@@ -1,0 +1,572 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Emoji Removal Report</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .summary { background: #ecf0f1; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 5px; border-left: 4px solid #3498db; }
+        .stat-number { font-size: 2em; font-weight: bold; color: #2c3e50; }
+        .stat-label { color: #7f8c8d; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #34495e; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .success { color: #27ae60; }
+        .warning { color: #f39c12; }
+        .error { color: #e74c3c; }
+        .file-list { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
+        .progress-bar { background: #ecf0f1; border-radius: 10px; height: 20px; margin: 10px 0; }
+        .progress-fill { background: #3498db; height: 100%; border-radius: 10px; transition: width 0.3s ease; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Comprehensive Emoji Removal Report</h1>
+        
+        <div class="summary">
+            <h2> Summary</h2>
+            <p><strong>Generated:</strong> 2025-11-19T20:10:48.616525</p>
+            <p><strong>Total Files Processed:</strong> 386</p>
+            <p><strong>Total Emojis Removed:</strong> <span class="success">0</span></p>
+            <p><strong>Backup Files Created:</strong> <span class="warning">0</span></p>
+        </div>
+
+        <h2> Statistics by File Type</h2>
+        <div class="stat-grid">
+
+            <div class="stat-card">
+                <div class="stat-number">30</div>
+                <div class="stat-label">Markdown Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">148</div>
+                <div class="stat-label">JavaScript Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">109</div>
+                <div class="stat-label">Python Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">10</div>
+                <div class="stat-label">JSON Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Batch Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Shell Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label">YAML Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Other Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">1</div>
+                <div class="stat-label">Log Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">HTML Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label">TypeScript Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">26</div>
+                <div class="stat-label">CSS Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">22</div>
+                <div class="stat-label">SVG Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-number">1</div>
+                <div class="stat-label">XML Files</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Emojis Removed</div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backups Created</div>
+            </div>
+
+        </div>
+
+        <h2> Detailed File Processing Results</h2>
+        <div class="file-list">
+<p>No emojis were found in any files. All files are already clean! </p>
+        <h2> Errors and Issues</h2>
+        <div class="file-list">
+            <ul>
+                <li class='error'>Failed to process e:\coastal\ASYNC_VALIDATION_CHECKLIST.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\BACKEND_API_TESTING_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\COMPREHENSIVE_MAINTENANCE_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\COMPREHENSIVE_TESTING_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\CONCURRENT_ACCESS.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\DATA_SYNCHRONIZATION_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\emoji_removal_tool.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\emoji_removal_tool.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\ENVIRONMENT_CONFIGURATION_VALIDATION_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\ERROR_FIXES_SUMMARY.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\final_security_assessment.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\FRONTEND_BACKEND_INTEGRATION_VALIDATION_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\generate_encryption_keys.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\generate_summary.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\LOGIN_PAGE_DOCUMENTATION.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\package-lock.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\package.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\PRODUCTION_DEPLOYMENT_GUIDE.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\PRODUCTION_ENVIRONMENT_DOCUMENTATION.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\PROJECT_CLEANUP_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\SECURITY_AUDIT_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\SECURITY_FIXES_IMPLEMENTATION.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\SYSTEM_HEALTH_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\TESTING_ENVIRONMENT_CREDENTIALS.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\test_authentication_flows.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\test_security_configuration.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\AWS_DEPLOYMENT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\comprehensive_test_report.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\comprehensive_test_script.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\conftest.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\DATABASE_CONNECTIVITY_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\deploy.bat: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\deploy.sh: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\DEPLOYMENT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\docker-compose.prod.yml: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\docker-compose.yml: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\Dockerfile: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\FRONTEND_BACKEND_SYNCHRONIZATION_FIXES.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\generate_keys.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\generate_production_keys.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\generate_ssl_cert.sh: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\LOGIN_CREDENTIALS.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\manage.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\nginx.conf: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\PRODUCTION_DEPLOYMENT_CHECKLIST.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\README.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\requirements.txt: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\server.log: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\SPPER_AUTHENTICATION_IMPLEMENTATION.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\STANDARDIZED_ERROR_HANDLING_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\targeted_test.sh: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_data_integrity.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_data_synchronization.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_endpoints.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_http2.sh: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_relationships.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_serialization.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_serializer_validation.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_spper_authentication.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\test_standardized_error_handling.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\TRANSACTION_MODEL_CONSOLIDATION_REPORT.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\validate_production_config.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\Dockerfile: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\index.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\package-lock.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\package.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\postcss.config.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\tailwind.config.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\tsconfig.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\tsconfig.node.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\vite.config.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\vite.config.ts: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\vitest.config.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\.github\copilot-instructions.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\admin.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\apps.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\models.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\permissions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\serializers.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\tests.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\urls.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\views.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\__init__.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\config\asgi.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\config\settings.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\config\urls.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\config\wsgi.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\fixtures\initial_data.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\fixtures\test_data.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\monitoring\prometheus.yml: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\admin.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\apps.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\models.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\permissions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\serializers.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\tests.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\urls.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\views.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\automated_backup.bat: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\automated_backup.sh: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\backup_database.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\create_test_commissions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\create_test_users.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\health_check.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\scripts\security_audit.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\admin.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\apps.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\models.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\serializers.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\tests.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\urls.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\transactions\views.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\admin.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\apps.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\audit_models.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\audit_utils.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\auth_backend.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\forms.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\models.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\permissions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\serializers.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\tests.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\test_password_reset.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\test_serializers.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\urls.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\views.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\migrations\0001_initial.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\migrations\0002_initial.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\migrations\0003_feestructure_transaction_description_and_more.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\migrations\0004_branch.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking\migrations\__init__.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\audit.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\encryption.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\error_handling.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\exceptions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\exception_handler.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\health_checks.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\masking.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\monitoring.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\sanitizer.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\schema_extensions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\test_audit.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\test_encryption.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\test_masking.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\test_sanitizer.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\banking_backend\utils\__init__.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\docker\prod\nginx.conf: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\docker\prod\supervisord.conf: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\monitoring\grafana\dashboards\banking-overview.json: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\monitoring\grafana\provisioning\datasources\prometheus.yml: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\migrations\0001_initial.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\migrations\0002_commission_commission_operations__created_91371b_idx_and_more.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\migrations\0003_expense_expense_operations__date_in_1b304c_idx_and_more.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\migrations\0004_visitschedule_and_more.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\migrations\0005_message_message_operations__created_3ea26e_idx_and_more.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\operations\management\commands\create_test_commissions.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\autocomplete.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\base.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\changelists.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\dark_mode.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\dashboard.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\forms.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\login.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\nav_sidebar.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\responsive.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\responsive_rtl.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\rtl.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\widgets.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\calendar-icons.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-addlink.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-alert.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-calendar.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-changelink.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-clock.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-deletelink.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-no.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-unknown-alt.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-unknown.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-viewlink.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\icon-yes.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\inline-delete.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\LICENSE: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\README.txt: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\search.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\selector-icons.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\sorting-icons.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\tooltag-add.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\tooltag-arrowright.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\actions.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\autocomplete.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\calendar.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\cancel.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\change_form.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\collapse.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\core.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\filters.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\inlines.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\jquery.init.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\nav_sidebar.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\popup_response.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\prepopulate.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\prepopulate_init.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\SelectBox.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\SelectFilter2.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\theme.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\urlify.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\vendor\select2\LICENSE-SELECT2.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\vendor\select2\select2.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\css\vendor\select2\select2.min.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\gis\move_vertex_off.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\img\gis\move_vertex_on.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\admin\DateTimeShortcuts.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\admin\RelatedObjectLookups.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\jquery\jquery.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\jquery\jquery.min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\jquery\LICENSE.txt: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\LICENSE.md: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\select2.full.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\select2.full.min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\xregexp\LICENSE.txt: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\xregexp\xregexp.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\xregexp\xregexp.min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\af.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ar.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\az.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\bg.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\bn.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\bs.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ca.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\cs.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\da.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\de.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\dsb.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\el.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\en.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\es.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\et.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\eu.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\fa.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\fi.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\fr.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\gl.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\he.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\hi.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\hr.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\hsb.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\hu.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\hy.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\id.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\is.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\it.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ja.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ka.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\km.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ko.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\lt.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\lv.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\mk.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ms.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\nb.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ne.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\nl.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\pl.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ps.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\pt-BR.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\pt.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ro.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\ru.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\sk.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\sl.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\sq.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\sr-Cyrl.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\sr.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\sv.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\th.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\tk.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\tr.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\uk.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\vi.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\zh-CN.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\admin\js\vendor\select2\i18n\zh-TW.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\swagger-ui-dist\oauth2-redirect.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\swagger-ui-dist\swagger-ui-bundle.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\swagger-ui-dist\swagger-ui-bundle.js.LICENSE.txt: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\swagger-ui-dist\swagger-ui-standalone-preset.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\swagger-ui-dist\swagger-ui.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\redoc\bundles\redoc.standalone.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\drf_spectacular_sidecar\redoc\bundles\redoc.standalone.js.LICENSE.txt: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\css\bootstrap-theme.min.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\css\bootstrap-tweaks.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\css\bootstrap.min.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\css\default.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\css\font-awesome-4.0.3.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\css\prettify.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\fonts\fontawesome-webfont.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\fonts\glyphicons-halflings-regular.svg: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\ajax-form.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\bootstrap.min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\coreapi-0.1.1.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\csrf.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\default.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\jquery-3.5.1.min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\js\prettify-min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\docs\css\base.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\docs\css\highlight.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\docs\css\jquery.json-view.min.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\docs\js\api.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\docs\js\highlight.pack.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\staticfiles\rest_framework\docs\js\jquery.json-view.min.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0001_initial.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0002_user_reset_token.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0003_user_reset_token_created_at_alter_user_reset_token.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0004_otpverification_and_more.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0005_userprofile_phone.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0006_auto_20251119_1912.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\migrations\0007_add_missing_fields.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\management\commands\create_comprehensive_test_users.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\management\commands\create_spper_user.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\management\commands\create_test_users.py: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\base.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\change_password.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\dashboard.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\login.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\profile.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\register.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\user_confirm_delete.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\user_form.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\banking_backend\users\templates\users\user_list.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\public\browserconfig.xml: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\public\index.html: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\public\sw.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\App.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\App.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\index.css: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\main.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\setupTests.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\vite-env.d.ts: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\CashFlowSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\CommissionSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\DashboardDropdown.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\DashboardHeader.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\ErrorBoundary.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\ExpensesSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\InterestSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\LoansSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\OverviewSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\PayslipSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\ProtectedMemberRoute.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\ServiceChargesSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\StatementsSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\TransactionForm.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\TransactionForm.test.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\TransactionsSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\components\UserManagementSection.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\context\AuthContext.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\context\AuthContext.tsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\hooks\useAuth.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\Accounts.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\CashierDashboard.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\Dashboard.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\Login.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\ManagerDashboard.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\MemberDashboard.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\MobileBankerDashboard.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\OperationsManagerDashboard.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\Transactions.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\pages\Transfer.jsx: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\services\api.ts: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\utils\accessibility.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\utils\analytics.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\utils\formatters.js: incomplete escape \U0023 at position 404</li>
+                <li class='error'>Failed to process e:\coastal\frontend\src\utils\sanitizer.js: incomplete escape \U0023 at position 404</li>
+
+            </ul>
+        </div>
+
+        <h2> Completion Status</h2>
+        <div class="summary">
+            <p><strong>Status:</strong> 
+<span class='success'> Completed - No emojis found in any files</span></p>
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+                <li>Review the backup files with .backup extension if needed</li>
+                <li>Run tests to ensure functionality remains intact</li>
+                <li>Check syntax validation results for any issues</li>
+                <li>Deploy changes after validation</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

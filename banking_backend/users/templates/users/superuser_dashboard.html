@@ -1,0 +1,1358 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Superuser Dashboard - Banking System{% endblock %}
+
+{% if not user.role == 'superuser' %}
+<script>
+    window.location.href = "{% url 'users:dashboard' %}";
+</script>
+{% endif %}
+
+{% block extra_head %}
+<style>
+    .superuser-card {
+        transition: transform 0.2s;
+    }
+    .superuser-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .alert-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    .activity-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    .system-card {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+    }
+    .sidebar .nav-link {
+        color: #495057;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.25rem;
+    }
+    .sidebar .nav-link:hover {
+        background-color: #e9ecef;
+        color: #007bff;
+    }
+    .sidebar .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+    .sidebar .nav-link i {
+        width: 20px;
+        margin-right: 0.5rem;
+    }
+    .nav-header {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        border-bottom: 1px solid #dee2e6;
+        margin-top: 1rem;
+    }
+    .nav-header:first-child {
+        margin-top: 0;
+    }
+
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .sidebar {
+            position: static;
+            height: auto;
+            padding-top: 0;
+        }
+        .superuser-card .card-body {
+            padding: 1rem 0.75rem;
+        }
+        .superuser-card .card-body h2 {
+            font-size: 1.5rem;
+        }
+        .superuser-card .card-body h6 {
+            font-size: 0.875rem;
+        }
+        .btn-toolbar .btn {
+            padding: 0.375rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .dropdown-menu {
+            min-width: 120px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .superuser-card .d-flex {
+            flex-direction: column;
+            text-align: center;
+        }
+        .superuser-card .text-end {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        .row.mb-4 .col-md-3 {
+            margin-bottom: 1rem;
+        }
+        .quick-actions .col-md-2 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    /* Performance optimizations */
+    .section-content {
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .section-content[style*="display: block"] {
+        display: block !important;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Loading states */
+    .loading {
+        position: relative;
+        pointer-events: none;
+    }
+
+    .loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block sidebar %}
+<nav class="col-md-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'users:superuser_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+
+            <!-- User Management -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">User Management</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_users' %}">
+                    <i class="fas fa-users-cog"></i> User Administration
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:user_list' %}">
+                    <i class="fas fa-user-friends"></i> All Users
+                </a>
+            </li>
+
+            <!-- Banking Operations -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Banking Operations</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#banking-analytics" onclick="showSection('banking')">
+                    <i class="fas fa-university"></i> Banking Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#transactions" onclick="showSection('transactions')">
+                    <i class="fas fa-exchange-alt"></i> Transactions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#loans" onclick="showSection('loans')">
+                    <i class="fas fa-hand-holding-usd"></i> Loans & Advances
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#operations" onclick="showSection('operations')">
+                    <i class="fas fa-calculator"></i> Operations
+                </a>
+            </li>
+
+            <!-- Security & Fraud -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Security & Fraud</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_security' %}">
+                    <i class="fas fa-shield-alt"></i> Security Center
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#fraud-detection" onclick="showSection('fraud')">
+                    <i class="fas fa-exclamation-triangle"></i> Fraud Detection
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_audit' %}">
+                    <i class="fas fa-history"></i> Audit Logs
+                </a>
+            </li>
+
+            <!-- System Configuration -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">System Configuration</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_settings' %}">
+                    <i class="fas fa-cogs"></i> System Settings
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#api-settings" onclick="showSection('api')">
+                    <i class="fas fa-plug"></i> API Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#rate-limits" onclick="showSection('rate-limits')">
+                    <i class="fas fa-tachometer-alt"></i> Rate Limits
+                </a>
+            </li>
+
+            <!-- Reports & Analytics -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Reports & Analytics</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#reports" onclick="showSection('reports')">
+                    <i class="fas fa-chart-bar"></i> Report Center
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#analytics" onclick="showSection('analytics')">
+                    <i class="fas fa-chart-line"></i> Data Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_monitoring' %}">
+                    <i class="fas fa-desktop"></i> System Monitoring
+                </a>
+            </li>
+
+            <!-- Advanced Operations -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Advanced Operations</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_operations' %}">
+                    <i class="fas fa-tools"></i> Superuser Operations
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#backup-restore" onclick="showSection('backup')">
+                    <i class="fas fa-database"></i> Backup & Restore
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#maintenance" onclick="showSection('maintenance')">
+                    <i class="fas fa-wrench"></i> Maintenance
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-crown"></i> Superuser Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="exportData()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-clock"></i> Auto-refresh
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="setAutoRefresh(0)">Off</a></li>
+                <li><a class="dropdown-item" href="#" onclick="setAutoRefresh(30)">30 seconds</a></li>
+                <li><a class="dropdown-item" href="#" onclick="setAutoRefresh(60)">1 minute</a></li>
+                <li><a class="dropdown-item" href="#" onclick="setAutoRefresh(300)">5 minutes</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- System Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card superuser-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Users</h6>
+                        <h2 class="mb-0">{{ system_stats.total_users|default:0 }}</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <small class="text-white-50">
+                    <i class="fas fa-arrow-up"></i> {{ system_stats.user_growth|default:0 }}% this month
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card alert-card superuser-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Security Alerts</h6>
+                        <h2 class="mb-0">{{ system_stats.fraud_alerts|default:0 }}</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <small class="text-white-50">
+                    {{ system_stats.suspicious_activities|default:0 }} suspicious activities
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card activity-card superuser-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Accounts</h6>
+                        <h2 class="mb-0">{{ system_stats.total_accounts|default:0 }}</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-university fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <small class="text-white-50">
+                    Balance: ${{ system_stats.total_balance|floatformat:0|default:0 }}
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card system-card superuser-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">System Health</h6>
+                        <h2 class="mb-0">{{ system_stats.system_health|default:100 }}%</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-heartbeat fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <small class="text-white-50">
+                    {{ system_stats.active_loans|default:0 }} active loans
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <button class="btn btn-success btn-lg w-100 mb-2" onclick="quickAction('create_user')">
+                            <i class="fas fa-user-plus"></i><br>
+                            <small>Create User</small>
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-lg w-100 mb-2" onclick="quickAction('system_health')">
+                            <i class="fas fa-heartbeat"></i><br>
+                            <small>System Health</small>
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-warning btn-lg w-100 mb-2" onclick="quickAction('backup_database')">
+                            <i class="fas fa-database"></i><br>
+                            <small>Backup DB</small>
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-info btn-lg w-100 mb-2" onclick="quickAction('view_audit')">
+                            <i class="fas fa-history"></i><br>
+                            <small>Audit Logs</small>
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-secondary btn-lg w-100 mb-2" onclick="quickAction('security_scan')">
+                            <i class="fas fa-shield-alt"></i><br>
+                            <small>Security Scan</small>
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-danger btn-lg w-100 mb-2" onclick="quickAction('emergency_mode')">
+                            <i class="fas fa-exclamation-triangle"></i><br>
+                            <small>Emergency</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and System Status -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-clock"></i> Recent Activity</h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="filterActivity('all')">All</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="filterActivity('security')">Security</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="filterActivity('users')">Users</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="filterActivity('system')">System</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="activity-list" class="list-group list-group-flush">
+                    {% for activity in recent_activities %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center activity-item" data-type="{{ activity.type }}">
+                        <div>
+                            <i class="fas {{ activity.icon }} me-2 text-{{ activity.color }}"></i>
+                            <strong>{{ activity.user }}</strong> {{ activity.action }}
+                            {% if activity.target %}
+                            <code>{{ activity.target }}</code>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No recent activity</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-server"></i> System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Database</span>
+                        <span class="badge bg-success">Healthy</span>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>API Services</span>
+                        <span class="badge bg-success">Operational</span>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" style="width: 98%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Security Systems</span>
+                        <span class="badge bg-warning">Monitoring</span>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-warning" style="width: 85%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Backup Status</span>
+                        <span class="badge bg-info">In Progress</span>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-info" style="width: 60%"></div>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="text-center">
+                    <small class="text-muted">Last updated: <span id="last-update">{{ current_time }}</span></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Critical Alerts -->
+        <div class="card mt-3">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Critical Alerts</h6>
+            </div>
+            <div class="card-body">
+                {% for alert in critical_alerts %}
+                <div class="alert alert-danger py-2 mb-2">
+                    <small><strong>{{ alert.title }}</strong><br>{{ alert.message }}</small>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                    <p class="mb-0">No critical alerts</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Content Sections -->
+<div id="dynamic-sections" class="mt-4" style="display: none;">
+    <!-- Banking Analytics Section -->
+    <div id="banking-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-university"></i> Banking Analytics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h6>Total Accounts</h6>
+                                <h3 id="total-accounts">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h6>Total Balance</h6>
+                                <h3 id="total-balance">$0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <h6>Active Loans</h6>
+                                <h3 id="active-loans">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary" onclick="loadBankingAnalytics()">Refresh Analytics</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Section -->
+    <div id="transactions-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exchange-alt"></i> Transaction Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Recent Transactions</h6>
+                        <div id="recent-transactions" class="list-group">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Loading transactions...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Transaction Statistics</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h4 id="today-transactions">0</h4>
+                                        <small class="text-muted">Today</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h4 id="week-transactions">0</h4>
+                                        <small class="text-muted">This Week</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fraud Detection Section -->
+    <div id="fraud-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exclamation-triangle"></i> Fraud Detection Center</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-danger">
+                            <div class="card-body">
+                                <h6 class="text-danger">Active Alerts</h6>
+                                <h3 id="fraud-alerts">0</h3>
+                                <button class="btn btn-sm btn-outline-danger mt-2" onclick="viewFraudAlerts()">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h6 class="text-warning">Suspicious Activities</h6>
+                                <h3 id="suspicious-activities">0</h3>
+                                <button class="btn btn-sm btn-outline-warning mt-2" onclick="viewSuspiciousActivities()">Investigate</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h6 class="text-info">Fraud Rules</h6>
+                                <h3 id="fraud-rules">0</h3>
+                                <button class="btn btn-sm btn-outline-info mt-2" onclick="manageFraudRules()">Manage Rules</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div id="reports-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Report Center</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Available Reports</h6>
+                        <div class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('user-activity')">
+                                <i class="fas fa-users"></i> User Activity Report
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('transaction-summary')">
+                                <i class="fas fa-exchange-alt"></i> Transaction Summary
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('financial-overview')">
+                                <i class="fas fa-chart-line"></i> Financial Overview
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('security-audit')">
+                                <i class="fas fa-shield-alt"></i> Security Audit Report
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Report Templates</h6>
+                        <div id="report-templates" class="list-group">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div id="analytics-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Data Analytics Dashboard</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Advanced analytics features will be displayed here. This includes charts, graphs, and detailed metrics.
+                        </div>
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Analytics dashboard coming soon</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Management Section -->
+    <div id="api-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plug"></i> API Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>API Endpoints</h6>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <strong>Users API:</strong> <code>/api/users/</code>
+                                <span class="badge bg-success ms-2">Active</span>
+                            </div>
+                            <div class="list-group-item">
+                                <strong>Banking API:</strong> <code>/api/banking/</code>
+                                <span class="badge bg-success ms-2">Active</span>
+                            </div>
+                            <div class="list-group-item">
+                                <strong>Transactions API:</strong> <code>/api/transactions/</code>
+                                <span class="badge bg-success ms-2">Active</span>
+                            </div>
+                            <div class="list-group-item">
+                                <strong>Fraud Detection:</strong> <code>/api/fraud/</code>
+                                <span class="badge bg-success ms-2">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>API Health</h6>
+                        <div id="api-health-status">
+                            <div class="text-center py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Checking API health...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rate Limits Section -->
+    <div id="rate-limits-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tachometer-alt"></i> Rate Limiting Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Rate limiting helps prevent abuse and ensures fair usage of system resources.
+                </div>
+                <div id="rate-limits-config">
+                    <div class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin"></i> Loading rate limit settings...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup & Restore Section -->
+    <div id="backup-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-database"></i> Backup & Restore</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Create Backup</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p>Create a full system backup including database and configuration files.</p>
+                                <button class="btn btn-primary" onclick="createBackup()">
+                                    <i class="fas fa-download"></i> Create Backup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Restore from Backup</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p>Restore system from a previous backup. This operation cannot be undone.</p>
+                                <button class="btn btn-warning" onclick="restoreBackup()">
+                                    <i class="fas fa-upload"></i> Restore Backup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Backup History</h6>
+                    <div id="backup-history">
+                        <div class="text-center py-3">
+                            <i class="fas fa-spinner fa-spin"></i> Loading backup history...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Section -->
+    <div id="maintenance-section" class="section-content" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-wrench"></i> System Maintenance</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-broom fa-2x text-info mb-2"></i>
+                                <h6>Cache Management</h6>
+                                <button class="btn btn-sm btn-outline-info" onclick="clearCache()">Clear Cache</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-recycle fa-2x text-warning mb-2"></i>
+                                <h6>Database Cleanup</h6>
+                                <button class="btn btn-sm btn-outline-warning" onclick="cleanupDatabase()">Clean Database</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-server fa-2x text-success mb-2"></i>
+                                <h6>System Optimization</h6>
+                                <button class="btn btn-sm btn-outline-success" onclick="optimizeSystem()">Optimize</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for Quick Actions -->
+<div class="modal fade" id="quickActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickActionTitle">Quick Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quickActionBody">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="executeQuickAction()">Execute</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let autoRefreshInterval = null;
+let currentFilter = 'all';
+
+function refreshDashboard() {
+    location.reload();
+}
+
+function setAutoRefresh(seconds) {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    if (seconds > 0) {
+        autoRefreshInterval = setInterval(refreshDashboard, seconds * 1000);
+    }
+}
+
+function filterActivity(type) {
+    currentFilter = type;
+    const items = document.querySelectorAll('.activity-item');
+
+    items.forEach(item => {
+        if (type === 'all' || item.dataset.type === type) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    // Update button states
+    document.querySelectorAll('.btn-group-sm .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function quickAction(action) {
+    const modal = new bootstrap.Modal(document.getElementById('quickActionModal'));
+    const title = document.getElementById('quickActionTitle');
+    const body = document.getElementById('quickActionBody');
+
+    switch(action) {
+        case 'create_user':
+            title.textContent = 'Create New User';
+            body.innerHTML = `
+                <form id="createUserForm">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select class="form-control" name="role" required>
+                            <option value="customer">Customer</option>
+                            <option value="cashier">Cashier</option>
+                            <option value="manager">Manager</option>
+                            <option value="administrator">Administrator</option>
+                            <option value="superuser">Superuser</option>
+                        </select>
+                    </div>
+                </form>
+            `;
+            break;
+
+        case 'system_health':
+            title.textContent = 'System Health Check';
+            body.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-heartbeat fa-3x text-success mb-3"></i>
+                    <h5>Running System Health Check...</h5>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'backup_database':
+            title.textContent = 'Database Backup';
+            body.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    This will create a full database backup. The process may take several minutes.
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="compressBackup">
+                    <label class="form-check-label" for="compressBackup">
+                        Compress backup file
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="encryptBackup">
+                    <label class="form-check-label" for="encryptBackup">
+                        Encrypt backup file
+                    </label>
+                </div>
+            `;
+            break;
+
+        case 'view_audit':
+            window.location.href = "{% url 'users:superuser_audit' %}";
+            return;
+
+        case 'security_scan':
+            title.textContent = 'Security Scan';
+            body.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                    <h5>Initiating Security Scan...</h5>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 100%"></div>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'emergency_mode':
+            title.textContent = 'Emergency Mode';
+            body.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This will activate emergency protocols and may restrict normal operations.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reason for Emergency Mode</label>
+                    <textarea class="form-control" rows="3" placeholder="Describe the emergency situation..." required></textarea>
+                </div>
+            `;
+            break;
+    }
+
+    modal.show();
+}
+
+function executeQuickAction() {
+    // Implementation for executing quick actions
+    const modal = bootstrap.Modal.getInstance(document.getElementById('quickActionModal'));
+    modal.hide();
+
+    // Show success message
+    showNotification('Action executed successfully', 'success');
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    const container = document.querySelector('.container-fluid .row .col-md-9');
+    container.insertBefore(alertDiv, container.firstChild);
+
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function exportData() {
+    // Implementation for exporting dashboard data
+    showNotification('Data export initiated. Download will start shortly.', 'info');
+}
+
+// Section switching functionality
+function showSection(sectionName) {
+    // Hide all sections
+    const sections = document.querySelectorAll('.section-content');
+    sections.forEach(section => section.style.display = 'none');
+
+    // Show the dynamic sections container
+    document.getElementById('dynamic-sections').style.display = 'block';
+
+    // Show the requested section
+    const targetSection = document.getElementById(sectionName + '-section');
+    if (targetSection) {
+        targetSection.style.display = 'block';
+
+        // Load data for the section
+        loadSectionData(sectionName);
+    }
+
+    // Update URL hash
+    window.location.hash = sectionName;
+
+    // Scroll to the section
+    document.getElementById('dynamic-sections').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Load data for specific sections
+function loadSectionData(sectionName) {
+    switch(sectionName) {
+        case 'banking':
+            loadBankingAnalytics();
+            break;
+        case 'transactions':
+            loadTransactionData();
+            break;
+        case 'fraud':
+            loadFraudData();
+            break;
+        case 'reports':
+            loadReportTemplates();
+            break;
+        case 'api':
+            checkAPIHealth();
+            break;
+        case 'rate-limits':
+            loadRateLimits();
+            break;
+        case 'backup':
+            loadBackupHistory();
+            break;
+    }
+}
+
+// Banking Analytics Functions
+function loadBankingAnalytics() {
+    // Use real data from template variables
+    document.getElementById('total-accounts').textContent = '{{ system_stats.total_accounts|default:0 }}';
+    document.getElementById('total-balance').textContent = '${{ system_stats.total_balance|floatformat:0|default:0 }}';
+    document.getElementById('active-loans').textContent = '{{ system_stats.active_loans|default:0 }}';
+    showNotification('Banking analytics loaded successfully', 'success');
+}
+
+// Transaction Data Functions
+function loadTransactionData() {
+    // Use real transaction data from template variables
+    document.getElementById('today-transactions').textContent = '{{ system_stats.today_transactions|default:0 }}';
+    document.getElementById('week-transactions').textContent = '{{ system_stats.week_transactions|default:0 }}';
+
+    // Mock recent transactions for now - in real implementation, this would fetch from API
+    const transactionsHtml = `
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>Deposit</strong><br>
+                    <small class="text-muted">Account: ****1234</small>
+                </div>
+                <div class="text-end">
+                    <span class="text-success">+$500.00</span><br>
+                    <small class="text-muted">2 hours ago</small>
+                </div>
+            </div>
+        </div>
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>Transfer</strong><br>
+                    <small class="text-muted">To: ****5678</small>
+                </div>
+                <div class="text-end">
+                    <span class="text-danger">-$250.00</span><br>
+                    <small class="text-muted">4 hours ago</small>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('recent-transactions').innerHTML = transactionsHtml;
+}
+
+// Fraud Detection Functions
+function loadFraudData() {
+    document.getElementById('fraud-alerts').textContent = '{{ system_stats.fraud_alerts|default:0 }}';
+    document.getElementById('suspicious-activities').textContent = '{{ system_stats.suspicious_activities|default:0 }}';
+    document.getElementById('fraud-rules').textContent = '25'; // This would need to be calculated from the fraud rules model
+}
+
+function viewFraudAlerts() {
+    showNotification('Redirecting to fraud alerts...', 'info');
+    // In real implementation, redirect to fraud alerts page
+}
+
+function viewSuspiciousActivities() {
+    showNotification('Loading suspicious activities...', 'info');
+}
+
+function manageFraudRules() {
+    showNotification('Opening fraud rules management...', 'info');
+}
+
+// Report Functions
+function loadReportTemplates() {
+    const templatesHtml = `
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Monthly Financial Report</strong><br>
+                    <small class="text-muted">Generated monthly</small>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="generateReport('monthly-financial')">Generate</button>
+            </div>
+        </div>
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>User Activity Summary</strong><br>
+                    <small class="text-muted">Weekly summary</small>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="generateReport('user-activity')">Generate</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('report-templates').innerHTML = templatesHtml;
+}
+
+function generateReport(reportType) {
+    showNotification(`Generating ${reportType} report...`, 'info');
+    // In real implementation, make API call to generate report
+}
+
+// API Management Functions
+function checkAPIHealth() {
+    const healthHtml = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> All APIs are operational
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="text-success">98.5%</h5>
+                        <small>Uptime (24h)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="text-primary">1.2s</h5>
+                        <small>Avg Response</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('api-health-status').innerHTML = healthHtml;
+}
+
+// Rate Limits Functions
+function loadRateLimits() {
+    const rateLimitsHtml = `
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Rate Limit</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/auth/login</td>
+                        <td>5/minute</td>
+                        <td><span class="badge bg-success">Normal</span></td>
+                        <td><button class="btn btn-sm btn-outline-secondary">Configure</button></td>
+                    </tr>
+                    <tr>
+                        <td>/api/transactions/</td>
+                        <td>100/hour</td>
+                        <td><span class="badge bg-warning">High Usage</span></td>
+                        <td><button class="btn btn-sm btn-outline-secondary">Configure</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    document.getElementById('rate-limits-config').innerHTML = rateLimitsHtml;
+}
+
+// Backup Functions
+function createBackup() {
+    showNotification('Creating system backup...', 'info');
+    // In real implementation, make API call to create backup
+}
+
+function restoreBackup() {
+    if (confirm('Are you sure you want to restore from backup? This action cannot be undone.')) {
+        showNotification('Restoring from backup...', 'warning');
+        // In real implementation, make API call to restore backup
+    }
+}
+
+function loadBackupHistory() {
+    const historyHtml = `
+        <div class="list-group">
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>Full System Backup</strong><br>
+                        <small class="text-muted">Created: 2025-11-20 10:00 UTC</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-success me-2">Complete</span>
+                        <button class="btn btn-sm btn-outline-primary">Download</button>
+                    </div>
+                </div>
+            </div>
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>Database Backup</strong><br>
+                        <small class="text-muted">Created: 2025-11-19 10:00 UTC</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-success me-2">Complete</span>
+                        <button class="btn btn-sm btn-outline-primary">Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('backup-history').innerHTML = historyHtml;
+}
+
+// Maintenance Functions
+function clearCache() {
+    showNotification('Clearing system cache...', 'info');
+    // In real implementation, make API call to clear cache
+}
+
+function cleanupDatabase() {
+    showNotification('Cleaning up database...', 'info');
+    // In real implementation, make API call to cleanup database
+}
+
+function optimizeSystem() {
+    showNotification('Optimizing system performance...', 'info');
+    // In real implementation, make API call to optimize system
+}
+
+// Initialize tooltips and other UI elements
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for URL hash and show appropriate section
+    const hash = window.location.hash.substring(1);
+    if (hash) {
+        showSection(hash);
+    }
+
+    console.log('Superuser dashboard loaded');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+# OWASP ZAP Baseline Scan Configuration
+# https://www.zaproxy.org/docs/docker/baseline-scan/
+
+env:
+  # API key for ZAP
+  ZAP_API_KEY: "${ZAP_API_KEY:-}"
+
+# The URL to scan
+target: "http://localhost:3000"
+
+# The path to the context file
+# context: "zap-context.context"
+
+# The path to the policy file
+# policy: "zap-policy.policy"
+
+# The format of the report
+reportFormat: "json"
+
+# The path to the report file
+reportFile: "zap-baseline-report.json"
+
+# The minimum alert level to include in the report
+# alertLevel: "Medium"
+
+# The maximum number of alerts to include in the report
+maxAlerts: 10
+
+# Whether to follow redirects
+followRedirects: true
+
+# Whether to scan forms
+scanForms: true
+
+# Whether to scan AJAX spiders
+scanAjax: false
+
+# The user to authenticate as
+# authUser: "user"
+
+# The password to authenticate with
+# authPassword: "password"
+
+# The login URL
+# loginUrl: "http://localhost:3000/login"
+
+# The logout URL
+# logoutUrl: "http://localhost:3000/logout"
+
+# The username parameter
+# usernameParameter: "username"
+
+# The password parameter
+# passwordParameter: "password"
+
+# The excluded URLs
+excludedUrls:
+  - "http://localhost:3000/_next/static/*"
+  - "http://localhost:3000/static/*"
+
+# The included URLs
+# includedUrls: []
+
+# The authentication method
+# authMethod: "form"
+
+# The session management method
+# sessionManagement: "cookie"
+
+# The technology to scan
+# technology:
+#   - "OS"
+#   - "OS.Linux"
+#   - "DB"
+#   - "DB.MySQL"
+
+# The delay between requests
+delayInMs: 0
+
+# The number of threads to use
+threadCount: 2
+
+# Whether to use the AJAX spider
+ajaxSpider: false
+
+# The browser to use for the AJAX spider
+# browserId: "firefox"
+
+# The maximum crawl depth
+maxCrawlDepth: 5
+
+# The maximum crawl states
+maxCrawlStates: 1000
+
+# Whether to include the alpha active scan rules
+includeAlphaActive: false
+
+# Whether to include the alpha passive scan rules
+includeAlphaPassive: false
+
+# The minimum quality to include
+# minQuality: "release"
+
+# The maximum rule duration
+maxRuleDurationInMins: 5
+
+# The maximum scan duration
+maxScanDurationInMins: 10

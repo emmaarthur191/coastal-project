@@ -1,0 +1,65 @@
+# DigitalOcean App Platform Configuration
+# Estimated cost: ~$25-50/month for small app with DB
+# https://docs.digitalocean.com/products/app-platform/
+
+name: banking-app
+services:
+  - name: backend
+    source_dir: banking_backend
+    github:
+      repo: your-username/your-repo
+      branch: main
+      deploy_on_push: true
+    run_command: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    environment_slug: python
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: DEBUG
+        value: "False"
+      - key: ENVIRONMENT
+        value: "production"
+      - key: SECRET_KEY
+        type: SECRET
+        value: "${SECRET_KEY}"
+      - key: DATABASE_URL
+        type: SECRET
+        value: "${DATABASE_URL}"
+      - key: REDIS_URL
+        type: SECRET
+        value: "${REDIS_URL}"
+      - key: ENCRYPTION_KEY
+        type: SECRET
+        value: "${ENCRYPTION_KEY}"
+      - key: ALLOWED_HOSTS
+        value: "${APP_DOMAIN}"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://${APP_DOMAIN}"
+
+  - name: frontend
+    source_dir: frontend
+    github:
+      repo: your-username/your-repo
+      branch: main
+      deploy_on_push: true
+    build_command: npm run build
+    run_command: npx serve -s dist -l $PORT
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: REACT_APP_API_BASE_URL
+        value: "https://${APP_DOMAIN}"
+
+databases:
+  - name: postgres
+    engine: PG
+    version: "15"
+    size: basic
+    num_nodes: 1
+
+  - name: redis
+    engine: REDIS
+    version: "7"
+    size: basic
+    num_nodes: 1

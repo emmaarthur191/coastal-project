@@ -1,0 +1,59 @@
+[
+  {
+    "test": "Health Check /health/",
+    "status": "PASS",
+    "details": "Status: 200",
+    "response_data": {
+      "status": "healthy",
+      "checks": {
+        "database": {
+          "status": "healthy",
+          "response_time": 0.003289937973022461,
+          "timestamp": 1763579647.041348
+        },
+        "cache": {
+          "status": "healthy",
+          "response_time": 0.0,
+          "timestamp": 1763579647.041348
+        }
+      }
+    },
+    "timestamp": "2025-11-19 19:14:07"
+  },
+  {
+    "test": "Health Check /health/system/",
+    "status": "PASS",
+    "details": "Status: 200",
+    "response_data": {
+      "status": "healthy",
+      "timestamp": 1763579647.0475702,
+      "services": {
+        "database": {
+          "status": "healthy",
+          "response_time": 0.0009367465972900391,
+          "timestamp": 1763579647.0475702
+        },
+        "cache": {
+          "status": "healthy",
+          "response_time": 0.0,
+          "timestamp": 1763579647.0475702
+        }
+      }
+    },
+    "timestamp": "2025-11-19 19:14:07"
+  },
+  {
+    "test": "Health Check /health/banking/",
+    "status": "FAIL",
+    "details": "Status: 500",
+    "response_data": "{\"status\": \"error\", \"error\": \"Metrics calculation failed\", \"timestamp\": \"2025-11-19T19:14:07.056508+00:00\"}",
+    "timestamp": "2025-11-19 19:14:07"
+  },
+  {
+    "test": "User Authentication",
+    "status": "FAIL",
+    "details": "Authentication failed: 500",
+    "response_data": "{\"success\":false,\"error\":{\"code\":\"DATABASE_ERROR\",\"message\":\"Database operation failed\",\"details\":{}},\"timestamp\":\"2025-11-19T19:14:07.068349+00:00\"}",
+    "timestamp": "2025-11-19 19:14:07"
+  }
+]

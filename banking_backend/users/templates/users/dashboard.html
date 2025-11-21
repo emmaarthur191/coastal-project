@@ -1,0 +1,176 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Banking System{% endblock %}
+
+{% block sidebar %}
+{% if is_staff %}
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'users:dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            {% if is_superuser %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_dashboard' %}">
+                    <i class="fas fa-crown"></i> Superuser Panel
+                </a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:user_list' %}">
+                    <i class="fas fa-users"></i> User Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:profile' %}">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if is_staff %}
+<!-- Staff Dashboard -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">
+                <i class="fas fa-users"></i> Total Users
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ total_users }}</h5>
+                <p class="card-text">Registered users in the system</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">
+                <i class="fas fa-user-check"></i> Active Users
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ active_users }}</h5>
+                <p class="card-text">Currently active users</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">
+                <i class="fas fa-user-tie"></i> Staff Members
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ staff_users }}</h5>
+                <p class="card-text">Staff and management users</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tasks"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{% url 'users:user_create' %}" class="btn btn-success btn-lg w-100 mb-2">
+                            <i class="fas fa-user-plus"></i><br>
+                            Add New User
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'users:user_list' %}" class="btn btn-primary btn-lg w-100 mb-2">
+                            <i class="fas fa-users"></i><br>
+                            Manage Users
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'users:profile' %}" class="btn btn-info btn-lg w-100 mb-2">
+                            <i class="fas fa-user-edit"></i><br>
+                            Edit Profile
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'users:change_password' %}" class="btn btn-warning btn-lg w-100 mb-2">
+                            <i class="fas fa-key"></i><br>
+                            Change Password
+                        </a>
+                    </div>
+                    {% if is_superuser %}
+                    <div class="col-md-3">
+                        <a href="{% url 'users:superuser_dashboard' %}" class="btn btn-danger btn-lg w-100 mb-2">
+                            <i class="fas fa-crown"></i><br>
+                            Superuser Panel
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Member Dashboard -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user"></i> Welcome, {{ user.first_name }}!</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Account Information</h6>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+                        <p><strong>Member since:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
+                        <p><strong>Status:</strong>
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Quick Actions</h6>
+                        <a href="{% url 'users:profile' %}" class="btn btn-primary me-2">
+                            <i class="fas fa-user-edit"></i> Edit Profile
+                        </a>
+                        <a href="{% url 'users:change_password' %}" class="btn btn-warning">
+                            <i class="fas fa-key"></i> Change Password
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

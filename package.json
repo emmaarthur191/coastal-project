@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "amplitude-js": "^8.21.9"
+  }
+}

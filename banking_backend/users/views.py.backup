@@ -1,0 +1,1220 @@
+from rest_framework import serializers, views, permissions, status
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.crypto import get_random_string
+from django.utils import timezone
+from datetime import timedelta
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy, reverse
+from django.http import HttpResponseRedirect, JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+from .models import UserProfile, User, OTPVerification
+from .serializers import (
+    UserProfileSerializer, NotificationSettingsSerializer, 
+    EnhancedUserRegistrationSerializer, UserInfoSerializer, 
+    RoleBasedDashboardSerializer, UserManagementSerializer,
+    SecuritySettingsSerializer, OTPSerializer, OTPVerificationSerializer
+)
+from .permissions import (
+    IsCustomer, IsCashier, IsMobileBanker, IsManager, 
+    IsOperationsManager, IsAdministrator, IsManagerOrHigher,
+    CanManageUsers, CanAccessSecurityFeatures, CanPerformOperationalOversight
+)
+from .audit_utils import (
+    log_audit_event, log_login_attempt, log_security_event,
+    get_client_ip, rate_limit_check, check_suspicious_activity
+)
+from .forms import (
+    LoginForm, UserRegistrationForm, CustomUserCreationForm,
+    CustomUserChangeForm, UserProfileForm, PasswordChangeForm
+)
+from banking.models import Account, Transaction, Loan
+from decimal import Decimal
+import random
+import logging
+import json
+
+logger = logging.getLogger('banking_security')
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Custom login view that returns user data along with tokens.
+
+    Authenticates user credentials and returns JWT access/refresh tokens
+    along with basic user information. RESTRICTED TO 'spper' USER ONLY.
+    """
+
+    @extend_schema(
+        summary="User Login",
+        description="Authenticate user with username and password to obtain JWT tokens. RESTRICTED TO 'spper' USER ONLY. Progressive rate limiting with delays and account lockouts applied.",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'username': {'type': 'string', 'example': 'spper', 'description': 'Username - must be exactly "spper"'},
+                    'password': {'type': 'string', 'format': 'password', 'example': 'securepassword123'}
+                },
+                'required': ['username', 'password']
+            }
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'refresh': {'type': 'string', 'example': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'},
+                    'access': {'type': 'string', 'example': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'},
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string', 'example': '123e4567-e89b-12d3-a456-426614174000'},
+                            'email': {'type': 'string', 'format': 'email', 'example': 'spper@example.com'},
+                            'first_name': {'type': 'string', 'example': 'John'},
+                            'last_name': {'type': 'string', 'example': 'Doe'},
+                            'role': {'type': 'string', 'enum': ['member', 'cashier', 'mobile_banker', 'manager', 'operations_manager'], 'example': 'member'},
+                            'is_active': {'type': 'boolean', 'example': True},
+                            'is_staff': {'type': 'boolean', 'example': False}
+                        }
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'No active account found with the given credentials'}
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Access denied. Only spper user is authorized to login.'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Account temporarily locked due to multiple failed login attempts. Try again in 900 seconds.'}
+                }
+            }
+        },
+        tags=['Authentication']
+    )
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        
+        # Additional security check at the view level
+        if email != 'spper':
+            logger.warning(f"Unauthorized login attempt via API: {email}")
+            return Response({
+                'detail': 'Access denied. Only spper user is authorized to login.'
+            }, status=403)
+        
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = authenticate(
+                email=email,
+                password=request.data.get('password')
+            )
+            if user:
+                user_data = {
+                    'id': str(user.id),
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role,
+                    'is_active': user.is_active,
+                    'is_staff': user.is_staff,
+                }
+                response.data['user'] = user_data
+        return response
+
+
+class LogoutView(views.APIView):
+    """
+    POST: Logout by blacklisting the refresh token.
+
+    Invalidates the provided refresh token to log out the user.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="User Logout",
+        description="Invalidate the refresh token to log out the authenticated user. Rate limiting applied to prevent abuse.",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'refresh': {'type': 'string', 'example': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'}
+                },
+                'required': ['refresh']
+            }
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Successfully logged out.'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Invalid token.'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Authentication credentials were not provided.'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Transaction operations temporarily suspended due to excessive activity. Try again in 1800 seconds.'}
+                }
+            }
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            if not refresh_token:
+                # If no refresh token provided, just return success
+                # The frontend will clear local storage anyway
+                return Response({"detail": "Successfully logged out."}, status=200)
+
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Successfully logged out."}, status=200)
+        except Exception as e:
+            # Even if token blacklisting fails, return success
+            # The frontend will clear tokens locally
+            logger.warning(f"Logout token blacklist failed: {e}")
+            return Response({"detail": "Successfully logged out."}, status=200)
+
+
+class PasswordResetRequestView(views.APIView):
+    """POST: Request password reset by sending email with reset token."""
+    permission_classes = [permissions.AllowAny]
+
+    class EmailSerializer(serializers.Serializer):
+        email = serializers.EmailField()
+
+    def post(self, request):
+        serializer = self.EmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+
+        try:
+            user = User.objects.get(email=email)
+            reset_token = get_random_string(32)
+            user.set_reset_token(reset_token)
+
+            # Send email (in production, use proper email service)
+            reset_url = f"{settings.FRONTEND_URL}/reset-password/{reset_token}"
+            send_mail(
+                'Password Reset Request',
+                f'Click here to reset your password: {reset_url}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+            return Response({"detail": "Password reset email sent."})
+        except User.DoesNotExist:
+            return Response({"detail": "If the email exists, a reset link has been sent."})
+
+
+class PasswordResetConfirmView(views.APIView):
+    """POST: Confirm password reset with token."""
+    permission_classes = [permissions.AllowAny]
+
+    class ResetSerializer(serializers.Serializer):
+        token = serializers.CharField()
+        new_password = serializers.CharField()
+
+    def post(self, request):
+        serializer = self.ResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        token = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+
+        # Find all users with non-expired tokens
+        current_time = timezone.now()
+        users = User.objects.filter(
+            reset_token__isnull=False,
+            reset_token_created_at__isnull=False,
+            reset_token_created_at__gte=current_time - timedelta(minutes=15)
+        )
+
+        # Check token for each user (constant time to prevent timing attacks)
+        user_found = None
+        for user in users:
+            if user.check_reset_token(token):
+                user_found = user
+                # Don't break - continue checking to maintain constant time
+        
+        if user_found:
+            user_found.set_password(new_password)
+            user_found.clear_reset_token()
+            return Response({"detail": "Password reset successfully."})
+        
+        # Always return same error message to prevent user enumeration
+        return Response({"detail": "Invalid or expired token."}, status=400)
+
+
+class ProfileSettingsView(views.APIView):
+    """
+    GET: Retrieve profile.
+    PATCH: Update general profile details.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.profile
+
+    def get(self, request):
+        profile = self.get_object()
+        serializer = UserProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        profile = self.get_object()
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class NotificationSettingsView(views.APIView):
+    """PATCH: Update notification preferences (notify_email, notify_sms, notify_push)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request):
+        profile = self.request.user.profile
+        serializer = NotificationSettingsSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Notification settings updated."})
+
+
+class PasswordChangeView(views.APIView):
+    """POST: Change user password."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    class PasswordSerializer(serializers.Serializer):
+        old_password = serializers.CharField(required=True)
+        new_password = serializers.CharField(required=True)
+
+    def post(self, request):
+        serializer = self.PasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        old_password = serializer.validated_data['old_password']
+        new_password = serializer.validated_data['new_password']
+
+        if not user.check_password(old_password):
+            return Response({"old_password": ["Wrong password."]}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"detail": "Password updated successfully."})
+
+
+class AuthCheckView(views.APIView):
+    """
+    GET: Check if the current user is authenticated and return user info.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Check Authentication Status",
+        description="Returns the authenticated user's information if logged in. Rate limiting applied to prevent abuse.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'authenticated': {'type': 'boolean', 'example': True},
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string', 'example': '123e4567-e89b-12d3-a456-426614174000'},
+                            'email': {'type': 'string', 'format': 'email', 'example': 'user@example.com'},
+                            'first_name': {'type': 'string', 'example': 'John'},
+                            'last_name': {'type': 'string', 'example': 'Doe'},
+                            'role': {'type': 'string', 'enum': ['member', 'cashier', 'mobile_banker', 'manager', 'operations_manager'], 'example': 'member'},
+                            'is_active': {'type': 'boolean', 'example': True},
+                            'is_staff': {'type': 'boolean', 'example': False}
+                        }
+                    }
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Authentication credentials were not provided.'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Transaction operations temporarily suspended due to excessive activity. Try again in 1800 seconds.'}
+                }
+            }
+        },
+        tags=['Authentication']
+    )
+    def get(self, request):
+        user = request.user
+        user_data = {
+            'id': str(user.id),
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+            'is_active': user.is_active,
+            'is_staff': user.is_staff,
+        }
+        return Response({
+            'authenticated': True,
+            'user': user_data
+        })
+
+
+class RegisterView(views.APIView):
+    """
+    POST: Register a new user account.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        summary="User Registration",
+        description="Create a new user account with email, password, and basic information. Rate limiting applied to prevent abuse.",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'email': {'type': 'string', 'format': 'email', 'example': 'newuser@example.com'},
+                    'first_name': {'type': 'string', 'example': 'John'},
+                    'last_name': {'type': 'string', 'example': 'Doe'},
+                    'password': {'type': 'string', 'format': 'password', 'example': 'securepassword123'},
+                    'password_confirm': {'type': 'string', 'format': 'password', 'example': 'securepassword123'}
+                },
+                'required': ['email', 'first_name', 'last_name', 'password', 'password_confirm']
+            }
+        },
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'User registered successfully.'},
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string', 'example': '123e4567-e89b-12d3-a456-426614174000'},
+                            'email': {'type': 'string', 'format': 'email', 'example': 'newuser@example.com'},
+                            'first_name': {'type': 'string', 'example': 'John'},
+                            'last_name': {'type': 'string', 'example': 'Doe'},
+                            'role': {'type': 'string', 'example': 'member'}
+                        }
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Validation error details'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Transaction operations temporarily suspended due to excessive activity. Try again in 1800 seconds.'}
+                }
+            }
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        user_data = {
+            'id': str(user.id),
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+        }
+
+        return Response({
+            'detail': 'User registered successfully.',
+            'user': user_data
+        }, status=201)
+
+
+class MemberDashboardView(views.APIView):
+    """
+    GET: Retrieve dashboard data for authenticated members.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Member Dashboard",
+        description="Returns dashboard data including account balances, recent transactions, and loan information for authenticated members.",
+        responses={
+            200: RoleBasedDashboardSerializer,
+            401: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Authentication credentials were not provided.'}
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'example': 'Access denied. Members only.'}
+                }
+            }
+        },
+        tags=['Dashboard']
+    )
+    def get(self, request):
+        user = request.user
+
+        # Check if user is a member
+        if user.role != 'member':
+            return Response({'detail': 'Access denied. Members only.'}, status=403)
+
+        # Get user's accounts
+        accounts = Account.objects.filter(owner=user)
+        total_balance = sum(account.balance for account in accounts)
+
+        # Get recent transactions (last 10)
+        transactions = Transaction.objects.filter(account__owner=user).order_by('-timestamp')[:10]
+        recent_transactions = [
+            {
+                'date': transaction.timestamp.strftime('%Y-%m-%d'),
+                'description': transaction.description or transaction.type,
+                'amount': float(transaction.amount)
+            }
+            for transaction in transactions
+        ]
+
+        # Get loan balance
+        loans = Loan.objects.filter(account__owner=user, status='active')
+        loan_balance = sum(loan.outstanding_balance for loan in loans)
+
+        # Calculate savings balance (total balance minus loan balance)
+        savings_balance = total_balance - loan_balance
+
+        dashboard_data = {
+            'account_balance': total_balance,
+            'recent_transactions': recent_transactions,
+            'loan_balance': loan_balance,
+            'savings_balance': savings_balance,
+        }
+
+        serializer = MemberDashboardSerializer(dashboard_data)
+        return Response(serializer.data)
+
+
+class SendOTPView(views.APIView):
+    """
+    POST: Send OTP code to phone number for verification.
+    In test mode (DEBUG=True), the OTP is returned in the response.
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    class OTPRequestSerializer(serializers.Serializer):
+        phone_number = serializers.CharField(max_length=20)
+        verification_type = serializers.ChoiceField(
+            choices=['user_creation', 'phone_verification', 'transaction', 'password_reset'],
+            default='user_creation'
+        )
+    
+    @extend_schema(
+        summary="Send OTP",
+        description="Send OTP code to phone number. In test mode, OTP is returned in response for testing.",
+        request=OTPRequestSerializer,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'OTP sent successfully'},
+                    'expires_in': {'type': 'integer', 'example': 300},
+                    'test_mode': {'type': 'boolean', 'example': True},
+                    'otp_code': {'type': 'string', 'example': '123456', 'description': 'Only in test mode'}
+                }
+            }
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        serializer = self.OTPRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        phone_number = serializer.validated_data['phone_number']
+        verification_type = serializer.validated_data['verification_type']
+        
+        # Generate 6-digit OTP
+        otp_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        
+        # Set expiration (5 minutes)
+        expires_at = timezone.now() + timedelta(minutes=5)
+        
+        # Invalidate any existing OTPs for this phone number and type
+        OTPVerification.objects.filter(
+            phone_number=phone_number,
+            verification_type=verification_type,
+            is_verified=False
+        ).update(is_verified=True)  # Mark as used
+        
+        # Create new OTP
+        otp = OTPVerification.objects.create(
+            phone_number=phone_number,
+            otp_code=otp_code,
+            verification_type=verification_type,
+            expires_at=expires_at
+        )
+        
+        # In test mode (DEBUG=True), return the OTP in the response
+        test_mode = settings.DEBUG
+        
+        response_data = {
+            'message': 'OTP sent successfully',
+            'expires_in': 300,  # 5 minutes in seconds
+            'test_mode': test_mode
+        }
+        
+        if test_mode:
+            response_data['otp_code'] = otp_code
+            logger.info(f"TEST MODE: OTP for {phone_number}: {otp_code}")
+        else:
+            # In production, send actual SMS here
+            # Example: send_sms(phone_number, f"Your verification code is: {otp_code}")
+            logger.info(f"OTP sent to {phone_number}")
+        
+        return Response(response_data)
+
+
+class VerifyOTPView(views.APIView):
+    """
+    POST: Verify OTP code for phone number.
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    class OTPVerifySerializer(serializers.Serializer):
+        phone_number = serializers.CharField(max_length=20)
+        otp_code = serializers.CharField(max_length=6)
+        verification_type = serializers.ChoiceField(
+            choices=['user_creation', 'phone_verification', 'transaction', 'password_reset'],
+            default='user_creation'
+        )
+    
+    @extend_schema(
+        summary="Verify OTP",
+        description="Verify OTP code for phone number verification.",
+        request=OTPVerifySerializer,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'Phone number verified successfully'},
+                    'verified': {'type': 'boolean', 'example': True}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'example': 'Invalid or expired OTP'}
+                }
+            }
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        serializer = self.OTPVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        phone_number = serializer.validated_data['phone_number']
+        otp_code = serializer.validated_data['otp_code']
+        verification_type = serializer.validated_data['verification_type']
+        
+        # Find the most recent OTP for this phone number and type
+        try:
+            otp = OTPVerification.objects.filter(
+                phone_number=phone_number,
+                verification_type=verification_type,
+                is_verified=False
+            ).order_by('-created_at').first()
+            
+            if not otp:
+                return Response({
+                    'error': 'No OTP found for this phone number. Please request a new one.'
+                }, status=400)
+            
+            if not otp.is_valid():
+                if otp.is_expired():
+                    return Response({
+                        'error': 'OTP has expired. Please request a new one.'
+                    }, status=400)
+                elif otp.attempts >= otp.max_attempts:
+                    return Response({
+                        'error': 'Maximum verification attempts exceeded. Please request a new OTP.'
+                    }, status=400)
+            
+            # Verify the OTP
+            if otp.verify(otp_code):
+                return Response({
+                    'message': 'Phone number verified successfully',
+                    'verified': True
+                })
+            else:
+                remaining_attempts = otp.max_attempts - otp.attempts
+                return Response({
+                    'error': f'Invalid OTP code. {remaining_attempts} attempts remaining.'
+                }, status=400)
+                
+        except Exception as e:
+            logger.error(f"OTP verification error: {e}")
+            return Response({
+                'error': 'Verification failed. Please try again.'
+            }, status=400)
+
+
+class CreateUserView(views.APIView):
+    """
+    POST: Create a new user (staff only - requires manager or operations_manager role).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    class UserCreationSerializer(serializers.Serializer):
+        email = serializers.EmailField()
+        first_name = serializers.CharField(max_length=30)
+        last_name = serializers.CharField(max_length=30)
+        phone = serializers.CharField(max_length=20)
+        password = serializers.CharField(write_only=True)
+        role = serializers.ChoiceField(choices=['member', 'cashier', 'mobile_banker', 'manager', 'operations_manager'])
+    
+    @extend_schema(
+        summary="Create New User",
+        description="Create a new user account. Only accessible by managers and operations managers.",
+        request=UserCreationSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'User created successfully'},
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string'},
+                            'email': {'type': 'string'},
+                            'first_name': {'type': 'string'},
+                            'last_name': {'type': 'string'},
+                            'role': {'type': 'string'}
+                        }
+                    }
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'example': 'Only managers and operations managers can create users'}
+                }
+            }
+        },
+        tags=['User Management']
+    )
+    def post(self, request):
+        # Check if user has permission
+        if request.user.role not in ['manager', 'operations_manager']:
+            return Response({
+                'error': 'Only managers and operations managers can create users'
+            }, status=403)
+        
+        serializer = self.UserCreationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Check if user already exists
+        if User.objects.filter(email=serializer.validated_data['email']).exists():
+            return Response({
+                'error': 'User with this email already exists'
+            }, status=400)
+        
+        # Create user
+        user = User.objects.create_user(
+            email=serializer.validated_data['email'],
+            password=serializer.validated_data['password'],
+            first_name=serializer.validated_data['first_name'],
+            last_name=serializer.validated_data['last_name'],
+            role=serializer.validated_data['role']
+        )
+        
+        # Create UserProfile
+        UserProfile.objects.create(user=user)
+        
+        return Response({
+            'message': 'User created successfully',
+            'user': {
+                'id': str(user.id),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role
+            }
+        }, status=201)
+
+
+class StaffListView(views.APIView):
+    """
+    GET: List all staff members (excluding regular members).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @extend_schema(
+        summary="List Staff Members",
+        description="Get a list of all staff members. Only accessible by managers and operations managers.",
+        responses={
+            200: {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                        'email': {'type': 'string'},
+                        'first_name': {'type': 'string'},
+                        'last_name': {'type': 'string'},
+                        'role': {'type': 'string'},
+                        'is_active': {'type': 'boolean'},
+                        'date_joined': {'type': 'string'},
+                        'staff_id': {'type': 'string'}
+                    }
+                }
+            }
+        },
+        tags=['User Management']
+    )
+    def get(self, request):
+        # Check if user has permission
+        if request.user.role not in ['manager', 'operations_manager']:
+            return Response({
+                'error': 'Only managers and operations managers can view staff list'
+            }, status=403)
+        
+        # Get all users except regular members
+        staff = User.objects.exclude(role='member').order_by('-date_joined')
+        
+        staff_data = [
+            {
+                'id': str(user.id),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'is_active': user.is_active,
+                'date_joined': user.date_joined.strftime('%Y-%m-%d'),
+                'staff_id': str(user.id)[:8]  # Use first 8 chars of UUID as staff ID
+            }
+            for user in staff
+        ]
+        
+        return Response(staff_data)
+
+
+class DeactivateStaffView(views.APIView):
+    """
+    POST: Deactivate a staff member.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    class DeactivateSerializer(serializers.Serializer):
+        user_id = serializers.UUIDField()
+        reason = serializers.CharField(required=False)
+    
+    @extend_schema(
+        summary="Deactivate Staff",
+        description="Deactivate a staff member. Only accessible by operations managers.",
+        request=DeactivateSerializer,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'Staff member deactivated successfully'}
+                }
+            }
+        },
+        tags=['User Management']
+    )
+    def post(self, request):
+        # Check if user has permission
+        if request.user.role != 'operations_manager':
+            return Response({
+                'error': 'Only operations managers can deactivate staff'
+            }, status=403)
+        
+        serializer = self.DeactivateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            user = User.objects.get(id=serializer.validated_data['user_id'])
+            
+            # Prevent deactivating yourself
+            if user.id == request.user.id:
+                return Response({
+                    'error': 'You cannot deactivate your own account'
+                }, status=400)
+            
+            user.is_active = False
+            user.save()
+            
+            logger.info(f"Staff member {user.email} deactivated by {request.user.email}")
+            
+            return Response({
+                'message': f'Staff member {user.first_name} {user.last_name} deactivated successfully'
+            })
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found'
+            }, status=404)
+
+
+class ReactivateStaffView(views.APIView):
+    """
+    POST: Reactivate a staff member.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    class ReactivateSerializer(serializers.Serializer):
+        user_id = serializers.UUIDField()
+
+    @extend_schema(
+        summary="Reactivate Staff",
+        description="Reactivate a deactivated staff member. Only accessible by operations managers.",
+        request=ReactivateSerializer,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'Staff member reactivated successfully'}
+                }
+            }
+        },
+        tags=['User Management']
+    )
+    def post(self, request):
+        # Check if user has permission
+        if request.user.role != 'operations_manager':
+            return Response({
+                'error': 'Only operations managers can reactivate staff'
+            }, status=403)
+
+        serializer = self.ReactivateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            user = User.objects.get(id=serializer.validated_data['user_id'])
+            user.is_active = True
+            user.save()
+
+            logger.info(f"Staff member {user.email} reactivated by {request.user.email}")
+
+            return Response({
+                'message': f'Staff member {user.first_name} {user.last_name} reactivated successfully'
+            })
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found'
+            }, status=404)
+
+
+class MembersListView(views.APIView):
+    """
+    GET: List all members (users with role='member').
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="List Members",
+        description="Get a list of all members. Accessible by staff users.",
+        responses={
+            200: {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                        'email': {'type': 'string'},
+                        'first_name': {'type': 'string'},
+                        'last_name': {'type': 'string'},
+                        'phone': {'type': 'string'},
+                        'is_active': {'type': 'boolean'},
+                        'date_joined': {'type': 'string'}
+                    }
+                }
+            }
+        },
+        tags=['User Management']
+    )
+    def get(self, request):
+        # Get all users with role='member'
+        members = User.objects.filter(role='member').order_by('-date_joined')
+
+        members_data = []
+        for user in members:
+            try:
+                phone = user.profile.phone if user.profile else ''
+            except ObjectDoesNotExist:
+                phone = ''
+            members_data.append({
+                'id': str(user.id),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone': phone,
+                'is_active': user.is_active,
+                'date_joined': user.date_joined.strftime('%Y-%m-%d')
+            })
+
+        return Response(members_data)
+
+
+# Web Views for User Interface
+
+@csrf_protect
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Use .get() with a default value to safely access POST data,
+        # or check if the key exists before accessing it.
+        # This prevents a KeyError if the field is missing.
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        if not username or not password:
+            messages.error(request, "Please enter both username and password.")
+            return render(request, 'users/login.html')
+
+        # ENFORCE SPper USER RESTRICTION
+        if username != 'spper':
+            logger.warning(f"Unauthorized web login attempt: {username}")
+            messages.error(request, "Access denied. Only the spper user is authorized to login.")
+            return render(request, 'users/login.html')
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            logger.info(f"Successful web login for authorized user: {username}")
+            return redirect('dashboard')
+        else:
+            messages.error(request, "Invalid username or password.")
+    return render(request, 'users/login.html')
+
+
+def logout_view(request):
+    """Web view for user logout."""
+    logout(request)
+    messages.info(request, 'You have been logged out.')
+    return redirect('login')
+
+
+@login_required
+def dashboard_view(request):
+    """Dashboard view for authenticated users."""
+    user = request.user
+    context = {
+        'user': user,
+    }
+
+    # Add role-specific context
+    if user.role in ['manager', 'operations_manager']:
+        # Staff dashboard
+        context['is_staff'] = True
+        context['total_users'] = User.objects.count()
+        context['active_users'] = User.objects.filter(is_active=True).count()
+        context['staff_users'] = User.objects.exclude(role='member').count()
+    else:
+        # Member dashboard
+        context['is_member'] = True
+
+    return render(request, 'users/dashboard.html', context)
+
+
+@csrf_protect
+def register_view(request):
+    """Web view for user registration."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Account created successfully!')
+            return redirect('dashboard')
+    else:
+        form = UserRegistrationForm()
+
+    return render(request, 'users/register.html', {'form': form})
+
+
+@login_required
+@csrf_protect
+def profile_view(request):
+    """View and edit user profile."""
+    user = request.user
+
+    if request.method == 'POST':
+        profile_form = UserProfileForm(request.POST, instance=user.profile)
+        if profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile')
+    else:
+        profile_form = UserProfileForm(instance=user.profile)
+
+    context = {
+        'profile_form': profile_form,
+        'user': user,
+    }
+    return render(request, 'users/profile.html', context)
+
+
+@login_required
+@csrf_protect
+def change_password_view(request):
+    """Change user password."""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            request.user.set_password(form.cleaned_data['new_password1'])
+            request.user.save()
+            login(request, request.user)  # Re-login to update session
+            messages.success(request, 'Password changed successfully!')
+            return redirect('profile')
+    else:
+        form = PasswordChangeForm(request.user)
+
+    return render(request, 'users/change_password.html', {'form': form})
+
+
+class StaffRequiredMixin(UserPassesTestMixin):
+    """Mixin to require staff role."""
+
+    def test_func(self):
+        return self.request.user.role in ['manager', 'operations_manager']
+
+
+class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+    """List all users for staff management."""
+    model = User
+    template_name = 'users/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = User.objects.all().order_by('-date_joined')
+        role = self.request.GET.get('role')
+        is_active = self.request.GET.get('is_active')
+
+        if role:
+            queryset = queryset.filter(role=role)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active == '1')
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['roles'] = User.ROLE_CHOICES
+        return context
+
+
+class UserCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+    """Create new user."""
+    model = User
+    form_class = CustomUserCreationForm
+    template_name = 'users/user_form.html'
+    success_url = reverse_lazy('user_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        UserProfile.objects.create(user=self.object)
+        messages.success(self.request, f'User {self.object.email} created successfully!')
+        return response
+
+
+class UserUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+    """Update existing user."""
+    model = User
+    form_class = CustomUserChangeForm
+    template_name = 'users/user_form.html'
+    success_url = reverse_lazy('user_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'User {self.object.email} updated successfully!')
+        return response
+
+
+class UserDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    """Delete user."""
+    model = User
+    template_name = 'users/user_confirm_delete.html'
+    success_url = reverse_lazy('user_list')
+
+    def delete(self, request, *args, **kwargs):
+        user = self.get_object()
+        email = user.email
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f'User {email} deleted successfully!')
+        return response
+
+
+@login_required
+@require_POST
+@csrf_protect
+def toggle_user_status(request, pk):
+    """Toggle user active status."""
+    if request.user.role not in ['manager', 'operations_manager']:
+        messages.error(request, 'Permission denied.')
+        return redirect('user_list')
+
+    user = get_object_or_404(User, pk=pk)
+
+    # Prevent deactivating yourself
+    if user == request.user:
+        messages.error(request, 'You cannot deactivate your own account.')
+        return redirect('user_list')
+
+    user.is_active = not user.is_active
+    user.save()
+
+    action = 'activated' if user.is_active else 'deactivated'
+    messages.success(request, f'User {user.email} {action} successfully!')
+    return redirect('user_list')
