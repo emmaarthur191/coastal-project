@@ -1,0 +1,249 @@
+#!/usr/bin/env python
+"""
+Simple serializer validation test - no database writes required.
+Tests the new frontend-specific serializers.
+"""
+
+import os
+import sys
+import django
+from decimal import Decimal
+from datetime import datetime
+from unittest.mock import Mock
+
+# Add the project directory to Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
+
+from banking.serializers import (
+    AccountListSerializer, TransactionListSerializer, 
+    FrontendAccountSummarySerializer
+)
+
+
+def test_account_list_serializer():
+    """Test AccountListSerializer mapping and data transformation"""
+    print("\n=== Testing AccountListSerializer ===")
+    
+    # Create mock Account object
+    mock_account = Mock()
+    mock_account.id = "12345678-1234-5678-9abc-123456789012"
+    mock_account.type = "Savings"
+    mock_account.balance = Decimal('1500.75')
+    
+    # Test serialization
+    serializer = AccountListSerializer(mock_account)
+    data = serializer.data
+    
+    print(f"Original mock data:")
+    print(f"  ID: {mock_account.id}")
+    print(f"  Type: {mock_account.type}")
+    print(f"  Balance: {mock_account.balance} ({type(mock_account.balance).__name__})")
+    
+    print(f"\nSerialized data:")
+    print(f"  ID: {data['id']}")
+    print(f"  Name: {data['name']}")
+    print(f"  Balance: {data['balance']} ({type(data['balance']).__name__})")
+    
+    # Validation
+    assert 'id' in data, "Missing 'id' field"
+    assert 'name' in data, "Missing 'name' field" 
+    assert 'balance' in data, "Missing 'balance' field"
+    assert data['name'] == 'Savings', f"Expected 'Savings', got '{data['name']}'"
+    assert isinstance(data['balance'], float), f"Expected float, got {type(data['balance'])}"
+    assert data['balance'] == 1500.75, f"Expected 1500.75, got {data['balance']}"
+    
+    print(" AccountListSerializer test PASSED")
+    return True
+
+
+def test_transaction_list_serializer():
+    """Test TransactionListSerializer date formatting"""
+    print("\n=== Testing TransactionListSerializer ===")
+    
+    # Create mock Transaction object
+    mock_transaction = Mock()
+    mock_transaction.id = "87654321-4321-8765-cba9-210987654321"
+    mock_transaction.timestamp = datetime(2024, 3, 15, 14, 30, 45)
+    mock_transaction.description = "Test withdrawal transaction"
+    mock_transaction.amount = Decimal('-250.50')
+    
+    # Test serialization
+    serializer = TransactionListSerializer(mock_transaction)
+    data = serializer.data
+    
+    print(f"Original mock data:")
+    print(f"  ID: {mock_transaction.id}")
+    print(f"  Timestamp: {mock_transaction.timestamp}")
+    print(f"  Amount: {mock_transaction.amount} ({type(mock_transaction.amount).__name__})")
+    print(f"  Description: {mock_transaction.description}")
+    
+    print(f"\nSerialized data:")
+    print(f"  ID: {data['id']}")
+    print(f"  Date: {data['date']}")
+    print(f"  Amount: {data['amount']} ({type(data['amount']).__name__})")
+    print(f"  Description: {data['description']}")
+    
+    # Validation
+    assert 'id' in data, "Missing 'id' field"
+    assert 'date' in data, "Missing 'date' field"
+    assert 'amount' in data, "Missing 'amount' field"
+    assert 'description' in data, "Missing 'description' field"
+    assert data['date'] == '2024-03-15', f"Expected '2024-03-15', got '{data['date']}'"
+    assert isinstance(data['amount'], float), f"Expected float, got {type(data['amount'])}"
+    assert data['amount'] == -250.50, f"Expected -250.50, got {data['amount']}"
+    
+    print(" TransactionListSerializer test PASSED")
+    return True
+
+
+def test_account_summary_serializer():
+    """Test FrontendAccountSummarySerializer decimal conversion"""
+    print("\n=== Testing FrontendAccountSummarySerializer ===")
+    
+    # Test data with Decimals
+    summary_data = {
+        'total_savings': Decimal('25000.75'),
+        'total_loans': Decimal('15000.00'),
+        'available_balance': Decimal('10000.75'),
+        'monthly_contributions': Decimal('500.00'),
+        'account_count': 5,
+        'loan_count': 2
+    }
+    
+    # Test serialization
+    serializer = FrontendAccountSummarySerializer(data=summary_data)
+    is_valid = serializer.is_valid()
+    
+    if not is_valid:
+        print(f"Validation errors: {serializer.errors}")
+        return False
+        
+    data = serializer.validated_data
+    
+    print(f"Original summary data:")
+    for key, value in summary_data.items():
+        print(f"  {key}: {value} ({type(value).__name__})")
+    
+    print(f"\nSerialized data:")
+    for key, value in data.items():
+        print(f"  {key}: {value} ({type(value).__name__})")
+    
+    # Validation
+    decimal_fields = ['total_savings', 'total_loans', 'available_balance', 'monthly_contributions']
+    for field in decimal_fields:
+        assert field in data, f"Missing '{field}' field"
+        assert isinstance(data[field], float), f"Expected float for {field}, got {type(data[field])}"
+        assert data[field] == float(summary_data[field]), f"Value mismatch for {field}"
+    
+    assert data['account_count'] == 5, f"Expected 5, got {data['account_count']}"
+    assert data['loan_count'] == 2, f"Expected 2, got {data['loan_count']}"
+    
+    print(" FrontendAccountSummarySerializer test PASSED")
+    return True
+
+
+def test_date_formatting_edge_cases():
+    """Test various date formatting scenarios"""
+    print("\n=== Testing Date Formatting Edge Cases ===")
+    
+    # Test different date formats
+    test_cases = [
+        (datetime(2024, 1, 1), "2024-01-01"),
+        (datetime(2024, 12, 31), "2024-12-31"),
+        (datetime(2024, 6, 15, 23, 59, 59), "2024-06-15"),
+    ]
+    
+    for original_date, expected_date in test_cases:
+        mock_transaction = Mock()
+        mock_transaction.id = "test-id"
+        mock_transaction.timestamp = original_date
+        mock_transaction.description = "Test"
+        mock_transaction.amount = Decimal('100.00')
+        
+        serializer = TransactionListSerializer(mock_transaction)
+        data = serializer.data
+        
+        assert data['date'] == expected_date, f"Expected {expected_date}, got {data['date']}"
+        print(f"  {original_date} -> {data['date']} ")
+    
+    print(" Date formatting edge cases test PASSED")
+    return True
+
+
+def test_decimal_precision():
+    """Test decimal precision handling"""
+    print("\n=== Testing Decimal Precision ===")
+    
+    # Test various decimal precision scenarios
+    test_cases = [
+        (Decimal('1000.00'), 1000.0),
+        (Decimal('1234.56'), 1234.56),
+        (Decimal('999999.99'), 999999.99),
+        (Decimal('0.01'), 0.01),
+    ]
+    
+    for original_decimal, expected_float in test_cases:
+        mock_account = Mock()
+        mock_account.id = "test-id"
+        mock_account.type = "Test"
+        mock_account.balance = original_decimal
+        
+        serializer = AccountListSerializer(mock_account)
+        data = serializer.data
+        
+        assert data['balance'] == expected_float, f"Expected {expected_float}, got {data['balance']}"
+        print(f"  {original_decimal} -> {data['balance']} ")
+    
+    print(" Decimal precision test PASSED")
+    return True
+
+
+def main():
+    """Run all validation tests"""
+    print("Starting Serializer Validation Tests...")
+    print("=" * 50)
+    
+    tests = [
+        test_account_list_serializer,
+        test_transaction_list_serializer, 
+        test_account_summary_serializer,
+        test_date_formatting_edge_cases,
+        test_decimal_precision
+    ]
+    
+    all_passed = True
+    
+    for test_func in tests:
+        try:
+            result = test_func()
+            if not result:
+                all_passed = False
+                print(f" {test_func.__name__} FAILED")
+        except Exception as e:
+            print(f" {test_func.__name__} FAILED: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            all_passed = False
+    
+    print("\n" + "=" * 50)
+    if all_passed:
+        print("SUCCESS: ALL TESTS PASSED!")
+        print("\nData synchronization fixes validated:")
+        print("* Account type->name mapping working correctly")
+        print("* Transaction timestamp->date formatting (YYYY-MM-DD)")
+        print("* Decimal->float conversion for frontend compatibility")
+        print("* Edge cases and precision handling")
+    else:
+        print(" SOME TESTS FAILED")
+        return False
+    
+    return True
+
+
+if __name__ == '__main__':
+    success = main()
+    sys.exit(0 if success else 1)

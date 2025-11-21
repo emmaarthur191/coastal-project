@@ -1,0 +1,138 @@
+#!/bin/bash
+# Simple targeted test script for banking system fixes
+
+echo "============================================"
+echo "BANKING SYSTEM COMPREHENSIVE FIXES TEST"
+echo "============================================"
+
+BASE_URL="http://localhost:8000"
+
+echo ""
+echo "1. TESTING HEALTH ENDPOINTS"
+echo "----------------------------"
+
+# Health endpoints
+for endpoint in "health" "health/system"; do
+    echo -n "Testing /$endpoint... "
+    response=$(curl -s -w "%{http_code}" "$BASE_URL/$endpoint/")
+    status_code="${response: -3}"
+    if [ "$status_code" -eq 200 ]; then
+        echo " PASS (Status: $status_code)"
+    else
+        echo " FAIL (Status: $status_code)"
+    fi
+done
+
+echo ""
+echo "2. TESTING MISSING ENDPOINTS IMPLEMENTATION"
+echo "-------------------------------------------"
+
+# Test newly implemented endpoints
+for endpoint in "api/banking/account-summary" "api/banking/loans/pending"; do
+    echo -n "Testing /$endpoint... "
+    response=$(curl -s -w "%{http_code}" "$BASE_URL/$endpoint/")
+    status_code="${response: -3}"
+    if [ "$status_code" -eq 200 ] || [ "$status_code" -eq 401 ] || [ "$status_code" -eq 403 ]; then
+        echo " PASS (Status: $status_code - Endpoint exists)"
+    else
+        echo " FAIL (Status: $status_code)"
+    fi
+done
+
+echo ""
+echo "3. TESTING DATA STRUCTURE FIXES"
+echo "-------------------------------"
+
+# Test banking endpoints with new serializers
+for endpoint in "api/banking/accounts" "api/transactions/transactions"; do
+    echo -n "Testing /$endpoint... "
+    response=$(curl -s -w "%{http_code}" "$BASE_URL/$endpoint/")
+    status_code="${response: -3}"
+    if [ "$status_code" -eq 200 ]; then
+        echo " PASS (Status: $status_code - Data accessible)"
+    elif [ "$status_code" -eq 401 ] || [ "$status_code" -eq 403 ]; then
+        echo " PASS (Status: $status_code - Authentication required)"
+    else
+        echo " FAIL (Status: $status_code)"
+    fi
+done
+
+echo ""
+echo "4. TESTING ERROR HANDLING"
+echo "------------------------"
+
+# Test 404 handling
+echo -n "Testing 404 handling... "
+response=$(curl -s -w "%{http_code}" "$BASE_URL/api/nonexistent/")
+status_code="${response: -3}"
+if [ "$status_code" -eq 404 ]; then
+    echo " PASS (Status: $status_code)"
+else
+    echo " FAIL (Status: $status_code)"
+fi
+
+echo ""
+echo "5. TESTING TRANSACTION CONSOLIDATION"
+echo "------------------------------------"
+
+# Test transaction consolidation
+echo -n "Testing transaction consolidation... "
+response=$(curl -s -w "%{http_code}" "$BASE_URL/api/transactions/")
+status_code="${response: -3}"
+if [ "$status_code" -eq 200 ]; then
+    echo " PASS (Status: $status_code)"
+elif [ "$status_code" -eq 401 ] || [ "$status_code" -eq 403 ]; then
+    echo " PASS (Status: $status_code - Authentication required)"
+else
+    echo " FAIL (Status: $status_code)"
+fi
+
+echo ""
+echo "6. TESTING OVERALL SYSTEM VALIDATION"
+echo "-----------------------------------"
+
+# Test API schema
+echo -n "Testing API schema... "
+response=$(curl -s -w "%{http_code}" "$BASE_URL/api/schema/")
+status_code="${response: -3}"
+if [ "$status_code" -eq 200 ]; then
+    echo " PASS (Status: $status_code)"
+else
+    echo " FAIL (Status: $status_code)"
+fi
+
+# Test CORS headers
+echo -n "Testing CORS headers... "
+cors_headers=$(curl -s -I "$BASE_URL/api/banking/accounts/" | grep -i "access-control")
+if [ -n "$cors_headers" ]; then
+    echo " PASS (CORS headers present)"
+else
+    echo " FAIL (No CORS headers)"
+fi
+
+echo ""
+echo "============================================"
+echo "TEST SUMMARY COMPLETED"
+echo "============================================"
+
+# Detailed endpoint testing for specific data structure validation
+echo ""
+echo "DETAILED DATA STRUCTURE ANALYSIS:"
+echo "---------------------------------"
+
+echo "Testing Account Summary endpoint response..."
+curl -s "$BASE_URL/api/banking/account-summary/" | head -c 500
+echo ""
+
+echo ""
+echo "Testing Banking Accounts endpoint response..."
+curl -s "$BASE_URL/api/banking/accounts/" | head -c 500
+echo ""
+
+echo ""
+echo "Testing Transactions endpoint response..."
+curl -s "$BASE_URL/api/transactions/transactions/" | head -c 500
+echo ""
+
+echo ""
+echo "All targeted tests completed!"

@@ -1,0 +1,714 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Security Center - Banking System{% endblock %}
+
+{% if not user.role == 'superuser' %}
+<script>
+    window.location.href = "{% url 'users:dashboard' %}";
+</script>
+{% endif %}
+
+{% block extra_head %}
+<style>
+    .superuser-card {
+        transition: transform 0.2s;
+    }
+    .superuser-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .security-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+    }
+    .threat-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    .sidebar .nav-link {
+        color: #495057;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.25rem;
+    }
+    .sidebar .nav-link:hover {
+        background-color: #e9ecef;
+        color: #007bff;
+    }
+    .sidebar .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+    .sidebar .nav-link i {
+        width: 20px;
+        margin-right: 0.5rem;
+    }
+    .nav-header {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        border-bottom: 1px solid #dee2e6;
+        margin-top: 1rem;
+    }
+    .nav-header:first-child {
+        margin-top: 0;
+    }
+    .threat-level-high {
+        border-left: 4px solid #dc3545;
+    }
+    .threat-level-medium {
+        border-left: 4px solid #ffc107;
+    }
+    .threat-level-low {
+        border-left: 4px solid #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block sidebar %}
+<nav class="col-md-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+
+            <!-- User Management -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">User Management</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_users' %}">
+                    <i class="fas fa-users-cog"></i> User Administration
+                </a>
+            </li>
+
+            <!-- Security & Fraud -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Security & Fraud</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'users:superuser_security' %}">
+                    <i class="fas fa-shield-alt"></i> Security Center
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_audit' %}">
+                    <i class="fas fa-history"></i> Audit Logs
+                </a>
+            </li>
+
+            <!-- System Configuration -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">System Configuration</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_settings' %}">
+                    <i class="fas fa-cogs"></i> System Settings
+                </a>
+            </li>
+
+            <!-- Reports & Analytics -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Reports & Analytics</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_monitoring' %}">
+                    <i class="fas fa-desktop"></i> System Monitoring
+                </a>
+            </li>
+
+            <!-- Advanced Operations -->
+            <li class="nav-header mt-3 mb-1">
+                <small class="text-muted font-weight-bold text-uppercase">Advanced Operations</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'users:superuser_operations' %}">
+                    <i class="fas fa-tools"></i> Superuser Operations
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-shield-alt"></i> Security Center
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshSecurity()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="generateSecurityReport()">
+                <i class="fas fa-file-alt"></i> Security Report
+            </button>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-filter"></i> Filter Events
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="filterEvents('all')">All Events</a></li>
+                <li><a class="dropdown-item" href="#" onclick="filterEvents('critical')">Critical</a></li>
+                <li><a class="dropdown-item" href="#" onclick="filterEvents('warning')">Warnings</a></li>
+                <li><a class="dropdown-item" href="#" onclick="filterEvents('info')">Info</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Security Metrics Overview -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card security-card superuser-card">
+            <div class="card-body text-center">
+                <i class="fas fa-sign-in-alt fa-2x mb-2 opacity-75"></i>
+                <h6 class="card-title">Failed Logins Today</h6>
+                <h2 class="mb-0">{{ security_metrics.failed_logins_today|default:0 }}</h2>
+                <small class="text-white-50">Authentication attempts</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card threat-card superuser-card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2 opacity-75"></i>
+                <h6 class="card-title">Suspicious Activities</h6>
+                <h2 class="mb-0">{{ security_metrics.suspicious_activities|default:0 }}</h2>
+                <small class="text-white-50">Detected threats</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card security-card superuser-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2 opacity-75"></i>
+                <h6 class="card-title">Active Sessions</h6>
+                <h2 class="mb-0">{{ security_metrics.active_sessions|default:0 }}</h2>
+                <small class="text-white-50">Current users</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card threat-card superuser-card">
+            <div class="card-body text-center">
+                <i class="fas fa-ban fa-2x mb-2 opacity-75"></i>
+                <h6 class="card-title">Blocked IPs</h6>
+                <h2 class="mb-0">{{ security_metrics.blocked_ips|default:0 }}</h2>
+                <small class="text-white-50">IP restrictions</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Failed Login Attempts -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exclamation-triangle"></i> Failed Login Attempts</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Email</th>
+                                <th>IP Address</th>
+                                <th>Status</th>
+                                <th>Risk Score</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in failed_logins %}
+                            <tr class="{% if attempt.is_suspicious %}table-warning{% endif %}">
+                                <td>{{ attempt.timestamp|date:"M d, H:i:s" }}</td>
+                                <td>{{ attempt.email }}</td>
+                                <td>{{ attempt.ip_address }}</td>
+                                <td>
+                                    <span class="badge bg-{% if attempt.status == 'failure' %}warning{% elif attempt.status == 'blocked' %}danger{% else %}secondary{% endif %}">
+                                        {{ attempt.status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ attempt.risk_score }}</td>
+                                <td>
+                                    {% if attempt.risk_factors %}
+                                        {{ attempt.risk_factors|join:", " }}
+                                    {% else %}
+                                        Invalid credentials
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                                    <p>No failed login attempts</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suspicious Activities and Account Lockouts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-eye"></i> Suspicious Activities</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for activity in suspicious_activities %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{{ activity.action|title }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    User: {% if activity.user %}{{ activity.user.email }}{% else %}Anonymous{% endif %} |
+                                    IP: {{ activity.ip_address }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">{{ activity.timestamp|timesince }}</small>
+                                <br>
+                                <span class="badge bg-warning">Risk: {{ activity.risk_score }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-shield-alt fa-2x mb-2 text-success"></i>
+                        <p>No suspicious activities detected</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lock"></i> Account Lockouts</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for lockout in account_lockouts %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{% if lockout.user %}{{ lockout.user.email }}{% else %}Unknown{% endif %}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    IP: {{ lockout.ip_address }} |
+                                    {{ lockout.description|truncatechars:50 }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">{{ lockout.timestamp|timesince }}</small>
+                                <br>
+                                <span class="badge bg-danger">Locked</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-unlock fa-2x mb-2 text-success"></i>
+                        <p>No recent account lockouts</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Events and Threats -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> Recent Security Events</h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="filterEvents('all')">All</button>
+                    <button type="button" class="btn btn-outline-danger" onclick="filterEvents('critical')">Critical</button>
+                    <button type="button" class="btn btn-outline-warning" onclick="filterEvents('warning')">Warnings</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="security-events-list" class="list-group list-group-flush">
+                    {% for event in recent_events %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center threat-level-{{ event.severity|lower }}">
+                        <div>
+                            <i class="fas fa-{{ event.event_type|lower }} me-2 text-{{ event.severity|lower }}"></i>
+                            <strong>{{ event.event_type|title }}</strong>
+                            <span class="badge bg-{{ event.severity|lower }} ms-2">{{ event.severity|upper }}</span>
+                            <br>
+                            <small class="text-muted">{{ event.description }}</small>
+                        </div>
+                        <small class="text-muted">{{ event.timestamp|timesince }} ago</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                        <p>No recent security events</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Security Status -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-check-circle"></i> Security Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Firewall</span>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Encryption</span>
+                        <span class="badge bg-success">{{ security_metrics.encryption_status|default:'Active' }}</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Multi-factor Auth</span>
+                        <span class="badge bg-success">Enabled</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Last Security Scan</span>
+                        <small class="text-muted">{{ security_metrics.last_security_scan|timesince|default:'Never' }}</small>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="text-center">
+                    <button class="btn btn-outline-primary btn-sm" onclick="runSecurityScan()">
+                        <i class="fas fa-search"></i> Run Security Scan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Security Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-outline-danger btn-sm w-100 mb-2" onclick="lockdownSystem()">
+                    <i class="fas fa-lock"></i> Emergency Lockdown
+                </button>
+                <button class="btn btn-outline-warning btn-sm w-100 mb-2" onclick="blockSuspiciousIPs()">
+                    <i class="fas fa-ban"></i> Block Suspicious IPs
+                </button>
+                <button class="btn btn-outline-info btn-sm w-100 mb-2" onclick="resetAllPasswords()">
+                    <i class="fas fa-key"></i> Force Password Reset
+                </button>
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="auditUserSessions()">
+                    <i class="fas fa-user-secret"></i> Audit Sessions
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fraud Detection Center -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-shield-alt"></i> Fraud Detection Center</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <button class="btn btn-warning btn-lg w-100 mb-3" onclick="manageFraudRules()">
+                            <i class="fas fa-gavel"></i><br>
+                            <small>Manage Rules</small>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-danger btn-lg w-100 mb-3" onclick="viewFraudAlerts()">
+                            <i class="fas fa-exclamation-triangle"></i><br>
+                            <small>View Alerts</small>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-info btn-lg w-100 mb-3" onclick="manageFraudCases()">
+                            <i class="fas fa-folder-open"></i><br>
+                            <small>Fraud Cases</small>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-secondary btn-lg w-100 mb-3" onclick="fraudAnalytics()">
+                            <i class="fas fa-chart-bar"></i><br>
+                            <small>Analytics</small>
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>Active Fraud Rules</h6>
+                                <h3 class="text-primary">{{ fraud_stats.active_rules|default:0 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>Open Fraud Cases</h6>
+                                <h3 class="text-danger">{{ fraud_stats.open_cases|default:0 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Configuration -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Security Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Authentication Settings</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="requireMFA" checked>
+                            <label class="form-check-label" for="requireMFA">
+                                Require Multi-Factor Authentication
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="passwordComplexity" checked>
+                            <label class="form-check-label" for="passwordComplexity">
+                                Enforce Password Complexity
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="accountLockout" checked>
+                            <label class="form-check-label" for="accountLockout">
+                                Account Lockout on Failed Attempts
+                            </label>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Session Timeout (minutes)</label>
+                            <input type="number" class="form-control" value="30" min="5" max="480">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Monitoring & Alerts</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="realTimeMonitoring" checked>
+                            <label class="form-check-label" for="realTimeMonitoring">
+                                Real-time Security Monitoring
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="intrusionDetection" checked>
+                            <label class="form-check-label" for="intrusionDetection">
+                                Intrusion Detection System
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="anomalyDetection" checked>
+                            <label class="form-check-label" for="anomalyDetection">
+                                Anomaly Detection
+                            </label>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Alert Email Recipients</label>
+                            <textarea class="form-control" rows="2" placeholder="admin@bank.com, security@bank.com"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Access Control</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ipWhitelist" checked>
+                            <label class="form-check-label" for="ipWhitelist">
+                                IP Whitelisting
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="geoBlocking">
+                            <label class="form-check-label" for="geoBlocking">
+                                Geographic Blocking
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="deviceFingerprinting" checked>
+                            <label class="form-check-label" for="deviceFingerprinting">
+                                Device Fingerprinting
+                            </label>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Max Failed Login Attempts</label>
+                            <input type="number" class="form-control" value="5" min="3" max="10">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary" onclick="saveSecurityConfig()">
+                        <i class="fas fa-save"></i> Save Security Configuration
+                    </button>
+                    <button class="btn btn-outline-danger ms-2" onclick="resetToDefaults()">
+                        <i class="fas fa-undo"></i> Reset to Defaults
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function refreshSecurity() {
+    location.reload();
+}
+
+function generateSecurityReport() {
+    showNotification('Generating security report...', 'info');
+    // In real implementation, trigger report generation
+}
+
+function filterEvents(type) {
+    const items = document.querySelectorAll('.list-group-item');
+    items.forEach(item => {
+        if (type === 'all') {
+            item.style.display = 'flex';
+        } else {
+            const severity = item.className.match(/threat-level-(\w+)/)?.[1];
+            item.style.display = (severity === type || (type === 'critical' && severity === 'high')) ? 'flex' : 'none';
+        }
+    });
+
+    // Update button states
+    document.querySelectorAll('.btn-group-sm .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function runSecurityScan() {
+    showNotification('Initiating security scan...', 'info');
+    // In real implementation, make API call
+}
+
+function lockdownSystem() {
+    if (confirm('Are you sure you want to initiate emergency lockdown? This will restrict all access.')) {
+        showNotification('Emergency lockdown initiated', 'danger');
+        // In real implementation, make API call
+    }
+}
+
+function blockSuspiciousIPs() {
+    showNotification('Blocking suspicious IP addresses...', 'warning');
+    // In real implementation, make API call
+}
+
+function resetAllPasswords() {
+    if (confirm('This will force all users to reset their passwords. Continue?')) {
+        showNotification('Password reset initiated for all users', 'warning');
+        // In real implementation, make API call
+    }
+}
+
+function auditUserSessions() {
+    showNotification('Auditing user sessions...', 'info');
+    // In real implementation, make API call
+}
+
+function saveSecurityConfig() {
+    showNotification('Security configuration saved successfully', 'success');
+    // In real implementation, make API call
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all security settings to defaults?')) {
+        showNotification('Security settings reset to defaults', 'warning');
+        // In real implementation, make API call
+    }
+}
+
+// Fraud Detection Functions
+function manageFraudRules() {
+    showNotification('Opening fraud rules management...', 'info');
+    // In real implementation, redirect to fraud rules page
+}
+
+function viewFraudAlerts() {
+    showNotification('Loading fraud alerts...', 'info');
+    // In real implementation, redirect to fraud alerts page
+}
+
+function manageFraudCases() {
+    showNotification('Opening fraud cases management...', 'info');
+    // In real implementation, redirect to fraud cases page
+}
+
+function fraudAnalytics() {
+    showNotification('Loading fraud analytics...', 'info');
+    // In real implementation, redirect to fraud analytics page
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    const container = document.querySelector('.container-fluid .row .col-md-9');
+    container.insertBefore(alertDiv, container.firstChild);
+
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Initialize tooltips and other UI elements
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Security center page loaded');
+});
+</script>
+{% endblock %}

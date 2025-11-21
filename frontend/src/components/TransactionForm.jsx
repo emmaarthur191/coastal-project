@@ -1,0 +1,98 @@
+import React from 'react';
+
+const TransactionForm = ({ type, amount, setAmount, memberId, setMemberId, members, accountType, setAccountType, handleSubmit, loading }) => {
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    handleSubmit(e, type);
+  };
+
+  return (
+    <form onSubmit={handleFormSubmit}>
+      <div style={{ marginBottom: '20px' }}>
+        <label htmlFor="member-select" style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
+          Select Member
+        </label>
+        <select
+          id="member-select"
+          value={memberId}
+          onChange={(e) => setMemberId(e.target.value)}
+          style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', background: 'white' }}
+          required
+        >
+          <option value="">-- Select a member --</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.name} ({member.email})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <label htmlFor="account-type-select" style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
+          Account Type
+        </label>
+        <select
+          id="account-type-select"
+          value={accountType}
+          onChange={(e) => setAccountType(e.target.value)}
+          style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', background: 'white' }}
+          required
+        >
+          <option value="Savings">Savings</option>
+          <option value="Shares">Shares</option>
+          <option value="Checking">Checking</option>
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '24px' }}>
+        <label htmlFor={`${type.toLowerCase()}-amount`} style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
+          {type} Amount (GHS)
+        </label>
+        <input
+          id={`${type.toLowerCase()}-amount`}
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.00"
+          min="0.01"
+          step="0.01"
+          style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '16px', fontWeight: '600' }}
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        style={{
+          width: '100%',
+          padding: '16px',
+          background: loading ? '#9ca3af' : `linear-gradient(135deg, ${type === 'Deposit' ? '#10b981' : '#ef4444'} 0%, ${type === 'Deposit' ? '#059669' : '#dc2626'} 100%)`,
+          border: 'none',
+          borderRadius: '10px',
+          color: 'white',
+          fontSize: '16px',
+          fontWeight: '600',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          transition: 'all 0.2s',
+          opacity: loading ? 0.7 : 1
+        }}
+        onMouseEnter={(e) => {
+          if (!loading) {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = `0 8px 15px rgba(${type === 'Deposit' ? '16, 185, 129' : '239, 68, 68'}, 0.3)`;
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        {loading ? `Processing ${type}...` : `${type === 'Deposit' ? '' : ''} Process ${type}`}
+      </button>
+    </form>
+  );
+};
+
+export default TransactionForm;

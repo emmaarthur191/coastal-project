@@ -1,0 +1,237 @@
+[
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$test_salt$test_hash",
+      "email": "admin@bankingapp.com",
+      "first_name": "System",
+      "last_name": "Administrator",
+      "role": "manager",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "reset_token": null
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$test_salt$test_hash",
+      "email": "cashier@bankingapp.com",
+      "first_name": "John",
+      "last_name": "Cashier",
+      "role": "cashier",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": false,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "reset_token": null
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$test_salt$test_hash",
+      "email": "mobile@bankingapp.com",
+      "first_name": "Jane",
+      "last_name": "Mobile",
+      "role": "mobile_banker",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": false,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "reset_token": null
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 4,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$test_salt$test_hash",
+      "email": "ops@bankingapp.com",
+      "first_name": "Bob",
+      "last_name": "Operations",
+      "role": "operations_manager",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": false,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "reset_token": null
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 5,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$test_salt$test_hash",
+      "email": "member@bankingapp.com",
+      "first_name": "Alice",
+      "last_name": "Member",
+      "role": "member",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "reset_token": null
+    }
+  },
+  {
+    "model": "users.userprofile",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "notify_email": true,
+      "notify_sms": false,
+      "notify_push": true
+    }
+  },
+  {
+    "model": "users.userprofile",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "notify_email": true,
+      "notify_sms": true,
+      "notify_push": false
+    }
+  },
+  {
+    "model": "users.userprofile",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "notify_email": false,
+      "notify_sms": true,
+      "notify_push": true
+    }
+  },
+  {
+    "model": "users.userprofile",
+    "pk": 4,
+    "fields": {
+      "user": 4,
+      "notify_email": true,
+      "notify_sms": false,
+      "notify_push": true
+    }
+  },
+  {
+    "model": "users.userprofile",
+    "pk": 5,
+    "fields": {
+      "user": 5,
+      "notify_email": true,
+      "notify_sms": true,
+      "notify_push": true
+    }
+  },
+  {
+    "model": "banking.account",
+    "pk": 1,
+    "fields": {
+      "owner": 5,
+      "account_number": "encrypted:test_account_1234567890",
+      "type": "Savings",
+      "balance": "1000.00",
+      "status": "Active"
+    }
+  },
+  {
+    "model": "banking.account",
+    "pk": 2,
+    "fields": {
+      "owner": 5,
+      "account_number": "encrypted:test_account_0987654321",
+      "type": "Checking",
+      "balance": "500.00",
+      "status": "Active"
+    }
+  },
+  {
+    "model": "banking.feestructure",
+    "pk": 1,
+    "fields": {
+      "name": "Withdrawal Fee",
+      "description": "Standard withdrawal fee",
+      "transaction_type": "withdrawal",
+      "fee_type": "fixed",
+      "fixed_amount": "2.50",
+      "percentage": null,
+      "min_fee": null,
+      "max_fee": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "banking.feestructure",
+    "pk": 2,
+    "fields": {
+      "name": "Transfer Fee",
+      "description": "Standard transfer fee",
+      "transaction_type": "transfer",
+      "fee_type": "percentage",
+      "fixed_amount": null,
+      "percentage": "0.50",
+      "min_fee": "1.00",
+      "max_fee": "10.00",
+      "is_active": true
+    }
+  },
+  {
+    "model": "banking.feestructure",
+    "pk": 3,
+    "fields": {
+      "name": "Loan Disbursement Fee",
+      "description": "Fee for loan disbursement",
+      "transaction_type": "loan_disbursement",
+      "fee_type": "percentage",
+      "fixed_amount": null,
+      "percentage": "1.00",
+      "min_fee": "5.00",
+      "max_fee": "50.00",
+      "is_active": true
+    }
+  },
+  {
+    "model": "operations.workflow",
+    "pk": 1,
+    "fields": {
+      "name": "KYC Approval Workflow",
+      "description": "Standard workflow for KYC application approval",
+      "created_by": 1,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "is_active": true
+    }
+  },
+  {
+    "model": "operations.workflowstep",
+    "pk": 1,
+    "fields": {
+      "workflow": 1,
+      "name": "Mobile Banker Review",
+      "description": "Initial review by mobile banker",
+      "order": 1,
+      "required_role": "mobile_banker",
+      "is_required": true,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "operations.workflowstep",
+    "pk": 2,
+    "fields": {
+      "workflow": 1,
+      "name": "Operations Manager Review",
+      "description": "Final review by operations manager",
+      "order": 2,
+      "required_role": "operations_manager",
+      "is_required": true,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]
