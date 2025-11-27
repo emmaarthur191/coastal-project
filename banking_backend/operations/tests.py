@@ -1,3 +1,4 @@
+import os
 import pytest
 from django.test import TestCase
 from operations.models import Workflow, WorkflowStep, ClientKYC, FieldCollection
@@ -14,7 +15,7 @@ class WorkflowModelTestCase(TestCase):
             first_name='Workflow',
             last_name='Test',
             role='operations_manager',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
 
     def test_create_workflow(self):
@@ -49,7 +50,7 @@ class WorkflowStepModelTestCase(TestCase):
             first_name='Step',
             last_name='Test',
             role='operations_manager',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.workflow = Workflow.objects.create(
             name='Test Workflow',
@@ -111,14 +112,14 @@ class ClientKYCModelTestCase(TestCase):
             first_name='Mobile',
             last_name='Banker',
             role='mobile_banker',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.ops_manager = User.objects.create_user(
             email='kyc_ops@example.com',
             first_name='Ops',
             last_name='Manager',
             role='operations_manager',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.workflow = Workflow.objects.create(
             name='KYC Workflow',
@@ -180,7 +181,7 @@ class FieldCollectionModelTestCase(TestCase):
             first_name='Field',
             last_name='Mobile',
             role='mobile_banker',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.client_kyc = ClientKYC.objects.create(
             client_name='Test Client',

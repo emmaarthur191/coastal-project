@@ -1,3 +1,4 @@
+import os
 import pytest
 from decimal import Decimal
 from django.test import TestCase
@@ -19,7 +20,7 @@ class AccountModelTestCase(TestCase):
             first_name='Account',
             last_name='Test',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
 
     def test_create_account(self):
@@ -79,7 +80,7 @@ class TransactionModelTestCase(TestCase):
             first_name='Transaction',
             last_name='Test',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.account = Account.objects.create(
             owner=self.user,
@@ -135,7 +136,7 @@ class LoanApplicationModelTestCase(TestCase):
             first_name='Loan',
             last_name='Applicant',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
 
     def test_create_loan_application(self):
@@ -176,7 +177,7 @@ class LoanModelTestCase(TestCase):
             first_name='Loan',
             last_name='Test',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.account = Account.objects.create(
             owner=self.user,

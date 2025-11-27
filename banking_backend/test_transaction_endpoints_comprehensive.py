@@ -36,7 +36,7 @@ class TransactionEndpointTestCase(APITestCase):
         # Create test users
         self.cashier_user = User.objects.create_user(
             email='cashier@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='cashier',
             first_name='Test',
             last_name='Cashier'
@@ -44,7 +44,7 @@ class TransactionEndpointTestCase(APITestCase):
         
         self.member_user = User.objects.create_user(
             email='member@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='member',
             first_name='Test',
             last_name='Member'
@@ -129,7 +129,7 @@ class TransactionEndpointTestCase(APITestCase):
         # Create destination account
         dest_user = User.objects.create_user(
             email='dest@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='member'
         )
         dest_account = Account.objects.create(
@@ -156,7 +156,7 @@ class TransactionEndpointTestCase(APITestCase):
         # Create destination account
         dest_user = User.objects.create_user(
             email='dest2@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='member'
         )
         dest_account = Account.objects.create(
@@ -229,13 +229,13 @@ class TransactionModelIntegrationTestCase(TransactionTestCase):
         """Set up test data."""
         self.cashier_user = User.objects.create_user(
             email='cashier2@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='cashier'
         )
         
         self.member_user = User.objects.create_user(
             email='member2@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='member'
         )
         

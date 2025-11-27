@@ -274,7 +274,7 @@ class HealthChecker:
 
             # Check for missing critical headers
             missing_headers = []
-            for header,  # value in security_headers.items():
+            for header, value in security_headers.items():
                 if not value:
                     missing_headers.append(header)
 

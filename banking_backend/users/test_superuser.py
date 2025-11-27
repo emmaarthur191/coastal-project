@@ -1,3 +1,4 @@
+import os
 import pytest
 from django.test import TestCase
 from django.contrib.auth import get_user_model
@@ -14,12 +15,12 @@ class SuperuserModelTest(APITestCase):
     def setUp(self):
         self.superuser = User.objects.create_user(
             email='superuser@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='superuser'
         )
         self.admin = User.objects.create_user(
             email='admin@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='administrator'
         )
 
@@ -56,12 +57,12 @@ class SuperuserPermissionTest(APITestCase):
     def setUp(self):
         self.superuser = User.objects.create_user(
             email='superuser@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='superuser'
         )
         self.admin = User.objects.create_user(
             email='admin@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='administrator'
         )
 
@@ -93,17 +94,17 @@ class SuperuserAPITest(APITestCase):
     def setUp(self):
         self.superuser = User.objects.create_user(
             email='superuser@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='superuser'
         )
         self.admin = User.objects.create_user(
             email='admin@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='administrator'
         )
         self.manager = User.objects.create_user(
             email='manager@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='manager'
         )
         self.client.force_authenticate(user=self.superuser)
@@ -176,7 +177,7 @@ class SuperuserAPITest(APITestCase):
             'first_name': 'New',
             'last_name': 'Manager',
             'phone': '1234567890',
-            'password': 'testpass123',
+            'password': os.getenv('TEST_USER_PASSWORD', 'test123'),
             'role': 'manager'
         })
 
@@ -193,7 +194,7 @@ class SuperuserAPITest(APITestCase):
             'first_name': 'Attempted',
             'last_name': 'Superuser',
             'phone': '1234567890',
-            'password': 'testpass123',
+            'password': os.getenv('TEST_USER_PASSWORD', 'test123'),
             'role': 'superuser'
         })
 
@@ -207,7 +208,7 @@ class SuperuserDashboardTest(APITestCase):
     def setUp(self):
         self.superuser = User.objects.create_user(
             email='superuser@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='superuser'
         )
 
@@ -231,7 +232,7 @@ class SuperuserRateLimitTest(APITestCase):
     def setUp(self):
         self.superuser = User.objects.create_user(
             email='superuser@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='superuser'
         )
         self.client = APIClient()

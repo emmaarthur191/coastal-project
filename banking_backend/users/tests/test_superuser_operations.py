@@ -1,3 +1,4 @@
+import os
 import pytest
 from django.test import TestCase
 from django.contrib.auth import get_user_model
@@ -19,7 +20,7 @@ class SuperuserOperationsTestCase(APITestCase):
         # Create superuser
         self.superuser = User.objects.create_user(
             email='superuser@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             first_name='Super',
             last_name='User',
             role='superuser'
@@ -29,7 +30,7 @@ class SuperuserOperationsTestCase(APITestCase):
         # Create regular users for testing
         self.regular_user = User.objects.create_user(
             email='regular@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             first_name='Regular',
             last_name='User',
             role='customer'
@@ -38,7 +39,7 @@ class SuperuserOperationsTestCase(APITestCase):
 
         self.admin_user = User.objects.create_user(
             email='admin@test.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             first_name='Admin',
             last_name='User',
             role='administrator'

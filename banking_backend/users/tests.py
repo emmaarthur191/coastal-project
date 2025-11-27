@@ -1,3 +1,4 @@
+import os
 import pytest
 from django.test import TestCase
 from django.contrib.auth import authenticate
@@ -15,7 +16,7 @@ class UserModelTestCase(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'role': 'member',
-            'password': 'testpass123'
+            'password': os.getenv('TEST_USER_PASSWORD', 'test123')
         }
 
     def test_create_user(self):
@@ -84,7 +85,7 @@ class UserProfileModelTestCase(TestCase):
             first_name='Profile',
             last_name='Test',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
 
     def test_create_user_profile(self):
@@ -124,7 +125,7 @@ class TestUserManager:
         from users.models import UserManager
         manager = UserManager()
         with pytest.raises(ValueError, match="The Email field must be set"):
-            manager.create_user(email=None, password='test')
+            manager.create_user(email=None, password=os.getenv('TEST_USER_PASSWORD', 'test123'))
 
     def test_normalize_email(self):
         """Test email normalization."""
@@ -132,6 +133,6 @@ class TestUserManager:
         manager = UserManager()
         user = manager.create_user(
             email='Test.Email@EXAMPLE.COM',
-            password='test'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         assert user.email == 'Test.Email@example.com'

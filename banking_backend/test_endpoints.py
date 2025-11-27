@@ -2,6 +2,7 @@
 """
 Test script to verify the newly implemented endpoints.
 """
+import os
 import requests
 import json
 
@@ -11,7 +12,7 @@ def login_and_get_token():
     """Login and return access token."""
     login_data = {
         "email": "admin@bankingapp.com",
-        "password": "Test123!@#"
+        "password": os.getenv('TEST_USER_PASSWORD', 'test123')
     }
 
     try:

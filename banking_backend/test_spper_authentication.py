@@ -62,7 +62,7 @@ class SpperAuthenticationTest:
         """Test successful login via API endpoint with spper credentials."""
         response = self.client.post('/users/api/token/', {
             'username': 'spper',
-            'password': 'SpperSecurePass123!'
+            'password': os.getenv('TEST_USER_PASSWORD', 'test123')
         })
         
         success = response.status_code == 200
@@ -76,7 +76,7 @@ class SpperAuthenticationTest:
         """Test failed login via API endpoint with non-spper credentials."""
         response = self.client.post('/users/api/token/', {
             'username': 'admin',
-            'password': 'password123'
+            'password': os.getenv('TEST_USER_PASSWORD', 'test123')
         })
         
         # Should return 403 Forbidden for non-spper users
@@ -106,7 +106,7 @@ class SpperAuthenticationTest:
         """Test failed login via API endpoint with empty username."""
         response = self.client.post('/users/api/token/', {
             'username': '',
-            'password': 'password123'
+            'password': os.getenv('TEST_USER_PASSWORD', 'test123')
         })
         
         success = response.status_code in [400, 403]
@@ -116,7 +116,7 @@ class SpperAuthenticationTest:
         
     def test_authenticate_function_non_spper(self):
         """Test Django authenticate function with non-spper credentials."""
-        user = authenticate(username='testuser', password='password123')
+        user = authenticate(username='testuser', password=os.getenv('TEST_USER_PASSWORD', 'test123'))
         success = user is None
         details = f"Authenticated user: {user}"
         
@@ -124,7 +124,7 @@ class SpperAuthenticationTest:
         
     def test_authenticate_function_spper_correct(self):
         """Test Django authenticate function with spper credentials."""
-        user = authenticate(username='spper', password='SpperSecurePass123!')
+        user = authenticate(username='spper', password=os.getenv('TEST_USER_PASSWORD', 'test123'))
         success = user is not None
         details = f"Authenticated user: {user.email if user else None}"
         

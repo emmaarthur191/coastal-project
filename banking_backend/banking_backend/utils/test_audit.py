@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import Mock, patch
 from django.test import TestCase
@@ -15,7 +16,7 @@ class TestAuditService(TestCase):
         """Set up test data."""
         self.user = get_user_model().objects.create_user(
             email='test@example.com',
-            password='password123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             first_name='Test',
             last_name='User'
         )
@@ -296,7 +297,7 @@ class TestAuditService(TestCase):
         """Test that audit logs are properly associated with users."""
         user2 = get_user_model().objects.create_user(
             email='test2@example.com',
-            password='password123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
 
         with patch('banking_backend.utils.audit.logger') as mock_logger:
