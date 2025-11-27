@@ -43,7 +43,7 @@ class TestMasking:
 
     def test_mask_account_number_long(self):
         """Test masking of long account number."""
-        account_number = '12345678901234567890'  0 digits
+        account_number = '12345678901234567890'  # 20 digits
         result = mask_account_number(account_number)
         assert result == '****************7890'
         assert len(result) == len(account_number)

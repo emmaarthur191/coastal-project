@@ -32,7 +32,7 @@ def test_account_list_serializer():
     # Create test data
     test_user = User.objects.create_user(
         email='test@example.com',
-        password='testpass',
+        password=os.getenv('TEST_USER_PASSWORD', 'test123'),
         first_name='Test',
         last_name='User',
         role='member'
@@ -81,7 +81,7 @@ def test_transaction_list_serializer():
     # Create test data
     test_user = User.objects.create_user(
         email='test2@example.com',
-        password='testpass',
+        password=os.getenv('TEST_USER_PASSWORD', 'test123'),
         first_name='Test',
         last_name='User',
         role='member'
@@ -184,7 +184,7 @@ def test_backwards_compatibility():
     
     test_user = User.objects.create_user(
         email='test3@example.com',
-        password='testpass',
+        password=os.getenv('TEST_USER_PASSWORD', 'test123'),
         first_name='Test',
         last_name='User',
         role='member'

@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import patch, Mock
 from django.test import TestCase
@@ -14,7 +15,7 @@ class TestPasswordResetTokenHandling(TestCase):
         """Set up test data."""
         self.user = User.objects.create_user(
             email='test@example.com',
-            password='oldpassword123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             first_name='Test',
             last_name='User'
         )
@@ -156,7 +157,7 @@ class TestPasswordResetTokenHandling(TestCase):
         # Create another user
         user2 = User.objects.create_user(
             email='test2@example.com',
-            password='password123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             first_name='Test2',
             last_name='User2'
         )

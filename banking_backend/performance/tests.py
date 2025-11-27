@@ -1,3 +1,4 @@
+import os
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
@@ -15,7 +16,7 @@ class PerformanceMetricModelTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='test@example.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='cashier'
         )
 
@@ -68,7 +69,7 @@ class PerformanceMetricAPITestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='api@example.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='cashier'
         )
         self.client.force_authenticate(user=self.user)
@@ -108,7 +109,7 @@ class SystemHealthAPITestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='health@example.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='operations_manager'
         )
         self.client.force_authenticate(user=self.user)
@@ -151,7 +152,7 @@ class DashboardWidgetAPITestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='widget@example.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='manager'
         )
         self.client.force_authenticate(user=self.user)
@@ -183,7 +184,7 @@ class DashboardWidgetAPITestCase(APITestCase):
         # Create widget by another user
         other_user = User.objects.create_user(
             email='other@example.com',
-            password='testpass123',
+            password=os.getenv('TEST_USER_PASSWORD', 'test123'),
             role='cashier'
         )
 

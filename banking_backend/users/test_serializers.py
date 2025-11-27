@@ -1,3 +1,4 @@
+import os
 import pytest
 from django.test import TestCase
 from users.serializers import UserProfileSerializer, NotificationSettingsSerializer
@@ -14,7 +15,7 @@ class UserProfileSerializerTestCase(TestCase):
             first_name='Profile',
             last_name='Serializer',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.profile = UserProfile.objects.create(
             user=self.user,
@@ -61,7 +62,7 @@ class NotificationSettingsSerializerTestCase(TestCase):
             first_name='Notification',
             last_name='Test',
             role='member',
-            password='testpass123'
+            password=os.getenv('TEST_USER_PASSWORD', 'test123')
         )
         self.profile = UserProfile.objects.create(
             user=self.user,

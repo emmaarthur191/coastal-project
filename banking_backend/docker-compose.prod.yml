@@ -38,6 +38,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
+    env_file: .env
     environment:
       - DATABASE_URL=postgresql://${DB_USER:-banking_user}:${DB_PASSWORD}@db:${DB_PORT:-5432}/${DB_NAME:-banking_db}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT:-6379}/0
