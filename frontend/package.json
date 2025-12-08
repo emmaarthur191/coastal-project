@@ -3,10 +3,10 @@
   "type": "module",
   "scripts": {
     "api:sync": "npx openapi-typescript-codegen --input http://localhost:8000/api/schema/ --output src/api --client tanstack",
-    "dev": "npm run api:sync && vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest",
+    "dev": "npm run api:sync && npx vite",
+    "build": "npx vite build",
+    "preview": "npx vite preview",
+    "test": "npx vitest",
     "precommit": "npm run api:sync && git diff --exit-code src/api"
   },
   "dependencies": {
