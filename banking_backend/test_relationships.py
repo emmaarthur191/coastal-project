@@ -35,10 +35,11 @@ def test_relationships():
     print(f"Sample Account: {account.id if account else 'No accounts found'}")
     
     if account:
-        print(f"Account owner relationship: {account.owner.email}")
+        owner_email = account.owner.email if account.owner else 'No owner'
+        print(f"Account owner relationship: {owner_email}")
         print(f"Has 'transactions' relationship: {hasattr(account, 'transactions')}")
         print(f"Has 'loans' relationship: {hasattr(account, 'loans')}")
-        
+
         if hasattr(account, 'transactions'):
             print(f"Account transactions count: {account.transactions.count()}")
         if hasattr(account, 'loans'):
@@ -50,7 +51,8 @@ def test_relationships():
     print(f"Sample Transaction: {transaction.id if transaction else 'No transactions found'}")
     
     if transaction:
-        print(f"Transaction account: {transaction.account.id}")
+        account_id = transaction.account.id if transaction.account else 'No account'
+        print(f"Transaction account: {account_id}")
         print(f"Transaction has 'fees' relationship: {hasattr(transaction, 'fees')}")
     
     print("\n=== RELATIONSHIP TEST COMPLETE ===")

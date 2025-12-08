@@ -10,48 +10,54 @@
 
 /* CSS Custom Properties for Design System */
 :root {
-  /* Primary Brand Colors */
-  --color-primary: #0066CC;
-  --color-primary-hover: #0052a3;
-  --color-primary-light: #b8dcff;
-  --color-primary-dark: #003d7a;
-  
-  /* White/Background Colors */
+  /* Primary Brand Colors - Mauve for accents/backgrounds */
+  --color-primary: #D7BDE2;
+  --color-primary-hover: #c4a3d1;
+  --color-primary-light: #e8d5ed;
+  --color-primary-dark: #b89bc8;
+
+  /* White/Background Colors - White for main backgrounds/text */
   --color-white: #FFFFFF;
   --color-white-light: #fafafa;
   --color-white-dark: #f5f5f5;
-  
-  /* Error/Alert Colors */
-  --color-error: #CC0000;
-  --color-error-hover: #b91c1c;
-  --color-error-light: #fef2f2;
-  --color-error-medium: #fecaca;
-  
+
+  /* Blue for buttons/links/headers */
+  --color-secondary: #3498DB;
+  --color-secondary-hover: #2980b9;
+  --color-secondary-light: #a3d4f7;
+  --color-secondary-dark: #1f5f99;
+
+  /* Error/Alert Colors - Red for errors/alerts */
+  --color-error: #E74C3C;
+  --color-error-hover: #c0392b;
+  --color-error-light: #fadbd8;
+  --color-error-medium: #f5b7b1;
+
   /* Warning/Attention Colors */
   --color-warning: #FFD700;
   --color-warning-light: #fffbeb;
   --color-warning-medium: #fde68a;
-  
+
   /* Success Colors */
   --color-success: #10b981;
   --color-success-light: #f0fdf4;
-  
+
   /* Text Colors - WCAG AA Compliant */
   --color-text-primary: #171717;
   --color-text-secondary: #404040;
   --color-text-tertiary: #525252;
   --color-text-placeholder: #a3a3a3;
-  
+
   /* Border Colors */
   --color-border-light: #e5e5e5;
   --color-border-medium: #d4d4d4;
-  --color-border-focus: var(--color-primary);
-  
+  --color-border-focus: var(--color-secondary);
+
   /* Focus Colors for Accessibility */
-  --color-focus-ring: rgba(0, 102, 204, 0.1);
-  --color-focus-ring-error: rgba(204, 0, 0, 0.1);
+  --color-focus-ring: rgba(52, 152, 219, 0.1);
+  --color-focus-ring-error: rgba(231, 76, 60, 0.1);
   --color-focus-ring-warning: rgba(255, 215, 0, 0.1);
-  
+
   /* Animation Timing */
   --motion-fast: 150ms;
   --motion-normal: 250ms;

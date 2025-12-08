@@ -1,13 +1,11 @@
 import logging
 from decimal import Decimal
 from django.utils import timezone
-from django.db import transaction as db_transaction
-from django.db.models import Count, Sum, Q
+from django.db.models import Sum
 from datetime import timedelta
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Any
 from .models import FraudRule, FraudAlert, FraudPattern
 from banking.models import Transaction, Account
-from users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,6 @@ class FraudDetectionEngine:
 
     def __init__(self):
         self.rules_cache = {}
-        self._load_active_rules()
 
     def _load_active_rules(self):
         """Load all active fraud rules into cache."""

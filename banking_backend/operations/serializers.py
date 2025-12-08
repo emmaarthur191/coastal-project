@@ -130,7 +130,7 @@ class CommissionSerializer(serializers.ModelSerializer):
         return f"{obj.earned_by.first_name} {obj.earned_by.last_name}"
 
 
-class MessageSerializer(serializers.ModelSerializer):
+class OperationsMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
     recipient_name = serializers.SerializerMethodField()
 

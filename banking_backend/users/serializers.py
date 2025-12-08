@@ -1,456 +1,468 @@
 from rest_framework import serializers
-from .models import User, UserProfile, OTPVerification
-from banking.models import Account, Transaction, Loan
-from banking_backend.utils.masking import mask_email, mask_phone_number
-from .audit_utils import validate_password_strength
-from django.utils import timezone
+from .models import User, UserProfile, UserDocuments
 from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
 import re
+import logging
 
+logger = logging.getLogger('banking_security')
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    # Include user fields for profile display
+    email = serializers.EmailField(source='user.email', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    role = serializers.CharField(source='user.role', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
+    date_joined = serializers.DateTimeField(source='user.date_joined', read_only=True)
+
+    # Decrypted fields for authorized users
+    decrypted_ssnit_number = serializers.SerializerMethodField()
+    decrypted_staff_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        exclude = ['ssnit_number', 'staff_id']  # Exclude encrypted sensitive fields
+        extra_kwargs = {
+            'user': {'read_only': True}
+        }
+
+    def get_decrypted_ssnit_number(self, obj):
+        """Return decrypted SSNIT number only for authorized users."""
+        request = self.context.get('request')
+        if request and request.user.has_role_permission('manager'):
+            return obj.get_decrypted_ssnit_number()
+        return None
+
+    def get_decrypted_staff_id(self, obj):
+        """Return decrypted staff ID."""
+        return obj.get_decrypted_staff_id()
 
 class NotificationSettingsSerializer(serializers.ModelSerializer):
-    """Handles updating notification preferences."""
     class Meta:
         model = UserProfile
         fields = ['notify_email', 'notify_sms', 'notify_push']
 
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    """Handles updating basic profile details (name and email)."""
-    email = serializers.EmailField(source='user.email')
-    first_name = serializers.CharField(source='user.first_name')
-    last_name = serializers.CharField(source='user.last_name')
-    role = serializers.CharField(source='user.role', read_only=True)
-    phone = serializers.CharField(required=False, allow_blank=True)
-
-    class Meta:
-        model = UserProfile
-        fields = ['first_name', 'last_name', 'email', 'role', 'phone', 'notify_email', 'notify_sms', 'notify_push']
-        read_only_fields = ['role']
-
-    def update(self, instance, validated_data):
-        # Update fields in the linked User model
-        user_data = validated_data.pop('user', {})
-        user = instance.user
-
-        user.first_name = user_data.get('first_name', user.first_name)
-        user.last_name = user_data.get('last_name', user.last_name)
-        user.email = user_data.get('email', user.email)
-        user.save()
-
-        # Update fields in UserProfile model
-        return super().update(instance, validated_data)
-
-
 class EnhancedUserRegistrationSerializer(serializers.ModelSerializer):
-    """Enhanced serializer for user registration with comprehensive validation."""
-    password = serializers.CharField(write_only=True, required=True)
     password_confirm = serializers.CharField(write_only=True, required=True)
-    phone = serializers.CharField(required=False, allow_blank=True)
-    agree_to_terms = serializers.BooleanField(required=True, write_only=True)
-    marketing_consent = serializers.BooleanField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = [
-            'email', 'first_name', 'last_name', 'password', 'password_confirm', 
-            'phone', 'agree_to_terms', 'marketing_consent'
-        ]
+        fields = ['email', 'first_name', 'last_name', 'password', 'password_confirm', 'role']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
 
-    def validate_email(self, value):
-        """Validate email format and uniqueness."""
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
-        return value
-
-    def validate_password(self, value):
-        """Validate password strength."""
-        is_valid, message, score = validate_password_strength(value)
-        if not is_valid:
-            raise serializers.ValidationError(f"Password validation failed: {message}")
-        return value
-
-    def validate_phone(self, value):
-        """Validate phone number format."""
-        if value:
-            # Basic phone number validation (you might want to use a library like phonenumbers)
-            phone_pattern = r'^\+?1?\d{9,15}$'
-            if not re.match(phone_pattern, value.replace(' ', '').replace('-', '')):
-                raise serializers.ValidationError("Please enter a valid phone number.")
-        return value
-
-    def validate(self, attrs):
-        """Cross-field validation."""
-        if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Passwords do not match.")
-        
-        if not attrs.get('agree_to_terms', False):
-            raise serializers.ValidationError("You must agree to the terms and conditions.")
-        
-        return attrs
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+        return data
 
     def create(self, validated_data):
-        """Create user with comprehensive validation."""
         validated_data.pop('password_confirm')
-        validated_data.pop('agree_to_terms')
-        validated_data.pop('marketing_consent', None)  # Optional field
-        
-        # Create user with default customer role
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            role='customer'
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            role=validated_data.get('role', 'customer')
         )
-        
-        # Create UserProfile
-        profile_data = {
-            'phone': validated_data.get('phone', ''),
-            'notify_email': True,
-            'notify_sms': False,
-            'notify_push': True
-        }
-        UserProfile.objects.create(user=user, **profile_data)
-        
         return user
-
-
-class UserManagementSerializer(serializers.ModelSerializer):
-    """Serializer for user management operations (admin/staff only)."""
-    password = serializers.CharField(write_only=True, required=False)
-    password_confirm = serializers.CharField(write_only=True, required=False)
-    phone = serializers.CharField(source='profile.phone', required=False)
-    
-    class Meta:
-        model = User
-        fields = [
-            'id', 'email', 'first_name', 'last_name', 'role', 'is_active', 'is_staff',
-            'password', 'password_confirm', 'phone'
-        ]
-        read_only_fields = ['id']
-
-    def validate_role(self, value):
-        """Validate role assignment based on current user's permissions."""
-        current_user = self.context['request'].user
-        if current_user.role == 'superuser':
-            # Superuser can assign any role
-            return value
-        elif current_user.role == 'administrator':
-            # Administrators can assign all roles except superuser
-            if value == 'superuser':
-                raise serializers.ValidationError("Only superusers can assign superuser role.")
-            return value
-        elif current_user.role == 'operations_manager':
-            # Operations managers can assign all roles except administrator and superuser
-            if value in ['administrator', 'superuser']:
-                raise serializers.ValidationError("Only administrators and superusers can assign administrator/superuser roles.")
-            return value
-        elif current_user.role == 'manager':
-            # Managers can only create customer and cashier roles
-            if value not in ['customer', 'cashier']:
-                raise serializers.ValidationError("Managers can only create customer and cashier accounts.")
-            return value
-        else:
-            raise serializers.ValidationError("Insufficient permissions to assign roles.")
-
-    def validate(self, attrs):
-        """Cross-field validation for password updates."""
-        password = attrs.get('password')
-        password_confirm = attrs.get('password_confirm')
-        
-        if password:
-            if not password_confirm:
-                raise serializers.ValidationError("Please confirm the password.")
-            if password != password_confirm:
-                raise serializers.ValidationError("Passwords do not match.")
-            
-            # Validate password strength
-            is_valid, message, score = validate_password_strength(password)
-            if not is_valid:
-                raise serializers.ValidationError(f"Password validation failed: {message}")
-        
-        return attrs
-
-    def create(self, validated_data):
-        """Create user with proper role-based restrictions."""
-        password = validated_data.pop('password', None)
-        password_confirm = validated_data.pop('password_confirm', None)
-        phone = validated_data.pop('profile', {}).get('phone', '')
-        
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            password=password or 'temp_password_123',
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            role=validated_data['role'],
-            is_active=validated_data.get('is_active', True),
-            is_staff=validated_data.get('is_staff', False)
-        )
-        
-        # Create profile if phone provided
-        if phone:
-            UserProfile.objects.create(user=user, phone=phone)
-        
-        return user
-
-    def update(self, instance, validated_data):
-        """Update user with proper restrictions."""
-        password = validated_data.pop('password', None)
-        password_confirm = validated_data.pop('password_confirm', None)
-        phone_data = validated_data.pop('profile', {})
-        
-        # Update user fields
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.role = validated_data.get('role', instance.role)
-        instance.is_active = validated_data.get('is_active', instance.is_active)
-        instance.is_staff = validated_data.get('is_staff', instance.is_staff)
-        
-        # Update password if provided
-        if password:
-            instance.set_password(password)
-        
-        instance.save()
-        
-        # Update profile
-        if phone_data.get('phone') is not None:
-            profile, created = UserProfile.objects.get_or_create(user=instance)
-            profile.phone = phone_data['phone']
-            profile.save()
-        
-        return instance
-
-
-class SecuritySettingsSerializer(serializers.Serializer):
-    """Serializer for user security settings."""
-    current_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-    new_password_confirm = serializers.CharField(required=True)
-    enable_2fa = serializers.BooleanField(required=False)
-    session_timeout_minutes = serializers.IntegerField(required=False, min_value=15, max_value=480)
-
-    def validate_current_password(self, value):
-        """Validate current password."""
-        user = self.context['request'].user
-        if not user.check_password(value):
-            raise serializers.ValidationError("Current password is incorrect.")
-        return value
-
-    def validate_new_password(self, value):
-        """Validate new password strength."""
-        is_valid, message, score = validate_password_strength(value)
-        if not is_valid:
-            raise serializers.ValidationError(f"Password validation failed: {message}")
-        return value
-
-    def validate(self, attrs):
-        """Cross-field validation."""
-        if attrs['new_password'] != attrs['new_password_confirm']:
-            raise serializers.ValidationError("New passwords do not match.")
-        
-        if attrs['current_password'] == attrs['new_password']:
-            raise serializers.ValidationError("New password must be different from current password.")
-        
-        return attrs
-
-
-class OTPSerializer(serializers.Serializer):
-    """Serializer for OTP operations."""
-    phone_number = serializers.CharField(required=True)
-    verification_type = serializers.ChoiceField(
-        choices=[
-            ('user_creation', 'User Creation'),
-            ('phone_verification', 'Phone Verification'),
-            ('transaction', 'Transaction Verification'),
-            ('password_reset', 'Password Reset'),
-            ('security_change', 'Security Change'),
-        ],
-        default='phone_verification'
-    )
-
-
-class OTPVerificationSerializer(serializers.Serializer):
-    """Serializer for OTP verification."""
-    phone_number = serializers.CharField(required=True)
-    otp_code = serializers.CharField(max_length=6, required=True)
-    verification_type = serializers.ChoiceField(
-        choices=[
-            ('user_creation', 'User Creation'),
-            ('phone_verification', 'Phone Verification'),
-            ('transaction', 'Transaction Verification'),
-            ('password_reset', 'Password Reset'),
-            ('security_change', 'Security Change'),
-        ],
-        default='phone_verification'
-    )
-
 
 class UserInfoSerializer(serializers.ModelSerializer):
-    """Serializer for returning user information."""
-    email = serializers.SerializerMethodField()
-    phone_number = serializers.SerializerMethodField()
-    permissions = serializers.SerializerMethodField()
-    security_status = serializers.SerializerMethodField()
-
-    def get_email(self, obj):
-        return mask_email(obj.email)
-
-    def get_phone_number(self, obj):
-        if hasattr(obj, 'profile') and obj.profile.phone:
-            return mask_phone_number(obj.profile.phone)
-        return None
-
-    def get_permissions(self, obj):
-        """Get user permissions based on role."""
-        return obj.get_permissions_by_role() if hasattr(obj, 'get_permissions_by_role') else []
-
-    def get_security_status(self, obj):
-        """Get user security status."""
-        if hasattr(obj, 'is_account_locked'):
-            return {
-                'account_locked': obj.is_account_locked(),
-                'failed_login_attempts': getattr(obj, 'failed_login_attempts', 0),
-                'last_login': obj.last_login.isoformat() if obj.last_login else None,
-                'password_age_days': (timezone.now() - obj.password_changed_at).days if hasattr(obj, 'password_changed_at') else None
-            }
-        return {}
-
     class Meta:
         model = User
-        fields = [
-            'id', 'email', 'first_name', 'last_name', 'phone_number', 'role', 
-            'is_active', 'is_staff', 'date_joined', 'permissions', 'security_status'
-        ]
-
+        fields = ['id', 'email', 'first_name', 'last_name', 'role', 'is_active', 'is_staff']
 
 class RoleBasedDashboardSerializer(serializers.Serializer):
-    """Role-based dashboard serializer."""
-    
-    def __init__(self, *args, **kwargs):
-        user = kwargs.get('context', {}).get('request').user if 'request' in kwargs.get('context', {}) else None
-        super().__init__(*args, **kwargs)
-        
-        if user:
-            if user.role == 'customer':
-                self.fields.update(self._get_customer_fields())
-            elif user.role == 'cashier':
-                self.fields.update(self._get_cashier_fields())
-            elif user.role == 'mobile_banker':
-                self.fields.update(self._get_mobile_banker_fields())
-            elif user.role == 'manager':
-                self.fields.update(self._get_manager_fields())
-            elif user.role == 'operations_manager':
-                self.fields.update(self._get_operations_manager_fields())
-            elif user.role == 'administrator':
-                self.fields.update(self._get_administrator_fields())
-            elif user.role == 'superuser':
-                self.fields.update(self._get_superuser_fields())
-
-    def _get_customer_fields(self):
-        """Fields for customer dashboard."""
-        return {
-            'account_balance': serializers.DecimalField(max_digits=15, decimal_places=2),
-            'recent_transactions': serializers.ListField(child=serializers.DictField()),
-            'loan_balance': serializers.DecimalField(max_digits=12, decimal_places=2),
-            'savings_balance': serializers.DecimalField(max_digits=15, decimal_places=2),
-        }
-
-    def _get_cashier_fields(self):
-        """Fields for cashier dashboard."""
-        return {
-            'daily_transactions_processed': serializers.IntegerField(),
-            'pending_approvals': serializers.IntegerField(),
-            'customer_service_metrics': serializers.DictField(),
-            'shift_summary': serializers.DictField(),
-        }
-
-    def _get_mobile_banker_fields(self):
-        """Fields for mobile banker dashboard."""
-        return {
-            'remote_sessions_active': serializers.IntegerField(),
-            'pending_mobile_requests': serializers.ListField(child=serializers.DictField()),
-            'client_communications': serializers.ListField(child=serializers.DictField()),
-            'mobile_transactions_today': serializers.IntegerField(),
-        }
-
-    def _get_manager_fields(self):
-        """Fields for manager dashboard."""
-        return {
-            'team_performance': serializers.DictField(),
-            'workflow_approvals_pending': serializers.ListField(child=serializers.DictField()),
-            'team_member_status': serializers.ListField(child=serializers.DictField()),
-            'operational_metrics': serializers.DictField(),
-        }
-
-    def _get_operations_manager_fields(self):
-        """Fields for operations manager dashboard."""
-        return {
-            'system_health': serializers.DictField(),
-            'operational_oversight': serializers.DictField(),
-            'process_metrics': serializers.DictField(),
-            'staff_performance': serializers.ListField(child=serializers.DictField()),
-            'risk_indicators': serializers.DictField(),
-        }
-
-    def _get_administrator_fields(self):
-        """Fields for administrator dashboard."""
-        return {
-            'system_overview': serializers.DictField(),
-            'security_status': serializers.DictField(),
-            'user_management': serializers.DictField(),
-            'system_configuration': serializers.DictField(),
-            'audit_summary': serializers.DictField(),
-            'infrastructure_status': serializers.DictField(),
-        }
-
-    def _get_superuser_fields(self):
-        """Fields for superuser dashboard."""
-        return {
-            'unlimited_system_access': serializers.DictField(),
-            'bypass_all_restrictions': serializers.BooleanField(),
-            'system_administration': serializers.DictField(),
-            'security_override': serializers.DictField(),
-            'emergency_access': serializers.DictField(),
-            'full_audit_bypass': serializers.BooleanField(),
-            'configuration_override': serializers.DictField(),
-            'all_permissions': serializers.ListField(),
-        }
-
-
-class MemberDashboardSerializer(serializers.Serializer):
-    """Serializer for member dashboard data."""
-    account_balance = serializers.DecimalField(max_digits=15, decimal_places=2)
+    account_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
     recent_transactions = serializers.ListField(child=serializers.DictField())
     loan_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
-    savings_balance = serializers.DecimalField(max_digits=15, decimal_places=2)
+    savings_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
+    available_tabs = serializers.ListField(child=serializers.DictField())
+    user_permissions = serializers.DictField()
+    membership_status = serializers.DictField()
 
+class UserManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'role', 'is_active', 'date_joined']
+        read_only_fields = ['id', 'date_joined']
 
-class EmailTokenObtainPairSerializer(serializers.Serializer):
-    """Custom serializer for JWT token obtain that uses email instead of username."""
-    email = serializers.EmailField()
-    password = serializers.CharField()
+class SecuritySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['two_factor_enabled', 'two_factor_phone', 'security_question', 'security_answer']
 
+class OTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=20)
+    otp_code = serializers.CharField(max_length=6)
+    verification_type = serializers.ChoiceField(
+        choices=['user_creation', 'phone_verification', 'transaction', 'password_reset'],
+        default='user_creation'
+    )
+
+class OTPVerificationSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=20)
+    otp_code = serializers.CharField(max_length=6)
+    verification_type = serializers.ChoiceField(
+        choices=['user_creation', 'phone_verification', 'transaction', 'password_reset'],
+        default='user_creation'
+    )
+
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
 
-        if email and password:
-            # Use email as username for authentication
-            user = authenticate(username=email, password=password)
-            if user:
-                if user.is_active:
-                    attrs['user'] = user
-                else:
-                    raise serializers.ValidationError('User account is disabled.')
-            else:
-                raise serializers.ValidationError('No active account found with the given credentials.')
-        else:
-            raise serializers.ValidationError('Must include "email" and "password".')
+        if not email or not password:
+            raise AuthenticationFailed('Email and password are required.')
 
-        return attrs
+        # Validate email format
+        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+            raise AuthenticationFailed('Invalid email format.')
+
+        # Authenticate user
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise AuthenticationFailed('No active account found with the given credentials.')
+
+        if not user.is_active:
+            raise AuthenticationFailed('Account is inactive.')
+
+        # Check if user has sufficient privileges
+        allowed_roles = ['customer', 'cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser']
+        if user.role not in allowed_roles:
+            raise AuthenticationFailed('Access denied. Insufficient privileges.')
+
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': user
+        }
+
+class MemberDashboardSerializer(serializers.Serializer):
+    account_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
+    recent_transactions = serializers.ListField(child=serializers.DictField())
+    loan_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
+    savings_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
+    available_tabs = serializers.ListField(child=serializers.DictField())
+    user_permissions = serializers.DictField()
+    membership_status = serializers.DictField()
 
 
-# Backward compatibility - alias for the old serializer name
-UserRegistrationSerializer = EnhancedUserRegistrationSerializer
+class UserDocumentsSerializer(serializers.ModelSerializer):
+    """Serializer for user document management."""
+    uploaded_by_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    verified_by_name = serializers.CharField(source='verified_by.get_full_name', read_only=True)
+    file_url = serializers.SerializerMethodField()
+    file_size_mb = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserDocuments
+        fields = [
+            'id', 'user', 'document_type', 'file', 'file_url', 'uploaded_at',
+            'file_size', 'file_size_mb', 'file_name', 'mime_type', 'status',
+            'is_verified', 'verified_by', 'verified_by_name', 'verified_at',
+            'rejection_reason', 'review_priority', 'expiry_date', 'checksum',
+            'uploaded_by_name'
+        ]
+        read_only_fields = ['id', 'uploaded_at', 'verified_at', 'file_url', 'file_size_mb']
+
+    def get_file_url(self, obj):
+        """Get the full URL for the uploaded file."""
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return None
+
+    def get_file_size_mb(self, obj):
+        """Return file size in MB."""
+        return obj.get_file_size_mb()
+
+    def validate_file(self, value):
+        """Validate uploaded file."""
+        # Check file size (max 10MB)
+        max_size = 10 * 1024 * 1024  # 10MB
+        if value.size > max_size:
+            raise serializers.ValidationError("File size cannot exceed 10MB.")
+
+        # Check file type
+        allowed_types = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+            'application/pdf', 'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ]
+
+        if hasattr(value, 'content_type') and value.content_type not in allowed_types:
+            raise serializers.ValidationError(
+                f"File type {value.content_type} is not allowed. "
+                "Allowed types: JPEG, PNG, GIF, PDF, DOC, DOCX."
+            )
+
+        return value
+
+    def create(self, validated_data):
+        """Create document with additional metadata."""
+        user = self.context['request'].user
+        validated_data['user'] = user
+
+        # Set file metadata
+        file = validated_data.get('file')
+        if file:
+            validated_data['file_size'] = file.size
+            validated_data['file_name'] = file.name
+            validated_data['mime_type'] = getattr(file, 'content_type', 'application/octet-stream')
+
+            # Generate checksum for integrity
+            import hashlib
+            file.seek(0)
+            checksum = hashlib.sha256(file.read()).hexdigest()
+            validated_data['checksum'] = checksum
+            file.seek(0)  # Reset file pointer
+
+        return super().create(validated_data)
+
+
+class DocumentApprovalSerializer(serializers.Serializer):
+    """Serializer for document approval/rejection actions."""
+    action = serializers.ChoiceField(choices=['approve', 'reject'])
+    rejection_reason = serializers.CharField(required=False, allow_blank=True)
+    review_notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class EnhancedStaffRegistrationSerializer(serializers.Serializer):
+    """Enhanced serializer for staff registration with document uploads."""
+
+    # User fields
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=30)
+    last_name = serializers.CharField(max_length=30)
+    phone = serializers.CharField(max_length=20)
+    role = serializers.ChoiceField(choices=[
+        'cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator'
+    ])
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    # Profile fields
+    house_address = serializers.CharField(max_length=500)
+    contact_address = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    government_id = serializers.CharField(max_length=50)
+    ssnit_number = serializers.CharField(max_length=20)
+    date_of_birth = serializers.DateField()
+    employment_date = serializers.DateField()
+
+    # Bank account details
+    bank_name = serializers.CharField(max_length=100)
+    account_number = serializers.CharField(max_length=50)
+    branch_code = serializers.CharField(max_length=20)
+    routing_number = serializers.CharField(max_length=20)
+
+    # File uploads
+    passport_picture = serializers.FileField(required=True)
+    application_letter = serializers.FileField(required=True)
+    appointment_letter = serializers.FileField(required=True)
+
+    def validate_password(self, value):
+        """Validate password strength."""
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long")
+
+        if not any(c.isupper() for c in value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter")
+
+        if not any(c.islower() for c in value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter")
+
+        if not any(c.isdigit() for c in value):
+            raise serializers.ValidationError("Password must contain at least one digit")
+
+        special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+        if not any(c in special_chars for c in value):
+            raise serializers.ValidationError("Password must contain at least one special character")
+
+        # Check for common passwords
+        common_passwords = ['password', '123456', 'qwerty', 'admin', 'letmein']
+        if value.lower() in common_passwords:
+            raise serializers.ValidationError("Password cannot be a commonly used password")
+
+        return value
+
+    def validate_government_id(self, value):
+        """Validate government ID format."""
+        import re
+        clean_id = re.sub(r'[\s-]', '', value).upper()
+        if not clean_id:
+            raise serializers.ValidationError("Government ID is required")
+        if not re.match(r'^[A-Z0-9]+$', clean_id):
+            raise serializers.ValidationError("Government ID must contain only letters and numbers")
+        if len(clean_id) < 6 or len(clean_id) > 20:
+            raise serializers.ValidationError("Government ID must be between 6 and 20 characters long")
+        return clean_id
+
+    def validate_ssnit_number(self, value):
+        """Validate SSNIT number format."""
+        import re
+        clean_ssnit = re.sub(r'[\s-]', '', value)
+        if not clean_ssnit:
+            raise serializers.ValidationError("SSNIT number is required")
+        if not re.match(r'^\d{12}$', clean_ssnit):
+            raise serializers.ValidationError("SSNIT number must be exactly 12 digits, e.g., 123456789012")
+        return clean_ssnit
+
+    def validate_account_number(self, value):
+        """Validate account number format."""
+        if not value:
+            raise serializers.ValidationError("Account number is required")
+        if not re.match(r'^[A-Z0-9]+$', value):
+            raise serializers.ValidationError("Account number must contain only letters and numbers")
+        if len(value) < 8 or len(value) > 20:
+            raise serializers.ValidationError("Account number must be between 8 and 20 characters long")
+        return value
+
+    def validate_branch_code(self, value):
+        """Validate branch code format."""
+        if not value:
+            raise serializers.ValidationError("Branch code is required")
+        if not re.match(r'^[A-Z0-9]+$', value):
+            raise serializers.ValidationError("Branch code must contain only letters and numbers")
+        if len(value) < 3 or len(value) > 10:
+            raise serializers.ValidationError("Branch code must be between 3 and 10 characters long")
+        return value
+
+    def validate_routing_number(self, value):
+        """Validate routing number format."""
+        import re
+        clean_routing = re.sub(r'[\s-]', '', value)
+        if not clean_routing:
+            raise serializers.ValidationError("Routing number is required")
+        if not re.match(r'^\d{9}$', clean_routing):
+            raise serializers.ValidationError("Routing number must be 9 digits")
+        return clean_routing
+
+    def validate_passport_picture(self, value):
+        """Validate passport picture file."""
+        # Size validation (max 2MB)
+        max_size = 2 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("Passport picture file size cannot exceed 2MB")
+
+        # Type validation
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png']
+        if hasattr(value, 'content_type') and value.content_type not in allowed_types:
+            raise serializers.ValidationError("Only JPEG/JPG/PNG files are allowed for passport pictures")
+
+        return value
+
+    def validate_application_letter(self, value):
+        """Validate application letter file."""
+        # Size validation (max 5MB)
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("Application letter file size cannot exceed 5MB")
+
+        # Type validation
+        allowed_types = ['application/pdf']
+        if hasattr(value, 'content_type') and value.content_type not in allowed_types:
+            raise serializers.ValidationError("Only PDF files are allowed for application letters")
+
+        return value
+
+    def validate_appointment_letter(self, value):
+        """Validate appointment letter file."""
+        # Size validation (max 5MB)
+        max_size = 5 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("Appointment letter file size cannot exceed 5MB")
+
+        # Type validation
+        allowed_types = ['application/pdf']
+        if hasattr(value, 'content_type') and value.content_type not in allowed_types:
+            raise serializers.ValidationError("Only PDF files are allowed for appointment letters")
+
+        return value
+
+    def validate_email(self, value):
+        """Check if user already exists."""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists")
+        return value
+
+    def create(self, validated_data):
+        """Create user with profile and documents."""
+        from django.db import transaction
+
+        with transaction.atomic():
+            # Extract file data
+            passport_picture = validated_data.pop('passport_picture')
+            application_letter = validated_data.pop('application_letter')
+            appointment_letter = validated_data.pop('appointment_letter')
+
+            # Extract profile data
+            ssnit_number = validated_data.pop('ssnit_number')
+            profile_data = {
+                'house_address': validated_data.pop('house_address'),
+                'contact_address': validated_data.pop('contact_address', ''),
+                'government_id': validated_data.pop('government_id'),
+                'date_of_birth': validated_data.pop('date_of_birth'),
+                'employment_date': validated_data.pop('employment_date'),
+                'bank_name': validated_data.pop('bank_name'),
+                'account_number': validated_data.pop('account_number'),
+                'branch_code': validated_data.pop('branch_code'),
+                'routing_number': validated_data.pop('routing_number'),
+            }
+
+            # Create user
+            user = User.objects.create_user(
+                email=validated_data['email'],
+                password=validated_data['password'],
+                first_name=validated_data['first_name'],
+                last_name=validated_data['last_name'],
+                role=validated_data['role']
+            )
+
+            # Create profile
+            profile = UserProfile.objects.create(user=user, **profile_data)
+            # Set SSNIT number with encryption
+            profile.set_ssnit_number(ssnit_number)
+            profile.save()
+
+            # Generate staff ID
+            profile.generate_staff_id()
+
+            # Create documents
+            UserDocuments.objects.create(
+                user=user,
+                document_type='passport_picture',
+                file=passport_picture,
+                file_size=passport_picture.size,
+                file_name=passport_picture.name,
+                mime_type=getattr(passport_picture, 'content_type', 'application/octet-stream')
+            )
+
+            UserDocuments.objects.create(
+                user=user,
+                document_type='application_letter',
+                file=application_letter,
+                file_size=application_letter.size,
+                file_name=application_letter.name,
+                mime_type=getattr(application_letter, 'content_type', 'application/octet-stream')
+            )
+
+            UserDocuments.objects.create(
+                user=user,
+                document_type='appointment_letter',
+                file=appointment_letter,
+                file_size=appointment_letter.size,
+                file_name=appointment_letter.name,
+                mime_type=getattr(appointment_letter, 'content_type', 'application/octet-stream')
+            )
+
+            return user

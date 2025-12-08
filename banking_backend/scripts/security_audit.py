@@ -7,7 +7,6 @@ Comprehensive security assessment and hardening checks.
 import os
 import sys
 import json
-import hashlib
 import subprocess
 from datetime import datetime
 from pathlib import Path

@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 from users.models import UserProfile
 from django.utils import timezone
 import random
-import string
 
 User = get_user_model()
 

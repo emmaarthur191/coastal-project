@@ -7,9 +7,8 @@ import logging
 from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 from .audit import AuditService
-from .monitoring import log_security_event
 
 logger = logging.getLogger(__name__)
 

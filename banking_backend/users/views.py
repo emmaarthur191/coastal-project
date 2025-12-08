@@ -1,15 +1,14 @@
 from rest_framework import serializers, views, permissions, status
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth import authenticate
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from datetime import timedelta
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,39 +17,32 @@ from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy, reverse
-from django.http import HttpResponseRedirect, JsonResponse
+from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
-from rest_framework.decorators import throttle_classes
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
-from .models import UserProfile, User, OTPVerification
+from rest_framework.throttling import AnonRateThrottle
+from django.db.models import Q
+from .models import UserProfile, User, OTPVerification, UserDocuments
 from .serializers import (
     UserProfileSerializer, NotificationSettingsSerializer,
-    EnhancedUserRegistrationSerializer, UserInfoSerializer,
-    RoleBasedDashboardSerializer, UserManagementSerializer,
-    SecuritySettingsSerializer, OTPSerializer, OTPVerificationSerializer,
-    EmailTokenObtainPairSerializer
+    RoleBasedDashboardSerializer, EmailTokenObtainPairSerializer,
+    MemberDashboardSerializer, UserDocumentsSerializer,
+    DocumentApprovalSerializer, EnhancedStaffRegistrationSerializer
 )
 from .permissions import (
-    IsCustomer, IsCashier, IsMobileBanker, IsManager,
-    IsOperationsManager, IsAdministrator, IsSuperuser, IsManagerOrHigher,
-    CanManageUsers, CanAccessSecurityFeatures, CanPerformOperationalOversight
+    IsSuperuser, IsManagerOrHigher, IsMember
 )
 from .audit_utils import (
-    log_audit_event, log_login_attempt, log_security_event,
-    get_client_ip, rate_limit_check, check_suspicious_activity
+    log_audit_event, log_login_attempt
 )
 from .forms import (
     LoginForm, UserRegistrationForm, CustomUserCreationForm,
     CustomUserChangeForm, UserProfileForm, PasswordChangeForm
 )
 from banking.models import Account, Transaction, Loan
-from decimal import Decimal
 import random
 import logging
-import json
 
 logger = logging.getLogger('banking_security')
 
@@ -100,7 +92,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             'email': {'type': 'string', 'format': 'email', 'example': 'spper@example.com'},
                             'first_name': {'type': 'string', 'example': 'John'},
                             'last_name': {'type': 'string', 'example': 'Doe'},
-                            'role': {'type': 'string', 'enum': ['member', 'cashier', 'mobile_banker', 'manager', 'operations_manager'], 'example': 'member'},
+                            'role': {'type': 'string', 'enum': ['customer', 'cashier', 'mobile_banker', 'manager', 'operations_manager'], 'example': 'customer'},
                             'is_active': {'type': 'boolean', 'example': True},
                             'is_staff': {'type': 'boolean', 'example': False}
                         }
@@ -124,11 +116,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     )
     def post(self, request, *args, **kwargs):
         email = None
-        logger.info(f"[DEBUG] Login attempt received: {request.data}")
+        # logger.info(f"[DEBUG] Login attempt received: {request.data}") # REMOVED: Security Risk
         try:
             # Validate input data first
             email = request.data.get('email')
-            logger.info(f"[DEBUG] Email from request: {email}")
+            # Email validation performed
             if not email or not request.data.get('password'):
                 logger.warning(f"Missing login credentials: email={bool(email)}")
                 return Response(
@@ -144,23 +136,24 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            logger.info(f"[DEBUG] Calling super().post() for authentication")
+            # Attempting authentication
             response = super().post(request, *args, **kwargs)
-            logger.info(f"[DEBUG] super().post() returned status: {response.status_code}")
+            # Authentication attempt completed
             if response.status_code == 200:
-                logger.info(f"[DEBUG] Authentication successful, processing user data")
+                # Processing authenticated user
                 try:
                     # Get the authenticated user from the serializer
                     serializer = self.get_serializer(data=request.data)
                     serializer.is_valid(raise_exception=True)
                     user = serializer.validated_data['user']
-                    logger.info(f"[DEBUG] Authenticated user: {user.email}, role: {user.role}")
+                    logger.info(f"User authenticated successfully with role: {user.role}")
 
-                    # Check if user has sufficient privileges (manager and above)
-                    allowed_roles = ['manager', 'operations_manager', 'administrator', 'superuser']
+                    # Check if user has sufficient privileges (allow roles for development)
+                    allowed_roles = ['customer', 'cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser']
                     if user.role not in allowed_roles:
                         logger.warning(f"Insufficient privileges login attempt: {user.email} (role: {user.role})")
-                        log_login_attempt(user.email, False, 'Access denied. Insufficient privileges.')
+                        from .audit_utils import get_client_ip
+                        log_login_attempt(user.email, get_client_ip(request), 'blocked', user=user, request=request)
                         return Response({'detail': 'Access denied. Insufficient privileges.'}, status=403)
 
                     # Generate JWT tokens explicitly
@@ -178,33 +171,63 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                         'is_staff': user.is_staff,
                     }
 
-                    # Return both tokens and user data
-                    response.data = {
-                        'refresh': str(refresh),
-                        'access': access_token,
+                    # Set httpOnly cookies for secure token storage
+                    response = Response({
+                        'detail': 'Login successful',
                         'user': user_data
-                    }
-                    logger.info(f"[DEBUG] Login successful, tokens and user data added to response")
+                    })
+
+                    # Set secure httpOnly cookies
+                    response.set_cookie(
+                        'access_token',
+                        access_token,
+                        httponly=True,
+                        secure=True,  # Always use secure in production
+                        samesite='Strict',
+                        max_age=60 * 60  # 1 hour
+                    )
+                    response.set_cookie(
+                        'refresh_token',
+                        str(refresh),
+                        httponly=True,
+                        secure=True,  # Always use secure in production
+                        samesite='Strict',
+                        max_age=24 * 60 * 60  # 24 hours
+                    )
+
+                    # Prevent session fixation attacks by regenerating session ID
+                    request.session.cycle_key()
+
+                    logger.info("Authentication tokens set successfully")
 
                     # Log successful login
-                    log_login_attempt(user.email, True, 'API login successful')
+                    from .audit_utils import get_client_ip
+                    log_login_attempt(user.email, get_client_ip(request), 'success', user=user, request=request)
                     logger.info(f"Successful login for user: {user.email}")
+
+                    return response
 
                 except Exception as e:
                     logger.error(f"Error processing successful login response: {str(e)}")
                     # Return response without user data if processing fails
-                    log_login_attempt(email, True, 'Login successful but user data processing failed')
+                    from .audit_utils import get_client_ip
+                    log_login_attempt(email, get_client_ip(request), 'success', request=request)
 
             return response
 
         except serializers.ValidationError as e:
-            logger.warning(f"Login validation error for {email}: {str(e)}")
-            log_login_attempt(email, False, f'Validation error: {str(e)}')
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            logger.warning(f"Login validation error for {email}")
+            from .audit_utils import get_client_ip
+            log_login_attempt(email, get_client_ip(request), 'failure', request=request)
+            # Generic error message to prevent account enumeration
+            return Response({
+                'detail': 'Invalid credentials. Please check your email and password.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
 
         except Exception as e:
             logger.error(f"Unexpected error during login for {email}: {str(e)}", exc_info=True)
-            log_login_attempt(email or 'unknown', False, f'Unexpected error: {str(e)}')
+            from .audit_utils import get_client_ip
+            log_login_attempt(email or 'unknown', get_client_ip(request), 'failure', request=request)
             return Response(
                 {'detail': 'An unexpected error occurred. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -263,19 +286,29 @@ class LogoutView(views.APIView):
     )
     def post(self, request):
         try:
-            refresh_token = request.data.get("refresh")
-            if not refresh_token:
-                # If no refresh token provided,  # just return success# The frontend will clear local storage anyway
-                return Response({"detail": "Successfully logged out."}, status=200)
+            # Clear httpOnly cookies
+            response = Response({"detail": "Successfully logged out."}, status=200)
+            response.delete_cookie('access_token')
+            response.delete_cookie('refresh_token')
 
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response({"detail": "Successfully logged out."}, status=200)
+            # Also try to blacklist the refresh token if provided
+            refresh_token = request.data.get("refresh")
+            if refresh_token:
+                try:
+                    token = RefreshToken(refresh_token)
+                    token.blacklist()
+                except Exception as e:
+                    logger.warning(f"Logout token blacklist failed: {e}")
+
+            return response
         except Exception as e:
             # Even if token blacklisting fails, return success
-            # The frontend will clear tokens locally
-            logger.warning(f"Logout token blacklist failed: {e}")
-            return Response({"detail": "Successfully logged out."}, status=200)
+            # The cookies will be cleared
+            logger.warning(f"Logout failed: {e}")
+            response = Response({"detail": "Successfully logged out."}, status=200)
+            response.delete_cookie('access_token')
+            response.delete_cookie('refresh_token')
+            return response
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -283,6 +316,7 @@ class PasswordResetRequestView(views.APIView):
     """POST: Request password reset by sending email with reset token."""
     permission_classes = [permissions.AllowAny]
     throttle_classes = [PasswordResetThrottle]
+    serializer_class = None  # No serializer needed for this view
 
     class EmailSerializer(serializers.Serializer):
         email = serializers.EmailField()
@@ -316,6 +350,7 @@ class PasswordResetConfirmView(views.APIView):
     """POST: Confirm password reset with token."""
     permission_classes = [permissions.AllowAny]
     throttle_classes = [PasswordResetThrottle]
+    serializer_class = None  # No serializer needed for this view
 
     class ResetSerializer(serializers.Serializer):
         token = serializers.CharField()
@@ -359,6 +394,7 @@ class ProfileSettingsView(views.APIView):
     PATCH: Update general profile details.
     """
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = None  # No serializer needed for this view
 
     def get_object(self):
         return self.request.user.profile
@@ -380,6 +416,7 @@ class ProfileSettingsView(views.APIView):
 class NotificationSettingsView(views.APIView):
     """PATCH: Update notification preferences (notify_email, notify_sms, notify_push)."""
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = None  # No serializer needed for this view
 
     def patch(self, request):
         profile = self.request.user.profile
@@ -393,6 +430,7 @@ class NotificationSettingsView(views.APIView):
 class PasswordChangeView(views.APIView):
     """POST: Change user password."""
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = None  # No serializer needed for this view
 
     class PasswordSerializer(serializers.Serializer):
         old_password = serializers.CharField(required=True)
@@ -436,7 +474,7 @@ class AuthCheckView(views.APIView):
                             'email': {'type': 'string', 'format': 'email', 'example': 'user@example.com'},
                             'first_name': {'type': 'string', 'example': 'John'},
                             'last_name': {'type': 'string', 'example': 'Doe'},
-                            'role': {'type': 'string', 'enum': ['member', 'cashier', 'mobile_banker', 'manager', 'operations_manager'], 'example': 'member'},
+                            'role': {'type': 'string', 'enum': ['customer', 'cashier', 'mobile_banker', 'manager', 'operations_manager'], 'example': 'customer'},
                             'is_active': {'type': 'boolean', 'example': True},
                             'is_staff': {'type': 'boolean', 'example': False}
                         }
@@ -510,7 +548,7 @@ class RegisterView(views.APIView):
                             'email': {'type': 'string', 'format': 'email', 'example': 'newuser@example.com'},
                             'first_name': {'type': 'string', 'example': 'John'},
                             'last_name': {'type': 'string', 'example': 'Doe'},
-                            'role': {'type': 'string', 'example': 'member'}
+                            'role': {'type': 'string', 'example': 'customer'}
                         }
                     }
                 }
@@ -553,7 +591,7 @@ class MemberDashboardView(views.APIView):
     """
     GET: Retrieve dashboard data for authenticated members.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsMember]
 
     @extend_schema(
         summary="Member Dashboard",
@@ -578,7 +616,7 @@ class MemberDashboardView(views.APIView):
     def get(self, request):
         user = request.user
 
-        # Check if user is a member
+        # Check if user is a member (customer)
         if user.role != 'customer':
             return Response({'detail': 'Access denied. Members only.'}, status=403)
 
@@ -604,15 +642,176 @@ class MemberDashboardView(views.APIView):
         # Calculate savings balance (total balance minus loan balance)
         savings_balance = total_balance - loan_balance
 
+        # Calculate dynamic tab availability based on user permissions and data
+        available_tabs = self._get_available_tabs(user, accounts, transactions, loans)
+        user_permissions = self._get_user_permissions(user)
+        membership_status = self._get_membership_status(user, accounts, transactions)
+
         dashboard_data = {
             'account_balance': total_balance,
             'recent_transactions': recent_transactions,
             'loan_balance': loan_balance,
             'savings_balance': savings_balance,
+            'available_tabs': available_tabs,
+            'user_permissions': user_permissions,
+            'membership_status': membership_status,
         }
 
         serializer = MemberDashboardSerializer(dashboard_data)
         return Response(serializer.data)
+
+    def _get_available_tabs(self, user, accounts, transactions, loans):
+        """Determine which tabs should be available based on user data and permissions."""
+        tabs = []
+
+        # Check service availability
+        service_status = self._check_service_availability()
+
+        # Overview tab - always available
+        tabs.append({
+            'id': 'overview',
+            'name': 'Overview',
+            'icon': '📊',
+            'enabled': True,
+            'description': 'Financial overview and quick stats'
+        })
+
+        # Account Balance tab - available if service is up
+        tabs.append({
+            'id': 'account_balance',
+            'name': 'Account Balance',
+            'icon': '💰',
+            'enabled': service_status['account_balance'],
+            'description': 'View your current account balance and transaction history' if service_status['account_balance'] else 'Account balance service temporarily unavailable'
+        })
+
+        # Account Types tab - available if service is up
+        tabs.append({
+            'id': 'account_types',
+            'name': 'Account Types',
+            'icon': '🏦',
+            'enabled': service_status['account_types'],
+            'description': 'Manage your different account types' if service_status['account_types'] else 'Account types service temporarily unavailable'
+        })
+
+        # Request Services tab - available if service is up
+        tabs.append({
+            'id': 'request_services',
+            'name': 'Request Services',
+            'icon': '📋',
+            'enabled': service_status['request_services'],
+            'description': 'Request statements, loans, and support' if service_status['request_services'] else 'Service request system temporarily unavailable'
+        })
+
+        # Change Password tab - available if service is up
+        tabs.append({
+            'id': 'change_password',
+            'name': 'Change Password',
+            'icon': '🔒',
+            'enabled': service_status['change_password'],
+            'description': 'Update your account password' if service_status['change_password'] else 'Password change service temporarily unavailable'
+        })
+
+        # Activate 2FA tab - available if service is up and user doesn't have 2FA enabled
+        can_enable_2fa = service_status['activate_2fa'] and not user.two_factor_enabled
+        tabs.append({
+            'id': 'activate_2fa',
+            'name': 'Activate 2FA',
+            'icon': '🛡️',
+            'enabled': can_enable_2fa,
+            'description': 'Enable two-factor authentication' if can_enable_2fa else ('Two-factor authentication already enabled' if user.two_factor_enabled else '2FA service temporarily unavailable')
+        })
+
+        # Accounts tab - available if user has accounts
+        has_accounts = len(accounts) > 0
+        tabs.append({
+            'id': 'accounts',
+            'name': 'Accounts',
+            'icon': '🏦',
+            'enabled': has_accounts,
+            'description': 'Manage your bank accounts' if has_accounts else 'No accounts available'
+        })
+
+        # Transactions tab - available if user has transaction history
+        has_transactions = len(transactions) > 0
+        tabs.append({
+            'id': 'transactions',
+            'name': 'Transactions',
+            'icon': '💳',
+            'enabled': has_transactions,
+            'description': 'View transaction history' if has_transactions else 'No transactions yet'
+        })
+
+        # Transfers tab - available for active members with accounts
+        can_transfer = has_accounts and user.is_active
+        tabs.append({
+            'id': 'transfers',
+            'name': 'Transfers',
+            'icon': '↗',
+            'enabled': can_transfer,
+            'description': 'Send money and manage transfers' if can_transfer else 'Account setup required'
+        })
+
+        # Loans tab - available if user has loan-related permissions or active loans
+        has_loans = len(loans) > 0
+        can_access_loans = has_loans or user.role in ['customer', 'manager', 'operations_manager']
+        tabs.append({
+            'id': 'loans',
+            'name': 'Loans',
+            'icon': '💰',
+            'enabled': can_access_loans,
+            'description': 'Loan applications and management' if can_access_loans else 'Loan services not available'
+        })
+
+        # Profile tab - always available for account management
+        tabs.append({
+            'id': 'profile',
+            'name': 'Profile',
+            'icon': '👤',
+            'enabled': True,
+            'description': 'Manage your account settings'
+        })
+
+        return tabs
+
+    def _check_service_availability(self):
+        """Check availability of various backend services."""
+        service_status = {
+            'account_balance': True,  # Always available
+            'account_types': True,    # Always available
+            'request_services': True, # Service request endpoint exists
+            'change_password': True,  # Password change endpoint exists
+            'activate_2fa': True,     # 2FA endpoint exists
+        }
+
+        # In a real implementation, you might check:
+        # - Database connectivity
+        # - External service health
+        # - Feature flags
+        # - Service maintenance status
+
+        return service_status
+
+    def _get_user_permissions(self, user):
+        """Get user permissions for dashboard features."""
+        return {
+            'can_view_accounts': True,
+            'can_make_transfers': user.is_active,
+            'can_apply_loans': user.role == 'customer' and user.is_active,
+            'can_view_reports': user.role in ['customer', 'manager', 'operations_manager'],
+            'can_manage_profile': True,
+            'can_access_support': True,
+        }
+
+    def _get_membership_status(self, user, accounts, transactions):
+        """Get membership status information."""
+        return {
+            'is_active_member': user.is_active and user.role == 'customer',
+            'account_count': len(accounts),
+            'has_recent_activity': len(transactions) > 0,
+            'membership_level': 'premium' if len(accounts) > 1 else 'standard',
+            'days_since_join': (timezone.now().date() - user.date_joined.date()).days,
+        }
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -676,17 +875,16 @@ class SendOTPView(views.APIView):
             expires_at=expires_at
         )
         
-        # In test mode (DEBUG=True),  # return the OTP in the response
+        # In test mode (DEBUG=True), we might log the OTP but NEVER return it in response
         test_mode = settings.DEBUG
         
         response_data = {
             'message': 'OTP sent successfully',
             'expires_in': 300,  # minutes in seconds
-            'test_mode': test_mode
         }
         
         if test_mode:
-            response_data['otp_code'] = otp_code
+            # Only log in debug mode, do not return in response
             logger.info(f"TEST MODE: OTP for {phone_number}: {otp_code}")
         else:
             # In production, send actual SMS here
@@ -788,16 +986,16 @@ class CreateUserView(views.APIView):
     """
     POST: Create a new user (staff only - requires manager or operations_manager role).
     """
-    permission_classes = [permissions.IsAuthenticated]
-    
+    permission_classes = [permissions.IsAuthenticated, IsManagerOrHigher]
+
     class UserCreationSerializer(serializers.Serializer):
         email = serializers.EmailField()
         first_name = serializers.CharField(max_length=30)
         last_name = serializers.CharField(max_length=30)
         phone = serializers.CharField(max_length=20)
         password = serializers.CharField(write_only=True)
-        role = serializers.ChoiceField(choices=['member', 'cashier', 'mobile_banker', 'manager', 'operations_manager'])
-    
+        role = serializers.ChoiceField(choices=['customer', 'cashier', 'mobile_banker', 'manager', 'operations_manager'])
+
     @extend_schema(
         summary="Create New User",
         description="Create a new user account. Only accessible by managers and operations managers.",
@@ -834,16 +1032,16 @@ class CreateUserView(views.APIView):
             return Response({
                 'error': 'Insufficient permissions to create users'
             }, status=403)
-        
+
         serializer = self.UserCreationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # Check if user already exists
         if User.objects.filter(email=serializer.validated_data['email']).exists():
             return Response({
                 'error': 'User with this email already exists'
             }, status=400)
-        
+
         # Create user
         user = User.objects.create_user(
             email=serializer.validated_data['email'],
@@ -852,10 +1050,10 @@ class CreateUserView(views.APIView):
             last_name=serializer.validated_data['last_name'],
             role=serializer.validated_data['role']
         )
-        
+
         # Create UserProfile
         UserProfile.objects.create(user=user)
-        
+
         return Response({
             'message': 'User created successfully',
             'user': {
@@ -866,6 +1064,125 @@ class CreateUserView(views.APIView):
                 'role': user.role
             }
         }, status=201)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class EnhancedStaffRegistrationView(views.APIView):
+    """
+    POST: Create a new staff member with comprehensive registration including documents.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsManagerOrHigher]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(
+        summary="Enhanced Staff Registration",
+        description="Create a new staff member with complete profile, banking details, and required documents. Only accessible by managers and operations managers.",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'email': {'type': 'string', 'format': 'email'},
+                    'first_name': {'type': 'string'},
+                    'last_name': {'type': 'string'},
+                    'phone': {'type': 'string'},
+                    'role': {'type': 'string', 'enum': ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator']},
+                    'password': {'type': 'string', 'format': 'password'},
+                    'house_address': {'type': 'string'},
+                    'contact_address': {'type': 'string'},
+                    'government_id': {'type': 'string'},
+                    'ssnit_number': {'type': 'string'},
+                    'bank_name': {'type': 'string'},
+                    'account_number': {'type': 'string'},
+                    'branch_code': {'type': 'string'},
+                    'routing_number': {'type': 'string'},
+                    'passport_picture': {'type': 'string', 'format': 'binary'},
+                    'application_letter': {'type': 'string', 'format': 'binary'},
+                    'appointment_letter': {'type': 'string', 'format': 'binary'}
+                },
+                'required': ['email', 'first_name', 'last_name', 'phone', 'role', 'password', 'house_address', 'government_id', 'ssnit_number', 'bank_name', 'account_number', 'branch_code', 'routing_number', 'passport_picture', 'application_letter', 'appointment_letter']
+            }
+        },
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'Staff member registered successfully'},
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string'},
+                            'email': {'type': 'string'},
+                            'first_name': {'type': 'string'},
+                            'last_name': {'type': 'string'},
+                            'role': {'type': 'string'}
+                        }
+                    },
+                    'documents_created': {'type': 'integer', 'example': 3}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'example': 'Validation error details'}
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'example': 'Insufficient permissions'}
+                }
+            }
+        },
+        tags=['Staff Registration']
+    )
+    def post(self, request):
+        # Check permissions
+        if request.user.role not in ['manager', 'operations_manager', 'administrator', 'superuser']:
+            return Response({
+                'error': 'Insufficient permissions to register staff members'
+            }, status=403)
+
+        # Use the enhanced serializer
+        serializer = EnhancedStaffRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = serializer.save()
+
+                # Log the staff registration
+                log_audit_event(
+                    user=request.user,
+                    action='staff_registered',
+                    description=f"Staff member {user.email} registered by {request.user.email}",
+                    metadata={
+                        'new_user_id': str(user.id),
+                        'new_user_email': user.email,
+                        'new_user_role': user.role,
+                        'registered_by': request.user.email
+                    }
+                )
+
+                return Response({
+                    'message': 'Staff member registered successfully',
+                    'user': {
+                        'id': str(user.id),
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'role': user.role
+                    },
+                    'documents_created': 3  # passport_picture, application_letter, appointment_letter
+                }, status=201)
+
+            except Exception as e:
+                logger.error(f"Staff registration failed: {str(e)}")
+                return Response({
+                    'error': f'Registration failed: {str(e)}'
+                }, status=500)
+        else:
+            return Response({
+                'error': 'Validation failed',
+                'details': serializer.errors
+            }, status=400)
 
 
 class StaffListView(views.APIView):
@@ -922,6 +1239,200 @@ class StaffListView(views.APIView):
         ]
         
         return Response(staff_data)
+
+
+class StaffIDListView(views.APIView):
+    """
+    GET: List all staff IDs with filtering, searching, and pagination.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="List Staff IDs",
+        description="Get a list of all staff IDs with advanced filtering and searching. Only accessible by managers and operations managers.",
+        parameters=[
+            OpenApiParameter(
+                name='search',
+                type=OpenApiTypes.STR,
+                description='Search by name, email, or staff ID',
+                required=False
+            ),
+            OpenApiParameter(
+                name='role',
+                type=OpenApiTypes.STR,
+                description='Filter by role',
+                required=False,
+                enum=['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator']
+            ),
+            OpenApiParameter(
+                name='status',
+                type=OpenApiTypes.STR,
+                description='Filter by status',
+                required=False,
+                enum=['active', 'inactive']
+            ),
+            OpenApiParameter(
+                name='employment_date_from',
+                type=OpenApiTypes.DATE,
+                description='Filter by employment date from',
+                required=False
+            ),
+            OpenApiParameter(
+                name='employment_date_to',
+                type=OpenApiTypes.DATE,
+                description='Filter by employment date to',
+                required=False
+            ),
+            OpenApiParameter(
+                name='page',
+                type=OpenApiTypes.INT,
+                description='Page number for pagination',
+                required=False
+            ),
+            OpenApiParameter(
+                name='page_size',
+                type=OpenApiTypes.INT,
+                description='Number of items per page',
+                required=False
+            ),
+        ],
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'count': {'type': 'integer', 'example': 25},
+                    'next': {'type': 'string', 'nullable': True, 'example': 'http://api.example.com/api/users/staff-ids/?page=2'},
+                    'previous': {'type': 'string', 'nullable': True, 'example': None},
+                    'results': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'string', 'example': '123e4567-e89b-12d3-a456-426614174000'},
+                                'email': {'type': 'string', 'format': 'email', 'example': 'john.doe@example.com'},
+                                'first_name': {'type': 'string', 'example': 'John'},
+                                'last_name': {'type': 'string', 'example': 'Doe'},
+                                'role': {'type': 'string', 'example': 'cashier'},
+                                'staff_id': {'type': 'string', 'example': 'JD0323'},
+                                'employment_date': {'type': 'string', 'format': 'date', 'example': '2023-03-15'},
+                                'is_active': {'type': 'boolean', 'example': True},
+                                'date_joined': {'type': 'string', 'format': 'date-time', 'example': '2023-03-15T10:30:00Z'}
+                            }
+                        }
+                    }
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string', 'example': 'Insufficient permissions to view staff IDs'}
+                }
+            }
+        },
+        tags=['Staff Management']
+    )
+    def get(self, request):
+        # Check permissions - only managers and operations managers can view staff IDs
+        if request.user.role not in ['manager', 'operations_manager', 'administrator', 'superuser']:
+            return Response({
+                'error': 'Insufficient permissions to view staff IDs'
+            }, status=403)
+
+        # Get staff users (exclude customers)
+        staff = User.objects.exclude(role='customer').select_related('profile')
+
+        # Apply filters
+        search_query = request.query_params.get('search', '')
+        role_filter = request.query_params.get('role', '')
+        status_filter = request.query_params.get('status', '')
+        employment_date_from = request.query_params.get('employment_date_from', '')
+        employment_date_to = request.query_params.get('employment_date_to', '')
+
+        if search_query:
+            staff = staff.filter(
+                Q(email__icontains=search_query) |
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(profile__staff_id__icontains=search_query)  # This will search encrypted field - may not work as expected
+            )
+
+        if role_filter:
+            staff = staff.filter(role=role_filter)
+
+        if status_filter:
+            if status_filter == 'active':
+                staff = staff.filter(is_active=True)
+            elif status_filter == 'inactive':
+                staff = staff.filter(is_active=False)
+
+        if employment_date_from:
+            staff = staff.filter(profile__employment_date__gte=employment_date_from)
+
+        if employment_date_to:
+            staff = staff.filter(profile__employment_date__lte=employment_date_to)
+
+        # Order by date joined (most recent first)
+        staff = staff.order_by('-date_joined')
+
+        # Pagination
+        from django.core.paginator import Paginator
+        page_size = int(request.query_params.get('page_size', 20))
+        paginator = Paginator(staff, page_size)
+        page_number = request.query_params.get('page', 1)
+
+        try:
+            page_obj = paginator.page(page_number)
+        except:
+            page_obj = paginator.page(1)
+
+        # Prepare response data
+        staff_data = []
+        for user in page_obj:
+            try:
+                profile = user.profile
+                staff_id = profile.get_decrypted_staff_id() if profile and profile.staff_id else None
+            except:
+                staff_id = None
+
+            staff_data.append({
+                'id': str(user.id),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'staff_id': staff_id,
+                'employment_date': profile.employment_date.isoformat() if profile and profile.employment_date else None,
+                'is_active': user.is_active,
+                'date_joined': user.date_joined.isoformat()
+            })
+
+        response_data = {
+            'count': paginator.count,
+            'next': page_obj.next_page_number() if page_obj.has_next() else None,
+            'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+            'results': staff_data
+        }
+
+        # Log access for audit
+        log_audit_event(
+            user=request.user,
+            action='staff_id_list_accessed',
+            description=f"Staff ID list accessed by {request.user.email}",
+            metadata={
+                'filters_applied': {
+                    'search': search_query,
+                    'role': role_filter,
+                    'status': status_filter,
+                    'employment_date_from': employment_date_from,
+                    'employment_date_to': employment_date_to
+                },
+                'results_count': len(staff_data),
+                'page': page_number,
+                'page_size': page_size
+            }
+        )
+
+        return Response(response_data)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -1085,6 +1596,188 @@ class MembersListView(views.APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class ServiceRequestView(views.APIView):
+    """
+    POST: Create a service request.
+    GET: List user's service requests.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    class ServiceRequestSerializer(serializers.Serializer):
+        request_type = serializers.ChoiceField(choices=[
+            'statement', 'loan_application', 'support_ticket', 'account_closure',
+            'address_change', 'name_change', 'card_replacement'
+        ])
+        description = serializers.CharField(required=False, allow_blank=True)
+        delivery_method = serializers.ChoiceField(choices=['email', 'sms', 'mail'])
+
+    @extend_schema(
+        summary="Create Service Request",
+        description="Create a new service request for the authenticated user.",
+        request=ServiceRequestSerializer,
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'Service request created successfully'},
+                    'request_id': {'type': 'string', 'example': 'req_123456789'}
+                }
+            }
+        },
+        tags=['Service Requests']
+    )
+    def post(self, request):
+        serializer = self.ServiceRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        delivery_method = serializer.validated_data.get('delivery_method')
+        user = request.user
+
+        # Check if 2FA is required for SMS delivery
+        if delivery_method == 'sms':
+            # Check system setting for 2FA requirement on SMS delivery
+            require_2fa_for_sms = self._get_system_setting('require_2fa_for_sms_delivery', True)
+
+            logger.info(f"SMS delivery requested, 2FA status: {user.two_factor_enabled}")
+
+            if require_2fa_for_sms and not user.two_factor_enabled:
+                logger.warning(f"[DEBUG] User {user.email} attempting SMS delivery without 2FA enabled - blocking request")
+                return Response({
+                    'error': 'Two-factor authentication is required for SMS delivery. Please enable 2FA first.',
+                    'requires_2fa': True
+                }, status=400)
+
+        # For now, just log the request and return success
+        # In a real implementation, this would create a database record
+        request_id = f"req_{timezone.now().strftime('%Y%m%d%H%M%S')}"
+
+        logger.info(f"Service request created by {request.user.email}: {serializer.validated_data}")
+
+        return Response({
+            'message': 'Service request created successfully',
+            'request_id': request_id
+        }, status=201)
+
+    def _get_system_setting(self, key, default_value=False):
+        """Get a system setting value."""
+        try:
+            from settings.models import SystemSettings
+            setting = SystemSettings.objects.filter(key=key, is_active=True).first()
+            if setting:
+                return setting.get_value()
+        except Exception as e:
+            logger.error(f"Error retrieving system setting {key}: {e}")
+        return default_value
+
+    @extend_schema(
+        summary="List Service Requests",
+        description="Get all service requests for the authenticated user.",
+        responses={
+            200: {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'string'},
+                        'request_type': {'type': 'string'},
+                        'description': {'type': 'string'},
+                        'delivery_method': {'type': 'string'},
+                        'status': {'type': 'string'},
+                        'created_at': {'type': 'string'}
+                    }
+                }
+            }
+        },
+        tags=['Service Requests']
+    )
+    def get(self, request):
+        # For now, return empty array as we don't have a service request model
+        # In a real implementation, this would query the database
+        return Response([])
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class Enable2FAView(views.APIView):
+    """
+    POST: Enable two-factor authentication for the user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    class Enable2FASerializer(serializers.Serializer):
+        phone_number = serializers.CharField(max_length=20)
+        otp_code = serializers.CharField(max_length=6)
+
+    @extend_schema(
+        summary="Enable 2FA",
+        description="Enable two-factor authentication for the authenticated user.",
+        request=Enable2FASerializer,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string', 'example': 'Two-factor authentication enabled successfully'}
+                }
+            }
+        },
+        tags=['Security']
+    )
+    def post(self, request):
+        serializer = self.Enable2FASerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        phone_number = serializer.validated_data['phone_number']
+        otp_code = serializer.validated_data['otp_code']
+
+        # Verify the OTP first
+        try:
+            otp = OTPVerification.objects.filter(
+                phone_number=phone_number,
+                verification_type='2fa_setup',
+                is_verified=False
+            ).order_by('-created_at').first()
+
+            if not otp:
+                return Response({
+                    'error': 'No OTP found for this phone number. Please request a new one.'
+                }, status=400)
+
+            if not otp.is_valid():
+                if otp.is_expired():
+                    return Response({
+                        'error': 'OTP has expired. Please request a new one.'
+                    }, status=400)
+                elif otp.attempts >= otp.max_attempts:
+                    return Response({
+                        'error': 'Maximum verification attempts exceeded. Please request a new OTP.'
+                    }, status=400)
+
+            # Verify the OTP
+            if not otp.verify(otp_code):
+                remaining_attempts = otp.max_attempts - otp.attempts
+                return Response({
+                    'error': f'Invalid OTP code. {remaining_attempts} attempts remaining.'
+                }, status=400)
+
+            # Enable 2FA for the user
+            user = request.user
+            user.two_factor_enabled = True
+            user.two_factor_phone = phone_number
+            user.save()
+
+            logger.info(f"2FA enabled for user {user.email}")
+
+            return Response({
+                'message': 'Two-factor authentication enabled successfully'
+            })
+
+        except Exception as e:
+            logger.error(f"2FA enablement error: {e}")
+            return Response({
+                'error': 'Failed to enable 2FA. Please try again.'
+            }, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class SuperuserOperationsView(views.APIView):
     """
     POST: Perform superuser operations.
@@ -1153,14 +1846,16 @@ class SuperuserOperationsView(views.APIView):
         try:
             result = None
 
-            if operation == 'bypass_security':
-                result = self._bypass_security(target, reason)
-            elif operation == 'emergency_access':
-                result = self._emergency_access(target, reason)
-            elif operation == 'system_reset':
-                result = self._system_reset(reason)
-            elif operation == 'audit_bypass':
-                result = self._audit_bypass(target, reason)
+            if operation in ['bypass_security', 'emergency_access', 'system_reset', 'audit_bypass']:
+                return Response({'error': 'This operation is disabled for security reasons.'}, status=403)
+            # if operation == 'bypass_security':
+            #     result = self._bypass_security(target, reason)
+            # elif operation == 'emergency_access':
+            #     result = self._emergency_access(target, reason)
+            # elif operation == 'system_reset':
+            #     result = self._system_reset(reason)
+            # elif operation == 'audit_bypass':
+            #     result = self._audit_bypass(target, reason)
             elif operation == 'create_user':
                 result = self._create_user(serializer.validated_data, reason)
             elif operation == 'modify_user_role':
@@ -1234,13 +1929,19 @@ class SuperuserOperationsView(views.APIView):
         """Create a new user account."""
         from banking.models import Account
 
+        # Generate a random secure password
+        temp_password = get_random_string(12)
+
         user = User.objects.create_user(
             email=data['email'],
-            password='temp_password_123',  # Should be changed by user
+            password=temp_password,
             first_name=data.get('first_name', ''),
             last_name=data.get('last_name', ''),
             role=data.get('role', 'customer')
         )
+        
+        # In a real system, we would email this password to the user
+        logger.info(f"User created by superuser. Temporary password generated.")
 
         # Create user profile
         UserProfile.objects.create(user=user)
@@ -1565,6 +2266,62 @@ def dashboard_view(request):
     return render(request, 'users/dashboard.html', context)
 
 
+@login_required
+def analytics_view(request):
+    """Analytics view for web analytics functionality."""
+    user = request.user
+
+    # Check if user has permission to view analytics (staff and above)
+    if user.role not in ['manager', 'operations_manager', 'administrator', 'superuser']:
+        messages.error(request, 'Access denied. Analytics view requires staff privileges.')
+        return redirect('users:dashboard')
+
+    context = {
+        'user': user,
+        'is_staff': True,
+    }
+
+    # Add analytics data
+    try:
+        from banking.models import Account, Transaction
+        from django.db.models import Count, Sum
+        from django.db.models.functions import TruncMonth
+
+        # User registration analytics
+        user_registrations = User.objects.annotate(
+            month=TruncMonth('date_joined')
+        ).values('month').annotate(
+            count=Count('id')
+        ).order_by('month')
+
+        # Transaction analytics
+        transaction_volume = Transaction.objects.annotate(
+            month=TruncMonth('timestamp')
+        ).values('month').annotate(
+            count=Count('id'),
+            total_amount=Sum('amount')
+        ).order_by('month')
+
+        # Account analytics
+        account_stats = {
+            'total_accounts': Account.objects.count(),
+            'active_accounts': Account.objects.filter(is_active=True).count(),
+            'total_balance': sum(account.balance for account in Account.objects.all()),
+        }
+
+        context.update({
+            'user_registrations': list(user_registrations),
+            'transaction_volume': list(transaction_volume),
+            'account_stats': account_stats,
+        })
+
+    except Exception as e:
+        logger.error(f"Error loading analytics data: {str(e)}")
+        context['analytics_error'] = 'Unable to load analytics data at this time.'
+
+    return render(request, 'users/analytics.html', context)
+
+
 @csrf_protect
 def register_view(request):
     """Web view for user registration."""
@@ -1590,14 +2347,17 @@ def profile_view(request):
     """View and edit user profile."""
     user = request.user
 
+    # Ensure user has a profile
+    profile, created = UserProfile.objects.get_or_create(user=user)
+
     if request.method == 'POST':
-        profile_form = UserProfileForm(request.POST, instance=user.profile)
+        profile_form = UserProfileForm(request.POST, instance=profile)
         if profile_form.is_valid():
             profile_form.save()
             messages.success(request, 'Profile updated successfully!')
             return redirect('profile')
     else:
-        profile_form = UserProfileForm(instance=user.profile)
+        profile_form = UserProfileForm(instance=profile)
 
     context = {
         'profile_form': profile_form,
@@ -2244,6 +3004,8 @@ def toggle_user_status(request, pk):
     if request.user.role not in ['manager', 'operations_manager', 'administrator', 'superuser']:
         messages.error(request, 'Permission denied.')
         return redirect('users:user_list')
+    
+    
 
     user = get_object_or_404(User, pk=pk)
 
@@ -2258,3 +3020,226 @@ def toggle_user_status(request, pk):
     action = 'activated' if user.is_active else 'deactivated'
     messages.success(request, f'User {user.email} {action} successfully!')
     return redirect('users:user_list')
+
+
+# Document Management Views
+@extend_schema(exclude=True)
+class UserDocumentsListCreateView(views.APIView):
+    """API view for listing and uploading user documents."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="List User Documents",
+        description="Retrieve all documents uploaded by the authenticated user.",
+        responses={
+            200: UserDocumentsSerializer(many=True),
+            401: {'description': 'Authentication required'}
+        },
+        tags=['Documents']
+    )
+    def get(self, request):
+        """List all documents for the authenticated user."""
+        documents = UserDocuments.objects.filter(user=request.user)
+        serializer = UserDocumentsSerializer(documents, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Upload Document",
+        description="Upload a new document for the authenticated user.",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'document_type': {
+                        'type': 'string',
+                        'enum': ['passport_picture', 'application_letter', 'appointment_letter', 'id_card', 'utility_bill', 'bank_statement', 'other']
+                    },
+                    'file': {'type': 'string', 'format': 'binary'},
+                    'expiry_date': {'type': 'string', 'format': 'date', 'nullable': True}
+                },
+                'required': ['document_type', 'file']
+            }
+        },
+        responses={
+            201: UserDocumentsSerializer,
+            400: {'description': 'Validation error'},
+            401: {'description': 'Authentication required'}
+        },
+        tags=['Documents']
+    )
+    def post(self, request):
+        """Upload a new document."""
+        # Check if user already has this type of document
+        document_type = request.data.get('document_type')
+        if UserDocuments.objects.filter(user=request.user, document_type=document_type).exists():
+            return Response(
+                {'error': f'You already have a {document_type.replace("_", " ")} uploaded.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = UserDocumentsSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserDocumentsDetailView(views.APIView):
+    """API view for retrieving, updating, and deleting specific user documents."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk, user):
+        """Get document object with ownership check."""
+        try:
+            return UserDocuments.objects.get(pk=pk, user=user)
+        except UserDocuments.DoesNotExist:
+            return None
+
+    @extend_schema(
+        summary="Get Document Details",
+        description="Retrieve details of a specific document.",
+        responses={
+            200: UserDocumentsSerializer,
+            404: {'description': 'Document not found'},
+            401: {'description': 'Authentication required'}
+        },
+        tags=['Documents']
+    )
+    def get(self, request, pk):
+        """Retrieve document details."""
+        document = self.get_object(pk, request.user)
+        if not document:
+            return Response({'error': 'Document not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserDocumentsSerializer(document, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Delete Document",
+        description="Delete a specific document.",
+        responses={
+            204: {'description': 'Document deleted successfully'},
+            404: {'description': 'Document not found'},
+            401: {'description': 'Authentication required'}
+        },
+        tags=['Documents']
+    )
+    def delete(self, request, pk):
+        """Delete a document."""
+        document = self.get_object(pk, request.user)
+        if not document:
+            return Response({'error': 'Document not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only allow deletion of unverified documents
+        if document.is_verified:
+            return Response(
+                {'error': 'Cannot delete verified documents'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        document.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(exclude=True)
+class DocumentApprovalView(views.APIView):
+    """API view for document approval/rejection by managers and operations managers."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        """Check if user has approval permissions."""
+        # During schema generation, skip permission checks for anonymous users
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            if not self.request.user.has_role_permission('manager'):
+                self.permission_denied(self.request, message="Insufficient permissions for document approval")
+        return super().get_permissions()
+
+    @extend_schema(
+        summary="Approve/Reject Document",
+        description="Approve or reject a document submission.",
+        request=DocumentApprovalSerializer,
+        responses={
+            200: {'description': 'Document status updated successfully'},
+            400: {'description': 'Validation error'},
+            403: {'description': 'Insufficient permissions'},
+            404: {'description': 'Document not found'}
+        },
+        tags=['Documents']
+    )
+    def post(self, request, pk):
+        """Approve or reject a document."""
+        try:
+            document = UserDocuments.objects.get(pk=pk)
+        except UserDocuments.DoesNotExist:
+            return Response({'error': 'Document not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DocumentApprovalSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        action = serializer.validated_data['action']
+
+        if action == 'approve':
+            document.status = 'approved'
+            document.is_verified = True
+            document.verified_by = request.user
+            document.verified_at = timezone.now()
+        elif action == 'reject':
+            document.status = 'rejected'
+            document.is_verified = False
+            document.verified_by = request.user
+            document.verified_at = timezone.now()
+            document.rejection_reason = serializer.validated_data.get('rejection_reason', '')
+
+        document.save()
+
+        # Log the approval action
+        log_audit_event(
+            user=request.user,
+            action='document_approved' if action == 'approve' else 'document_rejected',
+            description=f"Document {document.id} {action}d by {request.user.email}",
+            metadata={
+                'document_id': document.id,
+                'document_type': document.document_type,
+                'user_email': document.user.email,
+                'rejection_reason': serializer.validated_data.get('rejection_reason', '')
+            }
+        )
+
+        return Response({
+            'message': f'Document {action}d successfully',
+            'document_id': document.id,
+            'status': document.status
+        }, status=status.HTTP_200_OK)
+
+
+@extend_schema(exclude=True)
+class PendingDocumentsView(views.APIView):
+    """API view for managers/operations managers to view pending document approvals."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        """Check if user has approval permissions."""
+        # During schema generation, skip permission checks for anonymous users
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            if not self.request.user.has_role_permission('manager'):
+                self.permission_denied(self.request, message="Insufficient permissions to view pending documents")
+        return super().get_permissions()
+
+    @extend_schema(
+        summary="List Pending Documents",
+        description="Retrieve all documents pending approval.",
+        responses={
+            200: UserDocumentsSerializer(many=True),
+            403: {'description': 'Insufficient permissions'}
+        },
+        tags=['Documents']
+    )
+    def get(self, request):
+        """List all pending documents for approval."""
+        pending_documents = UserDocuments.objects.filter(
+            status__in=['uploaded', 'pending_review']
+        ).select_related('user', 'verified_by')
+
+        serializer = UserDocumentsSerializer(pending_documents, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)

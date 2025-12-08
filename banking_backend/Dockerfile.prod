@@ -1,80 +1,20 @@
-# Multi-stage build for production
-FROM python:3.12-slim as builder
+FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=config.settings
-
-# Install system dependencies for building
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        pkg-config \
-        git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir gunicorn==21.2.0 whitenoise==6.6.0
-
-# Production stage
-FROM python:3.12-slim
-
-# Install runtime system dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        postgresql-client \
-        curl \
-        nginx \
-        supervisor \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Set work directory
 WORKDIR /app
 
-# Copy project files
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/static /app/media /app/logs /app/backups/database \
-    && chown -R appuser:appuser /app
-
 # Collect static files
-RUN python manage.py collectstatic --noinput --clear
+RUN python manage.py collectstatic --noinput
 
-# Copy configuration files
-COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY docker/prod/nginx.conf /etc/nginx/sites-available/app.conf
-RUN ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/ \
-    && rm /etc/nginx/sites-enabled/default
-
-# Set permissions
-RUN chown -R appuser:appuser /app /var/log/nginx /var/cache/nginx /run
-
-# Switch to non-root user
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
-
-# Expose port
-EXPOSE 8000
-
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Run with Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "config.wsgi:application"]

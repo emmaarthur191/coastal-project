@@ -250,3 +250,89 @@ class Commission(models.Model):
 
     def __str__(self):
         return f"{self.commission_type} - {self.amount} ({self.created_at.date()})"
+
+
+class CustomerAssignment(models.Model):
+    """Track assignments of customers/users to mobile bankers."""
+
+    STATUS_CHOICES = [
+        ('assigned', 'Assigned'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('reassigned', 'Reassigned'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer_assignments')
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_customers')
+    assigned_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignments_made')
+
+    # Assignment details
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
+    assigned_at = models.DateTimeField(default=datetime.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    # Geolocation tracking
+    assignment_location = models.CharField(max_length=100, blank=True, help_text="Geotag when assignment was made")
+    last_location = models.CharField(max_length=100, blank=True, help_text="Last known location of mobile banker")
+
+    # Performance tracking
+    priority = models.CharField(max_length=10, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], default='medium')
+    estimated_completion = models.DateTimeField(null=True, blank=True)
+    actual_completion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-assigned_at']
+        indexes = [
+            models.Index(fields=['customer']),
+            models.Index(fields=['assigned_to']),
+            models.Index(fields=['status']),
+            models.Index(fields=['assigned_at']),
+        ]
+        unique_together = ['customer', 'assigned_to']  # One active assignment per customer-mobile banker pair
+
+    def mark_completed(self, location='', notes=''):
+        """Mark assignment as completed."""
+        from django.utils import timezone
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        self.actual_completion = timezone.now()
+        if location:
+            self.last_location = location
+        if notes:
+            self.notes = notes
+        self.save()
+
+    def update_location(self, location):
+        """Update last known location."""
+        self.last_location = location
+        self.save()
+
+    def __str__(self):
+        return f"{self.customer.email} assigned to {self.assigned_to.email} ({self.status})"
+
+
+class AssignmentHistory(models.Model):
+    """History of assignment changes for audit trail."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment = models.ForeignKey(CustomerAssignment, on_delete=models.CASCADE, related_name='history')
+    changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    change_type = models.CharField(max_length=50)  # assigned, reassigned, completed, etc.
+    old_value = models.JSONField(default=dict, blank=True)
+    new_value = models.JSONField(default=dict, blank=True)
+    change_reason = models.TextField(blank=True)
+    changed_at = models.DateTimeField(default=datetime.now)
+    location = models.CharField(max_length=100, blank=True)  # Geotag when change was made
+
+    class Meta:
+        ordering = ['-changed_at']
+        indexes = [
+            models.Index(fields=['assignment', '-changed_at']),
+            models.Index(fields=['changed_by']),
+        ]
+
+    def __str__(self):
+        return f"Assignment {self.assignment.id} - {self.change_type} by {self.changed_by.email}"

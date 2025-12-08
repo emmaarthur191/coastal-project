@@ -1,14 +1,10 @@
 import logging
-import uuid
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.cache import cache
-from django.core.exceptions import SuspiciousOperation
-from django.db import connection
 from django.utils.html import strip_tags
 import re
 import json
-from urllib.parse import urlparse, parse_qs
 
 from .models import AuditLog, SecurityEvent, LoginAttempt
 
@@ -41,10 +37,26 @@ def get_client_ip(request):
     """Extract client IP address from request."""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(',')[0].strip()
     else:
         ip = request.META.get('REMOTE_ADDR')
-    return ip
+
+    # Validate IP address
+    if not ip:
+        return None
+
+    # Basic validation - ensure it's not a boolean or invalid value
+    if isinstance(ip, bool) or ip.lower() in ['true', 'false', 'none']:
+        return None
+
+    # Check if it's a valid IP-like string
+    import ipaddress
+    try:
+        ipaddress.ip_address(ip)
+        return ip
+    except ValueError:
+        # Not a valid IP, return None
+        return None
 
 
 def detect_sql_injection(request_data):

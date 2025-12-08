@@ -22,11 +22,15 @@ class BaseRolePermission(permissions.BasePermission):
 
 class IsCustomer(BaseRolePermission):
     """Allow access only to customers/users."""
-    
+
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
         return request.user.role == 'customer'
+
+
+# Alias for backward compatibility
+IsMember = IsCustomer
 
 
 class IsCashier(BaseRolePermission):
@@ -90,7 +94,7 @@ class IsCashierOrHigher(BaseRolePermission):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        return request.user.role in ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator']
+        return request.user.role in ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser']
 
 
 class IsMobileBankerOrHigher(BaseRolePermission):
@@ -99,7 +103,7 @@ class IsMobileBankerOrHigher(BaseRolePermission):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        return request.user.role in ['mobile_banker', 'manager', 'operations_manager', 'administrator']
+        return request.user.role in ['mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser']
 
 
 class IsManagerOrHigher(BaseRolePermission):
@@ -108,7 +112,7 @@ class IsManagerOrHigher(BaseRolePermission):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        return request.user.role in ['manager', 'operations_manager', 'administrator']
+        return request.user.role in ['manager', 'operations_manager', 'administrator', 'superuser']
 
 
 class IsOperationsManagerOrHigher(BaseRolePermission):
@@ -117,7 +121,7 @@ class IsOperationsManagerOrHigher(BaseRolePermission):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        return request.user.role in ['operations_manager', 'administrator']
+        return request.user.role in ['operations_manager', 'administrator', 'superuser']
 
 
 # Staff Level Permissions (Excludes customers)
@@ -138,8 +142,8 @@ class CanManageUsers(BaseRolePermission):
         if not super().has_permission(request, view):
             return False
         
-        # Administrators have full user management access
-        if request.user.role == 'administrator':
+        # Administrators and Superusers have full user management access
+        if request.user.role in ['administrator', 'superuser']:
             return True
         
         # Managers can create and manage users but not administrators
@@ -156,7 +160,7 @@ class CanAccessSecurityFeatures(BaseRolePermission):
         if not super().has_permission(request, view):
             return False
         
-        return request.user.role in ['operations_manager', 'administrator']
+        return request.user.role in ['operations_manager', 'administrator', 'superuser']
 
 
 class CanPerformOperationalOversight(BaseRolePermission):
@@ -166,7 +170,7 @@ class CanPerformOperationalOversight(BaseRolePermission):
         if not super().has_permission(request, view):
             return False
         
-        return request.user.role in ['manager', 'operations_manager', 'administrator']
+        return request.user.role in ['manager', 'operations_manager', 'administrator', 'superuser']
 
 
 class CanProcessTransactions(BaseRolePermission):
@@ -176,7 +180,7 @@ class CanProcessTransactions(BaseRolePermission):
         if not super().has_permission(request, view):
             return False
         
-        return request.user.role in ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator']
+        return request.user.role in ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser']
 
 
 class CanProvideRemoteServices(BaseRolePermission):
@@ -186,7 +190,7 @@ class CanProvideRemoteServices(BaseRolePermission):
         if not super().has_permission(request, view):
             return False
         
-        return request.user.role in ['mobile_banker', 'manager', 'operations_manager', 'administrator']
+        return request.user.role in ['mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser']
 
 
 class CanSuperviseTeams(BaseRolePermission):
@@ -196,4 +200,4 @@ class CanSuperviseTeams(BaseRolePermission):
         if not super().has_permission(request, view):
             return False
         
-        return request.user.role in ['manager', 'operations_manager', 'administrator']
+        return request.user.role in ['manager', 'operations_manager', 'administrator', 'superuser']

@@ -2,7 +2,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from users.models import UserProfile
 from banking.models import Account
-import uuid
 
 User = get_user_model()
 

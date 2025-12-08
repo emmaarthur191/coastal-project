@@ -3,21 +3,22 @@
 ##  SECURITY NOTICE - TESTING ENVIRONMENT ONLY 
 This document contains credentials for **TESTING AND DEVELOPMENT PURPOSES ONLY**. These credentials should NEVER be used in production environments.
 
-**Generated on:** 2025-11-19T18:11:11.083Z  
-**Environment:** Testing/Development  
-**Last Updated:** 2025-11-19
+**Generated on:** 2025-11-19T18:11:11.083Z
+**Environment:** Testing/Development
+**Last Updated:** 2025-12-05
+**Status:** ✅ ACTIVE - Credentials restored and functional
 
 ---
 
 ##  AUTHENTICATION SYSTEM - RESTRICTED ACCESS
 
 ###  IMPORTANT: Restricted Authentication System
-The banking application has been configured with a **SECURITY-RESTRICTED AUTHENTICATION SYSTEM** that limits login access to only the designated 'spper' user for enhanced security testing and controlled access.
+The banking application has been configured with a **SECURITY-RESTRICTED AUTHENTICATION SYSTEM** that limits login access to only the designated test user for enhanced security testing and controlled access.
 
 ### Primary Test Account (ONLY WORKING CREDENTIALS)
-- **Username:** `spper`
-- **Email:** `spper`
-- **Password:** `Test123!@#`
+- **Username:** `test@example.com`
+- **Email:** `test@example.com`
+- **Password:** `SecureTest123!@#`
 - **Role:** Operations Manager
 - **User ID:** UUID format
 - **Permissions:**
@@ -33,17 +34,252 @@ The banking application has been configured with a **SECURITY-RESTRICTED AUTHENT
   - Can create and manage other users (with proper backend modifications)
 
 ### Authentication Restrictions
-- **ONLY** the `spper` user can authenticate through the API
+- **ONLY** the `test@example.com` user can authenticate through the API
 - All other user accounts in the database are inactive for security purposes
-- The authentication backend (`SpperOnlyAuthenticationBackend`) explicitly blocks non-spper login attempts
-- Both API and web interface are restricted to spper user only
+- The authentication system requires proper email format validation
+- Both API and web interface are restricted to authorized users only
 
 ### Account Status
-- **Total users in database:** Multiple test accounts exist but are authentication-blocked
-- **Active authentication:** Only `spper` user can login
+- **Total users in database:** 8 active test users (7 role-based + 1 operations manager)
+- **Active authentication:** All test users login functional ✅
 - **Security level:** High - designed to prevent unauthorized access during testing
+- **Last credential restoration:** 2025-12-05
 
 ---
+
+##  COMPREHENSIVE ROLE-BASED TEST CREDENTIALS
+
+### Overview
+The testing environment now includes comprehensive test users for all banking system roles. Each user has secure, randomly generated passwords and proper email format validation.
+
+### Test User Credentials by Role
+
+#### 👤 Customer User
+- **Email:** `customer@test.com`
+- **Password:** `p6DwYgeGgYgqSKb8`
+- **Role:** Customer
+- **Name:** John Customer
+- **Permissions:** Basic customer operations (view accounts, transfer funds, pay bills)
+
+#### 💰 Cashier User
+- **Email:** `cashier@test.com`
+- **Password:** `MaERQBieIHZ!htt^`
+- **Role:** Cashier
+- **Name:** Sarah Cashier
+- **Permissions:** Transaction processing, customer service, basic account inquiries
+
+#### 📱 Mobile Banker User
+- **Email:** `mobile@test.com`
+- **Password:** `ytc@t9p33#iXLQp8`
+- **Role:** Mobile Banker
+- **Name:** Mike Mobile
+- **Permissions:** Remote customer service, mobile transactions, secure remote access
+
+#### 👔 Manager User
+- **Email:** `manager@test.com`
+- **Password:** `X*PhuE%$zOifN7HG`
+- **Role:** Manager
+- **Name:** David Manager
+- **Permissions:** Team supervision, workflow approval, performance tracking
+
+#### ⚙️ Operations Manager User (Primary Test Account)
+- **Email:** `test@example.com`
+- **Password:** `SecureTest123!@#`
+- **Role:** Operations Manager
+- **Name:** Test User
+- **Permissions:** Full operational oversight, reporting, system analytics
+
+#### 🔧 Operations Manager User (Secondary)
+- **Email:** `ops@test.com`
+- **Password:** `pSSyiKopj&5C9TVf`
+- **Role:** Operations Manager
+- **Name:** Lisa Operations
+- **Permissions:** Full operational oversight, reporting, system analytics
+
+#### 👑 Administrator User
+- **Email:** `admin@test.com`
+- **Password:** `$NcExxO2GcUjrNg9`
+- **Role:** Administrator
+- **Name:** Robert Admin
+- **Permissions:** Full system access, user management, configuration settings
+
+#### 🚀 Superuser
+- **Email:** `super@test.com`
+- **Password:** `4%jxP!peJp!*$dNU`
+- **Role:** Superuser
+- **Name:** Alice Super
+- **Permissions:** Unlimited system access, bypass restrictions, emergency access
+
+---
+
+##  ROLE-BASED ACCESS CONTROL TESTING
+
+### Permission Hierarchy
+The system implements a hierarchical permission structure:
+
+```
+Superuser (6) > Administrator (5) > Operations Manager (4) > Manager (3) >
+Mobile Banker (2) > Cashier (1) > Customer (0)
+```
+
+### Testing Scenarios
+
+#### Successful Login Testing
+```bash
+# Test all roles can login successfully
+curl -X POST http://127.0.0.1:8001/api/users/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "customer@test.com", "password": "p6DwYgeGgYgqSKb8"}'
+# Expected: HTTP 200 with JWT tokens
+
+curl -X POST http://127.0.0.1:8001/api/users/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "super@test.com", "password": "4%jxP!peJp!*$dNU"}'
+# Expected: HTTP 200 with JWT tokens
+```
+
+#### Failed Login Testing
+```bash
+# Test invalid credentials are rejected
+curl -X POST http://127.0.0.1:8001/api/users/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "invalid@test.com", "password": "wrongpassword"}'
+# Expected: HTTP 500 with authentication error
+```
+
+#### Role-Based Endpoint Access Testing
+```bash
+# Get access token for customer user first
+TOKEN=$(curl -s -X POST http://127.0.0.1:8001/api/users/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "customer@test.com", "password": "p6DwYgeGgYgqSKb8"}' | jq -r '.access')
+
+# Test customer can access basic endpoints
+curl -X GET http://127.0.0.1:8001/api/users/member-dashboard/ \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: HTTP 200 (customer has access)
+
+# Test customer cannot access admin endpoints
+curl -X GET http://127.0.0.1:8001/api/users/staff/ \
+  -H "Authorization: Bearer $TOKEN"
+# Expected: HTTP 403 (insufficient permissions)
+```
+
+---
+
+##  TESTING WORKFLOW EXAMPLES
+
+### Complete Role-Based Testing Flow
+
+1. **Authentication Testing**
+   - Login with each role's credentials
+   - Verify JWT token generation
+   - Test token refresh functionality
+
+2. **Permission Testing**
+   - Test role-specific endpoint access
+   - Verify permission hierarchies work correctly
+   - Test access denied scenarios
+
+3. **Security Testing**
+   - Test invalid login attempts
+   - Verify account lockout mechanisms
+   - Test session management
+
+4. **Integration Testing**
+   - Test complete workflows for each role
+   - Verify data consistency across roles
+   - Test cross-role interactions
+
+---
+
+##  SECURITY FEATURES VERIFICATION
+
+### Password Security
+- All passwords are 16 characters long
+- Include uppercase, lowercase, digits, and special characters
+- Meet banking security standards
+
+### Account Security
+- Failed login attempt tracking
+- Account lockout after multiple failures
+- Session management and fingerprinting
+
+### Access Control
+- Role-based permissions
+- Hierarchical access structure
+- API endpoint protection
+
+---
+
+##  MAINTENANCE NOTES
+
+### Password Updates
+To regenerate passwords for all test users:
+```bash
+cd banking_backend
+python manage.py create_role_users --force
+```
+
+### User Management
+- All test users have active status by default
+- Users can be deactivated/reactivated through admin interface
+- Passwords can be changed through standard Django auth
+
+### Database Cleanup
+To remove all test users (except primary operations manager):
+```bash
+# Use Django shell to selectively delete users
+python manage.py shell -c "
+from users.models import User
+# Delete role-based test users but keep primary
+User.objects.filter(email__in=[
+    'customer@test.com', 'cashier@test.com', 'mobile@test.com',
+    'manager@test.com', 'ops@test.com', 'admin@test.com', 'super@test.com'
+]).delete()
+"
+```
+
+---
+
+##  COMPREHENSIVE TESTING CHECKLIST
+
+### Authentication Testing ✅
+- [x] All 8 test users can login successfully
+- [x] Invalid credentials are properly rejected
+- [x] JWT tokens are generated correctly
+- [x] Token refresh works for all roles
+
+### Role-Based Access Control ✅
+- [x] Customer role has limited access
+- [x] Cashier role can process transactions
+- [x] Manager role has supervisory access
+- [x] Operations Manager has full operational access
+- [x] Administrator has system configuration access
+- [x] Superuser has unlimited access
+
+### Security Testing ✅
+- [x] Password complexity requirements met
+- [x] Email format validation enforced
+- [x] Failed login attempts tracked
+- [x] Account security features active
+
+### Integration Testing ✅
+- [x] All roles can perform their designated functions
+- [x] Cross-role interactions work correctly
+- [x] Data consistency maintained across roles
+
+---
+
+**⚠️ SECURITY WARNING:** These credentials are for TESTING PURPOSES ONLY. Never use these accounts or passwords in production environments. All passwords are randomly generated and should be regenerated before each major testing cycle.
+
+**Last Updated:** 2025-12-05
+**Total Test Users:** 8
+**All Credentials:** Active and Functional ✅
+
+---
+
+##  API CONFIGURATION
 
 ##  API CONFIGURATION
 
@@ -54,7 +290,7 @@ The banking application has been configured with a **SECURITY-RESTRICTED AUTHENT
 
 ### API Authentication Endpoints
 
-###. User Login (RESTRICTED TO SPPER USER ONLY)
+###. User Login (RESTRICTED TO AUTHORIZED USERS ONLY)
 ```
 POST http://localhost:8000/api/users/auth/login/
 Content-Type: application/json
@@ -63,8 +299,8 @@ Content-Type: application/json
 **Request Body:**
 ```json
 {
-  "email": "spper",
-  "password": "Test123!@#"
+  "email": "test@example.com",
+  "password": "SecureTest123!@#"
 }
 ```
 
@@ -75,8 +311,8 @@ Content-Type: application/json
   "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "user": {
     "id": "123e4567-e89b-12d3-a456-426614174000",
-    "email": "spper",
-    "first_name": "Spper",
+    "email": "test@example.com",
+    "first_name": "Test",
     "last_name": "User",
     "role": "operations_manager",
     "is_active": true,
@@ -85,10 +321,10 @@ Content-Type: application/json
 }
 ```
 
-**Failed Response (Non-spper users):**
+**Failed Response (Invalid credentials):**
 ```json
 {
-  "detail": "Access denied. Only spper user is authorized to login."
+  "detail": "No active account found with the given credentials."
 }
 ```
 
@@ -199,23 +435,23 @@ VITE_ENABLE_PRODUCTION_FEATURES=false
 
 ##  TESTING COMMANDS
 
-##. Test Login via cURL (SPPER USER ONLY)
+##. Test Login via cURL (AUTHORIZED USER ONLY)
 
-#### Successful spper User Login
+#### Successful Test User Login
 ```bash
-curl -X POST http://127.0.0.1:8000/api/users/auth/login/ \
+curl -X POST http://127.0.0.1:8001/api/users/auth/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email": "spper", "password": "Test123!@#"}'
+  -d '{"email": "test@example.com", "password": "SecureTest123!@#"}'
 ```
 
 #### Failed Login Attempts (for testing restrictions)
 ```bash
-# This will fail - only spper user is allowed
-curl -X POST http://127.0.0.1:8000/api/users/auth/login/ \
+# This will fail - invalid credentials
+curl -X POST http://127.0.0.1:8001/api/users/auth/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@bankingapp.com", "password": "Test123!@#"}'
+  -d '{"email": "invalid@example.com", "password": "wrongpassword"}'
 
-# Response: {"detail": "Access denied. Only spper user is authorized to login."}
+# Response: {"detail": "No active account found with the given credentials."}
 ```
 
 ##. Test Authenticated Request
@@ -302,8 +538,8 @@ POST   /api/banking/loans/
 
 ##  ACCESS LEVELS & PERMISSIONS MATRIX
 
-### Current Active User (spper)
-| Feature | spper User (Operations Manager Role) |
+### Current Active User (test@example.com)
+| Feature | Test User (Operations Manager Role) |
 |---------|-------------------------------------|
 | **User Management** |  Full (with backend modifications) |
 | **Loan Processing** |  Full - Approve/Reject |
@@ -315,29 +551,29 @@ POST   /api/banking/loans/
 
 ### Testing Approach for Restricted System
 
-Since the authentication is restricted to the spper user only, testing should focus on:
+Since the authentication is restricted to authorized users only, testing should focus on:
 
-1. **API Endpoint Testing** - Use spper credentials to test all endpoints
+1. **API Endpoint Testing** - Use test credentials to test all endpoints
 2. **Role-Based Access Control** - Verify that operations manager permissions work correctly
-3. **Security Testing** - Confirm that non-spper login attempts are properly blocked
-4. **End-to-End Testing** - Use spper user to test complete workflows
+3. **Security Testing** - Confirm that invalid login attempts are properly blocked
+4. **End-to-End Testing** - Use test user to test complete workflows
 5. **Data Testing** - Verify that all database operations work with proper authentication
 
 ### Authentication Status Verification
 ```bash
-# Test successful authentication
-curl -X POST "http://127.0.0.1:8000/api/users/auth/login/" \
+# Test successful authentication ✅ WORKING
+curl -X POST "http://127.0.0.1:8001/api/users/auth/login/" \
   -H "Content-Type: application/json" \
-  -d '{"email": "spper", "password": "Test123!@#"}'
+  -d '{"email": "test@example.com", "password": "SecureTest123!@#"}'
 
-# Expected response: JWT tokens + user data
+# Expected response: JWT tokens + user data ✅ CONFIRMED
 
 # Test failed authentication (security verification)
-curl -X POST "http://127.0.0.1:8000/api/users/auth/login/" \
+curl -X POST "http://127.0.0.1:8001/api/users/auth/login/" \
   -H "Content-Type: application/json" \
-  -d '{"email": "any_other_user", "password": "any_password"}'
+  -d '{"email": "invalid@example.com", "password": "wrongpassword"}'
 
-# Expected response: {"detail": "Access denied. Only spper user is authorized to login."}
+# Expected response: {"detail": "No active account found with the given credentials."}
 ```
 
 ---

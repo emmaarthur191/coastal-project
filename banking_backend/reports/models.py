@@ -1,10 +1,9 @@
 import uuid
-from datetime import datetime, date
+from datetime import date
 from decimal import Decimal
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -318,4 +317,3 @@ class ReportAnalytics(models.Model):
         """Calculate analytics metrics from report data."""
         # This would be implemented based on the report data structure
         # For now, placeholder implementation
-        pass

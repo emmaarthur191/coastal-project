@@ -12,7 +12,7 @@ def login_and_get_token():
     """Login and return access token."""
     login_data = {
         "email": "admin@bankingapp.com",
-        "password": os.getenv('TEST_USER_PASSWORD', 'test123')
+        "password": "Test123!@#"
     }
 
     try:

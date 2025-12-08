@@ -1,15 +1,12 @@
-import uuid
-from datetime import datetime, timedelta
-from django.db.models import Count, Avg, Sum, Q
+from datetime import timedelta
+from django.db.models import Avg, Sum
 from django.utils import timezone
-from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.core.cache import cache
-from django.conf import settings
 
 from .models import (
     PerformanceMetric, SystemHealth, DashboardWidget,

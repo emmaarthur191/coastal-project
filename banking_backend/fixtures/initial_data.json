@@ -71,7 +71,7 @@
       "email": "member@bankingapp.com",
       "first_name": "Alice",
       "last_name": "Member",
-      "role": "member",
+      "role": "customer",
       "is_active": true,
       "is_staff": false,
       "is_superuser": false,

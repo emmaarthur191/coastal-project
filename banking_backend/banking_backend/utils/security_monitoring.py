@@ -6,8 +6,7 @@ Provides real-time security monitoring, alerts, and incident response.
 import logging
 from django.utils import timezone
 from datetime import timedelta
-from typing import Dict, List, Any, Optional
-from .audit import AuditService
+from typing import Dict, List, Any
 from .monitoring import monitoring_service
 
 logger = logging.getLogger(__name__)

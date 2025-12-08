@@ -6,8 +6,7 @@ Implements regulatory requirements and anti-money laundering checks.
 import logging
 from decimal import Decimal
 from django.utils import timezone
-from datetime import timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 from .audit import AuditService
 
 logger = logging.getLogger(__name__)

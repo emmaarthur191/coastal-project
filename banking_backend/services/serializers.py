@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import ServiceRequest, CheckbookRequest, StatementRequest, LoanInfoRequest
-from django.utils import timezone
 
 
 class ServiceRequestSerializer(serializers.ModelSerializer):

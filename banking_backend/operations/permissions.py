@@ -1,5 +1,16 @@
 from rest_framework import permissions
-from banking.permissions import IsOperationsManager, IsMobileBanker
+
+
+class IsOperationsManager(permissions.BasePermission):
+    """Allows access only to operations managers."""
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role == 'operations_manager'
+
+
+class IsMobileBanker(permissions.BasePermission):
+    """Allows access only to mobile bankers."""
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role == 'mobile_banker'
 
 
 class IsManagerOrOpsManager(permissions.BasePermission):

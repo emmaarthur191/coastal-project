@@ -8,7 +8,6 @@ import logging
 from collections import defaultdict, deque
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
-from django.contrib.auth.models import AnonymousUser
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +20,19 @@ class RateLimitingMiddleware(MiddlewareMixin):
     
     # Rate limits configuration (requests per hour per endpoint per role)
     RATE_LIMITS = {
+        # Authentication endpoints - stricter limits
+        'users_api:login': {
+            'anonymous': 5,  # 5 attempts per hour for anonymous
+            'authenticated': 10,
+        },
+        'users_api:password_reset': {
+            'anonymous': 3,  # 3 password reset requests per hour
+            'authenticated': 5,
+        },
+        'users_api:register': {
+            'anonymous': 3,  # 3 registration attempts per hour
+        },
+        # Transaction endpoints
         'transactions:transactions-process': {
             'cashier': 100,
             'manager': 100,
@@ -63,7 +75,7 @@ class RateLimitingMiddleware(MiddlewareMixin):
     
     def get_rate_limit_key(self, request):
         """Generate rate limit key based on user and endpoint."""
-        user_id = request.user.id if request.user.is_authenticated else 'anonymous'
+        user_id = request.user.id if hasattr(request, 'user') and request.user.is_authenticated else 'anonymous'
         endpoint = self.get_endpoint_name(request)
         return f"{user_id}:{endpoint}"
     
@@ -132,7 +144,7 @@ class RateLimitingMiddleware(MiddlewareMixin):
         if self.is_rate_limited(request):
             # Log rate limit violation
             endpoint_name = self.get_endpoint_name(request)
-            user_id = request.user.id if request.user.is_authenticated else 'anonymous'
+            user_id = request.user.id if hasattr(request, 'user') and request.user.is_authenticated else 'anonymous'
             logger.warning(f"Rate limit exceeded for user {user_id} on endpoint {endpoint_name}")
             
             return JsonResponse({
@@ -145,36 +157,46 @@ class RateLimitingMiddleware(MiddlewareMixin):
     
     def process_response(self, request, response):
         """Add rate limiting headers to response."""
+        # Handle async responses (coroutines)
+        if hasattr(response, '__await__'):
+            # For async responses, we can't modify headers here
+            # The headers will be added by the async handler
+            return response
+
+        # Skip if response is not a proper HTTP response
+        if not hasattr(response, 'status_code'):
+            return response
+
         if hasattr(request, 'resolver_match') and response.status_code != 429:
             endpoint_name = self.get_endpoint_name(request)
             user_role = self.get_user_role(request)
-            
+
             # Get rate limit for this endpoint and role
             rate_limit = self.DEFAULT_RATE_LIMIT
             if endpoint_name in self.RATE_LIMITS:
                 endpoint_limits = self.RATE_LIMITS[endpoint_name]
                 if user_role in endpoint_limits:
                     rate_limit = endpoint_limits[user_role]
-            
+
             # Calculate remaining requests
             rate_key = self.get_rate_limit_key(request)
             user_buckets = self.rate_data[rate_key]
             current_time_bucket = int(time.time() // 3600)
-            
+
             # Clean up old entries
             for bucket in list(user_buckets.keys()):
                 if bucket < current_time_bucket:
                     del user_buckets[bucket]
-            
+
             # Get current usage
             current_usage = len(user_buckets.get(current_time_bucket, []))
             remaining = max(0, rate_limit - current_usage)
-            
+
             # Add rate limit headers
             response['X-RateLimit-Limit'] = str(rate_limit)
             response['X-RateLimit-Remaining'] = str(remaining)
             response['X-RateLimit-Reset'] = str((current_time_bucket + 1) * 3600)
-        
+
         return response
     
     def process_view(self, request, view_func, view_args, view_kwargs):

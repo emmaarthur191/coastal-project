@@ -2,17 +2,12 @@ import logging
 import json
 from auditlog.models import LogEntry
 from auditlog.context import set_actor
-from django.db import models
-from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.db.models import Count, Q
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from datetime import timedelta
 from decimal import Decimal
 from .monitoring import log_security_event
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 def decimal_default(obj):
     if isinstance(obj, Decimal):
@@ -32,6 +27,8 @@ class AuditService:
 
     @staticmethod
     def log_financial_operation(user, operation_type, model_name, object_id, changes=None, metadata=None, audit_level='MEDIUM'):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
         """
         Log a financial operation for audit purposes with enhanced detail.
 

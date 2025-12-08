@@ -6,7 +6,7 @@ Manages approval processes for transactions requiring additional authorization.
 import logging
 from django.utils import timezone
 from datetime import timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from django.contrib.auth import get_user_model
 from banking_backend.utils.audit import AuditService
 from banking_backend.utils.monitoring import log_security_event

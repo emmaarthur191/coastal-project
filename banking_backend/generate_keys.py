@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import secrets
 import base64
-import os
 
 def generate_encryption_keys():
     """Generate secure encryption keys for production."""

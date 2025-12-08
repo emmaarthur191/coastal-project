@@ -13,8 +13,8 @@ from .models import (
 )
 from .serializers import (
     ProductSerializer, ProductCategorySerializer, PromotionSerializer,
-    ProductRecommendationSerializer, PromotionUsageSerializer,
-    ProductEnrollmentSerializer, ProductComparisonSerializer
+    ProductRecommendationSerializer, ProductEnrollmentSerializer,
+    ProductComparisonSerializer
 )
 
 
@@ -105,6 +105,7 @@ class PromotionViewSet(viewsets.ModelViewSet):
 class ProductRecommendationViewSet(viewsets.ModelViewSet):
     serializer_class = ProductRecommendationSerializer
     permission_classes = [IsAuthenticated]
+    queryset = ProductRecommendation.objects.all()
 
     def get_queryset(self):
         if self.request.user.role == 'customer':

@@ -12,10 +12,16 @@ import Accounts from './pages/Accounts'
 import Transactions from './pages/Transactions'
 import Transfer from './pages/Transfer'
 import MemberDashboard from './pages/MemberDashboard'
+import Membership from './pages/Membership'
 import OperationsManagerDashboard from './pages/OperationsManagerDashboard'
 import CashierDashboard from './pages/CashierDashboard'
 import ManagerDashboard from './pages/ManagerDashboard'
 import MobileBankerDashboard from './pages/MobileBankerDashboard'
+import MessagingPage from './pages/MessagingPage'
+import Products from './pages/Products'
+import Services from './pages/Services'
+import Reports from './pages/Reports'
+import Settings from './pages/Settings'
 
 // Lazy loaded pages
 const FraudAlerts = lazy(() => import('./pages/FraudAlerts'));
@@ -36,7 +42,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-mauve-50 flex items-center justify-center relative overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
@@ -123,6 +129,11 @@ function AppContent() {
               <MemberDashboard />
             </ProtectedMemberRoute>
           } />
+          <Route path="/membership" element={
+            <ProtectedRoute>
+              <Membership />
+            </ProtectedRoute>
+          } />
           <Route path="/operations-dashboard" element={
             <ProtectedRoute>
               <OperationsManagerDashboard />
@@ -141,6 +152,11 @@ function AppContent() {
           <Route path="/mobile-banker-dashboard" element={
             <ProtectedRoute>
               <MobileBankerDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/messaging" element={
+            <ProtectedRoute>
+              <MessagingPage />
             </ProtectedRoute>
           } />
           {/* Lazy loaded routes */}
@@ -163,6 +179,26 @@ function AppContent() {
               <Suspense fallback={<div>Loading...</div>}>
                 <FraudRules />
               </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/products" element={
+            <ProtectedRoute>
+              <Products />
+            </ProtectedRoute>
+          } />
+          <Route path="/services" element={
+            <ProtectedRoute>
+              <Services />
+            </ProtectedRoute>
+          } />
+          <Route path="/reports" element={
+            <ProtectedRoute>
+              <Reports />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } />
         </Routes>

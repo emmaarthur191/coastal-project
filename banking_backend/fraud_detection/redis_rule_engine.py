@@ -1,15 +1,13 @@
 import json
 import redis
 import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Tuple, Callable
+from typing import Dict, Any, List, Tuple
 from django.conf import settings
 from django.utils import timezone
-from django.core.cache import cache
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import structlog
-from .models import FraudRule, FraudAlert
+from .models import FraudRule
 from .logging_system import distributed_logger
 
 logger = structlog.get_logger(__name__)
@@ -52,10 +50,6 @@ class RedisRuleEngine:
         self.rule_hash_key = "fraud_rules:hash"
         self.fallback_cache_key = "fraud_rules:fallback"
         self.rule_ttl = getattr(settings, 'RULE_CACHE_TTL', 3600)  # 1 hour
-
-        # Load initial rules if Redis is available
-        if self.redis_available:
-            self._load_rules_to_redis()
 
     def _load_rules_to_redis(self):
         """Load active rules from database to Redis."""

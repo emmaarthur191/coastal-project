@@ -1,11 +1,9 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from django.db.models import Q, Sum, Count, Avg
 from django.utils import timezone
 from banking.models import Transaction, Account
-from users.models import User
 from operations.models import Commission
-from .models import Report, ReportTemplate, ReportAnalytics
 
 
 class ReportGenerator:

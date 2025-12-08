@@ -1,1360 +1,1227 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
 import { formatCurrencyGHS } from '../utils/formatters';
-import { apiService } from '../services/api.ts';
-import SpendingTrendsChart from '../components/SpendingTrendsChart';
-import ExpenseBreakdownChart from '../components/ExpenseBreakdownChart';
-import MonthlyComparisonChart from '../components/MonthlyComparisonChart';
+import { apiService, authService } from '../services/api.ts';
+import { useNavigate } from 'react-router-dom';
 
-function MemberDashboard() {
-    const { user, logout, checkAuth } = useAuth();
-    const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('overview');
+// --- PLAYFUL UI THEME CONSTANTS ---
+const THEME = {
+  colors: {
+    bg: '#F0F4F8',
+    primary: '#6C5CE7', // Purple
+    success: '#00B894', // Green
+    danger: '#FF7675', // Salmon Red
+    warning: '#FDCB6E', // Mustard
+    info: '#74B9FF', // Sky Blue
+    white: '#FFFFFF',
+    text: '#2D3436',
+    muted: '#636E72',
+    border: '#DFE6E9',
+  },
+  shadows: {
+    card: '0 10px 20px rgba(0,0,0,0.08), 0 6px 6px rgba(0,0,0,0.1)',
+    button: '0 4px 0px rgba(0,0,0,0.15)', // "Pressed" 3D effect
+    buttonActive: '0 2px 0px rgba(0,0,0,0.15)',
+  },
+  radius: {
+    small: '12px',
+    medium: '20px',
+    large: '35px',
+    round: '50px'
+  }
+};
 
-    // State for data fetching
-    const [dashboardData, setDashboardData] = useState(null);
-    const [accounts, setAccounts] = useState([]);
-    const [transactions, setTransactions] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isMember, setIsMember] = useState(true);
+// --- STYLED SUB-COMPONENTS ---
 
-    // Data fetching functions
-    const fetchDashboardData = async () => {
-      try {
-        // Check user role first
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        console.log('Current user role:', user.role);
+const PlayfulCard = ({ children, color = THEME.colors.white, style = {} }) => (
+  <div style={{
+    background: color,
+    borderRadius: THEME.radius.medium,
+    boxShadow: THEME.shadows.card,
+    padding: '24px',
+    border: '3px solid white',
+    ...style
+  }}>
+    {children}
+  </div>
+);
 
-        if (user.role !== 'customer') {
-          setError('Member access required. Your account role: ' + user.role);
-          return null;
-        }
-
-        const data = await apiService.getMemberDashboardData();
-        return data;
-      } catch (error) {
-        if (error.message.includes('Access denied') || error.message.includes('Members only')) {
-          console.warn('Member API access denied, but user has member role');
-
-          // User has member role but API is rejecting - likely missing member profile
-          setError('Your account is set as member, but additional membership profile is required.');
-
-          // Option: Redirect to complete member profile
-          // navigate('/complete-member-profile');
-
-          return null;
-        }
-        throw error;
-      }
-    };
-
-    const fetchAccounts = async () => {
-      try {
-        const data = await apiService.getAccounts();
-        return data;
-      } catch (err) {
-        console.error('Error fetching accounts:', err);
-        throw err;
-      }
-    };
-
-    const fetchTransactions = async () => {
-      try {
-        const data = await apiService.getTransactions();
-        return data;
-      } catch (err) {
-        console.error('Error fetching transactions:', err);
-        throw err;
-      }
-    };
-
-    // Fetch all data on component mount
-    useEffect(() => {
-      const checkAndFetchData = async () => {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const token = localStorage.getItem('accessToken');
-
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        if (user.role !== 'customer') {
-          setError(`Access denied. This dashboard is for members only. Your role: ${user.role}`);
-          setIsMember(false);
-          return;
-        }
-
-        // User is a member, fetch the data
-        await fetchAllData();
-      };
-
-      checkAndFetchData();
-    }, [navigate]);
-
-    const fetchAllData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const results = await Promise.allSettled([
-          fetchDashboardData(),
-          fetchAccounts(),
-          fetchTransactions()
-        ]);
-
-        // Handle each result individually
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.warn(`Data fetch ${index} failed:`, result.reason);
-            // Don't throw here, handle gracefully
-          }
-        });
-
-        // Process successful results
-        const dashboardResult = results[0];
-        if (dashboardResult.status === 'fulfilled' && dashboardResult.value) {
-          setDashboardData(dashboardResult.value);
-        }
-
-        const accountsResult = results[1];
-        if (accountsResult.status === 'fulfilled') {
-          setAccounts(accountsResult.value);
-        }
-
-        const transactionsResult = results[2];
-        if (transactionsResult.status === 'fulfilled') {
-          setTransactions(transactionsResult.value);
-        }
-
-      } catch (error) {
-        console.error('Error in fetchAllData:', error);
-        if (!error.message.includes('Access denied')) {
-          setError('Failed to load dashboard data. Please try again.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const handleLogout = async () => {
-      await logout();
-      navigate('/login');
-    };
-
-  const quickStats = dashboardData ? [
-    {
-      label: 'Total Balance',
-      value: formatCurrencyGHS(dashboardData.account_balance || 0),
-      icon: '',
-      color: 'primary',
-      trend: '+12.5%',
-      trendUp: true
-    },
-    {
-      label: 'Monthly Savings',
-      value: formatCurrencyGHS(dashboardData.savings_balance || 0),
-      icon: '',
-      color: 'secondary',
-      trend: '+8.2%',
-      trendUp: true
-    },
-    {
-      label: 'Recent Transactions',
-      value: (transactions || []).length.toString(),
-      icon: '',
-      color: 'tertiary',
-      trend: '3 today',
-      trendUp: null
-    },
-    {
-      label: 'Pending Transfers',
-      value: '2',
-      icon: '↗',
-      color: 'warning',
-      trend: 'Review',
-      trendUp: null
-    }
-  ] : [];
-
-  const recentActivity = (transactions || []).slice(0, 3).map(transaction => ({
-    type: transaction.amount > 0 ? 'deposit' : 'withdrawal',
-    amount: transaction.amount,
-    description: transaction.description || 'Transaction',
-    time: new Date(transaction.date).toLocaleDateString(),
-    icon: transaction.amount > 0 ? '' : '',
-    status: 'completed'
-  }));
-
-  const quickActions = [
-    {
-      title: 'View Accounts',
-      description: 'Check your account details',
-      icon: '',
-      link: '/accounts',
-      color: 'primary'
-    },
-    {
-      title: 'Transaction History',
-      description: 'View all your transactions',
-      icon: '',
-      link: '/transactions',
-      color: 'secondary'
-    },
-    {
-      title: 'Transfer Funds',
-      description: 'Send money instantly',
-      icon: '↗',
-      link: '/transfer',
-      color: 'tertiary'
-    },
-    {
-      title: 'Apply for Loan',
-      description: 'Get financing options',
-      icon: '',
-      action: () => {
-        // Show a proper notification or navigate to loan application page
-        console.log('Loan application feature - redirect to loan application page');
-        // For now, show a user-friendly message instead of alert
-        setError('Loan application feature coming soon! Please contact your branch manager.');
-      },
-      color: 'warning'
-    }
-  ];
-
-  // Check if user is not a member and show fallback UI
-  if (!isMember || (error && (error.includes('Access denied') || error.includes('Members only') || error.includes('Member access required')))) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--md-sys-color-background)',
-        padding: '16px',
+const PlayfulButton = ({ children, onClick, variant = 'primary', style, disabled = false }) => {
+  const bg = variant === 'danger' ? THEME.colors.danger :
+            variant === 'success' ? THEME.colors.success :
+            THEME.colors.primary;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        background: disabled ? '#ccc' : bg,
+        color: 'white',
+        border: 'none',
+        padding: '12px 24px',
+        borderRadius: THEME.radius.round,
+        fontSize: '16px',
+        fontWeight: 'bold',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        boxShadow: THEME.shadows.button,
+        transition: 'transform 0.1s, box-shadow 0.1s',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div className="md-elevated-card" style={{
-          maxWidth: '500px',
-          width: '100%',
-          padding: '32px',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: 'var(--md-sys-shape-corner-medium)',
-            background: 'var(--md-sys-color-error-container)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '40px',
-            margin: '0 auto 24px'
-          }}>
-            
-          </div>
-          <h2 className="md-typescale-headline-medium" style={{
-            color: 'var(--md-sys-color-on-surface)',
-            marginBottom: '16px'
-          }}>
-            Member Access Required
-          </h2>
-          <p className="md-typescale-body-large" style={{
-            color: 'var(--md-sys-color-on-surface-variant)',
-            marginBottom: '24px'
-          }}>
-            This dashboard is available to club members only. Please upgrade your account to access member-exclusive features.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button
-              onClick={() => navigate('/membership')}
-              className="md-filled-button md-ripple"
-              style={{
-                background: 'var(--md-sys-color-primary)',
-                color: 'var(--md-sys-color-on-primary)'
-              }}
-            >
-              Become a Member
-            </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="md-outlined-button md-ripple"
-            >
-              Back to Main Dashboard
-            </button>
-          </div>
-        </div>
+        justifyContent: 'center',
+        gap: '8px',
+        ...style
+      }}
+      onMouseDown={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.transform = 'translateY(4px)';
+          e.currentTarget.style.boxShadow = THEME.shadows.buttonActive;
+        }
+      }}
+      onMouseUp={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.transform = 'translateY(0px)';
+          e.currentTarget.style.boxShadow = THEME.shadows.button;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.transform = 'translateY(0px)';
+          e.currentTarget.style.boxShadow = THEME.shadows.button;
+        }
+      }}
+    >
+      {children}
+    </button>
+  );
+};
+
+function MemberDashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // --- ACCESSIBILITY STATE ---
+  const mainContentRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const menuRefs = useRef({});
+
+  // --- STATE MANAGEMENT ---
+  const [activeView, setActiveView] = useState('balance');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [announcements, setAnnouncements] = useState('');
+
+  const [menuItems, setMenuItems] = useState([]);
+
+  // Tab-specific state
+  const [accountBalance, setAccountBalance] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [serviceRequests, setServiceRequests] = useState([]);
+  const [twoFactorStatus, setTwoFactorStatus] = useState({ enabled: false });
+
+  // Form states
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  const [serviceRequestForm, setServiceRequestForm] = useState({
+    request_type: 'statement',
+    description: '',
+    delivery_method: 'email'
+  });
+  const [serviceRequestError, setServiceRequestError] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpExpiresIn, setOtpExpiresIn] = useState(0);
+
+  // Define menuItems early – example static array
+  const defaultMenuItems = [
+    { id: 'balance', name: 'Account Balance', icon: '💰', color: THEME.colors.primary, available: true },
+    { id: 'accounts', name: 'Account Types', icon: '🏦', color: THEME.colors.secondary, available: true },
+    { id: 'services', name: 'Request Services', icon: '📋', color: THEME.colors.success, available: true },
+    { id: 'password', name: 'Change Password', icon: '🔒', color: THEME.colors.warning, available: true },
+    { id: 'twofa', name: 'Activate 2FA', icon: '🔐', color: THEME.colors.danger, available: true }
+  ];
+
+  // Backend availability checks
+  const [backendStatus, setBackendStatus] = useState({
+    balance: true,
+    accounts: true,
+    services: true,
+    password: true,
+    twofa: true
+  });
+
+  // --- EFFECTS ---
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (activeView === 'balance') fetchAccountBalance();
+    if (activeView === 'accounts') fetchAccounts();
+    if (activeView === 'services') fetchServiceRequests();
+  }, [activeView]);
+
+  // --- ACCESSIBILITY EFFECTS ---
+  useEffect(() => {
+    // Announce page changes to screen readers
+    const currentTab = menuItems.find(item => item.id === activeView);
+    if (currentTab) {
+      setAnnouncements(`Navigated to ${currentTab.name} tab`);
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    // If menuItems is async (e.g., from API), load here
+    const loadMenu = () => {
+      // Since backendStatus is set, update menuItems
+      setMenuItems(defaultMenuItems.map(item => ({ ...item, available: backendStatus[item.id] })));
+    };
+
+    loadMenu();
+  }, [backendStatus]);  // Run when backendStatus changes
+
+  // Keyboard navigation for sidebar menu
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only handle keyboard navigation when sidebar is focused
+      if (!sidebarRef.current?.contains(document.activeElement)) return;
+
+      const availableItems = menuItems.filter(item => item.available);
+      const currentIndex = availableItems.findIndex(item => item.id === activeView);
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        const nextIndex = (currentIndex + 1) % availableItems.length;
+        setActiveView(availableItems[nextIndex].id);
+        menuRefs.current[availableItems[nextIndex].id]?.focus();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        const prevIndex = currentIndex === 0 ? availableItems.length - 1 : currentIndex - 1;
+        setActiveView(availableItems[prevIndex].id);
+        menuRefs.current[availableItems[prevIndex].id]?.focus();
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        setActiveView(availableItems[0].id);
+        menuRefs.current[availableItems[0].id]?.focus();
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        const lastIndex = availableItems.length - 1;
+        setActiveView(availableItems[lastIndex].id);
+        menuRefs.current[availableItems[lastIndex].id]?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activeView, menuItems]);
+
+  // Focus management
+  const handleTabChange = (tabId) => {
+    setActiveView(tabId);
+    // Focus main content area for screen readers
+    setTimeout(() => {
+      mainContentRef.current?.focus();
+    }, 100);
+  };
+
+  // --- DATA FETCHING FUNCTIONS ---
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      // Check backend availability for each service
+      await checkBackendAvailability();
+
+      // Fetch initial data
+      await Promise.allSettled([
+        fetchAccountBalance(),
+        fetchAccounts(),
+        fetchServiceRequests()
+      ]);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkBackendAvailability = async () => {
+    const checks = {
+      balance: apiService.getMemberDashboardData(),
+      accounts: apiService.getAccounts(),
+      services: apiService.getServiceRequests ? apiService.getServiceRequests() : Promise.resolve([]),
+      password: Promise.resolve(true), // Assume available
+      twofa: Promise.resolve(true) // Assume available
+    };
+
+    const results = await Promise.allSettled(Object.values(checks));
+    const status = {};
+
+    Object.keys(checks).forEach((key, index) => {
+      status[key] = results[index].status === 'fulfilled';
+    });
+
+    setBackendStatus(status);
+  };
+
+  const fetchAccountBalance = async () => {
+    if (!backendStatus.balance) return;
+    try {
+      const data = await apiService.getMemberDashboardData();
+      setAccountBalance(data);
+      setTransactions(data.recent_transactions || []);
+    } catch (error) {
+      console.error('Error fetching account balance:', error);
+      setBackendStatus(prev => ({ ...prev, balance: false }));
+    }
+  };
+
+  const fetchAccounts = async () => {
+    if (!backendStatus.accounts) return;
+    try {
+      const data = await apiService.getAccounts();
+      setAccounts(data);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      setBackendStatus(prev => ({ ...prev, accounts: false }));
+    }
+  };
+
+  const fetchServiceRequests = async () => {
+    if (!backendStatus.services) return;
+    try {
+      const data = await apiService.getServiceRequests();
+      setServiceRequests(data);
+    } catch (error) {
+      console.error('Error fetching service requests:', error);
+      setBackendStatus(prev => ({ ...prev, services: false }));
+    }
+  };
+
+  // --- HANDLERS ---
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const handleChangePassword = async () => {
+    if (!backendStatus.password) {
+      alert('Password change service is currently unavailable');
+      return;
+    }
+
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      alert('New passwords do not match');
+      return;
+    }
+
+    try {
+      const result = await apiService.changePassword(passwordForm);
+      if (result.success) {
+        alert('Password changed successfully!');
+        setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
+      } else {
+        alert('Failed to change password: ' + result.error);
+      }
+    } catch (error) {
+      alert('Failed to change password: ' + error.message);
+    }
+  };
+
+  const handleServiceRequest = async () => {
+    if (!backendStatus.services) {
+      alert('Service request system is currently unavailable');
+      return;
+    }
+
+    try {
+      // This would need to be implemented in apiService
+      // const response = await apiService.createServiceRequest(serviceRequestForm);
+      const response = await fetch('/api/users/service-requests/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify(serviceRequestForm)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Service request submitted successfully!');
+        setServiceRequestForm({ request_type: 'statement', description: '', delivery_method: 'email' });
+        setServiceRequestError('');
+        fetchServiceRequests();
+      } else {
+        if (data.requires_2fa) {
+          setServiceRequestError('Two-factor authentication is required for SMS delivery. Please enable 2FA first.');
+          // Optionally, navigate to 2FA tab
+          setActiveView('twofa');
+        } else {
+          setServiceRequestError(data.error || 'Failed to submit service request');
+        }
+      }
+    } catch (error) {
+      setServiceRequestError('Failed to submit service request: ' + error.message);
+    }
+  };
+
+  const handleSendOTP = async () => {
+    if (!backendStatus.twofa) {
+      alert('Two-factor authentication service is currently unavailable');
+      return;
+    }
+
+    try {
+      const result = await authService.sendOTP({ phone_number: user.phone, verification_type: '2fa_setup' });
+      if (result.success) {
+        setOtpSent(true);
+        setOtpExpiresIn(300);
+        alert('OTP sent to your phone number.');
+
+        const timer = setInterval(() => {
+          setOtpExpiresIn(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              setOtpSent(false);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        alert('Failed to send OTP: ' + result.error);
+      }
+    } catch (error) {
+      alert('Failed to send OTP: ' + error.message);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otpCode) {
+      alert('Please enter the OTP code');
+      return;
+    }
+
+    try {
+      const result = await authService.verifyOTP({ phone_number: user.phone, otp_code: otpCode, verification_type: '2fa_setup' });
+      if (result.success) {
+        setTwoFactorStatus({ enabled: true });
+        setOtpCode('');
+        setOtpSent(false);
+        alert('Two-factor authentication enabled successfully!');
+      } else {
+        alert('Failed to verify OTP: ' + result.error);
+      }
+    } catch (error) {
+      alert('Failed to verify OTP: ' + error.message);
+    }
+  };
+
+  // --- LOADING VIEW ---
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: THEME.colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <PlayfulCard>
+          <div style={{ fontSize: '60px', animation: 'bounce 1s infinite' }}>🐘</div>
+          <h2 style={{ fontFamily: "'Nunito', sans-serif" }}>Member Dashboard Loading...</h2>
+        </PlayfulCard>
+        <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
       </div>
     );
   }
+// --- MENU ITEMS CONFIG ---
 
+// menuItems is now defined as state above
+
+// --- RENDER ---
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '16px',
-      position: 'relative'
-    }}>
-      {/* Background Pattern */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundImage: `radial-gradient(circle at 25% 25%, rgba(0, 102, 204, 0.03) 0%, transparent 50%),
-                         radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.03) 0%, transparent 50%)`,
-        pointerEvents: 'none'
-      }} />
-      {/* App Bar */}
-      <header className="md-elevated-card md-animate-slide-in-down" style={{
-        marginBottom: '24px',
-        padding: '20px 24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '16px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        border: '1px solid rgba(0, 102, 204, 0.1)',
-        boxShadow: '0 8px 32px rgba(0, 102, 204, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Header Background Pattern */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: `linear-gradient(45deg, rgba(0, 102, 204, 0.02) 25%, transparent 25%),
-                           linear-gradient(-45deg, rgba(0, 102, 204, 0.02) 25%, transparent 25%),
-                           linear-gradient(45deg, transparent 75%, rgba(0, 102, 204, 0.02) 75%),
-                           linear-gradient(-45deg, transparent 75%, rgba(0, 102, 204, 0.02) 75%)`,
-          backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-          opacity: 0.3
-        }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: 'var(--md-sys-shape-corner-full)',
-            background: 'var(--md-sys-color-primary-container)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--md-sys-color-on-primary-container)',
-            fontSize: '20px',
-            fontWeight: '500'
-          }}>
-            {user?.first_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
-          </div>
-          <div>
-            <h1 className="md-typescale-headline-small" style={{ 
-              color: 'var(--md-sys-color-on-surface)',
-              marginBottom: '4px'
-            }}>
-              Welcome back, {user?.first_name || user?.name || 'User'}!
-            </h1>
-            <p className="md-typescale-body-medium" style={{ 
-              color: 'var(--md-sys-color-on-surface-variant)'
-            }}>
-              Here's your financial overview
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="md-chip" style={{
-            background: 'var(--md-sys-color-secondary-container)',
-            color: 'var(--md-sys-color-on-secondary-container)',
-            border: 'none'
-          }}>
-             {user?.role?.replace('_', ' ').toUpperCase()}
-          </div>
-          <button
-            onClick={handleLogout}
-            className="md-filled-button md-ripple"
+    <div className="dashboard-container" style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+          /* Custom Scrollbar */
+          ::-webkit-scrollbar { width: 10px; }
+          ::-webkit-scrollbar-track { background: #fff; }
+          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; }
+
+          /* Skip link styles */
+          .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: ${THEME.colors.primary};
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 4px;
+            z-index: 1000;
+            font-weight: bold;
+          }
+          .skip-link:focus {
+            top: 6px;
+          }
+
+          /* Focus visible styles for better keyboard navigation */
+          .focus-visible:focus-visible {
+            outline: 3px solid ${THEME.colors.primary};
+            outline-offset: 2px;
+          }
+
+          /* Screen reader only text */
+          .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+          }
+
+          /* Responsive design */
+          @media (max-width: 768px) {
+            .dashboard-container {
+              flex-direction: column !important;
+            }
+
+            .sidebar {
+              width: 100% !important;
+              height: auto !important;
+              border-right: none !important;
+              border-bottom: 3px solid #000 !important;
+            }
+
+            .main-content {
+              padding: 20px !important;
+            }
+
+            .header-section {
+              flex-direction: column !important;
+              align-items: flex-start !important;
+              gap: 16px !important;
+            }
+
+            .tab-navigation {
+              width: 100% !important;
+              justify-content: flex-start !important;
+            }
+
+            .stats-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .charts-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .form-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .account-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .sidebar {
+              padding: 15px !important;
+            }
+
+            .main-content {
+              padding: 15px !important;
+            }
+
+            .playful-card {
+              padding: 16px !important;
+              margin-bottom: 16px !important;
+            }
+
+            .playful-button {
+              padding: 10px 16px !important;
+              font-size: 14px !important;
+            }
+          }
+        `}
+      </style>
+
+      {/* Skip Link for Accessibility */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
+      {/* Screen Reader Announcements */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        style={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}
+      >
+        {announcements}
+      </div>
+
+      {/* --- SIDEBAR (STICKER SHEET) --- */}
+      <nav
+        ref={sidebarRef}
+        role="navigation"
+        aria-label="Main navigation"
+        className="sidebar"
+        style={{
+          width: '280px',
+          background: '#fff',
+          borderRight: '3px solid #000',
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto'
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div
+            role="img"
+            aria-label="Member avatar"
             style={{
-              background: 'var(--md-sys-color-error)',
-              color: 'var(--md-sys-color-on-error)'
+              fontSize: '40px',
+              background: THEME.colors.secondary,
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              margin: '0 auto 10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '3px solid #000'
             }}
           >
-            Logout
-          </button>
+            👤
+          </div>
+          <h1 style={{ margin: 0, fontWeight: '900', color: THEME.colors.text }}>Member Hub</h1>
+          <p style={{ margin: 0, fontSize: '14px', color: '#888' }}>{user?.name || 'Member'}</p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          padding: '4px',
-          background: 'var(--md-sys-color-surface-container-highest)',
-          borderRadius: 'var(--md-sys-shape-corner-large)'
-        }}>
-          {[
-            { id: 'overview', name: 'Overview', icon: '' },
-            { id: 'accounts', name: 'Accounts', icon: '' },
-            { id: 'transactions', name: 'Transactions', icon: '' },
-            { id: 'transfers', name: 'Transfers', icon: '↗' },
-            { id: 'profile', name: 'Profile', icon: '' }
-          ].map((tab) => (
+        <div role="tablist" aria-label="Dashboard sections" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {menuItems.map(item => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="md-ripple"
+              key={item.id}
+              ref={(el) => menuRefs.current[item.id] = el}
+              onClick={() => item.available && handleTabChange(item.id)}
+              role="tab"
+              aria-selected={activeView === item.id}
+              aria-controls={`tabpanel-${item.id}`}
+              aria-disabled={!item.available}
+              tabIndex={item.available ? 0 : -1}
+              className="focus-visible"
               style={{
-                padding: '10px 16px',
-                background: activeTab === tab.id ? 'var(--md-sys-color-surface)' : 'transparent',
-                border: 'none',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                color: activeTab === tab.id ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
-                fontWeight: activeTab === tab.id ? '600' : '500',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap',
-                transition: 'all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard)',
-                boxShadow: activeTab === tab.id ? 'var(--md-sys-elevation-1)' : 'none'
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px 16px',
+                border: activeView === item.id ? `3px solid ${item.color}` : '3px solid transparent',
+                background: activeView === item.id ? `${item.color}20` : 'transparent',
+                borderRadius: '16px',
+                cursor: item.available ? 'pointer' : 'not-allowed',
+                textAlign: 'left',
+                fontSize: '16px',
+                fontWeight: '800',
+                color: item.available
+                  ? (activeView === item.id ? item.color : '#888')
+                  : '#ccc',
+                transition: 'all 0.2s ease',
+                opacity: item.available ? 1 : 0.5
               }}
             >
-              <span style={{ fontSize: '18px' }}>{tab.icon}</span>
-              <span className="md-typescale-label-large">{tab.name}</span>
+              <span role="img" aria-hidden="true" style={{ fontSize: '24px' }}>{item.icon}</span>
+              <span>{item.name}</span>
+              {!item.available && (
+                <span
+                  role="img"
+                  aria-label="Service unavailable"
+                  style={{ fontSize: '12px', marginLeft: '4px' }}
+                >
+                  ⚠️
+                </span>
+              )}
             </button>
           ))}
         </div>
-      </header>
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+          <PlayfulButton variant="danger" onClick={handleLogout} style={{ width: '100%' }}>
+            Log Out 👋
+          </PlayfulButton>
+        </div>
+      </nav>
+
+      {/* --- MAIN CONTENT --- */}
+      <main
+        id="main-content"
+        ref={mainContentRef}
+        tabIndex="-1"
+        role="main"
+        aria-labelledby="main-heading"
+        className="main-content"
+        style={{ flex: 1, padding: '30px', overflowY: 'auto' }}
+      >
+
+        {/* Header Ribbon */}
+        <header className="header-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+          <h2
+            id="main-heading"
+            style={{ fontSize: '32px', fontWeight: '900', color: THEME.colors.text, margin: 0 }}
+          >
+            <span aria-hidden="true">{menuItems.find(i => i.id === activeView)?.icon}</span>
+            {menuItems.find(i => i.id === activeView)?.name}
+          </h2>
+          <time
+            aria-label={`Current date: ${new Date().toLocaleDateString()}`}
+            style={{ background: '#FFF', padding: '8px 16px', borderRadius: '20px', border: '2px solid #000', fontWeight: 'bold' }}
+          >
+            📅 {new Date().toLocaleDateString()}
+          </time>
+        </header>
+
         {/* Error Banner */}
         {error && (
-          <div className="md-filled-card md-animate-slide-in-down" style={{
-            marginBottom: '24px',
-            background: 'var(--md-sys-color-error-container)',
-            color: 'var(--md-sys-color-on-error-container)',
+          <div style={{
+            background: THEME.colors.danger,
+            color: 'white',
             padding: '16px 24px',
-            borderRadius: 'var(--md-sys-shape-corner-medium)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
+            borderRadius: THEME.radius.card,
+            marginBottom: '24px',
+            border: '3px solid #000',
+            boxShadow: THEME.shadows.card
           }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: 'var(--md-sys-shape-corner-medium)',
-              background: 'var(--md-sys-color-error)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--md-sys-color-on-error)',
-              flexShrink: 0
-            }}>
-              
-            </div>
-            <div style={{ flex: 1 }}>
-              <p className="md-typescale-body-medium" style={{ margin: 0 }}>
-                {error}
-              </p>
-            </div>
-            <button
-              onClick={() => setError(null)}
-              className="md-text-button"
-              style={{
-                color: 'var(--md-sys-color-on-error-container)',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer'
-              }}
-            >
-              
-            </button>
+            ⚠️ {error}
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="md-elevated-card"
-                style={{
-                  padding: '24px',
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                  background: 'var(--md-sys-color-surface-container-low)'
-                }}
-              >
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: 'var(--md-sys-shape-corner-medium)',
-                    background: 'var(--md-sys-color-surface-container-highest)'
-                  }}></div>
-                  <div style={{
-                    height: '24px',
-                    width: '60px',
-                    borderRadius: 'var(--md-sys-shape-corner-small)',
-                    background: 'var(--md-sys-color-surface-container-highest)'
-                  }}></div>
-                </div>
-                <div style={{
-                  height: '16px',
-                  width: '80px',
-                  borderRadius: 'var(--md-sys-shape-corner-small)',
-                  background: 'var(--md-sys-color-surface-container-highest)',
-                  marginBottom: '8px'
-                }}></div>
-                <div style={{
-                  height: '32px',
-                  width: '120px',
-                  borderRadius: 'var(--md-sys-shape-corner-small)',
-                  background: 'var(--md-sys-color-surface-container-highest)'
-                }}></div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Dynamic Content Wrapper */}
+        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
 
-        {/* Overview Tab */}
-        {activeTab === 'overview' && !loading && (
-          <>
-            {/* Quick Stats Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '16px',
-              marginBottom: '24px'
-            }}>
-          {quickStats.map((stat, index) => (
-            <div
-              key={index}
-              className="md-elevated-card md-state-layer md-animate-scale-in"
-              style={{
-                animationDelay: `${index * 100}ms`,
-                cursor: 'pointer',
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                border: `1px solid rgba(0, 102, 204, 0.06)`,
-                boxShadow: '0 4px 16px rgba(0, 102, 204, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 102, 204, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 102, 204, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04)';
-              }}
+          {/* Account Balance Tab */}
+          {activeView === 'balance' && (
+            <section
+              id="tabpanel-balance"
+              role="tabpanel"
+              aria-labelledby={`tab-${activeView}`}
+              aria-hidden={activeView !== 'balance'}
             >
-              {/* Card Background Pattern */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '60px',
-                height: '60px',
-                background: `linear-gradient(135deg, ${stat.color === 'primary' ? 'rgba(0, 102, 204, 0.04)' :
-                  stat.color === 'secondary' ? 'rgba(16, 185, 129, 0.04)' :
-                  stat.color === 'tertiary' ? 'rgba(245, 158, 11, 0.04)' :
-                  'rgba(239, 68, 68, 0.04)'} 0%, transparent 100%)`,
-                borderRadius: '50%',
-                transform: 'translate(20px, -20px)',
-                pointerEvents: 'none'
-              }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', position: 'relative', zIndex: 1 }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: `linear-gradient(135deg, var(--md-sys-color-${stat.color}-container) 0%, ${stat.color === 'primary' ? '#e0efff' :
-                    stat.color === 'secondary' ? '#f0fdf4' :
-                    stat.color === 'tertiary' ? '#fffbeb' :
-                    '#fef2f2'} 100%)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  boxShadow: `0 4px 12px rgba(0, 102, 204, 0.15)`
-                }}>
-                  {stat.icon}
-                </div>
-                {stat.trendUp !== null && (
-                  <div className="md-chip" style={{
-                    background: stat.trendUp ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-                    color: stat.trendUp ? '#166534' : '#dc2626',
-                    border: 'none',
-                    padding: '4px 8px',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    {stat.trendUp ? '↗' : '↘'} {stat.trend}
+              {!backendStatus.balance ? (
+                <PlayfulCard color="#FFEBEE">
+                  <div style={{ textAlign: 'center', padding: '48px' }}>
+                    <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
+                    <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
+                    <p style={{ fontSize: '16px', color: '#666' }}>Account balance service is currently down. Please try again later.</p>
                   </div>
-                )}
-              </div>
-              <p className="md-typescale-label-medium" style={{
-                color: 'var(--md-sys-color-on-surface-variant)',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                position: 'relative',
-                zIndex: 1
-              }}>
-                {stat.label}
-              </p>
-              <p className="md-typescale-headline-medium" style={{
-                color: 'var(--md-sys-color-on-surface)',
-                fontWeight: '600',
-                position: 'relative',
-                zIndex: 1
-              }}>
-                {stat.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Data Visualization Section */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
-          gap: '24px',
-          marginBottom: '32px'
-        }}>
-          {/* Spending Trends Chart */}
-          <div className="md-elevated-card md-animate-slide-in-up" style={{
-            animationDelay: '200ms',
-            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-            border: '1px solid rgba(0, 102, 204, 0.08)',
-            boxShadow: '0 8px 32px rgba(0, 102, 204, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Chart Background Pattern */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '120px',
-              height: '120px',
-              background: 'linear-gradient(135deg, rgba(0, 102, 204, 0.04) 0%, rgba(0, 102, 204, 0.01) 100%)',
-              borderRadius: '50%',
-              transform: 'translate(40px, -40px)',
-              pointerEvents: 'none'
-            }} />
-            <div style={{ padding: '24px 24px 16px', position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #0066CC 0%, #0052a3 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 102, 204, 0.3)'
-                }}>
-                  📈
-                </div>
-                <div>
-                  <h3 className="md-typescale-title-large" style={{
-                    color: 'var(--md-sys-color-on-surface)',
-                    marginBottom: '4px',
-                    fontWeight: '600'
-                  }}>
-                    Spending Trends
-                  </h3>
-                  <p className="md-typescale-body-small" style={{
-                    color: 'var(--md-sys-color-on-surface-variant)',
-                    margin: 0
-                  }}>
-                    6-month overview
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div style={{ padding: '0 24px 24px', position: 'relative', zIndex: 1 }}>
-              <SpendingTrendsChart />
-            </div>
-          </div>
-
-          {/* Expense Breakdown Chart */}
-          <div className="md-elevated-card md-animate-slide-in-up" style={{
-            animationDelay: '300ms',
-            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-            border: '1px solid rgba(16, 185, 129, 0.08)',
-            boxShadow: '0 8px 32px rgba(16, 185, 129, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Chart Background Pattern */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '100px',
-              height: '100px',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.01) 100%)',
-              borderRadius: '50%',
-              transform: 'translate(30px, -30px)',
-              pointerEvents: 'none'
-            }} />
-            <div style={{ padding: '24px 24px 16px', position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                }}>
-                  🥧
-                </div>
-                <div>
-                  <h3 className="md-typescale-title-large" style={{
-                    color: 'var(--md-sys-color-on-surface)',
-                    marginBottom: '4px',
-                    fontWeight: '600'
-                  }}>
-                    Expense Breakdown
-                  </h3>
-                  <p className="md-typescale-body-small" style={{
-                    color: 'var(--md-sys-color-on-surface-variant)',
-                    margin: 0
-                  }}>
-                    Current month analysis
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div style={{ padding: '0 24px 24px', position: 'relative', zIndex: 1 }}>
-              <ExpenseBreakdownChart />
-            </div>
-          </div>
-        </div>
-
-        {/* Monthly Comparison Chart */}
-        <div className="md-elevated-card md-animate-slide-in-up" style={{
-          animationDelay: '400ms',
-          marginBottom: '32px',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-          border: '1px solid rgba(245, 158, 11, 0.08)',
-          boxShadow: '0 8px 32px rgba(245, 158, 11, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Chart Background Pattern */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '140px',
-            height: '140px',
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.04) 0%, rgba(245, 158, 11, 0.01) 100%)',
-            borderRadius: '50%',
-            transform: 'translate(50px, -50px)',
-            pointerEvents: 'none'
-          }} />
-          <div style={{ padding: '24px 24px 16px', position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
-              }}>
-                📊
-              </div>
-              <div>
-                <h3 className="md-typescale-title-large" style={{
-                  color: 'var(--md-sys-color-on-surface)',
-                  marginBottom: '4px',
-                  fontWeight: '600'
-                }}>
-                  Monthly Financial Overview
-                </h3>
-                <p className="md-typescale-body-small" style={{
-                  color: 'var(--md-sys-color-on-surface-variant)',
-                  margin: 0
-                }}>
-                  Income vs expenses vs savings
-                </p>
-              </div>
-            </div>
-          </div>
-          <div style={{ padding: '0 24px 24px', position: 'relative', zIndex: 1 }}>
-            <MonthlyComparisonChart />
-          </div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-          gap: '24px'
-        }}>
-          {/* Quick Actions */}
-          <div className="md-elevated-card md-animate-slide-in-up">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                background: 'var(--md-sys-color-primary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--md-sys-color-on-primary-container)'
-              }}>
-                
-              </div>
-              <h3 className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                Quick Actions
-              </h3>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {quickActions.map((action, index) => {
-                const Component = action.link ? Link : 'button';
-                const props = action.link 
-                  ? { to: action.link } 
-                  : { onClick: action.action, style: { border: 'none', background: 'none', width: '100%', padding: 0, cursor: 'pointer' } };
-                
-                return (
-                  <Component key={index} {...props}>
-                    <div className="md-list-item md-state-layer" style={{
-                      padding: '16px',
-                      borderRadius: 'var(--md-sys-shape-corner-medium)',
-                      background: 'var(--md-sys-color-surface-container-low)'
-                    }}>
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: 'var(--md-sys-shape-corner-small)',
-                        background: `var(--md-sys-color-${action.color}-container)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '20px',
-                        flexShrink: 0
-                      }}>
-                        {action.icon}
-                      </div>
-                      <div style={{ flex: 1, textAlign: 'left' }}>
-                        <p className="md-typescale-title-medium" style={{ 
-                          color: 'var(--md-sys-color-on-surface)',
-                          marginBottom: '4px'
-                        }}>
-                          {action.title}
-                        </p>
-                        <p className="md-typescale-body-small" style={{ 
-                          color: 'var(--md-sys-color-on-surface-variant)'
-                        }}>
-                          {action.description}
-                        </p>
-                      </div>
-                      <span style={{ 
-                        color: 'var(--md-sys-color-on-surface-variant)',
-                        fontSize: '20px'
-                      }}>
-                        ›
-                      </span>
+                </PlayfulCard>
+              ) : (
+                <>
+                  <PlayfulCard color="#E8F5E9">
+                    <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Current Balance</h3>
+                    <div style={{ fontSize: '48px', fontWeight: '900', color: THEME.colors.success, marginBottom: '10px' }}>
+                      {formatCurrencyGHS(accountBalance?.account_balance || 0)}
                     </div>
-                  </Component>
-                );
-              })}
-            </div>
-          </div>
+                    <p style={{ color: '#666', marginBottom: '20px' }}>Available Balance</p>
+                  </PlayfulCard>
 
-          {/* Recent Activity */}
-          <div className="md-elevated-card md-animate-slide-in-up" style={{ animationDelay: '100ms' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                background: 'var(--md-sys-color-secondary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--md-sys-color-on-secondary-container)'
-              }}>
-                
-              </div>
-              <h3 className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                Recent Activity
-              </h3>
-            </div>
+                  <PlayfulCard color="#FFF3E0">
+                    <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Recent Transactions</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {transactions.slice(0, 5).map((transaction, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px',
+                          background: '#f9f9f9',
+                          borderRadius: '12px',
+                          border: '2px solid #000'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: 'bold' }}>{transaction.description}</div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {new Date(transaction.date).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div style={{
+                            fontWeight: 'bold',
+                            color: transaction.amount > 0 ? THEME.colors.success : THEME.colors.danger
+                          }}>
+                            {formatCurrencyGHS(transaction.amount)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </PlayfulCard>
+                </>
+              )}
+            </section>
+          )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {recentActivity.map((activity, index) => (
-                <div
-                  key={index}
-                  className="md-list-item"
-                  style={{
-                    padding: '16px',
-                    borderRadius: 'var(--md-sys-shape-corner-medium)',
-                    background: 'var(--md-sys-color-surface-container-low)'
-                  }}
-                >
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: 'var(--md-sys-shape-corner-medium)',
-                    background: activity.amount > 0 
-                      ? 'var(--md-sys-color-secondary-container)' 
-                      : 'var(--md-sys-color-error-container)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '20px',
-                    flexShrink: 0
-                  }}>
-                    {activity.icon}
+          {/* Account Types Tab */}
+          {activeView === 'accounts' && (
+            <section
+              id="tabpanel-accounts"
+              role="tabpanel"
+              aria-labelledby={`tab-${activeView}`}
+              aria-hidden={activeView !== 'accounts'}
+            >
+              {!backendStatus.accounts ? (
+                <PlayfulCard color="#FFEBEE">
+                  <div style={{ textAlign: 'center', padding: '48px' }}>
+                    <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
+                    <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
+                    <p style={{ fontSize: '16px', color: '#666' }}>Account information service is currently down. Please try again later.</p>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className="md-typescale-title-small" style={{ 
-                      color: 'var(--md-sys-color-on-surface)',
-                      marginBottom: '4px'
-                    }}>
-                      {activity.description}
-                    </p>
-                    <p className="md-typescale-body-small" style={{ 
-                      color: 'var(--md-sys-color-on-surface-variant)'
-                    }}>
-                      {activity.time}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p className="md-typescale-title-medium" style={{ 
-                      color: activity.amount > 0 
-                        ? 'var(--md-sys-color-secondary)' 
-                        : 'var(--md-sys-color-error)',
-                      fontWeight: '600'
-                    }}>
-                      {formatCurrencyGHS(activity.amount)}
-                    </p>
-                  </div>
+                </PlayfulCard>
+              ) : (
+                <div className="account-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                  {accounts.map((account, index) => (
+                    <PlayfulCard key={index} color={index % 2 === 0 ? '#E3F2FD' : '#F3E5F5'}>
+                      <h4 style={{ marginBottom: '16px', fontSize: '20px', fontWeight: '900' }}>
+                        {account.type} Account
+                      </h4>
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', textTransform: 'uppercase' }}>Account Number</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                          ****{account.account_number?.slice(-4) || '****'}
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', textTransform: 'uppercase' }}>Balance</div>
+                        <div style={{ fontSize: '24px', fontWeight: '900', color: THEME.colors.primary }}>
+                          {formatCurrencyGHS(account.balance || 0)}
+                        </div>
+                      </div>
+                      <div style={{
+                        display: 'inline-block',
+                        padding: '4px 12px',
+                        background: account.status === 'active' ? THEME.colors.success : THEME.colors.warning,
+                        color: 'white',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase'
+                      }}>
+                        {account.status}
+                      </div>
+                    </PlayfulCard>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </section>
+          )}
 
-            <button className="md-text-button" style={{
-              width: '100%',
-              marginTop: '16px',
-              justifyContent: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span>View All Transactions</span>
-              <span>›</span>
-            </button>
-          </div>
-        </div>
-
-            {/* Security Notice */}
-            <div className="md-filled-card md-animate-fade-in" style={{
-              marginTop: '24px',
-              background: 'var(--md-sys-color-primary-container)',
-              color: 'var(--md-sys-color-on-primary-container)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: 'var(--md-sys-shape-corner-medium)',
-                  background: 'var(--md-sys-color-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--md-sys-color-on-primary)',
-                  flexShrink: 0
-                }}>
-                  
+          {/* Request Services Tab */}
+          {activeView === 'services' && (
+            <section
+              id="tabpanel-services"
+              role="tabpanel"
+              aria-labelledby={`tab-${activeView}`}
+              aria-hidden={activeView !== 'services'}
+            >
+              <PlayfulCard color="#E1F5FE">
+              {!backendStatus.services ? (
+                <div style={{ textAlign: 'center', padding: '48px' }}>
+                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
+                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
+                  <p style={{ fontSize: '16px', color: '#666' }}>Service request system is currently down. Please try again later.</p>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <h4 className="md-typescale-title-medium" style={{ marginBottom: '8px' }}>
-                    Your account is secure
-                  </h4>
-                  <p className="md-typescale-body-medium">
-                    All transactions are protected with 256-bit SSL encryption. We monitor your account 24/7 for suspicious activity.
+              ) : (
+                <>
+                  <h3 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '900' }}>Request Services</h3>
+
+                  <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <div>
+                      <h4 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>New Service Request</h4>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                            Request Type
+                          </label>
+                          <select
+                            value={serviceRequestForm.request_type}
+                            onChange={(e) => setServiceRequestForm(prev => ({ ...prev, request_type: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              border: '2px solid #000',
+                              borderRadius: '12px',
+                              fontSize: '16px'
+                            }}
+                          >
+                            <option value="statement">Account Statement</option>
+                            <option value="checkbook">Checkbook Request</option>
+                            <option value="loan-info">Loan Information</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                            Delivery Method
+                          </label>
+                          <select
+                            value={serviceRequestForm.delivery_method}
+                            onChange={(e) => setServiceRequestForm(prev => ({ ...prev, delivery_method: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              border: '2px solid #000',
+                              borderRadius: '12px',
+                              fontSize: '16px'
+                            }}
+                          >
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                            <option value="mail">Physical Mail</option>
+                          </select>
+                          {serviceRequestForm.delivery_method === 'sms' && !twoFactorStatus.enabled && (
+                            <div style={{
+                              marginTop: '8px',
+                              padding: '8px 12px',
+                              background: '#FFF3CD',
+                              border: '2px solid #856404',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              color: '#856404'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🔐</span>
+                                <span>2FA required for SMS delivery</span>
+                                <PlayfulButton
+                                  onClick={() => setActiveView('twofa')}
+                                  style={{
+                                    fontSize: '12px',
+                                    padding: '4px 8px',
+                                    background: THEME.colors.warning
+                                  }}
+                                >
+                                  Enable 2FA
+                                </PlayfulButton>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                            Description (Optional)
+                          </label>
+                          <textarea
+                            value={serviceRequestForm.description}
+                            onChange={(e) => setServiceRequestForm(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Additional details..."
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              border: '2px solid #000',
+                              borderRadius: '12px',
+                              fontSize: '16px',
+                              minHeight: '80px',
+                              resize: 'vertical'
+                            }}
+                          />
+                        </div>
+
+                        {serviceRequestError && (
+                          <div style={{
+                            marginTop: '16px',
+                            padding: '12px',
+                            background: THEME.colors.danger,
+                            color: 'white',
+                            borderRadius: '8px',
+                            border: '2px solid #000',
+                            fontSize: '14px'
+                          }}>
+                            ⚠️ {serviceRequestError}
+                          </div>
+                        )}
+
+                        <PlayfulButton onClick={handleServiceRequest} style={{ width: '100%', marginTop: '16px' }}>
+                          Submit Request 📋
+                        </PlayfulButton>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>Recent Requests</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {serviceRequests.length === 0 ? (
+                          <div style={{
+                            padding: '24px',
+                            textAlign: 'center',
+                            background: '#f9f9f9',
+                            borderRadius: '12px',
+                            border: '2px solid #000'
+                          }}>
+                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
+                            <p style={{ color: '#666' }}>No service requests yet</p>
+                          </div>
+                        ) : (
+                          serviceRequests.map((request, index) => (
+                            <div key={index} style={{
+                              padding: '12px',
+                              background: '#f9f9f9',
+                              borderRadius: '12px',
+                              border: '2px solid #000'
+                            }}>
+                              <div style={{ fontWeight: 'bold' }}>{request.request_type}</div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>{request.status}</div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </PlayfulCard>
+            </section>
+          )}
+
+          {/* Change Password Tab */}
+          {activeView === 'password' && (
+            <section
+              id="tabpanel-password"
+              role="tabpanel"
+              aria-labelledby={`tab-${activeView}`}
+              aria-hidden={activeView !== 'password'}
+            >
+              <PlayfulCard color="#FFF3E0">
+              {!backendStatus.password ? (
+                <div style={{ textAlign: 'center', padding: '48px' }}>
+                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
+                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
+                  <p style={{ fontSize: '16px', color: '#666' }}>Password change service is currently down. Please try again later.</p>
+                </div>
+              ) : (
+                <>
+                  <h3 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '900' }}>Change Password</h3>
+
+                  <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          value={passwordForm.current_password}
+                          onChange={(e) => setPasswordForm(prev => ({ ...prev, current_password: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px solid #000',
+                            borderRadius: '12px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="new-password"
+                          style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}
+                        >
+                          New Password
+                        </label>
+                        <input
+                          id="new-password"
+                          type="password"
+                          value={passwordForm.new_password}
+                          onChange={(e) => setPasswordForm(prev => ({ ...prev, new_password: e.target.value }))}
+                          aria-describedby="new-password-help"
+                          aria-required="true"
+                          autoComplete="new-password"
+                          className="focus-visible"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px solid #000',
+                            borderRadius: '12px',
+                            fontSize: '16px'
+                          }}
+                        />
+                        <div id="new-password-help" className="sr-only">
+                          Enter a strong password with at least 8 characters
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="confirm-password"
+                          style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}
+                        >
+                          Confirm New Password
+                        </label>
+                        <input
+                          id="confirm-password"
+                          type="password"
+                          value={passwordForm.confirm_password}
+                          onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm_password: e.target.value }))}
+                          aria-describedby="confirm-password-help"
+                          aria-required="true"
+                          autoComplete="new-password"
+                          className="focus-visible"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px solid #000',
+                            borderRadius: '12px',
+                            fontSize: '16px'
+                          }}
+                        />
+                        <div id="confirm-password-help" className="sr-only">
+                          Re-enter your new password to confirm
+                        </div>
+                      </div>
+
+                      <PlayfulButton onClick={handleChangePassword} style={{ width: '100%', marginTop: '16px' }}>
+                        Change Password 🔒
+                      </PlayfulButton>
+                    </div>
+                  </div>
+                </>
+              )}
+            </PlayfulCard>
+            </section>
+          )}
+
+          {/* Activate 2FA Tab */}
+          {activeView === 'twofa' && (
+            <section
+              id="tabpanel-twofa"
+              role="tabpanel"
+              aria-labelledby={`tab-${activeView}`}
+              aria-hidden={activeView !== 'twofa'}
+            >
+              <PlayfulCard color="#FCE4EC">
+              {!backendStatus.twofa ? (
+                <div style={{ textAlign: 'center', padding: '48px' }}>
+                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
+                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
+                  <p style={{ fontSize: '16px', color: '#666' }}>Two-factor authentication service is currently down. Please try again later.</p>
+                </div>
+              ) : twoFactorStatus.enabled ? (
+                <div style={{ textAlign: 'center', padding: '48px' }}>
+                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>✅</div>
+                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>2FA is Enabled</h3>
+                  <p style={{ fontSize: '16px', color: '#666' }}>
+                    Your account is protected with two-factor authentication.
                   </p>
                 </div>
-              </div>
-            </div>
-          </>
-        )}
+              ) : (
+                <>
+                  <h3 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '900' }}>Activate Two-Factor Authentication</h3>
 
-        {/* Accounts Tab */}
-        {activeTab === 'accounts' && !loading && (
-          <div className="md-elevated-card md-animate-slide-in-up">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                background: 'var(--md-sys-color-primary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--md-sys-color-on-primary-container)'
-              }}>
-                
-              </div>
-              <h3 className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                Account Details
-              </h3>
-            </div>
+                  <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔐</div>
+                      <p style={{ fontSize: '16px', color: '#666' }}>
+                        Add an extra layer of security to your account by enabling two-factor authentication.
+                      </p>
+                    </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-              <div className="md-filled-card" style={{ padding: '20px' }}>
-                <h4 className="md-typescale-title-medium" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '16px' }}>
-                  Primary Account
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Account Number
-                  </div>
-                  <div className="md-typescale-title-small" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                    {accounts[0]?.id || 'N/A'}
-                  </div>
-                  <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Account Type
-                  </div>
-                  <div className="md-typescale-title-small" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                    {accounts[0]?.name || 'Account'}
-                  </div>
-                  <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Current Balance
-                  </div>
-                  <div className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-secondary)' }}>
-                    {formatCurrencyGHS(accounts[0]?.balance || 0)}
-                  </div>
-                </div>
-              </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <h4 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>
+                          Choose your 2FA method:
+                        </h4>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                          <div style={{
+                            padding: '12px 24px',
+                            background: '#e8f5e8',
+                            border: '2px solid #000',
+                            borderRadius: '12px',
+                            fontWeight: 'bold'
+                          }}>
+                            📱 SMS
+                          </div>
+                          <div style={{
+                            padding: '12px 24px',
+                            background: '#e3f2fd',
+                            border: '2px solid #000',
+                            borderRadius: '12px',
+                            fontWeight: 'bold'
+                          }}>
+                            📧 Email
+                          </div>
+                          <div style={{
+                            padding: '12px 24px',
+                            background: '#f3e5f5',
+                            border: '2px solid #000',
+                            borderRadius: '12px',
+                            fontWeight: 'bold'
+                          }}>
+                            📱 Authenticator App
+                          </div>
+                        </div>
+                      </div>
 
-              <div className="md-filled-card" style={{ padding: '20px' }}>
-                <h4 className="md-typescale-title-medium" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '16px' }}>
-                  Account Features
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-secondary-container)',
-                    color: 'var(--md-sys-color-on-secondary-container)',
-                    border: 'none'
-                  }}>
-                     Online Banking
-                  </div>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-secondary-container)',
-                    color: 'var(--md-sys-color-on-secondary-container)',
-                    border: 'none'
-                  }}>
-                     Mobile Banking
-                  </div>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-secondary-container)',
-                    color: 'var(--md-sys-color-on-secondary-container)',
-                    border: 'none'
-                  }}>
-                     ATM Access
-                  </div>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-secondary-container)',
-                    color: 'var(--md-sys-color-on-secondary-container)',
-                    border: 'none'
-                  }}>
-                     SMS Alerts
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                      {!otpSent ? (
+                        <PlayfulButton onClick={handleSendOTP} style={{ width: '100%' }}>
+                          Send Verification Code 📱
+                        </PlayfulButton>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div>
+                            <label
+                              htmlFor="otp-code"
+                              style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}
+                            >
+                              Enter 6-digit code
+                            </label>
+                            <input
+                              id="otp-code"
+                              type="text"
+                              value={otpCode}
+                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              placeholder="000000"
+                              aria-describedby="otp-help"
+                              aria-required="true"
+                              inputMode="numeric"
+                              pattern="[0-9]{6}"
+                              maxLength={6}
+                              autoComplete="one-time-code"
+                              className="focus-visible"
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                border: '2px solid #000',
+                                borderRadius: '12px',
+                                fontSize: '18px',
+                                textAlign: 'center',
+                                letterSpacing: '4px'
+                              }}
+                            />
+                            <div id="otp-help" className="sr-only">
+                              Enter the 6-digit verification code sent to your phone
+                            </div>
+                          </div>
 
-        {/* Transactions Tab */}
-        {activeTab === 'transactions' && !loading && (
-          <div className="md-elevated-card md-animate-slide-in-up">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                background: 'var(--md-sys-color-secondary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--md-sys-color-on-secondary-container)'
-              }}>
-                
-              </div>
-              <h3 className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                Transaction History
-              </h3>
-            </div>
+                          <div style={{ textAlign: 'center', color: '#666' }}>
+                            Code expires in: {Math.floor(otpExpiresIn / 60)}:{(otpExpiresIn % 60).toString().padStart(2, '0')}
+                          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {recentActivity.map((activity, index) => (
-                <div
-                  key={index}
-                  className="md-list-item"
-                  style={{
-                    padding: '16px',
-                    borderRadius: 'var(--md-sys-shape-corner-medium)',
-                    background: 'var(--md-sys-color-surface-container-low)'
-                  }}
-                >
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: 'var(--md-sys-shape-corner-medium)',
-                    background: activity.amount > 0
-                      ? 'var(--md-sys-color-secondary-container)'
-                      : 'var(--md-sys-color-error-container)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '20px',
-                    flexShrink: 0
-                  }}>
-                    {activity.icon}
+                          <PlayfulButton onClick={handleVerifyOTP} style={{ width: '100%' }}>
+                            Verify & Enable 2FA ✅
+                          </PlayfulButton>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className="md-typescale-title-small" style={{
-                      color: 'var(--md-sys-color-on-surface)',
-                      marginBottom: '4px'
-                    }}>
-                      {activity.description}
-                    </p>
-                    <p className="md-typescale-body-small" style={{
-                      color: 'var(--md-sys-color-on-surface-variant)'
-                    }}>
-                      {activity.time}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p className="md-typescale-title-medium" style={{
-                      color: activity.amount > 0
-                        ? 'var(--md-sys-color-secondary)'
-                        : 'var(--md-sys-color-error)',
-                      fontWeight: '600'
-                    }}>
-                      {formatCurrencyGHS(activity.amount)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                </>
+              )}
+            </PlayfulCard>
+            </section>
+          )}
 
-            <button className="md-text-button" style={{
-              width: '100%',
-              marginTop: '16px',
-              justifyContent: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span>View All Transactions</span>
-              <span>›</span>
-            </button>
-          </div>
-        )}
-
-        {/* Transfers Tab */}
-        {activeTab === 'transfers' && !loading && (
-          <div className="md-elevated-card md-animate-slide-in-up">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                background: 'var(--md-sys-color-tertiary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--md-sys-color-on-tertiary-container)'
-              }}>
-                ↗
-              </div>
-              <h3 className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                Transfer Funds
-              </h3>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              <div className="md-filled-card">
-                <h4 className="md-typescale-title-medium" style={{ marginBottom: '16px', color: 'var(--md-sys-color-on-surface)' }}>
-                  Quick Transfer
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <input
-                    type="text"
-                    placeholder="Recipient Account"
-                    className="md-outlined-text-field"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Amount (GHS)"
-                    className="md-outlined-text-field"
-                  />
-                  <textarea
-                    placeholder="Description (Optional)"
-                    className="md-outlined-text-field"
-                    style={{ minHeight: '60px' }}
-                  />
-                  <button
-                    className="md-filled-button md-ripple"
-                    style={{
-                      width: '100%',
-                      justifyContent: 'center',
-                      background: 'var(--md-sys-color-primary)',
-                      color: 'var(--md-sys-color-on-primary)'
-                    }}
-                  >
-                    Send Money
-                  </button>
-                </div>
-              </div>
-
-              <div className="md-filled-card">
-                <h4 className="md-typescale-title-medium" style={{ marginBottom: '16px', color: 'var(--md-sys-color-on-surface)' }}>
-                  Transfer Options
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-primary-container)',
-                    color: 'var(--md-sys-color-on-primary-container)',
-                    border: 'none'
-                  }}>
-                     Instant Transfer
-                  </div>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-secondary-container)',
-                    color: 'var(--md-sys-color-on-secondary-container)',
-                    border: 'none'
-                  }}>
-                     Scheduled Transfer
-                  </div>
-                  <div className="md-chip" style={{
-                    background: 'var(--md-sys-color-tertiary-container)',
-                    color: 'var(--md-sys-color-on-tertiary-container)',
-                    border: 'none'
-                  }}>
-                     Mobile Money
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Profile Tab */}
-        {activeTab === 'profile' && !loading && (
-          <div className="md-elevated-card md-animate-slide-in-up">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                background: 'var(--md-sys-color-secondary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--md-sys-color-on-secondary-container)'
-              }}>
-                
-              </div>
-              <h3 className="md-typescale-title-large" style={{ color: 'var(--md-sys-color-on-surface)' }}>
-                Profile Settings
-              </h3>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-              <div className="md-filled-card">
-                <h4 className="md-typescale-title-medium" style={{ marginBottom: '16px', color: 'var(--md-sys-color-on-surface)' }}>
-                  Personal Information
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div>
-                    <label className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      defaultValue={`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.name || ''}
-                      className="md-outlined-text-field"
-                    />
-                  </div>
-                  <div>
-                    <label className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      defaultValue={user?.email || ''}
-                      className="md-outlined-text-field"
-                    />
-                  </div>
-                  <div>
-                    <label className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      defaultValue={user?.phone || ''}
-                      className="md-outlined-text-field"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="md-filled-card">
-                <h4 className="md-typescale-title-medium" style={{ marginBottom: '16px', color: 'var(--md-sys-color-on-surface)' }}>
-                  Security Settings
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button className="md-outlined-button md-ripple" style={{ justifyContent: 'flex-start' }}>
-                     Change Password
-                  </button>
-                  <button className="md-outlined-button md-ripple" style={{ justifyContent: 'flex-start' }}>
-                     Two-Factor Authentication
-                  </button>
-                  <button className="md-outlined-button md-ripple" style={{ justifyContent: 'flex-start' }}>
-                     Login History
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

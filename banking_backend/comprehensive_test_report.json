@@ -8,17 +8,15 @@
       "checks": {
         "database": {
           "status": "healthy",
-          "response_time": 0.003289937973022461,
-          "timestamp": 1763579647.041348
+          "response_time": 0.001
         },
         "cache": {
           "status": "healthy",
-          "response_time": 0.0,
-          "timestamp": 1763579647.041348
+          "response_time": 0.0
         }
       }
     },
-    "timestamp": "2025-11-19 19:14:07"
+    "timestamp": "2025-11-29 10:08:45"
   },
   {
     "test": "Health Check /health/system/",
@@ -26,34 +24,40 @@
     "details": "Status: 200",
     "response_data": {
       "status": "healthy",
-      "timestamp": 1763579647.0475702,
+      "timestamp": "2025-11-29T10:08:45.826064+00:00",
       "services": {
-        "database": {
-          "status": "healthy",
-          "response_time": 0.0009367465972900391,
-          "timestamp": 1763579647.0475702
-        },
-        "cache": {
-          "status": "healthy",
-          "response_time": 0.0,
-          "timestamp": 1763579647.0475702
-        }
+        "cpu_usage": 58.3,
+        "memory_usage": 74.0,
+        "disk_usage": 0.0
       }
     },
-    "timestamp": "2025-11-19 19:14:07"
+    "timestamp": "2025-11-29 10:08:45"
   },
   {
     "test": "Health Check /health/banking/",
-    "status": "FAIL",
-    "details": "Status: 500",
-    "response_data": "{\"status\": \"error\", \"error\": \"Metrics calculation failed\", \"timestamp\": \"2025-11-19T19:14:07.056508+00:00\"}",
-    "timestamp": "2025-11-19 19:14:07"
+    "status": "PASS",
+    "details": "Status: 200",
+    "response_data": {
+      "status": "healthy",
+      "timestamp": "2025-11-29T10:08:45.848495+00:00",
+      "metrics": {
+        "transactions_24h": {
+          "count": 0,
+          "total_amount": 0.0
+        },
+        "accounts": {
+          "total": 2,
+          "active": 2
+        }
+      }
+    },
+    "timestamp": "2025-11-29 10:08:45"
   },
   {
     "test": "User Authentication",
     "status": "FAIL",
-    "details": "Authentication failed: 500",
-    "response_data": "{\"success\":false,\"error\":{\"code\":\"DATABASE_ERROR\",\"message\":\"Database operation failed\",\"details\":{}},\"timestamp\":\"2025-11-19T19:14:07.068349+00:00\"}",
-    "timestamp": "2025-11-19 19:14:07"
+    "details": "Authentication failed: 400",
+    "response_data": "{\"detail\":\"{'email': [ErrorDetail(string='Enter a valid email address.', code='invalid')]}\"}",
+    "timestamp": "2025-11-29 10:08:45"
   }
 ]

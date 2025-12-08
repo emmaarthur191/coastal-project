@@ -1,242 +1,137 @@
-# Banking Backend Production Deployment Guide
+# Production Deployment Guide - Coastal Banking
 
-This document provides comprehensive instructions for deploying the Banking Backend application to production environments.
+## Quick Start
 
-## Table of Contents
+### Prerequisites
+- Python 3.9+
+- PostgreSQL 12+
+- Redis 6+ (optional, for caching and Channels)
+- SMTP server for email
+- SSL certificate
 
-1. [Prerequisites](#prerequisites)
-2. [Environment Setup](#environment-setup)
-3. [Security Configuration](#security-configuration)
-4. [Database Setup](#database-setup)
-5. [Application Deployment](#application-deployment)
-6. [Monitoring Setup](#monitoring-setup)
-7. [Backup Configuration](#backup-configuration)
-8. [SSL/TLS Configuration](#ssltls-configuration)
-9. [Maintenance Procedures](#maintenance-procedures)
-10. [Troubleshooting](#troubleshooting)
+### Environment Setup
 
-## Prerequisites
-
-### System Requirements
-
-- **Operating System**: Ubuntu 20.04 LTS or CentOS 7+ (recommended)
-- **Memory**: Minimum 4GB RAM, recommended 8GB+
-- **Storage**: Minimum 20GB free space
-- **Network**: Stable internet connection
-
-### Software Dependencies
-
-- Docker Engine 20.10+
-- Docker Compose 2.0+
-- PostgreSQL 15+ (if not using Docker)
-- Redis 7+ (if not using Docker)
-- Nginx (for production deployment)
-- SSL certificate (Let's Encrypt recommended)
-
-### Required Tools
-
+1. **Create `.env` file** (never commit to git):
 ```bash
-# Install Docker and Docker Compose
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Install required system packages
-sudo apt-get update
-sudo apt-get install -y postgresql-client redis-tools nginx certbot python3-certbot-nginx
-```
-
-## Environment Setup
-
-##. Clone Repository
-
-```bash
-git clone <repository-url> banking-backend
-cd banking-backend
-```
-
-##. Create Production Environment File
-
-```bash
-cp .env.example .env.production
-```
-
-Edit `.env.production` with your production values:
-
-```bash
-# Django Core Settings
-SECRET_KEY=your-production-secret-key-change-this-immediately
+# Core Django Settings
+SECRET_KEY=your-secret-key-here-minimum-50-characters
 DEBUG=False
-ALLOWED_HOSTS=your-domain.com,www.your-domain.com,api.your-domain.com
 ENVIRONMENT=production
-RELEASE_VERSION=1.0.0
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 
-# Database Configuration
-DB_NAME=banking_db_prod
-DB_USER=banking_user_prod
-DB_PASSWORD=your-secure-database-password-here
-DB_PORT=5432
+# Database (PostgreSQL recommended)
+DATABASE_URL=postgresql://user:password@localhost:5432/coastal_banking
 
-# Redis Configuration
-REDIS_PASSWORD=your-secure-redis-password-here
-REDIS_PORT=6379
+# Encryption Keys (generate with: python -c "import secrets, base64; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())")
+ENCRYPTION_KEY=your-32-byte-base64-encoded-key
+ENCRYPTION_SALT=your-16-byte-base64-encoded-salt
 
-# Security Settings
-ENCRYPTION_KEY=your-32-character-encryption-key-for-sensitive-data
-BACKUP_ENCRYPTION_KEY=your-32-character-backup-encryption-key
+# CORS (HTTPS only in production)
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+CORS_ALLOW_CREDENTIALS=True
+
+# CSRF
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
 
 # Email Configuration
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.your-email-provider.com
+EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-EMAIL_HOST_USER=noreply@your-domain.com
-EMAIL_HOST_PASSWORD=your-email-app-password
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=noreply@yourdomain.com
 
-# Monitoring
-SENTRY_DSN=https://your-sentry-dsn-here@sentry.io/project-id
-GRAFANA_ADMIN_PASSWORD=your-secure-grafana-admin-password
+# Frontend URL
+FRONTEND_URL=https://yourdomain.com
+
+# Security Settings
+SECURE_SSL_REDIRECT=True
+SECURE_HSTS_SECONDS=31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SECURE_HSTS_PRELOAD=True
+
+# Optional: Redis
+REDIS_URL=redis://localhost:6379/0
+
+# Optional: Sentry Error Tracking
+SENTRY_DSN=your-sentry-dsn
+SENTRY_ENABLED=True
 ```
 
-##. Set Environment Variables
+### Deployment Steps
 
+1. **Install Dependencies**:
 ```bash
-# Copy environment file to production location
-sudo cp .env.production /etc/banking-backend/.env.production
-sudo chmod 600 /etc/banking-backend/.env.production
+pip install -r requirements.txt
 ```
 
-## Security Configuration
-
-##. SSL/TLS Setup
-
+2. **Collect Static Files**:
 ```bash
-# Obtain SSL certificate using Let's Encrypt
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
-
-# Verify certificate renewal
-sudo certbot renew --dry-run
+python manage.py collectstatic --noinput
 ```
 
-##. Firewall Configuration
-
+3. **Run Migrations**:
 ```bash
-# Configure UFW firewall
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw --force enable
-
-# Verify firewall status
-sudo ufw status
-```
-
-##. Security Hardening
-
-```bash
-# Disable root login via SSH
-sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-sudo systemctl restart sshd
-
-# Install fail2ban for SSH protection
-sudo apt-get install -y fail2ban
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-```
-
-## Database Setup
-
-##. Create Production Database
-
-```bash
-# Connect to PostgreSQL
-sudo -u postgres psql
-
-# Create database and user
-CREATE DATABASE banking_db_prod;
-CREATE USER banking_user_prod WITH ENCRYPTED PASSWORD 'your-secure-password';
-GRANT ALL PRIVILEGES ON DATABASE banking_db_prod TO banking_user_prod;
-ALTER USER banking_user_prod CREATEDB;
-\q
-```
-
-##. Run Database Migrations
-
-```bash
-# Using Docker Compose
-docker-compose -f docker-compose.prod.yml run --rm web python manage.py migrate
-
-# Or using local Python environment
 python manage.py migrate
 ```
 
-##. Create Superuser
-
+4. **Create Superuser**:
 ```bash
-# Using Docker Compose
-docker-compose -f docker-compose.prod.yml run --rm web python manage.py createsuperuser
-
-# Or using local Python environment
-python manage.py createsuperuser
+python manage.py create_production_superuser
 ```
 
-## Application Deployment
-
-##. Build and Deploy
-
+5. **Test Configuration**:
 ```bash
-# Build production images
-docker-compose -f docker-compose.prod.yml build
-
-# Start services
-docker-compose -f docker-compose.prod.yml up -d
-
-# Verify deployment
-docker-compose -f docker-compose.prod.yml ps
+python manage.py check --deploy
 ```
 
-##. Run Initial Setup
+6. **Start Application**:
 
+**Using Gunicorn** (recommended):
 ```bash
-# Collect static files
-docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --noinput
-
-# Create cache table
-docker-compose -f docker-compose.prod.yml exec web python manage.py createcachetable
-
-# Run health check
-curl -f http://localhost/health/
+gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4
 ```
 
-##. Configure Nginx
+**Using uWSGI**:
+```bash
+uwsgi --http :8000 --module config.wsgi --master --processes 4
+```
 
-Update `/etc/nginx/sites-available/banking-backend` with SSL configuration:
+### Nginx Configuration
 
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com www.your-domain.com;
+    server_name yourdomain.com;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name your-domain.com www.your-domain.com;
+    server_name yourdomain.com;
 
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
-
-    # SSL Security
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers off;
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
 
     # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options "DENY" always;
     add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
+    # Static files
+    location /static/ {
+        alias /path/to/coastal/banking_backend/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Media files
+    location /media/ {
+        alias /path/to/coastal/banking_backend/media/;
+    }
+
+    # Proxy to Django
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
@@ -244,244 +139,102 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
-    location /static/ {
-        alias /path/to/static/files/;
-        expires 1y;
-    }
-
-    location /media/ {
-        alias /path/to/media/files/;
-        expires 30d;
-    }
 }
 ```
 
-Enable the site and restart Nginx:
+## Security Checklist
 
+- [x] `DEBUG=False` in production
+- [x] Strong `SECRET_KEY` (50+ characters)
+- [x] HTTPS enforced (`SECURE_SSL_REDIRECT=True`)
+- [x] HSTS enabled
+- [x] CORS restricted to HTTPS origins only
+- [x] Database uses strong password
+- [x] Encryption keys properly generated and stored
+- [x] Email credentials secured
+- [x] Firewall configured (only ports 80, 443 open)
+- [x] Database access restricted to localhost
+- [x] Regular security updates scheduled
+- [x] Backup strategy implemented
+- [x] Monitoring and alerting configured
+
+## Monitoring
+
+### Health Checks
+- System health: `https://yourdomain.com/health/system/`
+- Banking metrics: `https://yourdomain.com/health/banking/`
+- Prometheus metrics: `https://yourdomain.com/metrics/`
+
+### Recommended Monitoring Tools
+- **Sentry**: Error tracking and performance monitoring
+- **Prometheus + Grafana**: Metrics visualization
+- **CloudWatch/Datadog**: Infrastructure monitoring
+- **UptimeRobot**: Uptime monitoring
+
+## Backup Strategy
+
+### Database Backups
 ```bash
-sudo ln -s /etc/nginx/sites-available/banking-backend /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+# Daily automated backup
+0 2 * * * pg_dump coastal_banking > /backups/db_$(date +\%Y\%m\%d).sql
 ```
 
-## Monitoring Setup
-
-##. Access Grafana
-
+### Media Files Backup
 ```bash
-# Get Grafana admin password from environment
-echo $GRAFANA_ADMIN_PASSWORD
-
-# Access Grafana at http://your-domain.com:3001
-# Default credentials: admin / $GRAFANA_ADMIN_PASSWORD
-```
-
-##. Configure Dashboards
-
-1. Import the banking overview dashboard from `monitoring/grafana/dashboards/banking-overview.json`
-2. Configure alerting rules for critical metrics
-3. Set up notification channels (email, Slack, etc.)
-
-##. Health Check Monitoring
-
-```bash
-# Test health check endpoint
-curl -f https://your-domain.com/health/
-
-# Run comprehensive health check
-docker-compose -f docker-compose.prod.yml exec web python scripts/health_check.py
-```
-
-## Backup Configuration
-
-##. Automated Backups
-
-```bash
-# Run initial backup
-docker-compose -f docker-compose.prod.yml exec web python manage.py backup_database create --compress --encrypt
-
-# List available backups
-docker-compose -f docker-compose.prod.yml exec web python manage.py backup_database list
-```
-
-##. Backup Schedule
-
-Add to crontab for automated backups:
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add backup schedule (daily at 2 AM)
-0 2 * * * cd /path/to/banking-backend && docker-compose -f docker-compose.prod.yml exec -T web python manage.py backup_database create --compress --encrypt
-
-# Add cleanup schedule (weekly on Sunday)
-0 3 * * 0 cd /path/to/banking-backend && docker-compose -f docker-compose.prod.yml exec -T web python manage.py backup_database cleanup --keep-days 30
-```
-
-##. Backup Verification
-
-```bash
-# Test backup restoration (use test environment)
-docker-compose -f docker-compose.prod.yml exec web python manage.py backup_database restore <backup-file> --no-confirm
-```
-
-## SSL/TLS Configuration
-
-##. Certificate Management
-
-```bash
-# Check certificate expiry
-sudo certbot certificates
-
-# Renew certificates
-sudo certbot renew
-
-# Force renewal if needed
-sudo certbot certonly --force-renewal -d your-domain.com
-```
-
-##. SSL Configuration Testing
-
-```bash
-# Test SSL configuration
-openssl s_client -connect your-domain.com:443 -servername your-domain.com
-
-# Check SSL rating
-curl -s -I https://your-domain.com | head -n 1
-```
-
-## Maintenance Procedures
-
-##. Application Updates
-
-```bash
-# Pull latest changes
-git pull origin main
-
-# Build and deploy updates
-docker-compose -f docker-compose.prod.yml build
-docker-compose -f docker-compose.prod.yml up -d
-
-# Run migrations if needed
-docker-compose -f docker-compose.prod.yml exec web python manage.py migrate
-
-# Collect static files
-docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --noinput
-```
-
-##. Database Maintenance
-
-```bash
-# Vacuum database
-docker-compose -f docker-compose.prod.yml exec db vacuumdb --all --analyze
-
-# Reindex database
-docker-compose -f docker-compose.prod.yml exec db reindexdb --all
-```
-
-##. Log Rotation
-
-```bash
-# Configure logrotate for application logs
-sudo nano /etc/logrotate.d/banking-backend
-
-# Add configuration:
-/var/log/banking-backend/*.log {
-    daily
-    missingok
-    rotate 52
-    compress
-    delaycompress
-    notifempty
-    create 644 www-data www-data
-    postrotate
-        docker-compose -f /path/to/docker-compose.prod.yml restart web
-    endscript
-}
-```
-
-##. Security Audits
-
-```bash
-# Run security audit
-docker-compose -f docker-compose.prod.yml exec web python scripts/security_audit.py
-
-# Check for dependency vulnerabilities
-docker-compose -f docker-compose.prod.yml exec web pip list --outdated
+# Weekly backup to S3/cloud storage
+0 3 * * 0 aws s3 sync /path/to/media/ s3://your-bucket/media/
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-###. Application Won't Start
+**500 Error on deployment**:
+- Check `DEBUG=False` is set
+- Run `python manage.py check --deploy`
+- Check logs: `tail -f /var/log/nginx/error.log`
 
-```bash
-# Check logs
-docker-compose -f docker-compose.prod.yml logs web
+**Static files not loading**:
+- Run `python manage.py collectstatic --noinput`
+- Check nginx static file path
+- Verify `STATIC_ROOT` in settings
 
-# Check environment variables
-docker-compose -f docker-compose.prod.yml exec web env
+**Database connection error**:
+- Verify `DATABASE_URL` format
+- Check PostgreSQL is running
+- Verify database user permissions
 
-# Verify database connectivity
-docker-compose -f docker-compose.prod.yml exec web python manage.py dbshell
+**CORS errors**:
+- Ensure `CORS_ALLOWED_ORIGINS` includes frontend URL
+- Must use HTTPS in production
+- Check `CORS_ALLOW_CREDENTIALS=True`
+
+## Performance Optimization
+
+### Database
+- Enable connection pooling
+- Use read replicas for high traffic
+- Regular VACUUM and ANALYZE
+
+### Caching
+```python
+# Use Redis for caching
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
 ```
 
-###. Database Connection Issues
+### CDN
+- Use CloudFlare or AWS CloudFront for static files
+- Enable gzip compression
+- Set proper cache headers
 
-```bash
-# Test database connection
-docker-compose -f docker-compose.prod.yml exec db pg_isready -U banking_user_prod -d banking_db_prod
+## Support
 
-# Check database logs
-docker-compose -f docker-compose.prod.yml logs db
-```
-
-###. SSL Certificate Issues
-
-```bash
-# Check certificate validity
-openssl x509 -in /etc/letsencrypt/live/your-domain.com/cert.pem -text -noout
-
-# Renew certificate manually
-sudo certbot certonly --webroot -w /var/www/html -d your-domain.com
-```
-
-###. Performance Issues
-
-```bash
-# Check system resources
-docker stats
-
-# Monitor application performance
-docker-compose -f docker-compose.prod.yml exec web python scripts/health_check.py --format json
-
-# Check database performance
-docker-compose -f docker-compose.prod.yml exec db psql -U banking_user_prod -d banking_db_prod -c "SELECT * FROM pg_stat_activity;"
-```
-
-### Log Locations
-
-- **Application logs**: `/app/logs/` (inside containers)
-- **Nginx logs**: `/var/log/nginx/`
-- **Docker logs**: `docker-compose -f docker-compose.prod.yml logs`
-- **System logs**: `/var/log/syslog`
-
-### Emergency Contacts
-
-- **System Administrator**: admin@your-domain.com
-- **Security Issues**: security@your-domain.com
-- **Monitoring Alerts**: alerts@your-domain.com
-
-## Additional Resources
-
-- [Django Deployment Documentation](https://docs.djangoproject.com/en/stable/howto/deployment/)
-- [Docker Production Best Practices](https://docs.docker.com/develop/dev-best-practices/)
-- [PostgreSQL Administration](https://www.postgresql.org/docs/current/admin.html)
-- [Nginx Configuration Guide](https://nginx.org/en/docs/)
-
----
-
-**Note**: This deployment guide should be reviewed and updated regularly to reflect changes in the application and infrastructure requirements.
+For issues or questions:
+- Check logs: `/var/log/coastal_banking/`
+- Review error tracking: Sentry dashboard
+- Contact: support@yourdomain.com

@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from decimal import Decimal
-from django.core.exceptions import ValidationError
 from banking.models import Transaction, Account
 from banking_backend.utils.sanitizer import Sanitizer
 from banking_backend.utils.masking import mask_account_number, mask_email

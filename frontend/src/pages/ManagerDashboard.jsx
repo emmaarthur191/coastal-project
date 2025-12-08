@@ -3,11 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { authService } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
+// Keep original imports
 import DashboardHeader from '../components/DashboardHeader';
 import OverviewSection from '../components/OverviewSection';
 import UserManagementSection from '../components/UserManagementSection';
 import TransactionsSection from '../components/TransactionsSection';
 import LoansSection from '../components/LoansSection';
+import LoanApprovalsSection from '../components/LoanApprovalsSection';
 import ServiceChargesSection from '../components/ServiceChargesSection';
 import PayslipSection from '../components/PayslipSection';
 import CashFlowSection from '../components/CashFlowSection';
@@ -16,15 +18,83 @@ import CommissionSection from '../components/CommissionSection';
 import StatementsSection from '../components/StatementsSection';
 import ExpensesSection from '../components/ExpensesSection';
 import DashboardDropdown from '../components/DashboardDropdown';
+import ClientRegistrationTab from '../components/ClientRegistrationTab';
+import AccountsTab from '../components/AccountsTab';
+
+// --- PLAYFUL UI THEME CONSTANTS ---
+const THEME = {
+  colors: {
+    bg: '#FFF0F5', // Lavender Blush
+    primary: '#6C5CE7', // Purple
+    secondary: '#00CEC9', // Teal
+    success: '#00B894', // Green
+    danger: '#FF7675', // Salmon
+    warning: '#FDCB6E', // Mustard
+    sidebar: '#FFFFFF',
+    text: '#2D3436',
+    border: '#dfe6e9',
+  },
+  shadows: {
+    card: '0 8px 0px rgba(0,0,0,0.1)',
+    button: '0 4px 0px rgba(0,0,0,0.2)',
+    active: '0 2px 0px rgba(0,0,0,0.2)',
+  },
+  radius: {
+    card: '24px',
+    button: '50px',
+  }
+};
+
+// --- STYLED WRAPPERS ---
+const PlayfulCard = ({ children, color = '#FFFFFF', style }) => (
+  <div style={{
+    background: color,
+    borderRadius: THEME.radius.card,
+    border: '3px solid #000000',
+    boxShadow: THEME.shadows.card,
+    padding: '24px',
+    marginBottom: '24px',
+    overflow: 'hidden',
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+const PlayfulButton = ({ children, onClick, variant = 'primary', style }) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: variant === 'danger' ? THEME.colors.danger : THEME.colors.primary,
+      color: 'white',
+      border: '3px solid #000000',
+      padding: '12px 24px',
+      borderRadius: THEME.radius.button,
+      fontWeight: '900',
+      fontSize: '16px',
+      cursor: 'pointer',
+      boxShadow: THEME.shadows.button,
+      transition: 'all 0.1s',
+      ...style
+    }}
+    onMouseDown={e => {
+      e.currentTarget.style.transform = 'translateY(4px)';
+      e.currentTarget.style.boxShadow = THEME.shadows.active;
+    }}
+    onMouseUp={e => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = THEME.shadows.button;
+    }}
+  >
+    {children}
+  </button>
+);
 
 function ManagerDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  // --- STATE MANAGEMENT (Original Logic) ---
   const [activeView, setActiveView] = useState('overview');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,11 +106,7 @@ function ManagerDashboard() {
   const [commissionData, setCommissionData] = useState(null);
   const [serviceCharges, setServiceCharges] = useState([]);
   const [newCharge, setNewCharge] = useState({
-    name: '',
-    description: '',
-    charge_type: 'percentage',
-    rate: '',
-    applicable_to: []
+    name: '', description: '', charge_type: 'percentage', rate: '', applicable_to: []
   });
   const [serviceChargeCalculation, setServiceChargeCalculation] = useState(null);
   const [interestCalculation, setInterestCalculation] = useState(null);
@@ -53,121 +119,44 @@ function ManagerDashboard() {
   const [otpExpiresIn, setOtpExpiresIn] = useState(0);
   const [expenses, setExpenses] = useState([]);
   const [newExpense, setNewExpense] = useState({
-    category: '',
-    amount: '',
-    description: '',
-    date_incurred: new Date().toISOString().split('T')[0]
+    category: '', amount: '', description: '', date_incurred: new Date().toISOString().split('T')[0]
+  });
+  const [staffIds, setStaffIds] = useState([]);
+  const [staffIdFilters, setStaffIdFilters] = useState({
+    name: '', department: '', employment_date_from: '', employment_date_to: '', id_prefix: ''
   });
 
+  // --- EFFECTS (Original Logic) ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Use operational metrics instead of manager_dashboard to avoid permission issues
         const response = await authService.getOperationalMetrics();
         if (response.success) {
           setDashboardData({
             branch_metrics: [
-              {
-                label: 'System Uptime',
-                value: response.data.system_uptime,
-                change: '+0.1%',
-                trend: 'up',
-                icon: ''
-              },
-              {
-                label: 'Transactions Today',
-                value: response.data.transactions_today?.toLocaleString() || '0',
-                change: `+${response.data.transaction_change || 0}%`,
-                trend: 'up',
-                icon: ''
-              },
-              {
-                label: 'API Response Time',
-                value: `${response.data.api_response_time}ms`,
-                change: '-5ms',
-                trend: 'up',
-                icon: ''
-              },
-              {
-                label: 'Failed Transactions',
-                value: response.data.failed_transactions?.toString() || '0',
-                change: `+${response.data.failed_change || 0}`,
-                trend: 'down',
-                icon: ''
-              }
+              { label: 'System Uptime', value: response.data.system_uptime, change: '+0.1%', trend: 'up', icon: '⏱️' },
+              { label: 'Transactions', value: response.data.transactions_today?.toLocaleString() || '0', change: `+${response.data.transaction_change || 0}%`, trend: 'up', icon: '💳' },
+              { label: 'API Speed', value: `${response.data.api_response_time}ms`, change: '-5ms', trend: 'up', icon: '⚡' },
+              { label: 'Failed TXs', value: response.data.failed_transactions?.toString() || '0', change: `+${response.data.failed_change || 0}`, trend: 'down', icon: '❌' }
             ],
-            staff_performance: [], // Will be populated from other endpoints
-            pending_approvals: [] // Will be populated from loans
+            staff_performance: [],
+            pending_approvals: []
           });
-        } else {
-          console.error('Failed to fetch dashboard data:', response.error);
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
+        } else { console.error('Failed to fetch dashboard data:', response.error); }
+      } catch (error) { console.error('Error fetching dashboard data:', error); } finally { setLoading(false); }
     };
-
     fetchDashboardData();
   }, []);
 
-  const fetchTransactions = async () => {
-    const response = await authService.getAllTransactions();
-    if (response.success) {
-      setTransactions(Array.isArray(response.data) ? response.data : []);
-    }
-  };
-
-  const fetchLoans = async () => {
-    const response = await authService.getPendingLoans();
-    if (response.success) {
-      setLoans(response.data);
-    }
-  };
-
-  const fetchCashFlow = async () => {
-    const response = await authService.getCashFlow();
-    if (response.success) {
-      setCashFlow(response.data);
-    }
-  };
-
-  const fetchInterest = async () => {
-    const response = await authService.calculateInterest();
-    if (response.success) {
-      setInterestData(response.data);
-    }
-  };
-
-  const fetchCommission = async () => {
-    const response = await authService.calculateCommission();
-    if (response.success) {
-      setCommissionData(response.data);
-    }
-  };
-
-  const fetchServiceCharges = async () => {
-    const response = await authService.getServiceCharges();
-    if (response.success) {
-      setServiceCharges(response.data);
-    }
-  };
-
-  const fetchStaffMembers = async () => {
-    const response = await authService.getAllStaff();
-    if (response.success) {
-      setStaffMembers(response.data);
-    }
-  };
-
-  const fetchExpenses = async () => {
-    const response = await authService.getExpenses();
-    if (response.success) {
-      setExpenses(response.data);
-    }
-  };
-
+  const fetchTransactions = async () => { const r = await authService.getAllTransactions(); if (r.success) setTransactions(Array.isArray(r.data) ? r.data : []); };
+  const fetchLoans = async () => { const r = await authService.getPendingLoans(); if (r.success) setLoans(r.data); };
+  const fetchCashFlow = async () => { const r = await authService.getCashFlow(); if (r.success) setCashFlow(r.data); };
+  const fetchInterest = async () => { const r = await authService.calculateInterest(); if (r.success) setInterestData(r.data); };
+  const fetchCommission = async () => { const r = await authService.getCommissionSummary(); if (r.success) setCommissionData(r.data); };
+  const fetchServiceCharges = async () => { const r = await authService.getServiceCharges(); if (r.success) setServiceCharges(r.data); };
+  const fetchStaffMembers = async () => { const r = await authService.getAllStaff(); if (r.success) setStaffMembers(r.data); };
+  const fetchExpenses = async () => { const r = await authService.getExpenses(); if (r.success) setExpenses(r.data); };
+  const fetchStaffIds = async () => { const r = await authService.getStaffIds(staffIdFilters); if (r.success) setStaffIds(r.data); };
 
   useEffect(() => {
     if (activeView === 'transactions') fetchTransactions();
@@ -177,403 +166,436 @@ function ManagerDashboard() {
     if (activeView === 'commission') fetchCommission();
     if (activeView === 'charges') fetchServiceCharges();
     if (activeView === 'users') fetchStaffMembers();
+    if (activeView === 'staff-ids') fetchStaffIds();
     if (activeView === 'expenses') fetchExpenses();
-  }, [activeView]);
+  }, [activeView, staffIdFilters]);
+
+  // --- HANDLERS (Original Logic) ---
+  const handleLogout = async () => { await logout(); navigate('/login'); };
 
   const handleSendOTP = async () => {
-    if (!formData.phone) {
-      alert('Please enter a phone number first');
-      return;
-    }
-
-    const response = await authService.sendOTP({
-      phone_number: formData.phone,
-      verification_type: 'user_creation'
-    });
-
+    if (!formData.phone) { alert('Please enter a phone number first'); return; }
+    const response = await authService.sendOTP({ phone_number: formData.phone, verification_type: 'user_creation' });
     if (response.success) {
-      setOtpSent(true);
-      setOtpExpiresIn(300); // 5 minutes
-      
-      // In test mode, display the OTP code
-      if (response.data.test_mode && response.data.otp_code) {
-        alert(`TEST MODE: OTP sent successfully!\n\nYour OTP code is: ${response.data.otp_code}\n\nThis code will expire in 5 minutes.\n\nIn production, this would be sent via SMS.`);
-        console.log('TEST MODE - OTP Code:', response.data.otp_code);
-      } else {
-        alert('OTP sent to your phone number.');
-      }
-
-      // Start countdown timer
+      setOtpSent(true); setOtpExpiresIn(300);
+      if (response.data.test_mode && response.data.otp_code) { alert(`TEST MODE OTP: ${response.data.otp_code}`); } 
+      else { alert('OTP sent to your phone number.'); }
       const timer = setInterval(() => {
-        setOtpExpiresIn(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setOtpSent(false);
-            return 0;
-          }
-          return prev - 1;
-        });
+        setOtpExpiresIn(prev => { if (prev <= 1) { clearInterval(timer); setOtpSent(false); return 0; } return prev - 1; });
       }, 1000);
-    } else {
-      alert('Failed to send OTP: ' + response.error);
-    }
+    } else { alert('Failed to send OTP: ' + response.error); }
   };
 
   const handleVerifyOTP = async () => {
-    if (!otpCode) {
-      alert('Please enter the OTP code');
-      return;
-    }
-
-    const response = await authService.verifyOTP({
-      phone_number: formData.phone,
-      otp_code: otpCode,
-      verification_type: 'user_creation'
-    });
-
-    if (response.success) {
-      setPhoneVerified(true);
-      setOtpSent(false);
-      alert('Phone number verified successfully!');
-    } else {
-      alert('Failed to verify OTP: ' + response.error);
-    }
+    if (!otpCode) { alert('Please enter the OTP code'); return; }
+    const response = await authService.verifyOTP({ phone_number: formData.phone, otp_code: otpCode, verification_type: 'user_creation' });
+    if (response.success) { setPhoneVerified(true); setOtpSent(false); alert('Phone number verified successfully!'); } 
+    else { alert('Failed to verify OTP: ' + response.error); }
   };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-
-    if (!phoneVerified) {
-      alert('Please verify your phone number with OTP before creating the user.');
-      return;
-    }
-
+    if (!phoneVerified) { alert('Please verify your phone number with OTP before creating the user.'); return; }
     const response = await authService.createUser(formData);
     if (response.success) {
-      const staffRoles = ['cashier', 'mobile_banker', 'manager', 'operations_manager'];
-      if (staffRoles.includes(formData.role)) {
-        alert(`User created successfully!\n\nStaff ID: ${response.data.staff_id}\nName: ${response.data.first_name} ${response.data.last_name}\nEmail: ${response.data.email}\nRole: ${response.data.role}`);
-      } else {
-        alert('User created successfully!');
-      }
-      setFormData({});
-      setOtpCode('');
-      setPhoneVerified(false);
-      setOtpSent(false);
-    } else {
-      alert('Failed to create user: ' + response.error);
-    }
+      alert(`User created! ID: ${response.data.staff_id || 'N/A'}`);
+      setFormData({}); setOtpCode(''); setPhoneVerified(false); setOtpSent(false);
+    } else { alert('Failed to create user: ' + response.error); }
   };
 
   const handleApproveLoan = async (loanId) => {
     const response = await authService.approveLoan(loanId);
-    if (response.success) {
-      alert('Loan approved successfully!');
-      fetchLoans();
-    } else {
-      alert('Failed to approve loan: ' + response.error);
-    }
+    if (response.success) { alert('Loan approved successfully!'); fetchLoans(); } 
+    else { alert('Failed to approve loan: ' + response.error); }
   };
 
   const handleGeneratePayslip = async () => {
     const response = await authService.generatePayslip(formData);
-    if (response.success) {
-      alert('Payslip generated successfully!');
-      console.log(response.data);
-    } else {
-      alert('Failed to generate payslip: ' + response.error);
-    }
+    if (response.success) { alert('Payslip generated successfully!'); console.log(response.data); } 
+    else { alert('Failed to generate payslip: ' + response.error); }
   };
 
   const handleGenerateStatement = async () => {
     const response = await authService.generateStatement(formData);
-    if (response.success) {
-      alert('Statement generated successfully!');
-      console.log(response.data);
-    } else {
-      alert('Failed to generate statement: ' + response.error);
-    }
+    if (response.success) { alert('Statement generated successfully!'); console.log(response.data); } 
+    else { alert('Failed to generate statement: ' + response.error); }
   };
 
+  // --- LOADING VIEW ---
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--md-sys-color-background)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{ textAlign: 'center' }} className="md-animate-scale-in">
-          <div style={{
-            width: '80px',
-            height: '80px',
-            margin: '0 auto 24px',
-            borderRadius: 'var(--md-sys-shape-corner-extra-large)',
-            background: 'var(--md-sys-color-primary-container)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'var(--md-sys-elevation-3)'
-          }} className="animate-pulse">
-            <span style={{ fontSize: '40px' }}></span>
-          </div>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            margin: '0 auto 24px',
-            border: '4px solid var(--md-sys-color-primary)',
-            borderTopColor: 'transparent',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-          <h2 className="md-typescale-headline-small" style={{
-            color: 'var(--md-sys-color-on-surface)',
-            marginBottom: '8px'
-          }}>
-            Loading Manager Dashboard
-          </h2>
-          <p className="md-typescale-body-medium" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-            Preparing your workspace...
-          </p>
-        </div>
+      <div style={{ minHeight: '100vh', background: THEME.colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <PlayfulCard>
+          <div style={{ fontSize: '60px', animation: 'bounce 1s infinite' }}>🐘</div>
+          <h2 style={{ fontFamily: "'Nunito', sans-serif" }}>Boss Mode Loading...</h2>
+        </PlayfulCard>
+        <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
       </div>
     );
   }
 
-  const branchMetrics = dashboardData?.branch_metrics || [
-    { label: 'Total Deposits', value: formatCurrencyGHS(0), change: '0%', icon: '', trend: 'up' },
-    { label: 'Loan Portfolio', value: formatCurrencyGHS(0), change: '0%', icon: '', trend: 'up' },
-    { label: 'New Accounts', value: '0', change: '0%', icon: '', trend: 'up' },
-    { label: 'Customer Satisfaction', value: '0%', change: '0%', icon: '⭐', trend: 'up' }
+  // --- MENU ITEMS CONFIG ---
+  const menuItems = [
+    { id: 'overview', name: 'Overview', icon: '📊', color: THEME.colors.primary },
+    { id: 'accounts', name: 'Accounts', icon: '🏦', color: THEME.colors.success },
+    { id: 'client-registration', name: 'Client Registration', icon: '👤', color: THEME.colors.success },
+    { id: 'loan-approvals', name: 'Loan Approvals', icon: '✅', color: THEME.colors.success },
+    { id: 'messaging', name: 'Messaging', icon: '💬', color: THEME.colors.secondary },
+    { id: 'users', name: 'Staff Users', icon: '👥', color: THEME.colors.warning },
+    { id: 'staff-ids', name: 'Staff IDs', icon: '🆔', color: THEME.colors.primary },
+    { id: 'transactions', name: 'All Transacs', icon: '💸', color: THEME.colors.success },
+    { id: 'loans', name: 'Loan Apps', icon: '📝', color: THEME.colors.danger },
+    { id: 'charges', name: 'Charges', icon: '🏷️', color: THEME.colors.primary },
+    { id: 'payslip', name: 'Payslips', icon: '🧧', color: THEME.colors.secondary },
+    { id: 'cashflow', name: 'Cash Flow', icon: '🌊', color: THEME.colors.success },
+    { id: 'interest', name: 'Interest', icon: '📈', color: THEME.colors.warning },
+    { id: 'commission', name: 'Commission', icon: '🤝', color: THEME.colors.danger },
+    { id: 'statements', name: 'Statements', icon: '📜', color: THEME.colors.primary },
+    { id: 'expenses', name: 'Expenses', icon: '📉', color: THEME.colors.secondary }
   ];
 
-  const staffPerformance = dashboardData?.staff_performance || [];
-
+  // --- RENDER ---
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '16px',
-      position: 'relative'
-    }}>
-      {/* Background Pattern */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundImage: `radial-gradient(circle at 25% 25%, rgba(0, 102, 204, 0.03) 0%, transparent 50%),
-                         radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.03) 0%, transparent 50%)`,
-        pointerEvents: 'none'
-      }} />
-      {/* App Bar */}
-      <header className="md-elevated-card md-animate-slide-in-down" style={{
-        marginBottom: '24px',
-        padding: '20px 24px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        border: '1px solid rgba(0, 102, 204, 0.1)',
-        boxShadow: '0 8px 32px rgba(0, 102, 204, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04)',
-        position: 'relative',
-        overflow: 'hidden'
+    <div style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+          /* Custom Scrollbar */
+          ::-webkit-scrollbar { width: 10px; }
+          ::-webkit-scrollbar-track { background: #fff; }
+          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; }
+        `}
+      </style>
+
+      {/* --- SIDEBAR (STICKER SHEET) --- */}
+      <nav style={{
+        width: '280px',
+        background: '#fff',
+        borderRight: '3px solid #000',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: 'auto'
       }}>
-        {/* Header Background Pattern */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: `linear-gradient(45deg, rgba(0, 102, 204, 0.02) 25%, transparent 25%),
-                           linear-gradient(-45deg, rgba(0, 102, 204, 0.02) 25%, transparent 25%),
-                           linear-gradient(45deg, transparent 75%, rgba(0, 102, 204, 0.02) 75%),
-                           linear-gradient(-45deg, transparent 75%, rgba(0, 102, 204, 0.02) 75%)`,
-          backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-          opacity: 0.3
-        }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px', position: 'relative', zIndex: 1 }}>
-          <div>
-            <h1 className="md-typescale-headline-medium" style={{
-              color: 'var(--md-sys-color-on-surface)',
-              marginBottom: '4px'
-            }}>
-              Manager Dashboard
-            </h1>
-            <p className="md-typescale-body-medium" style={{
-              color: 'var(--md-sys-color-on-surface-variant)'
-            }}>
-              Welcome, {user?.name} • Manage operations and oversight
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="md-chip" style={{
-              background: 'var(--md-sys-color-primary-container)',
-              color: 'var(--md-sys-color-on-primary-container)',
-              border: 'none'
-            }}>
-               MANAGER
-            </div>
-            <button
-              onClick={handleLogout}
-              className="md-filled-button md-ripple"
-              style={{
-                background: 'var(--md-sys-color-error)',
-                color: 'var(--md-sys-color-on-error)'
-              }}
-            >
-              Logout
-            </button>
-          </div>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{ fontSize: '40px', background: THEME.colors.warning, width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #000' }}>🦁</div>
+          <h1 style={{ margin: 0, fontWeight: '900', color: THEME.colors.text }}>Boss Mode</h1>
+          <p style={{ margin: 0, fontSize: '14px', color: '#888' }}>{user?.name}</p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          padding: '4px',
-          background: 'var(--md-sys-color-surface-container-highest)',
-          borderRadius: 'var(--md-sys-shape-corner-large)',
-          position: 'relative',
-          zIndex: 1
-        }}>
-          {[
-            { id: 'overview', name: 'Overview', icon: '' },
-            { id: 'users', name: 'Users', icon: '' },
-            { id: 'transactions', name: 'Transactions', icon: '' },
-            { id: 'loans', name: 'Loans', icon: '' },
-            { id: 'charges', name: 'Charges', icon: '' },
-            { id: 'payslip', name: 'Payslip', icon: '' },
-            { id: 'cashflow', name: 'Cash Flow', icon: '' },
-            { id: 'interest', name: 'Interest', icon: '' },
-            { id: 'commission', name: 'Commission', icon: '' },
-            { id: 'statements', name: 'Statements', icon: '' },
-            { id: 'expenses', name: 'Expenses', icon: '' }
-          ].map((view) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {menuItems.map(item => (
             <button
-              key={view.id}
-              onClick={() => setActiveView(view.id)}
-              className="md-ripple"
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
               style={{
-                padding: '10px 16px',
-                background: activeView === view.id ? 'var(--md-sys-color-surface)' : 'transparent',
-                border: 'none',
-                borderRadius: 'var(--md-sys-shape-corner-medium)',
-                color: activeView === view.id ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
-                fontWeight: activeView === view.id ? '600' : '500',
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px 16px',
+                border: activeView === item.id ? `3px solid ${item.color}` : '3px solid transparent',
+                background: activeView === item.id ? `${item.color}20` : 'transparent',
+                borderRadius: '16px',
                 cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap',
-                transition: 'all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard)',
-                boxShadow: activeView === view.id ? 'var(--md-sys-elevation-1)' : 'none'
+                textAlign: 'left',
+                fontSize: '16px',
+                fontWeight: '800',
+                color: activeView === item.id ? item.color : '#888',
+                transition: 'all 0.2s ease',
               }}
             >
-              <span style={{ fontSize: '18px' }}>{view.icon}</span>
-              <span className="md-typescale-label-large">{view.name}</span>
+              <span style={{ fontSize: '24px' }}>{item.icon}</span>
+              {item.name}
             </button>
           ))}
         </div>
-      </header>
 
-      {/* Main Content */}
-      <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
-        {/* Overview Tab */}
-        {activeView === 'overview' && (
-          <OverviewSection dashboardData={dashboardData} />
-        )}
+        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+          <PlayfulButton variant="danger" onClick={handleLogout} style={{ width: '100%' }}>
+            Log Out 👋
+          </PlayfulButton>
+        </div>
+      </nav>
 
-        {/* User Management Tab */}
-        {activeView === 'users' && (
-          <UserManagementSection
-            formData={formData}
-            setFormData={setFormData}
-            otpCode={otpCode}
-            setOtpCode={setOtpCode}
-            phoneVerified={phoneVerified}
-            setPhoneVerified={setPhoneVerified}
-            otpSent={otpSent}
-            setOtpSent={setOtpSent}
-            otpExpiresIn={otpExpiresIn}
-            setOtpExpiresIn={setOtpExpiresIn}
-            handleSendOTP={handleSendOTP}
-            handleVerifyOTP={handleVerifyOTP}
-            handleCreateUser={handleCreateUser}
-            staffMembers={staffMembers}
-            fetchStaffMembers={fetchStaffMembers}
-          />
-        )}
+      {/* --- MAIN CONTENT --- */}
+      <main style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
+        
+        {/* Header Ribbon */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: '900', color: THEME.colors.text, margin: 0 }}>
+             {menuItems.find(i => i.id === activeView)?.icon} {menuItems.find(i => i.id === activeView)?.name}
+          </h2>
+          <div style={{ background: '#FFF', padding: '8px 16px', borderRadius: '20px', border: '2px solid #000', fontWeight: 'bold' }}>
+            📅 {new Date().toLocaleDateString()}
+          </div>
+        </div>
 
+        {/* Dynamic Content Wrapper */}
+        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+          
+          {activeView === 'overview' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Custom Metric Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                {dashboardData?.branch_metrics?.map((metric, idx) => (
+                  <PlayfulCard key={idx} color={idx % 2 === 0 ? '#dff9fb' : '#fff0f5'} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '30px' }}>{metric.icon}</div>
+                    <div style={{ color: '#888', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px' }}>{metric.label}</div>
+                    <div style={{ fontSize: '28px', fontWeight: '900', color: THEME.colors.text, margin: '5px 0' }}>{metric.value}</div>
+                    <div style={{ color: metric.trend === 'up' ? THEME.colors.success : THEME.colors.danger, fontWeight: 'bold' }}>
+                      {metric.change} {metric.trend === 'up' ? '↗' : '↘'}
+                    </div>
+                  </PlayfulCard>
+                ))}
+              </div>
+              <PlayfulCard>
+                 <OverviewSection dashboardData={dashboardData} />
+              </PlayfulCard>
+            </div>
+          )}
 
-        {/* Transactions Tab */}
-        {activeView === 'transactions' && (
-          <TransactionsSection />
-        )}
+          {activeView === 'accounts' && (
+            <PlayfulCard color="#E8F5E9">
+              <AccountsTab />
+            </PlayfulCard>
+          )}
 
-        {/* Loans Tab */}
-        {activeView === 'loans' && (
-          <LoansSection loans={loans} handleApproveLoan={handleApproveLoan} />
-        )}
+          {activeView === 'client-registration' && (
+            <PlayfulCard color="#FFF">
+              <ClientRegistrationTab />
+            </PlayfulCard>
+          )}
 
-        {/* Service Charges Tab */}
-        {activeView === 'charges' && (
-          <ServiceChargesSection
-            newCharge={newCharge}
-            setNewCharge={setNewCharge}
-            serviceChargeCalculation={serviceChargeCalculation}
-            setServiceChargeCalculation={setServiceChargeCalculation}
-            serviceCharges={serviceCharges}
-            fetchServiceCharges={fetchServiceCharges}
-          />
-        )}
+          {activeView === 'messaging' && (
+            <PlayfulCard color="#F0F8FF">
+              <div style={{ textAlign: 'center', padding: '48px' }}>
+                <div style={{ fontSize: '80px', marginBottom: '16px' }}>💬</div>
+                <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Secure Staff Messaging</h3>
+                <p style={{ fontSize: '18px', color: '#666', marginBottom: '24px' }}>Top Secret chats with your team! 🕵️</p>
+                <PlayfulButton onClick={() => navigate('/messaging')}>
+                  Open Chat Room 🚀
+                </PlayfulButton>
+              </div>
+            </PlayfulCard>
+          )}
 
-        {/* Payslip Tab */}
-        {activeView === 'payslip' && (
-          <PayslipSection
-            formData={formData}
-            setFormData={setFormData}
-            handleGeneratePayslip={handleGeneratePayslip}
-          />
-        )}
+          {activeView === 'users' && (
+            <PlayfulCard color="#FFF">
+              <UserManagementSection
+                formData={formData} setFormData={setFormData}
+                otpCode={otpCode} setOtpCode={setOtpCode}
+                phoneVerified={phoneVerified} setPhoneVerified={setPhoneVerified}
+                otpSent={otpSent} setOtpSent={setOtpSent}
+                otpExpiresIn={otpExpiresIn} setOtpExpiresIn={setOtpExpiresIn}
+                handleSendOTP={handleSendOTP} handleVerifyOTP={handleVerifyOTP}
+                handleCreateUser={handleCreateUser}
+                staffMembers={staffMembers} fetchStaffMembers={fetchStaffMembers}
+              />
+            </PlayfulCard>
+          )}
 
-        {/* Cash Flow Tab */}
-        {activeView === 'cashflow' && cashFlow && (
-          <CashFlowSection cashFlow={cashFlow} />
-        )}
+          {activeView === 'staff-ids' && (
+            <PlayfulCard color="#E8F4FD">
+              <div>
+                <h3 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Staff ID Management</h3>
 
-        {/* Interest Tab */}
-        {activeView === 'interest' && interestData && (
-          <InterestSection interestData={interestData} />
-        )}
+                {/* Filters */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={staffIdFilters.name}
+                    onChange={(e) => setStaffIdFilters({...staffIdFilters, name: e.target.value})}
+                    style={{ padding: '10px', borderRadius: '8px', border: '2px solid #ddd' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Department..."
+                    value={staffIdFilters.department}
+                    onChange={(e) => setStaffIdFilters({...staffIdFilters, department: e.target.value})}
+                    style={{ padding: '10px', borderRadius: '8px', border: '2px solid #ddd' }}
+                  />
+                  <input
+                    type="date"
+                    placeholder="Employment from..."
+                    value={staffIdFilters.employment_date_from}
+                    onChange={(e) => setStaffIdFilters({...staffIdFilters, employment_date_from: e.target.value})}
+                    style={{ padding: '10px', borderRadius: '8px', border: '2px solid #ddd' }}
+                  />
+                  <input
+                    type="date"
+                    placeholder="Employment to..."
+                    value={staffIdFilters.employment_date_to}
+                    onChange={(e) => setStaffIdFilters({...staffIdFilters, employment_date_to: e.target.value})}
+                    style={{ padding: '10px', borderRadius: '8px', border: '2px solid #ddd' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="ID prefix..."
+                    value={staffIdFilters.id_prefix}
+                    onChange={(e) => setStaffIdFilters({...staffIdFilters, id_prefix: e.target.value})}
+                    style={{ padding: '10px', borderRadius: '8px', border: '2px solid #ddd' }}
+                  />
+                </div>
 
-        {/* Commission Tab */}
-        {activeView === 'commission' && commissionData && (
-          <CommissionSection commissionData={commissionData} />
-        )}
+                {/* Staff IDs Table */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                    <thead>
+                      <tr style={{ background: THEME.colors.primary, color: 'white' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Staff ID</th>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Name</th>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Department</th>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Employment Date</th>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Status</th>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Contact</th>
+                        <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Performance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {staffIds.map((staff, idx) => (
+                        <tr key={idx} style={{ background: idx % 2 === 0 ? '#f9f9f9' : 'white' }}>
+                          <td style={{ padding: '12px', border: '1px solid #ddd', fontWeight: 'bold' }}>
+                            {staff.decrypted_staff_id || 'N/A'}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                            {staff.first_name} {staff.last_name}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                            {staff.role}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                            {staff.employment_date ? new Date(staff.employment_date).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              background: staff.is_active ? THEME.colors.success : THEME.colors.danger,
+                              color: 'white',
+                              fontSize: '12px'
+                            }}>
+                              {staff.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                            {staff.phone || 'N/A'}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                            {/* Placeholder for performance metrics */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span>⭐</span>
+                              <span>4.5/5</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-        {/* Statements Tab */}
-        {activeView === 'statements' && (
-          <StatementsSection
-            formData={formData}
-            setFormData={setFormData}
-            handleGenerateStatement={handleGenerateStatement}
-          />
-        )}
+                {staffIds.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🆔</div>
+                    <p>No staff IDs found matching your criteria.</p>
+                  </div>
+                )}
 
-        {/* Expenses Tab */}
-        {activeView === 'expenses' && (
-          <ExpensesSection
-            newExpense={newExpense}
-            setNewExpense={setNewExpense}
-            expenses={expenses}
-            fetchExpenses={fetchExpenses}
-          />
-        )}
+                {/* Export Options */}
+                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                  <PlayfulButton onClick={() => alert('Export to CSV - Coming Soon!')}>
+                    📊 Export CSV
+                  </PlayfulButton>
+                  <PlayfulButton onClick={() => alert('Export to PDF - Coming Soon!')}>
+                    📄 Export PDF
+                  </PlayfulButton>
+                  <PlayfulButton onClick={() => alert('Export to Excel - Coming Soon!')}>
+                    📈 Export Excel
+                  </PlayfulButton>
+                </div>
+              </div>
+            </PlayfulCard>
+          )}
 
-      </div>
+          {activeView === 'transactions' && (
+            <PlayfulCard color="#E0F2F1">
+              <TransactionsSection />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'loan-approvals' && (
+            <PlayfulCard color="#D1FAE5">
+              <LoanApprovalsSection />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'loans' && (
+            <PlayfulCard color="#FFEBEE">
+              <LoansSection loans={loans} handleApproveLoan={handleApproveLoan} />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'charges' && (
+            <PlayfulCard color="#F3E5F5">
+              <ServiceChargesSection
+                newCharge={newCharge} setNewCharge={setNewCharge}
+                serviceChargeCalculation={serviceChargeCalculation}
+                setServiceChargeCalculation={setServiceChargeCalculation}
+                serviceCharges={serviceCharges} fetchServiceCharges={fetchServiceCharges}
+              />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'payslip' && (
+            <PlayfulCard color="#E8F5E9">
+              <PayslipSection
+                formData={formData} setFormData={setFormData}
+                handleGeneratePayslip={handleGeneratePayslip}
+              />
+            </PlayfulCard>
+          )}
+
+          {/* Contextual Note: Cash Flow represents the movement of money in and out. 
+            
+
+[Image of cash flow cycle diagram]
+ 
+          */}
+          {activeView === 'cashflow' && cashFlow && (
+            <PlayfulCard color="#E1F5FE">
+              <CashFlowSection cashFlow={cashFlow} />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'interest' && interestData && (
+            <PlayfulCard color="#FFF3E0">
+              <InterestSection interestData={interestData} />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'commission' && commissionData && (
+            <PlayfulCard color="#FBE9E7">
+              <CommissionSection commissionData={commissionData} />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'statements' && (
+            <PlayfulCard color="#ECEFF1">
+              <StatementsSection
+                formData={formData} setFormData={setFormData}
+                handleGenerateStatement={handleGenerateStatement}
+              />
+            </PlayfulCard>
+          )}
+
+          {activeView === 'expenses' && (
+            <PlayfulCard color="#F9FBE7">
+              <ExpensesSection
+                newExpense={newExpense} setNewExpense={setNewExpense}
+                expenses={expenses} fetchExpenses={fetchExpenses}
+              />
+            </PlayfulCard>
+          )}
+
+        </div>
+      </main>
     </div>
   );
 }

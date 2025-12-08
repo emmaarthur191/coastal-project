@@ -1,11 +1,9 @@
 import uuid
-import os
 from decimal import Decimal
-from datetime import datetime, date
+from datetime import date
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.conf import settings
 from django.utils import timezone
 from users.models import User
 from banking_backend.utils.encryption import encrypt_field, decrypt_field
@@ -47,7 +45,7 @@ class Account(models.Model):
         try:
             decrypted_number = self.get_decrypted_account_number()
         except (ValueError, Exception):
-            decrypted_number = f"encrypted:{self.account_number[:10]}..." if self.account_number else "unknown"
+            decrypted_number = "**** **** **** ****" if self.account_number else "unknown"
         return f"{decrypted_number} ({self.type}) - {self.owner.email if self.owner else 'no owner'}"
 
 
@@ -1374,23 +1372,32 @@ class CashTransaction(models.Model):
         return f"{self.type} - {self.amount:.2f} ({self.processed_at.strftime('%Y-%m-%d %H:%M')})"
 
     def save(self, *args, **kwargs):
-        # Generate reference number if not provided
-        if not self.reference_number:
-            self.reference_number = f"CD-{self.id.hex[:8].upper()}"
+        from django.db import transaction as db_transaction
 
-        # Update cash drawer balance
-        if self.cash_drawer.status == 'open':
-            # For inflows (positive impact on drawer)
-            if self.type in ['deposit', 'transfer_in', 'fee_collection', 'opening_balance']:
-                self.cash_drawer.update_balance(self.amount)
-            # For outflows (negative impact on drawer)
-            elif self.type in ['withdrawal', 'transfer_out', 'closing_balance']:
-                self.cash_drawer.update_balance(-self.amount)
-            # Change fund is neutral
-            elif self.type == 'change_fund':
-                pass  # No balance impact
+        with db_transaction.atomic():
+            # Generate reference number if not provided
+            if not self.reference_number:
+                self.reference_number = f"CD-{self.id.hex[:8].upper()}"
 
-        super().save(*args, **kwargs)
+            # Update cash drawer balance with race condition protection
+            if self.cash_drawer.status == 'open':
+                # Lock the cash drawer row to prevent race conditions
+                cash_drawer = CashDrawer.objects.select_for_update().get(pk=self.cash_drawer.pk)
+
+                # For inflows (positive impact on drawer)
+                if self.type in ['deposit', 'transfer_in', 'fee_collection', 'opening_balance']:
+                    cash_drawer.update_balance(self.amount)
+                # For outflows (negative impact on drawer)
+                elif self.type in ['withdrawal', 'transfer_out', 'closing_balance']:
+                    cash_drawer.update_balance(-self.amount)
+                # Change fund is neutral
+                elif self.type == 'change_fund':
+                    pass  # No balance impact
+
+                # Update self reference to locked instance
+                self.cash_drawer = cash_drawer
+
+            super().save(*args, **kwargs)
 
 
 class CashReconciliation(models.Model):
@@ -1562,6 +1569,10 @@ class CashAdvance(models.Model):
         """Approve the cash advance request."""
         if self.status != 'pending':
             raise ValidationError("Only pending requests can be approved.")
+
+        # Security Fix: Enforce role check
+        if approver.role not in ['manager', 'operations_manager', 'administrator', 'superuser']:
+             raise ValidationError("Insufficient privileges to approve cash advance.")
 
         self.status = 'approved'
         self.approved_by = approver
@@ -2072,3 +2083,178 @@ class Notification(models.Model):
         expired = cls.objects.filter(expires_at__lt=timezone.now(), status__in=['read', 'unread'])
         count = expired.update(status='archived')
         return count
+
+
+# Additional models needed by views.py
+class NextOfKin(models.Model):
+    """Next of kin information for account holders."""
+    # Using the structure from the existing database migration
+    name = models.CharField(max_length=255)
+    relationship = models.CharField(max_length=20, choices=[
+        ('spouse', 'Spouse'), ('parent', 'Parent'), ('child', 'Child'),
+        ('sibling', 'Sibling'), ('friend', 'Friend'), ('other', 'Other')
+    ])
+    address = models.TextField()
+    stake_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MinValueValidator(100)])
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} ({self.relationship})"
+
+
+class UserEncryptionKey(models.Model):
+    """User encryption keys for banking communications."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='banking_encryption_key')
+    public_key = models.TextField()
+    private_key_encrypted = models.TextField(blank=True, null=True)
+    key_salt = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Encryption key for {self.user}"
+
+
+class ClientRegistration(models.Model):
+    """Client registration applications."""
+    STATUS_CHOICES = [
+        ('draft', 'Draft'), ('otp_pending', 'OTP Pending'), ('otp_verified', 'OTP Verified'),
+        ('under_review', 'Under Review'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('completed', 'Completed')
+    ]
+    
+    ID_TYPE_CHOICES = [
+        ('passport', 'Passport'), ('national_id', 'National ID'), 
+        ('drivers_license', "Driver's License"), ('other', 'Other')
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    date_of_birth = models.DateField()
+    phone_number = models.CharField(max_length=20)
+    email = models.EmailField(blank=True)
+    id_type = models.CharField(max_length=20, choices=ID_TYPE_CHOICES)
+    id_number = models.CharField(max_length=50)
+    occupation = models.CharField(max_length=100)
+    work_address = models.TextField()
+    position = models.CharField(max_length=100)
+    passport_picture = models.ImageField(upload_to='client_registration/passport_pictures/%Y/%m/%d/', blank=True, null=True)
+    id_document = models.FileField(upload_to='client_registration/id_documents/%Y/%m/%d/', blank=True, null=True)
+    otp_code = models.CharField(max_length=6, blank=True, null=True)
+    otp_sent_at = models.DateTimeField(blank=True, null=True)
+    otp_verified_at = models.DateTimeField(blank=True, null=True)
+    otp_attempts = models.PositiveIntegerField(default=0)
+    submitted_at = models.DateTimeField(blank=True, null=True)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    approval_notes = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Foreign keys to existing models
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='reviewed_client_registrations')
+    user_account = models.OneToOneField(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='client_registration')
+    bank_account = models.OneToOneField(Account, on_delete=models.SET_NULL, blank=True, null=True, related_name='client_registration')
+    
+    # Many-to-many relationship with NextOfKin
+    next_of_kin = models.ManyToManyField(NextOfKin, blank=True, related_name='client_registrations')
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['phone_number']),
+            models.Index(fields=['submitted_at']),
+        ]
+    
+    def __str__(self):
+        return f"Registration - {self.first_name} {self.last_name} ({self.status})"
+
+
+# Banking-specific messaging models
+class MessageThread(models.Model):
+    """Message threads for banking communication."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    participants = models.ManyToManyField(User, related_name='banking_messaging_threads')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_banking_threads')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_message_at = models.DateTimeField(default=timezone.now)
+    shared_secret = models.TextField(blank=True)
+    public_keys = models.JSONField(default=dict)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-updated_at']
+    
+    def __str__(self):
+        return f"Banking Thread - {self.subject or 'No Subject'} - {self.participants.count()} participants"
+    
+    def update_last_message(self):
+        """Update the thread's timestamp when a new message is added."""
+        self.updated_at = timezone.now()
+        self.last_message_at = timezone.now()
+        self.save()
+
+    def get_unread_count(self, user):
+        """Get the count of unread messages for a specific user."""
+        return self.messages.filter(is_read=False).exclude(sender=user).count()
+
+
+class Message(models.Model):
+    """Messages within banking threads."""
+    MESSAGE_TYPES = [
+        ('text', 'Text'),
+        ('file', 'File'),
+        ('image', 'Image'),
+        ('system', 'System Message'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    thread = models.ForeignKey(MessageThread, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_banking_messages')
+    content = models.TextField(blank=True, null=True)
+    encrypted_content = models.TextField(blank=True, null=True)
+    iv = models.CharField(max_length=255, blank=True, null=True)
+    auth_tag = models.CharField(max_length=255, blank=True, null=True)
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='text')
+    timestamp = models.DateTimeField(default=timezone.now)
+    is_read = models.BooleanField(default=False)
+    read_by = models.ManyToManyField(User, related_name='read_banking_messages', blank=True)
+    read_at = models.DateTimeField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['timestamp']
+    
+    def __str__(self):
+        return f"Banking Message from {self.sender} in {self.thread.subject or 'No Subject'}"
+    
+    def mark_as_read(self, user):
+        """Mark message as read by a specific user."""
+        if user not in self.read_by.all():
+            self.read_by.add(user)
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save()
+
+
+class MessageReaction(models.Model):
+    """Model for message reactions (like WhatsApp reactions)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='banking_message_reactions')
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='reactions')
+    emoji = models.CharField(max_length=10)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ['user', 'message', 'emoji']  # One reaction per user per message per emoji
+
+    def __str__(self):
+        return f"{self.user.email} reacted with {self.emoji} to message {self.message.id}"

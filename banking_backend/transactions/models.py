@@ -1,4 +1,3 @@
-from django.db import models
 
 # The Transaction model is already defined in the banking app.
 # This app will use the existing Transaction model from banking.models

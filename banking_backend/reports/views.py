@@ -2,8 +2,6 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from datetime import date
 from .models import ReportTemplate, Report, ReportSchedule, ReportAnalytics
 from .serializers import (
@@ -181,7 +179,6 @@ class ReportViewSet(viewsets.ModelViewSet):
         # This would implement actual PDF/Excel/CSV generation
         # For now, return a placeholder path
         import os
-        from django.conf import settings
 
         filename = f"report_{report.id}.{format_type}"
         file_path = os.path.join('reports', 'exports', filename)
