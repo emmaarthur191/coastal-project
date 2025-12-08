@@ -124,9 +124,9 @@ EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-EMAIL_HOST_USER=noreply@coastal-banking.com
-EMAIL_HOST_PASSWORD=your-email-app-password
-DEFAULT_FROM_EMAIL=noreply@coastal-banking.com
+EMAIL_HOST_USER=<your-smtp-username>
+EMAIL_HOST_PASSWORD=<your-smtp-password>
+DEFAULT_FROM_EMAIL=<your-from-email>
 
 # Frontend
 FRONTEND_URL=https://coastal-banking.com

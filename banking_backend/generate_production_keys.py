@@ -107,9 +107,9 @@ EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.your-email-provider.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-EMAIL_HOST_USER=noreply@yourbank.com
-EMAIL_HOST_PASSWORD=your-email-app-password
-DEFAULT_FROM_EMAIL=noreply@yourbank.com
+EMAIL_HOST_USER=<your-smtp-username>
+EMAIL_HOST_PASSWORD=<your-smtp-password>
+DEFAULT_FROM_EMAIL=<your-from-email>
 FRONTEND_URL=https://your-frontend-domain.com
 
 # =============================================================================
