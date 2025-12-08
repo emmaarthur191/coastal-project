@@ -71,8 +71,7 @@ services:
 
 databases:
   # PostgreSQL Database
-  - type: postgresql
-    name: coastal-db
+  - name: coastal-db
     databaseName: coastal_db  # Optional: custom DB name inside Postgres
-    plan: starter
+    plan: basic-256mb  # Modern free tier (256MB RAM); upgrade as needed
     # region: oregon  # Optional: specify region (default: auto)
