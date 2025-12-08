@@ -37,7 +37,15 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ENVIRONMENT = config('ENVIRONMENT', default='development')
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+import os
+
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    # Render injects these two environment variables
+    os.getenv("RENDER_EXTERNAL_HOSTNAME", ""),   # e.g. coastal-backend-bmn3.onrender.com
+    os.getenv("RENDER_INSTANCE_ID", ""),         # fallback if needed
+]
 
 
 # Application definition
@@ -249,7 +257,14 @@ CORS_ALLOW_METHODS = [
 CORS_PREFLIGHT_MAX_AGE = 86400  # 4 hours
 
 # CSRF settings for cross-origin requests
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001', cast=lambda v: [s.strip() for s in v.split(',')])
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    # Render injects these environment variables
+    f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}",
+]
 
 # Email settings (for password reset)
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
@@ -383,10 +398,22 @@ except ImportError:
     }
 
 # Redis configuration for fraud detection system
-REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
-REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
-REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
-REDIS_DB = config('REDIS_DB', default=0, cast=int)
+from urllib.parse import urlparse
+
+REDIS_URL = os.getenv("REDIS_URL")  # <-- this is what Render gives you
+
+if REDIS_URL:
+    redis_url = urlparse(REDIS_URL)
+    REDIS_HOST = redis_url.hostname
+    REDIS_PORT = redis_url.port
+    REDIS_PASSWORD = redis_url.password
+    REDIS_DB = redis_url.path[1:] or 0
+else:
+    # fallback only for local dev
+    REDIS_HOST = "localhost"
+    REDIS_PORT = 6379
+    REDIS_PASSWORD = ""
+    REDIS_DB = 0
 REDIS_RULES_DB = config('REDIS_RULES_DB', default=1, cast=int)
 REDIS_LOG_DB = config('REDIS_LOG_DB', default=2, cast=int)
 
