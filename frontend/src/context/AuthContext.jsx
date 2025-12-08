@@ -63,16 +63,11 @@ export const AuthProvider = ({ children }) => {
   }, [checkAuth, TOKEN_CHECK_INTERVAL]);
 
   const login = async (email, password, role) => {
-    console.log('[DEBUG] AuthContext.login called with:', email, '[PASSWORD HIDDEN]', role);
     try {
-      console.log('[DEBUG] Calling authService.login...');
       const data = await authService.login(email, password);
-      console.log('[DEBUG] authService.login returned:', data);
       setUser(data.user);
-      console.log('[DEBUG] User set in context:', data.user);
       return { success: true };
     } catch (error) {
-      console.log('[DEBUG] authService.login threw error:', error);
       return { success: false, error: error.message };
     }
   };

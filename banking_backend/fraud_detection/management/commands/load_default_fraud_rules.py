@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from fraud_detection.models import FraudRule
 from users.models import User
 

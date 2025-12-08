@@ -23,14 +23,22 @@ urlpatterns = [
 
     # Dashboard endpoints
     path('member-dashboard/', views.MemberDashboardView.as_view(), name='member_dashboard'),
-    
+
+    # Service request endpoints
+    path('service-requests/', views.ServiceRequestView.as_view(), name='service_requests'),
+
+    # 2FA endpoints
+    path('enable-2fa/', views.Enable2FAView.as_view(), name='enable_2fa'),
+
     # OTP endpoints
     path('send-otp/', views.SendOTPView.as_view(), name='send_otp'),
     path('verify-otp/', views.VerifyOTPView.as_view(), name='verify_otp'),
     
     # User management endpoints (staff only)
     path('create/', views.CreateUserView.as_view(), name='create_user'),
+    path('staff/register/', views.EnhancedStaffRegistrationView.as_view(), name='enhanced_staff_registration'),
     path('staff/', views.StaffListView.as_view(), name='staff_list'),
+    path('staff-ids/', views.StaffIDListView.as_view(), name='staff_ids'),
     path('members/', views.MembersListView.as_view(), name='members_list'),
     path('deactivate-staff/', views.DeactivateStaffView.as_view(), name='deactivate_staff'),
     path('reactivate-staff/', views.ReactivateStaffView.as_view(), name='reactivate_staff'),
@@ -52,6 +60,7 @@ urlpatterns = [
     path('web/logout/', views.logout_view, name='logout'),
     path('web/register/', views.register_view, name='register'),
     path('web/dashboard/', views.dashboard_view, name='dashboard'),
+    path('web/analytics/', views.analytics_view, name='analytics'),
     path('web/profile/', views.profile_view, name='profile'),
     path('web/change-password/', views.change_password_view, name='change_password'),
 
@@ -61,4 +70,10 @@ urlpatterns = [
     path('web/users/<uuid:pk>/update/', views.UserUpdateView.as_view(), name='user_update'),
     path('web/users/<uuid:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
     path('web/users/<uuid:pk>/toggle-status/', views.toggle_user_status, name='toggle_user_status'),
+
+    # Document management endpoints
+    path('documents/', views.UserDocumentsListCreateView.as_view(), name='user_documents'),
+    path('documents/<uuid:pk>/', views.UserDocumentsDetailView.as_view(), name='user_document_detail'),
+    path('documents/<uuid:pk>/approve/', views.DocumentApprovalView.as_view(), name='document_approval'),
+    path('documents/pending/', views.PendingDocumentsView.as_view(), name='pending_documents'),
 ]

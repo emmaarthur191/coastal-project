@@ -3,8 +3,7 @@ Database optimization strategies for the banking backend.
 Includes proper indexing, query optimization, and performance improvements.
 """
 
-from django.db import models
-from django.db.models import Index, Q
+from django.db.models import Q
 
 
 class DatabaseOptimizations:
@@ -282,7 +281,6 @@ class QueryOptimizer:
         """
         from django.db.models import Sum, Count
         from django.utils import timezone
-        from datetime import timedelta
         
         from banking_backend.banking.models import Transaction
         
@@ -400,8 +398,6 @@ def generate_database_migration():
     Generate a Django migration file with performance indexes.
     Run this function to create the migration file.
     """
-    import os
-    from django.core.management import call_command
     
     # Create the migration file
     migration_content = create_performance_indexes()

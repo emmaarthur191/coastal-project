@@ -1,5 +1,6 @@
 import logging
 from rest_framework import viewsets, status
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,9 +8,13 @@ from django.db import transaction as db_transaction
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from users.models import User
-from .models import Account, Transaction, CashAdvance, Refund, Complaint, Notification, Loan
-from .serializers import CashAdvanceSerializer, RefundSerializer, ComplaintSerializer, NotificationSerializer, LoanSerializer
+from .models import Account, Transaction, CashAdvance, Refund, Complaint, Notification, Loan, MessageThread, Message, UserEncryptionKey, ClientRegistration
+from .serializers import CashAdvanceSerializer, RefundSerializer, ComplaintSerializer, NotificationSerializer, LoanSerializer, AccountListSerializer, BankingMessageThreadSerializer, BankingMessageSerializer, MessageCreateSerializer, MessageThreadCreateSerializer, UserEncryptionKeySerializer, ClientRegistrationSerializer, ClientRegistrationCreateSerializer, OTPSendSerializer, OTPVerifySerializer
+from banking_backend.utils.messaging_encryption import MessagingEncryption
+from banking_backend.utils.audit import AuditService
 from transactions.serializers import AccountSerializer
 from banking_backend.utils.error_handling import ViewMixin
 
@@ -24,10 +29,62 @@ class AccountViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = AccountSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'id'  # Explicitly set lookup field
 
     def get_queryset(self):
         """Filter accounts for the current user."""
         return Account.objects.filter(owner=self.request.user)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StaffAccountViewSet(viewsets.ReadOnlyModelViewSet, ViewMixin):
+    """
+    Handles account management for staff users.
+    Provides access to all accounts for managers and operations managers.
+    Endpoint: /api/banking/staff-accounts/
+    """
+    serializer_class = AccountListSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'  # Explicitly set lookup field
+
+    def get_queryset(self):
+        """Filter accounts based on user role."""
+        user = self.request.user
+        if user.role in ['manager', 'operations_manager', 'administrator', 'superuser']:
+            # Staff can see all accounts
+            return Account.objects.all().select_related('owner')
+        return Account.objects.none()
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def summary(self, request):
+        """Get account summary statistics for staff."""
+        try:
+            if request.user.role not in ['manager', 'operations_manager', 'administrator', 'superuser']:
+                return self.error_response(
+                    message='Access denied. Staff privileges required.',
+                    status_code=status.HTTP_403_FORBIDDEN
+                )
+
+            total_accounts = Account.objects.count()
+            active_accounts = Account.objects.filter(status='Active').count()
+            total_balance = sum(account.balance for account in Account.objects.all())
+
+            # Recent accounts (last 30 days)
+            from django.utils import timezone
+            thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+            recent_accounts = Account.objects.filter(
+                opening_application__created_at__gte=thirty_days_ago
+            ).count()
+
+            return self.success_response(data={
+                'total_accounts': total_accounts,
+                'active_accounts': active_accounts,
+                'total_balance': float(total_balance),
+                'recent_accounts': recent_accounts
+            })
+
+        except Exception as e:
+            return self.handle_error(e)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -37,6 +94,7 @@ class AccountSummaryViewSet(viewsets.ViewSet):
     Endpoint: /api/banking/account-summary/
     """
     permission_classes = [IsAuthenticated]
+    serializer_class = None  # Custom response, no serializer needed
 
     def list(self, request):
         """Get account summary for the current user."""
@@ -102,6 +160,7 @@ class CashAdvanceViewSet(viewsets.ModelViewSet, ViewMixin):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = CashAdvanceSerializer
+    lookup_field = 'id'  # Explicitly set lookup field
 
     def get_queryset(self):
         """Filter cash advances based on user role."""
@@ -280,6 +339,7 @@ class RefundViewSet(viewsets.ModelViewSet, ViewMixin):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = RefundSerializer
+    lookup_field = 'id'  # Explicitly set lookup field
 
     def get_queryset(self):
         """Filter refunds based on user role."""
@@ -345,7 +405,7 @@ class CashAdvanceReportViewSet(viewsets.ViewSet, ViewMixin):
     def summary(self, request):
         """Get cash advance summary statistics."""
         try:
-            from django.db.models import Count, Sum, Avg
+            from django.db.models import Count, Sum
             from django.db.models.functions import TruncMonth
 
             # Date range filter
@@ -418,7 +478,7 @@ class RefundReportViewSet(viewsets.ViewSet, ViewMixin):
     def summary(self, request):
         """Get refund summary statistics."""
         try:
-            from django.db.models import Count, Sum, Avg
+            from django.db.models import Count, Sum
             from django.db.models.functions import TruncMonth
 
             # Date range filter
@@ -476,12 +536,13 @@ class LoanViewSet(viewsets.ModelViewSet, ViewMixin):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = LoanSerializer
+    lookup_field = 'id'  # Explicitly set lookup field
 
     def get_queryset(self):
         """Filter loans based on user role."""
         user = self.request.user
-        if user.role == 'member':
-            # Members can see their own loans
+        if user.role == 'customer':
+            # Customers can see their own loans
             return Loan.objects.filter(account__owner=user)
         elif user.role in ['manager', 'operations_manager']:
             # Managers can see all loans
@@ -504,6 +565,664 @@ class LoanViewSet(viewsets.ModelViewSet, ViewMixin):
 
         except Exception as e:
             return self.handle_error(e)
+
+
+class UserEncryptionKeyViewSet(viewsets.ModelViewSet, ViewMixin):
+    """
+    Handles user encryption keys for end-to-end messaging.
+    Endpoint: /api/banking/encryption-keys/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserEncryptionKeySerializer
+    lookup_field = 'id'  # Explicitly set lookup field
+
+    def get_queryset(self):
+        """Users can only see their own encryption keys."""
+        return UserEncryptionKey.objects.filter(user=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Allow retrieving public keys of other users for encryption purposes."""
+        user_id = kwargs.get('pk')
+        try:
+            # Try to get the encryption key for the specified user
+            key_obj = UserEncryptionKey.objects.get(user_id=user_id)
+            serializer = self.get_serializer(key_obj)
+            return self.success_response(data=serializer.data)
+        except UserEncryptionKey.DoesNotExist:
+            return self.error_response(
+                message='Encryption key not found',
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+    def create(self, request, *args, **kwargs):
+        """Create or update encryption keys for the current user."""
+        user = request.user
+        public_key = request.data.get('public_key')
+        if not public_key:
+            return self.error_response(message='public_key is required', status_code=400)
+
+        obj, created = UserEncryptionKey.objects.get_or_create(
+            user=user,
+            defaults={
+                'public_key': public_key,
+                'private_key_encrypted': '',
+                'key_salt': '',
+            }
+        )
+        if not created:
+            obj.public_key = public_key
+            obj.save()
+
+        serializer = self.get_serializer(obj)
+        return self.success_response(data=serializer.data, status_code=201 if created else 200)
+
+    def perform_create(self, serializer):
+        """Set the user to the current request user."""
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def generate_keys(self, request):
+        """Generate encryption keys for the current user."""
+        try:
+            user = request.user
+
+            # Check if keys already exist
+            if UserEncryptionKey.objects.filter(user=user).exists():
+                return self.error_response(
+                    message='Encryption keys already exist for this user',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Generate ECDH key pair
+            private_key_pem, public_key_pem = MessagingEncryption.generate_ecdh_keypair()
+
+            # Encrypt private key with user's password (simplified - in production use proper key management)
+            password = request.data.get('password')
+            if not password:
+                return self.error_response(
+                    message='Password required to encrypt private key',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            encrypted_private_key = MessagingEncryption.encrypt_private_key(private_key_pem, password)
+
+            # Create encryption key record
+            encryption_key = UserEncryptionKey.objects.create(
+                user=user,
+                public_key=public_key_pem,
+                private_key_encrypted=encrypted_private_key['encrypted_key'],
+                key_salt=encrypted_private_key['salt']
+            )
+
+            # Log key generation for audit
+            AuditService.log_financial_operation(
+                user=user,
+                operation_type="CREATE",
+                model_name="UserEncryptionKey",
+                object_id=str(encryption_key.id),
+                changes={
+                    'has_public_key': bool(public_key_pem),
+                    'has_private_key': bool(encrypted_private_key['encrypted_key']),
+                    'has_salt': bool(encrypted_private_key['salt'])
+                },
+                metadata={
+                    'ip_address': request.META.get('REMOTE_ADDR'),
+                    'user_agent': request.META.get('HTTP_USER_AGENT'),
+                    'key_generation_method': 'ECDH_P256',
+                    'encryption_method': 'AES_GCM'
+                },
+                audit_level='HIGH'  # High audit level for encryption key operations
+            )
+
+            serializer = self.get_serializer(encryption_key)
+            return self.success_response(
+                data=serializer.data,
+                message='Encryption keys generated successfully'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+
+class MessageThreadViewSet(viewsets.ModelViewSet, ViewMixin):
+    """
+    Handles message threads for staff communication.
+    Endpoint: /api/banking/message-threads/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = BankingMessageThreadSerializer
+    lookup_field = 'id'  # Explicitly set lookup field
+
+    def get_queryset(self):
+        """Users can only see threads they participate in."""
+        return MessageThread.objects.filter(participants=self.request.user)
+
+    def get_serializer_context(self):
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def create(self, request, *args, **kwargs):
+        """Create a new message thread using MessageThreadCreateSerializer."""
+        serializer = MessageThreadCreateSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        thread = serializer.save()
+
+        # Log thread creation for audit
+        AuditService.log_financial_operation(
+            user=request.user,
+            operation_type="CREATE",
+            model_name="MessageThread",
+            object_id=str(thread.id),
+            changes={
+                'subject': thread.subject,
+                'participants_count': thread.participants.count(),
+                'participants': [str(p.id) for p in thread.participants.all()],
+                'has_initial_message': thread.messages.exists()
+            },
+            metadata={
+                'ip_address': request.META.get('REMOTE_ADDR'),
+                'user_agent': request.META.get('HTTP_USER_AGENT'),
+                'participants_emails': [p.email for p in thread.participants.all()]
+            },
+            audit_level='MEDIUM'
+        )
+
+        response_serializer = self.get_serializer(thread)
+        return self.success_response(
+            data=response_serializer.data,
+            message='Message thread created successfully',
+            status_code=status.HTTP_201_CREATED
+        )
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def create_thread(self, request):
+        """Create a new message thread."""
+        try:
+            serializer = MessageThreadCreateSerializer(data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+
+            # Use the serializer's create method to properly handle the MessageThread creation
+            thread = serializer.save()
+
+            # Log thread creation for audit
+            AuditService.log_financial_operation(
+                user=request.user,
+                operation_type="CREATE",
+                model_name="MessageThread",
+                object_id=str(thread.id),
+                changes={
+                    'subject': thread.subject,
+                    'participants_count': thread.participants.count(),
+                    'participants': [str(p.id) for p in thread.participants.all()],
+                    'has_initial_message': thread.messages.exists()
+                },
+                metadata={
+                    'ip_address': request.META.get('REMOTE_ADDR'),
+                    'user_agent': request.META.get('HTTP_USER_AGENT'),
+                    'participants_emails': [p.email for p in thread.participants.all()]
+                },
+                audit_level='MEDIUM'
+            )
+
+            response_serializer = self.get_serializer(thread)
+            return self.success_response(
+                data=response_serializer.data,
+                message='Message thread created successfully',
+                status_code=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+
+class ClientRegistrationViewSet(viewsets.ModelViewSet, ViewMixin):
+    """
+    Handles client registration applications with OTP verification.
+    Endpoint: /api/banking/client-registrations/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = ClientRegistrationSerializer
+
+    def get_queryset(self):
+        """Filter client registrations based on user role."""
+        user = self.request.user
+        if user.role in ['manager', 'operations_manager', 'administrator']:
+            # Staff can see all registrations
+            return ClientRegistration.objects.all()
+        return ClientRegistration.objects.none()
+
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action."""
+        if self.action == 'create':
+            return ClientRegistrationCreateSerializer
+        return ClientRegistrationSerializer
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def submit_registration(self, request):
+        """Submit a new client registration application."""
+        try:
+            serializer = ClientRegistrationCreateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            # Create registration
+            registration = serializer.save(
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT')
+            )
+
+            # Submit for OTP verification
+            registration.submit_application()
+
+            response_serializer = ClientRegistrationSerializer(registration)
+            return self.success_response(
+                data=response_serializer.data,
+                message='Client registration submitted successfully. Please verify with OTP.',
+                status_code=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def send_otp(self, request, pk=None):
+        """Send OTP to the client's phone number."""
+        try:
+            registration = self.get_object()
+
+            if registration.status != 'otp_pending':
+                return self.error_response(
+                    message='OTP verification not required at this stage',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Send OTP
+            otp_code = registration.send_otp()
+
+            return self.success_response(
+                data={'otp_sent': True},
+                message='OTP sent successfully to client phone number'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def verify_otp(self, request, pk=None):
+        """Verify OTP code for client registration."""
+        try:
+            registration = self.get_object()
+            otp_code = request.data.get('otp_code')
+
+            if not otp_code:
+                return self.error_response(
+                    message='OTP code is required',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            success, message = registration.verify_otp(otp_code)
+
+            if success:
+                serializer = self.get_serializer(registration)
+                return self.success_response(
+                    data=serializer.data,
+                    message='OTP verified successfully. Registration is now under review.'
+                )
+            else:
+                return self.error_response(
+                    message=message,
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def approve_registration(self, request, pk=None):
+        """Approve a client registration."""
+        try:
+            if request.user.role not in ['manager', 'operations_manager', 'administrator']:
+                return self.error_response(
+                    message='Only managers can approve client registrations',
+                    status_code=status.HTTP_403_FORBIDDEN
+                )
+
+            registration = self.get_object()
+
+            if registration.status != 'otp_verified':
+                return self.error_response(
+                    message='Registration must be OTP verified before approval',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            notes = request.data.get('notes', '')
+            registration.approve_registration(request.user, notes)
+
+            # Create user account and bank account
+            user = registration.create_user_account()
+            if user:
+                account = registration.create_bank_account()
+
+            serializer = self.get_serializer(registration)
+            return self.success_response(
+                data=serializer.data,
+                message='Client registration approved successfully'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def reject_registration(self, request, pk=None):
+        """Reject a client registration."""
+        try:
+            if request.user.role not in ['manager', 'operations_manager', 'administrator']:
+                return self.error_response(
+                    message='Only managers can reject client registrations',
+                    status_code=status.HTTP_403_FORBIDDEN
+                )
+
+            registration = self.get_object()
+            notes = request.data.get('notes', '')
+
+            registration.reject_registration(request.user, notes)
+
+            serializer = self.get_serializer(registration)
+            return self.success_response(
+                data=serializer.data,
+                message='Client registration rejected successfully'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def send_otp_public(self, request):
+        """Public endpoint to send OTP (used during registration form)."""
+        try:
+            serializer = OTPSendSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            phone_number = serializer.validated_data['phone_number']
+
+            # Find registration by phone number
+            try:
+                registration = ClientRegistration.objects.get(
+                    phone_number=phone_number,
+                    status='otp_pending'
+                )
+            except ClientRegistration.DoesNotExist:
+                return self.error_response(
+                    message='No pending registration found for this phone number',
+                    status_code=status.HTTP_404_NOT_FOUND
+                )
+
+            # Send OTP
+            otp_code = registration.send_otp()
+
+            return self.success_response(
+                data={'otp_sent': True},
+                message='OTP sent successfully'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def verify_otp_public(self, request):
+        """Public endpoint to verify OTP (used during registration form)."""
+        try:
+            serializer = OTPVerifySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            phone_number = serializer.validated_data['phone_number']
+            otp_code = serializer.validated_data['otp_code']
+
+            # Find registration by phone number
+            try:
+                registration = ClientRegistration.objects.get(
+                    phone_number=phone_number,
+                    status='otp_pending'
+                )
+            except ClientRegistration.DoesNotExist:
+                return self.error_response(
+                    message='No pending registration found for this phone number',
+                    status_code=status.HTTP_404_NOT_FOUND
+                )
+
+            success, message = registration.verify_otp(otp_code)
+
+            if success:
+                response_serializer = ClientRegistrationSerializer(registration)
+                return self.success_response(
+                    data=response_serializer.data,
+                    message='OTP verified successfully. Registration submitted for review.'
+                )
+            else:
+                return self.error_response(
+                    message=message,
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_read(self, request, pk=None):
+        """Mark all messages in thread as read for current user."""
+        try:
+            thread = self.get_object()
+
+            # Mark unread messages as read
+            unread_messages = thread.messages.filter(is_read=False).exclude(sender=request.user)
+            for message in unread_messages:
+                message.mark_as_read(request.user)
+
+            return self.success_response(message='Thread marked as read')
+
+        except Exception as e:
+            return self.handle_error(e)
+
+
+class MessageViewSet(viewsets.ModelViewSet, ViewMixin):
+    """
+    Handles messages within threads.
+    Endpoint: /api/banking/messages/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = BankingMessageSerializer
+
+    def get_queryset(self):
+        """Users can only see messages in threads they participate in."""
+        return Message.objects.filter(thread__participants=self.request.user)
+
+    def get_serializer_context(self):
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def perform_create(self, serializer):
+        """Set sender and update thread timestamp."""
+        message = serializer.save(sender=self.request.user)
+        message.thread.update_last_message()
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def send_message(self, request):
+        """Send a new message to a thread."""
+        try:
+            serializer = MessageCreateSerializer(data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+
+            # Create message
+            message = serializer.save(sender=request.user)
+
+            # Update thread timestamp
+            message.thread.update_last_message()
+
+            # Mark message as read by sender
+            message.mark_as_read(request.user)
+
+            # Broadcast message to WebSocket groups of all participants except sender
+            channel_layer = get_channel_layer()
+            # Use content if encrypted_content is not available (for backward compatibility)
+            content_to_send = message.encrypted_content or message.content
+            message_data = {
+                'type': 'new_message',
+                'message': {
+                    'id': str(message.id),
+                    'thread_id': str(message.thread.id),
+                    'sender_id': str(message.sender.id),
+                    'sender_name': message.sender.get_full_name() or message.sender.email,
+                    'encrypted_content': content_to_send,
+                    'iv': message.iv,
+                    'auth_tag': message.auth_tag,
+                    'timestamp': message.timestamp.isoformat()
+                }
+            }
+
+            # Send to thread group (all participants will receive it)
+            async_to_sync(channel_layer.group_send)(
+                f'messaging_{message.thread.id}',
+                message_data
+            )
+
+            # Log message creation for audit
+            AuditService.log_financial_operation(
+                user=request.user,
+                operation_type="CREATE",
+                model_name="Message",
+                object_id=str(message.id),
+                changes={
+                    'thread_id': str(message.thread.id),
+                    'thread_subject': message.thread.subject,
+                    'message_type': message.message_type,
+                    'has_encryption': bool(message.encrypted_content),
+                    'has_iv': bool(message.iv),
+                    'has_auth_tag': bool(message.auth_tag)
+                },
+                metadata={
+                    'ip_address': request.META.get('REMOTE_ADDR'),
+                    'user_agent': request.META.get('HTTP_USER_AGENT'),
+                    'participants_count': message.thread.participants.count(),
+                    'encrypted_content_length': len(message.encrypted_content) if message.encrypted_content else 0
+                },
+                audit_level='MEDIUM'
+            )
+
+            response_serializer = self.get_serializer(message)
+            return self.success_response(
+                data=response_serializer.data,
+                message='Message sent successfully',
+                status_code=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def add_reaction(self, request, pk=None):
+        """Add a reaction to a message."""
+        try:
+            message = self.get_object()
+            emoji = request.data.get('emoji')
+
+            if not emoji:
+                return self.error_response(
+                    message='Emoji is required',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Check if user already reacted with this emoji
+            from .models import MessageReaction
+            existing_reaction = MessageReaction.objects.filter(
+                message=message,
+                user=request.user,
+                emoji=emoji
+            ).first()
+
+            if existing_reaction:
+                return self.error_response(
+                    message='You have already reacted with this emoji',
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create reaction
+            reaction = MessageReaction.objects.create(
+                message=message,
+                user=request.user,
+                emoji=emoji
+            )
+
+            # Broadcast reaction to WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'messaging_{message.thread.id}',
+                {
+                    'type': 'reaction_added',
+                    'reaction': {
+                        'id': str(reaction.id),
+                        'message_id': str(message.id),
+                        'user_id': str(request.user.id),
+                        'user_name': f"{request.user.first_name} {request.user.last_name}",
+                        'emoji': reaction.emoji,
+                        'created_at': reaction.created_at.isoformat()
+                    }
+                }
+            )
+
+            return self.success_response(
+                data={
+                    'id': str(reaction.id),
+                    'emoji': reaction.emoji,
+                    'created_at': reaction.created_at.isoformat()
+                },
+                message='Reaction added successfully'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_read(self, request, pk=None):
+        """Mark a specific message as read."""
+        try:
+            message = self.get_object()
+            message.mark_as_read(request.user)
+
+            serializer = self.get_serializer(message)
+            return self.success_response(
+                data=serializer.data,
+                message='Message marked as read'
+            )
+
+        except Exception as e:
+            return self.handle_error(e)
+
+
+class AccountSummaryView(APIView):
+    """API view for account summary with frontend-compatible data."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = None  # Custom response, no serializer needed
+
+    def get(self, request):
+        accounts = Account.objects.filter(owner=request.user)
+        serializer = AccountListSerializer(accounts, many=True)
+        return Response({
+            'accounts': serializer.data,
+            'total_balance': float(sum(acc.balance for acc in accounts))
+        })
+
+
+class PendingLoansView(viewsets.ViewSet):
+    """API view for pending loans for the current user."""
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        loans = Loan.objects.filter(account__owner=request.user, status='pending')
+        serializer = LoanSerializer(loans, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
@@ -629,7 +1348,7 @@ class ComplaintReportViewSet(viewsets.ViewSet, ViewMixin):
     def summary(self, request):
         """Get complaint summary statistics."""
         try:
-            from django.db.models import Count, Avg
+            from django.db.models import Count
             from django.db.models.functions import TruncMonth
 
             # Date range filter
@@ -727,7 +1446,7 @@ class ComplaintReportViewSet(viewsets.ViewSet, ViewMixin):
                         'priority': complaint.priority,
                         'submitted_at': complaint.submitted_at,
                         'days_open': (timezone.now().date() - complaint.submitted_at.date()).days,
-                        'assigned_to': f"{complaint.assigned_to.first_name} {complaint.assigned_to.last_name}" if complaint.assigned_to else None
+                        'assigned_to': f"{complaint.assigned_to.first_name} {complaint.assigned_to.last_name}" if complaint.assigned_to else 'Unassigned'
                     })
 
             return self.success_response(data={

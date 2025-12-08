@@ -1,12 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
-from django.db.models import Q, Sum, Count
+from django.db.models import Sum, Count
 from datetime import datetime, date, timedelta
 from decimal import Decimal
-import json
-import os
 from banking.models import Transaction
-from users.models import User
 from reports.models import Report, ReportTemplate, ReportSchedule, ReportAnalytics
 
 

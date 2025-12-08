@@ -2,7 +2,6 @@ import os
 import pytest
 from django.test import TestCase
 from django.contrib.auth import authenticate
-from django.core.exceptions import ValidationError
 from users.models import User, UserProfile
 
 

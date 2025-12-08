@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 import secrets
-import string
 import base64
-import os
-import django
 from django.core.management.utils import get_random_secret_key
 
 def generate_comprehensive_production_keys():

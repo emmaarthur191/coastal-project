@@ -1,12 +1,12 @@
 import json
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Tuple
 from django.db import models, transaction as db_transaction
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db.models import Q, Count, Sum
+from django.db.models import Count
 from cryptography.fernet import Fernet
 from django.conf import settings
 import structlog

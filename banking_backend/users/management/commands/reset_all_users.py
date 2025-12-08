@@ -10,12 +10,9 @@ from banking.models import (
     Complaint, Notification
 )
 from operations.models import Commission
-from django.utils import timezone
-from django.conf import settings
 import secrets
 import string
 import os
-import uuid
 
 User = get_user_model()
 

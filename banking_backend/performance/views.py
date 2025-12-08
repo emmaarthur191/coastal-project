@@ -1,8 +1,7 @@
-from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -15,8 +14,7 @@ from .models import (
 from .serializers import (
     PerformanceMetricSerializer, SystemHealthSerializer,
     DashboardWidgetSerializer, PerformanceAlertSerializer,
-    PerformanceRecommendationSerializer, DashboardDataSerializer,
-    PerformanceChartDataSerializer, TransactionVolumeSerializer
+    PerformanceRecommendationSerializer, TransactionVolumeSerializer
 )
 
 
@@ -197,11 +195,8 @@ class PerformanceRecommendationViewSet(viewsets.ModelViewSet):
         return Response({'status': 'Recommendation implemented'})
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def transaction_volume(request):
-    """Get transaction volume data for charts."""
-    time_range = request.query_params.get('time_range', '7d')
+def _get_transaction_volume_data(time_range='7d'):
+    """Helper function to get transaction volume data."""
     days = 7
 
     if time_range == '30d':
@@ -236,6 +231,15 @@ def transaction_volume(request):
             'average_transaction_value': avg_value
         })
 
+    return volume_data
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def transaction_volume(request):
+    """Get transaction volume data for charts."""
+    time_range = request.query_params.get('time_range', '7d')
+    volume_data = _get_transaction_volume_data(time_range)
     serializer = TransactionVolumeSerializer(volume_data, many=True)
     return Response(serializer.data)
 
@@ -322,7 +326,7 @@ def dashboard_data(request):
     }
 
     # Transaction volume (last 7 days)
-    volume_data = transaction_volume(request).data
+    volume_data = _get_transaction_volume_data()
 
     # Active alerts
     active_alerts = PerformanceAlert.objects.filter(status='active').order_by('-triggered_at')[:10]

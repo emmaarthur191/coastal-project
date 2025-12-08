@@ -113,14 +113,7 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log('[DEBUG] Login form submitted with data:', {
-      email: formData.email,
-      role: formData.role,
-      rememberMe: formData.rememberMe
-    });
-
     if (!validateForm()) {
-      console.log('[DEBUG] Form validation failed:', formErrors);
       // Focus first error field
       if (errorSummaryRef.current) {
         errorSummaryRef.current.focus();
@@ -132,18 +125,14 @@ function LoginPage() {
       return;
     }
 
-    console.log('[DEBUG] Form validation passed, attempting login...');
     setIsLoading(true);
     setFormErrors({});
     setSuccessMessage('');
 
     try {
-      console.log('[DEBUG] Calling login function with:', formData.email, '[PASSWORD HIDDEN]', formData.role);
       const result = await login(formData.email, formData.password, formData.role);
-      console.log('[DEBUG] Login result:', result);
 
       if (result.success) {
-        console.log('[DEBUG] Login successful, setting success message');
         setSuccessMessage('Login successful! Redirecting...');
 
         // Store remember me preference
@@ -155,16 +144,13 @@ function LoginPage() {
 
         // Navigate after brief delay for UX
         setTimeout(() => {
-          console.log('[DEBUG] Navigating to dashboard');
           navigate('/dashboard');
         }, 1000);
       } else {
-        console.log('[DEBUG] Login failed with error:', result.error);
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
         passwordInputRef.current?.focus();
       }
     } catch (error) {
-      console.log('[DEBUG] Login threw exception:', error);
       setFormErrors({
         submit: 'Network error. Please check your connection and try again.'
       });
@@ -231,11 +217,6 @@ function LoginPage() {
         Skip to main content
       </a>
 
-      {/* Background decorative elements with reduced motion support */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 motion-reduce:hidden animate-pulse-gentle"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-warning-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 motion-reduce:hidden animate-pulse-gentle" style={{ animationDelay: '2s' }}></div>
-      </div>
 
       {/* Main login container */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -583,9 +564,9 @@ function LoginPage() {
       </main>
 
       {/* Live region for announcements */}
-      <div 
-        aria-live="polite" 
-        aria-atomic="true" 
+      <div
+        aria-live="polite"
+        aria-atomic="true"
         className="sr-only"
         id="live-region"
       >

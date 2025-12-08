@@ -1,14 +1,9 @@
 import uuid
 from decimal import Decimal
-from datetime import timedelta
-from typing import Dict, Any, Tuple
-from django.db import models, transaction
+from django.db import models
 from django.utils import timezone
-from django.conf import settings
-from django.core.exceptions import ValidationError
 from users.models import User
 from banking.models import Transaction, Account
-from cryptography.fernet import Fernet
 import logging
 
 logger = logging.getLogger(__name__)

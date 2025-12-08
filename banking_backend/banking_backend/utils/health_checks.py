@@ -106,14 +106,18 @@ def system_health_view(request):
 @require_GET
 @never_cache
 def banking_metrics_view(request):
+    """
+    Banking-specific metrics and KPIs.
+    Synchronous view to avoid async middleware issues.
+    """
     """Banking-specific metrics and KPIs."""
-    try:
-        from django.db.models import Count, Sum, Q
-        from django.utils import timezone
-        from datetime import timedelta
-        from banking.models import Transaction
-        from banking.models import Account
+    from django.db.models import Count, Sum
+    from django.utils import timezone
+    from datetime import timedelta
+    from banking.models import Transaction
+    from banking.models import Account
 
+    try:
         # Calculate metrics for the last 24 hours
         since = timezone.now() - timedelta(hours=24)
 
@@ -126,10 +130,10 @@ def banking_metrics_view(request):
         )
 
         # Account metrics
-        account_metrics = Account.objects.aggregate(
-            total_accounts=Count('id'),
-            active_accounts=Count('id', filter={'is_active': True})
-        )
+        account_metrics = {
+            'total_accounts': Account.objects.count(),
+            'active_accounts': Account.objects.filter(is_active=True).count()
+        }
 
         response_data = {
             'status': 'healthy',

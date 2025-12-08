@@ -1,9 +1,9 @@
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
-from django.db.models import Count, Avg, Q, Max
+from django.db.models import Count, Avg, Max
 from django.utils import timezone
 from datetime import timedelta
 from .models import UserSettings, SystemSettings, APIUsage, APIRateLimit, HealthCheck
@@ -12,7 +12,7 @@ from .serializers import (
     APIRateLimitSerializer, HealthCheckSerializer, APIAnalyticsSerializer,
     SystemHealthOverviewSerializer
 )
-from users.permissions import IsAdministrator, IsSuperuser, BaseRolePermission
+from users.permissions import BaseRolePermission
 
 
 class CanAccessSystemSettings(BaseRolePermission):

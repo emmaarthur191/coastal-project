@@ -1,7 +1,6 @@
 import pytest
 import django
 from django.conf import settings
-from django.test.utils import get_runner
 
 # Configure Django settings
 if not settings.configured:

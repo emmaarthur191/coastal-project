@@ -1,11 +1,9 @@
 import os
 from django.test import TestCase
-from django.utils import timezone
-from datetime import timedelta
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from .models import PerformanceMetric, SystemHealth, DashboardWidget, PerformanceAlert, PerformanceRecommendation
+from .models import PerformanceMetric, SystemHealth, DashboardWidget
 
 User = get_user_model()
 

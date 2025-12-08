@@ -7,7 +7,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from users.models import User, UserProfile
-from banking.models import Account, Transaction, LoanApplication, Loan
+from banking.models import Transaction, LoanApplication
 from users.serializers import UserInfoSerializer, UserProfileSerializer
 from transactions.serializers import TransactionSerializer
 from banking.serializers import LoanApplicationSerializer

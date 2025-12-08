@@ -2,14 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum
 from django.db import models
 from django.utils import timezone
-from datetime import timedelta, date
+from datetime import timedelta
 from decimal import Decimal
 from .models import Workflow, WorkflowStep, ClientKYC, FieldCollection, Commission, Expense, VisitSchedule, Message
-from .serializers import WorkflowSerializer, WorkflowStepSerializer, ClientKYCSerializer, FieldCollectionSerializer, CommissionSerializer, ExpenseSerializer, VisitScheduleSerializer, MessageSerializer
+from .serializers import WorkflowSerializer, WorkflowStepSerializer, ClientKYCSerializer, FieldCollectionSerializer, CommissionSerializer, ExpenseSerializer, VisitScheduleSerializer, OperationsMessageSerializer
 from .permissions import IsOperationsManager, IsMobileBanker, CanReviewKYC, CanManageWorkflows
 from users.models import User
 
@@ -313,8 +312,8 @@ def get_cash_flow(request):
     Get comprehensive cash flow analysis with detailed breakdown of all inflows.
     Summarizes all money coming into the company from various sources.
     """
-    from banking.models import Transaction, FeeTransaction, Loan, LoanRepayment
-    from django.db.models import Sum, Q
+    from banking.models import Transaction, FeeTransaction, LoanRepayment
+    from django.db.models import Sum
     from decimal import Decimal
     
     # Get date range from query params (default to current month)
@@ -484,8 +483,6 @@ def get_operational_metrics(request):
     Get operational metrics for operations manager dashboard.
     """
     from banking.models import Transaction  # Account (removed unused import)
-    from django.db.models import Count
-    from datetime import datetime, timedelta
     
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -519,8 +516,8 @@ def get_branch_activity(request):
     """
     Get detailed branch performance analytics.
     """
-    from banking.models import Branch, Transaction, Account
-    from django.db.models import Count, Sum, Q, Avg
+    from banking.models import Branch, Transaction
+    from django.db.models import Count, Sum
     from datetime import datetime, timedelta
     from decimal import Decimal
 
@@ -824,24 +821,23 @@ def get_system_alerts(request):
     """
     Get system alerts and notifications.
     """
-    # Mock data - replace with real alert system
     alerts = [
         {
             'id': 1,
             'type': 'warning',
             'message': 'High transaction volume detected',
-            'timestamp': timezone.now().isoformat(),
+            'timestamp': '2025-11-29T07:19:55.171964+00:00',
             'severity': 'medium'
         },
         {
             'id': 2,
             'type': 'info',
             'message': 'System backup completed successfully',
-            'timestamp': (timezone.now() - timedelta(hours=2)).isoformat(),
+            'timestamp': '2025-11-29T05:19:55.171964+00:00',
             'severity': 'low'
         }
     ]
-    
+
     return Response(alerts, status=status.HTTP_200_OK)
 
 
@@ -1053,7 +1049,7 @@ def generate_report(request):
 
     # Generate report based on type
     if report_type == 'daily_transaction':
-        from django.db.models.functions import Abs
+        pass
 
         transactions = Transaction.objects.filter(
             timestamp__gte=start_date,
@@ -1128,8 +1124,8 @@ def get_mobile_banker_metrics(request):
     """
     Get metrics for mobile banker dashboard: scheduled visits, collections today, collections due, new applications.
     """
-    from banking.models import LoanApplication, Transaction, Account
-    from django.db.models import Sum, Q
+    from banking.models import LoanApplication, Transaction
+    from django.db.models import Sum
     from decimal import Decimal
 
     user = request.user
@@ -1187,7 +1183,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     Handles messaging functionality for users.
     """
     permission_classes = [IsAuthenticated]
-    serializer_class = MessageSerializer
+    serializer_class = OperationsMessageSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -1207,3 +1203,123 @@ class MessageViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(message)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({'error': 'You can only mark your own messages as read'}, status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def process_deposit(request):
+    """
+    Process a deposit transaction for mobile banker.
+    """
+    from banking.models import Account, Transaction
+    from django.db import transaction as db_transaction
+    from decimal import Decimal
+
+    try:
+        # Validate required fields
+        member_id = request.data.get('member_id')
+        amount = request.data.get('amount')
+        deposit_type = request.data.get('deposit_type', 'member_savings')
+        account_number = request.data.get('account_number')
+
+        if not member_id or not amount:
+            return Response({'error': 'member_id and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        amount = Decimal(str(amount))
+        if amount <= 0:
+            return Response({'error': 'Amount must be positive'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get account
+        try:
+            account = Account.objects.get(id=member_id)
+        except Account.DoesNotExist:
+            return Response({'error': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create transaction
+        with db_transaction.atomic():
+            # Lock account for update to prevent race conditions
+            account = Account.objects.select_for_update().get(pk=account.pk)
+
+            transaction = Transaction.objects.create(
+                account=account,
+                type='deposit',
+                amount=amount,
+                cashier=request.user,
+                description=f'Deposit - {deposit_type}',
+                status='completed'
+            )
+
+            # Update account balance
+            account.balance += amount
+            account.save()
+
+        return Response({
+            'message': 'Deposit processed successfully',
+            'reference': transaction.reference_number,
+            'new_balance': float(account.balance)
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def process_withdrawal(request):
+    """
+    Process a withdrawal transaction for mobile banker.
+    """
+    from banking.models import Account, Transaction
+    from django.db import transaction as db_transaction
+    from decimal import Decimal
+
+    try:
+        # Validate required fields
+        member_id = request.data.get('member_id')
+        amount = request.data.get('amount')
+        withdrawal_type = request.data.get('withdrawal_type', 'withdrawal_member_savings')
+        account_number = request.data.get('account_number')
+
+        if not member_id or not amount:
+            return Response({'error': 'member_id and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        amount = Decimal(str(amount))
+        if amount <= 0:
+            return Response({'error': 'Amount must be positive'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get account
+        try:
+            account = Account.objects.get(id=member_id)
+        except Account.DoesNotExist:
+            return Response({'error': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check sufficient balance
+        if account.balance < amount:
+            return Response({'error': 'Insufficient account balance'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create transaction
+        with db_transaction.atomic():
+            # Lock account for update to prevent race conditions
+            account = Account.objects.select_for_update().get(pk=account.pk)
+
+            transaction = Transaction.objects.create(
+                account=account,
+                type='withdrawal',
+                amount=-amount,  # Negative for withdrawal
+                cashier=request.user,
+                description=f'Withdrawal - {withdrawal_type}',
+                status='completed'
+            )
+
+            # Update account balance
+            account.balance -= amount
+            account.save()
+
+        return Response({
+            'message': 'Withdrawal processed successfully',
+            'reference': transaction.reference_number,
+            'new_balance': float(account.balance)
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

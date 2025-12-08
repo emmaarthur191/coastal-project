@@ -1,0 +1,609 @@
+/* Enhanced User Management Form Styles */
+.enhanced-user-management-form {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  font-family: 'Nunito', sans-serif;
+}
+
+.enhanced-user-management-form h3 {
+  margin: 0 0 24px 0;
+  color: #1e293b;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.form-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: bold;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.phone-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.phone-input-group input {
+  flex: 1;
+}
+
+.phone-input-group button {
+  padding: 12px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.phone-input-group button:hover {
+  background: #2563eb;
+}
+
+.phone-input-group button:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.file-uploads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.file-upload-container {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.file-upload-container:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.file-upload-input {
+  display: none;
+}
+
+.file-upload-input-container {
+  margin: 12px 0;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+}
+
+.file-info {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.file-placeholder {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.file-requirements {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.otp-section {
+  background: #f0fdf4;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.otp-verification {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.otp-input {
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.otp-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.otp-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.verify-button {
+  background: #10b981;
+  color: white;
+}
+
+.cancel-button {
+  background: #ef4444;
+  color: white;
+}
+
+.otp-timer {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+}
+
+.verified-status {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: all 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.submit-button:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.staff-list-section {
+  margin-top: 40px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 30px;
+}
+
+.staff-list-section h4 {
+  margin: 0 0 16px 0;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.staff-list {
+  display: grid;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.staff-member {
+  padding: 12px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  background: #f9f9f9;
+  transition: all 0.2s;
+}
+
+.staff-member:hover {
+  background: #f0f9ff;
+  border-color: #3b82f6;
+}
+
+.staff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.staff-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.staff-details {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.no-staff {
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+  font-size: 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-uploads-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .phone-input-group {
+    flex-direction: column;
+  }
+
+  .phone-input-group button {
+    width: 100%;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.enhanced-user-management-form {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Error states */
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+  border-color: #ef4444;
+}
+
+.form-group input.error:focus,
+.form-group select.error:focus,
+.form-group textarea.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Success states */
+.form-group input.success,
+.form-group select.success,
+.form-group textarea.success {
+  border-color: #10b981;
+}
+
+.form-group input.success:focus,
+.form-group select.success:focus,
+.form-group textarea.success:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Enhanced File Upload Styles */
+.enhanced-file-upload-container {
+  margin-bottom: 16px;
+}
+
+.file-upload-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.file-upload-dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  position: relative;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-upload-dropzone:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.file-upload-dropzone.drag-over {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+}
+
+.file-upload-dropzone.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.file-upload-input-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+.upload-text p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.upload-hint {
+  font-size: 14px !important;
+  color: #6b7280 !important;
+  font-weight: normal !important;
+}
+
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.spinner {
+  font-size: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.upload-progress p {
+  margin: 0;
+  font-weight: 500;
+  color: #374151;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.file-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.file-details {
+  flex: 1;
+  text-align: left;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.file-meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.remove-file-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-file-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.file-requirements {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.req-icon {
+  font-size: 14px;
+}
+
+/* Enhanced responsive design for file uploads */
+@media (max-width: 768px) {
+  .file-upload-dropzone {
+    padding: 16px;
+    min-height: 100px;
+  }
+
+  .file-preview {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .file-details {
+    text-align: center;
+  }
+
+  .file-requirements {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .requirement-item {
+    justify-content: center;
+  }
+}
+
+/* Animation for file upload */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.file-preview {
+  animation: slideIn 0.3s ease-out;
+}

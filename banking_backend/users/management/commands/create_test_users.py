@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 'email': 'member@bankingapp.com',
                 'first_name': 'Alice',
                 'last_name': 'Member',
-                'role': 'member',
+                'role': 'customer',
                 'is_staff': False,
                 'is_superuser': False,
             },

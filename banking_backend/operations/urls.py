@@ -5,7 +5,8 @@ from .views import (
     FieldCollectionViewSet, CommissionViewSet, ExpenseViewSet, VisitScheduleViewSet, MessageViewSet, calculate_commission,
     get_cash_flow, get_operational_metrics, get_branch_activity,
     get_system_alerts, get_workflow_status, service_charges,
-    calculate_service_charge, calculate_interest, generate_report, get_mobile_banker_metrics
+    calculate_service_charge, calculate_interest, generate_report, get_mobile_banker_metrics,
+    process_deposit, process_withdrawal
 )
 
 router = DefaultRouter()
@@ -30,4 +31,6 @@ urlpatterns = [
     path('calculate-interest/', calculate_interest, name='calculate-interest'),
     path('generate-report/', generate_report, name='generate-report'),
     path('mobile-banker-metrics/', get_mobile_banker_metrics, name='mobile-banker-metrics'),
+    path('process_deposit/', process_deposit, name='process_deposit'),
+    path('process_withdrawal/', process_withdrawal, name='process_withdrawal'),
 ] + router.urls

@@ -5,13 +5,11 @@ Tracks critical operations, performance metrics, and security events.
 
 import logging
 import time
-import json
 import functools
 from decimal import Decimal
-from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 try:
     import psutil
@@ -280,11 +278,29 @@ class BankingMonitoringService:
                 "error": "psutil not available"
             }
 
-        return {
-            "cpu_usage": psutil.cpu_percent(),
-            "memory_usage": psutil.virtual_memory().percent,
-            "disk_usage": psutil.disk_usage('/').percent,
-        }
+        try:
+            # Try to get disk usage - handle different OS path formats
+            try:
+                disk_usage = psutil.disk_usage('/').percent
+            except:
+                # On Windows, try C: drive
+                try:
+                    disk_usage = psutil.disk_usage('C:\\').percent
+                except:
+                    disk_usage = 0.0
+
+            return {
+                "cpu_usage": psutil.cpu_percent(),
+                "memory_usage": psutil.virtual_memory().percent,
+                "disk_usage": disk_usage,
+            }
+        except Exception as e:
+            return {
+                "cpu_usage": 0.0,
+                "memory_usage": 0.0,
+                "disk_usage": 0.0,
+                "error": f"Failed to get system metrics: {str(e)}"
+            }
 
 
 # Global monitoring service instance

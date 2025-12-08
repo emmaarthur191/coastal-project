@@ -58,7 +58,7 @@ def create_test_users():
             'email': 'member@bankingapp.com',
             'first_name': 'Alice',
             'last_name': 'Member',
-            'role': 'member',
+            'role': 'customer',
             'is_staff': False,
             'is_superuser': False,
         },
@@ -76,6 +76,12 @@ def create_test_users():
         if User.objects.filter(email=email).exists():
             user = User.objects.get(email=email)
             user.set_password(test_password)
+            user.first_name = user_data['first_name']
+            user.last_name = user_data['last_name']
+            user.role = user_data['role']
+            user.is_staff = user_data['is_staff']
+            user.is_superuser = user_data['is_superuser']
+            user.is_active = True
             user.save()
             print(f" Updated existing user: {email}")
         else:

@@ -17,6 +17,16 @@ const ProtectedMemberRoute = ({ children }) => {
         return;
       }
 
+      // Check if we're in test mode - allow all authenticated users
+      const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
+
+      if (isTestMode) {
+        console.log('Test mode enabled - allowing member dashboard access for all authenticated users');
+        setUser(userData);
+        setLoading(false);
+        return;
+      }
+
       if (userData.role !== 'customer') {
         // Redirect based on role
         if (userData.role === 'staff' || userData.role === 'cashier') {

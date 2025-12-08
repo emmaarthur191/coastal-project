@@ -7,7 +7,7 @@ Tests implemented fixes for frontend-backend integration issues
 import requests
 import json
 import time
-from typing import Dict, Any
+from typing import Any
 
 class BankingSystemTester:
     def __init__(self, base_url="http://localhost:8000"):

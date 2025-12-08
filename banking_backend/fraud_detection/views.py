@@ -1,19 +1,12 @@
-import json
 from datetime import datetime, timedelta
-from django.shortcuts import get_object_or_404
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.utils.decorators import method_decorator
-from django.contrib.auth.decorators import permission_required
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
-from typing import Dict, Any, List, Optional
 import structlog
 
 from .models import FraudRule, FraudAlert
@@ -308,6 +301,22 @@ class FraudAlertViewSet(viewsets.ReadOnlyModelViewSet):
             'high_priority_alerts': FraudAlert.objects.filter(
                 created_at__gte=since_date, priority='high'
             ).count()
+        }
+
+        return Response(stats)
+
+    @action(detail=False, methods=['get'])
+    def dashboard_stats(self, request):
+        """Get dashboard statistics for fraud alerts."""
+        hours = int(request.query_params.get('hours', 24))
+        start_time = timezone.now() - timedelta(hours=hours)
+
+        alerts = FraudAlert.objects.filter(created_at__gte=start_time)
+        stats = {
+            'total_alerts': alerts.count(),
+            'alerts_by_type': alerts.values('type').annotate(count=Count('id')),
+            'high_risk': alerts.filter(risk_level='HIGH').count(),
+            # Add more stats based on your needs
         }
 
         return Response(stats)

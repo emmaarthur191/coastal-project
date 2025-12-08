@@ -73,19 +73,27 @@ class EncryptionService:
             raise ValueError(f"Failed to decrypt data: {str(e)}")
 
 
-# Global instance
-encryption_service = EncryptionService()
+# Lazy singleton - initialized on first use after Django is configured
+_encryption_service = None
+
+
+def _get_encryption_service():
+    """Get or create the encryption service singleton."""
+    global _encryption_service
+    if _encryption_service is None:
+        _encryption_service = EncryptionService()
+    return _encryption_service
 
 
 def encrypt_field(value):
     """Encrypt a field value."""
     if value is None:
         return None
-    return encryption_service.encrypt(value)
+    return _get_encryption_service().encrypt(value)
 
 
 def decrypt_field(value):
     """Decrypt a field value."""
     if value is None:
         return None
-    return encryption_service.decrypt(value)
+    return _get_encryption_service().decrypt(value)

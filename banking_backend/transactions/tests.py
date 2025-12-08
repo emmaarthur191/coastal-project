@@ -2,7 +2,6 @@ import pytest
 from django.test import TestCase
 from transactions.serializers import TransactionSerializer, FastTransferSerializer
 from banking.models import Account, Transaction
-from banking_backend.utils.exceptions import InsufficientFundsException, ValidationException
 
 
 class TransactionSerializerTestCase(TestCase):

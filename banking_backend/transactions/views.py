@@ -1,8 +1,6 @@
 import uuid
 import logging
 import csv
-import io
-import json
 from decimal import Decimal
 from django.db import transaction as db_transaction
 from django.utils import timezone
@@ -13,24 +11,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
-from drf_spectacular.types import OpenApiTypes
-from banking.models import Account, Transaction, FeeStructure, FeeTransaction, Loan, LoanRepayment, CheckDeposit, CheckImage
-from banking.permissions import IsCashier, IsMemberOrStaff, IsOperationsManager, IsMobileBanker
+from banking.models import Account, Transaction, FeeStructure, FeeTransaction, Loan, CheckDeposit, CheckImage
+from banking.permissions import IsCashier, IsMemberOrStaff, IsOperationsManager
 from users.models import User
-from banking_backend.utils.exceptions import InsufficientFundsException, ValidationException, PermissionDeniedException, AccountNotFoundException, InvalidTransactionException, RateLimitExceededException
-from banking_backend.utils.error_handling import ErrorHandler, ResponseBuilder
+from banking_backend.utils.exceptions import InsufficientFundsException, ValidationException, PermissionDeniedException, AccountNotFoundException, InvalidTransactionException
 from banking_backend.utils.audit import AuditService, audit_context
-from banking_backend.utils.sanitizer import Sanitizer
-from banking_backend.utils.compliance import compliance_service
 from banking_backend.utils.fund_verification import fund_verification_service
 from banking_backend.utils.approval_workflow import approval_workflow_service
 from fraud_detection.fraud_detection_engine import fraud_engine
 from .serializers import TransactionSerializer, FastTransferSerializer, TransactionListSerializer, FrontendAccountSummarySerializer
 from banking.serializers import CheckDepositSerializer
-from banking.serializers import (
-    AccountSummarySerializer, LoanSerializer, LoanRepaymentSerializer, FeeStructureSerializer, FeeTransactionSerializer
-)
 
 def decimal_default(obj):
     if isinstance(obj, Decimal):
@@ -449,7 +439,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
                         daily_limit = Decimal('5000.00')  # Configurable daily limit
                         # Check daily withdrawal amount
                         from django.utils import timezone
-                        from datetime import timedelta
                         
                         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
                         today_withdrawals = Transaction.objects.filter(
@@ -546,6 +535,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         from_account_id = request.data.get('from_account')
         to_account_id = request.data.get('to_account')
         amount = Decimal(request.data.get('amount'))
+        member_id = request.data.get('member_id') # Security Fix: Require member context
 
         if amount <= 0:
             return Response({'error': 'Invalid transfer amount'}, status=status.HTTP_400_BAD_REQUEST)
@@ -553,10 +543,22 @@ class TransactionViewSet(viewsets.ModelViewSet):
         from_account = get_object_or_404(Account, id=from_account_id)
         to_account = get_object_or_404(Account, id=to_account_id)
 
+        # Security Fix: Verify customer context
+        if member_id and str(from_account.owner.id) != member_id:
+             return Response({'error': 'Source account does not belong to the specified member'}, status=status.HTTP_400_BAD_REQUEST)
+        elif not member_id and request.user.role == 'cashier':
+             # If no member_id provided, ensure we are not transferring from a random account without verification
+             # Ideally require member_id for all cashier transfers
+             return Response({'error': 'Member ID is required for transfers'}, status=status.HTTP_400_BAD_REQUEST)
+
         if from_account.balance < amount:
             return Response({'error': 'Insufficient funds'}, status=status.HTTP_400_BAD_REQUEST)
 
         with db_transaction.atomic():
+            # Lock accounts for update to prevent race conditions
+            from_account = Account.objects.select_for_update().get(pk=from_account.pk)
+            to_account = Account.objects.select_for_update().get(pk=to_account.pk)
+
             # Debit from source
             from_account.balance -= amount
             from_account.save()
@@ -596,7 +598,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
         trans_type = request.data.get('type')
 
         member_user = get_object_or_404(User, id=member_id)
-        member_account = get_object_or_404(Account, owner=member_user, type='Savings')
+        account_type = request.data.get('account_type', 'Savings')
+        member_account = get_object_or_404(Account, owner=member_user, type=account_type)
 
         # Calculate fee
         try:
@@ -660,6 +663,17 @@ class TransactionViewSet(viewsets.ModelViewSet):
         try:
             user = request.user
             account_id = request.query_params.get('account_id')
+
+            # Security Fix: Log access to balance inquiry
+            AuditService.log_financial_operation(
+                user=user,
+                operation_type='VIEW',
+                model_name='Account',
+                object_id=str(user.id), # Log against user since it's a summary
+                changes={},
+                metadata={'action': 'balance_inquiry', 'target_account_id': account_id},
+                audit_level='LOW'
+            )
 
             if user.role == 'member':
                 # Members can only see their own accounts
@@ -1213,6 +1227,10 @@ class FastTransferViewSet(viewsets.GenericViewSet):
                     if request.user.role == 'member' and from_account.owner != request.user:
                         raise PermissionDeniedException("You can only transfer from your own accounts")
 
+                    # Lock accounts for update to prevent race conditions
+                    from_account = Account.objects.select_for_update().get(pk=from_account.pk)
+                    to_account = Account.objects.select_for_update().get(pk=to_account.pk)
+
                     if from_account.balance < amount:
                         raise InsufficientFundsException()
 
@@ -1452,7 +1470,6 @@ class CheckDepositViewSet(viewsets.ModelViewSet):
         """
         import pytesseract
         from PIL import Image
-        import re
         from decimal import Decimal
 
         try:

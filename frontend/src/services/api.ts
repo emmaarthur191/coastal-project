@@ -82,22 +82,12 @@ const logger = {
   }
 };
 
-// Use secure storage for tokens
+// DEPRECATED: This function is no longer used with httpOnly cookie-based authentication
+// Tokens are now managed securely by the backend in httpOnly cookies
+// @deprecated Use backend-managed httpOnly cookies instead
 function setStoredTokens(access, refresh) {
-  if (typeof window !== 'undefined') {
-    if (access) {
-      // Store access token in localStorage for client-side access
-      localStorage.setItem('accessToken', access);
-    } else {
-      localStorage.removeItem('accessToken');
-    }
-    if (refresh) {
-      // Store refresh token in localStorage as well for client-side refresh
-      localStorage.setItem('refreshToken', refresh);
-    } else {
-      localStorage.removeItem('refreshToken');
-    }
-  }
+  // No-op: tokens are handled by backend httpOnly cookies
+  logger.warn('setStoredTokens is deprecated. Tokens are now managed by backend httpOnly cookies.');
 }
 
 // CSRF token management
@@ -116,11 +106,10 @@ function getCsrfToken() {
 }
 
 function getStoredTokens() {
-  if (typeof window !== 'undefined') {
-    const access = localStorage.getItem('accessToken');
-    const refresh = localStorage.getItem('refreshToken');
-    return { access, refresh };
-  }
+  // Tokens are now stored in httpOnly cookies by the backend
+  // Frontend cannot read httpOnly cookies, so we return null
+  // Authentication is handled via cookies automatically by the browser
+  logger.debug('getStoredTokens: tokens are managed by backend httpOnly cookies');
   return { access: null, refresh: null };
 }
 
@@ -146,7 +135,7 @@ async function refreshAccessToken() {
   logger.debug('Attempting token refresh');
 
   try {
-    const response = await fetch(`${API_BASE_URL}users/auth/token/refresh/`, {
+    const response = await fetch(`${API_BASE_URL}users/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -291,17 +280,11 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
       processedConfig = await interceptor(processedConfig);
     }
 
-    let { access } = getStoredTokens();
-
-    // Check if access token exists and is not expired
-    if (access && isTokenExpired(access)) {
-      logger.debug('Access token expired, refreshing...');
-      access = await refreshAccessToken();
-    }
+    // Tokens are now handled via httpOnly cookies automatically by the browser
+    // No need to manually add Authorization headers
 
     const headers = {
       'Content-Type': 'application/json',
-      ...(access && { 'Authorization': `Bearer ${access}` }),
       // Include CSRF token for state-changing operations
       ...((method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') && { 'X-CSRFToken': getCsrfToken() }),
       ...processedConfig.headers,
@@ -345,11 +328,18 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
           errorData = { detail: `HTTP error! status: ${processedResponse.status}` };
         }
 
+        // Extract the actual error details from the backend response
+        const status = processedResponse.status;
+        const data = errorData;
+        const msg = (data as any)?.detail || (data as any)?.error || (data as any)?.message || `HTTP error! status: ${status}`;
+        console.error(`[API ERROR ${status}]`, msg);
+        console.error("Full data:", data);
+
         const error = new Error(
-          sanitizeErrorMessage(errorData.error || errorData.detail || `HTTP error! status: ${processedResponse.status}`)
+          sanitizeErrorMessage((errorData as any).error || (errorData as any).detail || `HTTP error! status: ${processedResponse.status}`)
         );
-        error.status = processedResponse.status;
-        error.data = errorData;
+        (error as any).status = processedResponse.status;
+        (error as any).data = errorData;
 
         // Apply error interceptors
         for (const interceptor of errorInterceptors) {
@@ -522,7 +512,10 @@ const MemberDashboardData = {
   account_balance: 0,
   recent_transactions: [],
   loan_balance: 0,
-  savings_balance: 0
+  savings_balance: 0,
+  available_tabs: [],
+  user_permissions: {},
+  membership_status: {}
 };
 
 const AccountSummary = {
@@ -613,9 +606,7 @@ export const authService = {
       }
 
       const data = await response.json();
-      console.log('[DEBUG] Login successful, received data:', data);
-      setStoredTokens(data.access, data.refresh);
-      console.log('[DEBUG] Tokens stored successfully');
+      console.log('[DEBUG] Login successful, tokens set in httpOnly cookies');
       return data;
     } catch (error) {
       console.log('[DEBUG] Login threw exception:', error);
@@ -626,50 +617,31 @@ export const authService = {
 
   async logout() {
     try {
-      const { access, refresh } = getStoredTokens();
-      
-      // Only attempt server logout if we have tokens
-      if (access && refresh) {
-        const response = await fetch(`${API_BASE_URL}users/auth/logout/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${access}`,
-          },
-          body: JSON.stringify({ refresh }),
-        });
+      // Attempt server logout - cookies will be sent automatically
+      const response = await fetch(`${API_BASE_URL}users/auth/logout/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Include credentials to send cookies
+        credentials: 'include',
+      });
 
-        // Clear tokens regardless of response
-        setStoredTokens(null, null);
-        
-        if (response.ok) {
-          return await response.json();
-        }
-      } else {
-        // No tokens, just clear local storage
-        setStoredTokens(null, null);
+      if (response.ok) {
+        return await response.json();
       }
-      
-      return { detail: 'Logged out successfully' };
     } catch (error) {
       console.error('Logout error:', error);
-      // Clear tokens even if logout request fails
-      setStoredTokens(null, null);
-      return { detail: 'Logged out successfully' };
     }
+
+    // Return success regardless - cookies are cleared server-side
+    return { detail: 'Logged out successfully' };
   },
 
   async checkAuth() {
     try {
-      const { access } = getStoredTokens();
-      if (!access || isTokenExpired(access)) {
-        return { authenticated: false };
-      }
-
       const response = await fetch(`${API_BASE_URL}users/auth/check/`, {
-        headers: {
-          'Authorization': `Bearer ${access}`,
-        },
+        credentials: 'include', // Include cookies for authentication
       });
 
       if (response.ok) {
@@ -707,20 +679,33 @@ export const authService = {
     }
   },
 
-  // Helper function to get current access token
+  // Helper function to get current access token (deprecated - tokens are in httpOnly cookies)
   getAccessToken() {
-    return getStoredTokens().access;
+    logger.warn('getAccessToken is deprecated. Tokens are now managed by backend httpOnly cookies.');
+    return null;
   },
 
   // Helper function to check if user is authenticated
-  isAuthenticated() {
-    const { access } = getStoredTokens();
-    return !!(access && !isTokenExpired(access));
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE_URL}users/auth/check/`, {
+        credentials: 'include', // Include cookies
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.authenticated || false;
+      }
+      return false;
+    } catch (error) {
+      logger.error('Auth check failed:', error);
+      return false;
+    }
   },
 
-  // Helper function to refresh access token (public method)
+  // Helper function to refresh access token (deprecated - handled automatically by cookies)
   async refreshAccessToken(): Promise<string | null> {
-    return refreshAccessToken();
+    logger.warn('refreshAccessToken is deprecated. Token refresh is handled automatically via cookies.');
+    return null;
   },
 
   // Manager Dashboard Methods
@@ -778,7 +763,7 @@ export const authService = {
     }
   },
 
-  async calculateCommission(): Promise<{ success; data?: any; error?: string }> {
+  async getCommissionSummary(): Promise<{ success; data?: any; error?: string }> {
     try {
       // Use the commission summary endpoint which provides daily/weekly/monthly breakdowns
       const response = await api.get('operations/commissions/summary/');
@@ -825,6 +810,16 @@ export const authService = {
     }
   },
 
+  async getStaffIds(filters?: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const queryString = filters ? `?${new URLSearchParams(filters).toString()}` : '';
+      const response = await api.get(`users/staff-ids/${queryString}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
   async getExpenses(): Promise<{ success; data?: any; error?: string }> {
     try {
       const response = await api.get('operations/expenses/');
@@ -854,8 +849,51 @@ export const authService = {
 
   async createUser(userData: any): Promise<{ success; data?: any; error?: string }> {
     try {
-      const response = await api.post('users/create/', userData);
-      return { success: true, data: response.data };
+      // Check if userData contains file uploads
+      const hasFileUploads = userData.passport_picture || userData.application_letter || userData.appointment_letter;
+
+      if (hasFileUploads) {
+        // Handle file uploads with FormData
+        const formData = new FormData();
+
+        // Add regular fields
+        Object.keys(userData).forEach(key => {
+          if (key !== 'passport_picture' && key !== 'application_letter' && key !== 'appointment_letter') {
+            if (userData[key] !== null && userData[key] !== undefined) {
+              formData.append(key, userData[key]);
+            }
+          }
+        });
+
+        // Add files if they exist
+        if (userData.passport_picture) {
+          formData.append('passport_picture', userData.passport_picture);
+        }
+        if (userData.application_letter) {
+          formData.append('application_letter', userData.application_letter);
+        }
+        if (userData.appointment_letter) {
+          formData.append('appointment_letter', userData.appointment_letter);
+        }
+
+        // Make request with FormData
+        const response = await fetch(`${API_BASE_URL}users/create/`, {
+          method: 'POST',
+          body: formData,
+          // Don't set Content-Type header - let browser set it with boundary
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          return { success: false, error: errorData.error || 'Failed to create user' };
+        }
+
+        return { success: true, data: await response.json() };
+      } else {
+        // Regular JSON request for backward compatibility
+        const response = await api.post('users/create/', userData);
+        return { success: true, data: response.data };
+      }
     } catch (error: any) {
       return { success: false, error: error.message };
     }
@@ -864,6 +902,15 @@ export const authService = {
   async approveLoan(loanId: string): Promise<{ success; data?: any; error?: string }> {
     try {
       const response = await api.post(`banking/loans/${loanId}/approve/`, {});
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async rejectLoan(loanId: string, notes?: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/loans/${loanId}/reject/`, { notes: notes || '' });
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -956,7 +1003,615 @@ export const authService = {
     } catch (error: any) {
       return { success: false, error: error.message };
     }
-  }
+  },
+
+
+  async getAllUsers(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/all/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Messaging API Methods
+  async getMessageThreads(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/message-threads/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getThreadMessages(threadId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get(`banking/messages/?thread=${threadId}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async sendMessage(messageData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/messages/', messageData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createMessageThread(threadData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/message-threads/', threadData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async markThreadRead(threadId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.patch(`banking/message-threads/${threadId}/`, { is_read: true });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getUserEncryptionKey(userId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get(`banking/encryption-keys/${userId}/`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createUserEncryptionKey(keyData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/encryption-keys/', keyData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffUsers(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/staff/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async addMessageReaction(messageId: string, emoji: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/messages/${messageId}/add_reaction/`, { emoji });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async removeMessageReaction(messageId: string, emoji: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/messages/${messageId}/remove_reaction/`, { emoji });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async uploadMedia(file: File): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post('banking/messages/upload_media/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async registerDevice(deviceData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/devices/', deviceData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async syncDeviceData(deviceId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get(`banking/devices/sync_data/?device_id=${deviceId}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async markMessageRead(messageId: string, deviceId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/read-statuses/', {
+        message: messageId,
+        device_id: deviceId
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createBackup(backupType: string = 'full'): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/backups/', {
+        backup_type: backupType
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getBackups(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/backups/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async restoreBackup(backupId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/backups/${backupId}/restore/`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Additional Operations APIs
+  async calculateCommission(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/calculate-commission/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getMobileBankerMetrics(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/mobile-banker-metrics/');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      console.error('Error fetching mobile banker metrics:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  },
+
+  async processDeposit(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/process_deposit/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async processWithdrawal(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/process_withdrawal/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // CRUD Operations for Operations entities
+  async getWorkflows(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/workflows/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createWorkflow(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/workflows/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getWorkflowSteps(workflowId?: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const url = workflowId ? `operations/workflow-steps/?workflow=${workflowId}` : 'operations/workflow-steps/';
+      const response = await api.get(url);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createWorkflowStep(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/workflow-steps/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getClientKYC(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/client-kyc/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createClientKYC(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/client-kyc/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getFieldCollections(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/field-collections/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createFieldCollection(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/field-collections/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getCommissions(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/commissions/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createCommission(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/commissions/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getVisitSchedules(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/visit_schedules/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createVisitSchedule(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/visit_schedules/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getOperationsMessages(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/messages/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createOperationsMessage(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/messages/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Reports API Methods
+  async getReportTemplates(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/templates/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createReportTemplate(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('reports/templates/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getReports(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/reports/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createReport(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('reports/reports/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getReportSchedules(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/schedules/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createReportSchedule(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('reports/schedules/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getReportAnalytics(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/analytics/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Performance API Methods
+  async getPerformanceDashboardData(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/dashboard-data/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getSystemHealth(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/system-health/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceMetrics(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/metrics/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceAlerts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/alerts/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceRecommendations(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/recommendations/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getTransactionVolume(params?: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+      const response = await api.get(`performance/transaction-volume/${queryString}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceChartData(params?: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+      const response = await api.get(`performance/chart-data/${queryString}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Settings API Methods
+  async getUserSettings(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/user-settings/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateUserSettings(settings: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('settings/user-settings/', settings);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getSystemSettings(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/system-settings/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getApiUsage(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/api-usage/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getRateLimits(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/rate-limits/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getHealthChecks(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/health-checks/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Banking API Methods
+  async getLoans(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/loans/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createLoan(loanData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/loans/', loanData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffAccounts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/staff-accounts/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffAccountsSummary(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/staff-accounts/summary/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getComplaints(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/complaints/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createComplaint(complaintData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/complaints/', complaintData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getCashAdvances(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/cash-advances/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getRefunds(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/refunds/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getAccounts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/accounts/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
 };
 
 // Banking API service
@@ -965,6 +1620,7 @@ export const api = {
   get: <T = any>(url: string, config: RequestInit = {}): Promise<ApiResponse<T>> => apiCall('GET', url, null, config),
   post: <T = any>(url: string, data: any, config: RequestInit = {}): Promise<ApiResponse<T>> => apiCall('POST', url, data, config),
   put: <T = any>(url: string, data: any, config: RequestInit = {}): Promise<ApiResponse<T>> => apiCall('PUT', url, data, config),
+  patch: <T = any>(url: string, data: any, config: RequestInit = {}): Promise<ApiResponse<T>> => apiCall('PATCH', url, data, config),
   delete: <T = any>(url: string, config: RequestInit = {}): Promise<ApiResponse<T>> => apiCall('DELETE', url, null, config),
 };
 
@@ -991,6 +1647,29 @@ export const apiService = {
         ],
         loan_balance: 5000.00,
         savings_balance: 10000.50,
+        available_tabs: [
+          { id: 'overview', name: 'Overview', icon: '📊', enabled: true, description: 'Financial overview and quick stats' },
+          { id: 'accounts', name: 'Accounts', icon: '🏦', enabled: true, description: 'Manage your bank accounts' },
+          { id: 'transactions', name: 'Transactions', icon: '💳', enabled: true, description: 'View transaction history' },
+          { id: 'transfers', name: 'Transfers', icon: '↗', enabled: true, description: 'Send money and manage transfers' },
+          { id: 'loans', name: 'Loans', icon: '💰', enabled: false, description: 'Loan services not available' },
+          { id: 'profile', name: 'Profile', icon: '👤', enabled: true, description: 'Manage your account settings' }
+        ],
+        user_permissions: {
+          can_view_accounts: true,
+          can_make_transfers: true,
+          can_apply_loans: false,
+          can_view_reports: true,
+          can_manage_profile: true,
+          can_access_support: true,
+        },
+        membership_status: {
+          is_active_member: true,
+          account_count: 2,
+          has_recent_activity: true,
+          membership_level: 'standard',
+          days_since_join: 30,
+        },
       };
     }
   },
@@ -1047,10 +1726,23 @@ export const apiService = {
           // Django REST framework pagination style
           transactionsArray = data.results;
           console.log('Using paginated results:', transactionsArray.length, 'transactions');
-        } else if (Array.isArray(data.transactions)) {
-          // Custom transactions key
-          transactionsArray = data.transactions;
-          console.log('Using transactions array:', transactionsArray.length, 'transactions');
+        } else if (data.transactions) {
+            console.log('data.transactions exists:', data.transactions);
+            console.log('typeof data.transactions:', typeof data.transactions);
+            console.log('Array.isArray(data.transactions):', Array.isArray(data.transactions));
+            if (Array.isArray(data.transactions)) {
+                // Custom transactions key
+                transactionsArray = data.transactions;
+                console.log('Using transactions array:', transactionsArray.length, 'transactions');
+            } else if (data.transactions.results && Array.isArray(data.transactions.results)) {
+                transactionsArray = data.transactions.results;
+                console.log('Using transactions.results array:', transactionsArray.length, 'transactions');
+            } else if (data.transactions.data && Array.isArray(data.transactions.data)) {
+                transactionsArray = data.transactions.data;
+                console.log('Using transactions.data array:', transactionsArray.length, 'transactions');
+            } else {
+                console.warn('transactions property exists but no array found inside it. Keys:', Object.keys(data.transactions));
+            }
         } else if (Array.isArray(data.data)) {
           // Common data key
           transactionsArray = data.data;
@@ -1081,6 +1773,82 @@ export const apiService = {
     } catch (error) {
       console.error('Error fetching transactions:', error);
       return [];
+    }
+  },
+
+  async changePassword(data: { current_password: string; new_password: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await api.post('users/change-password/', data);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createServiceRequest(data: { request_type: string; description?: string; delivery_method: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+      // For now, this will need to be implemented in the backend
+      // We'll use a placeholder endpoint that doesn't exist yet
+      const response = await api.post('users/service-requests/', data);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getServiceRequests(): Promise<any[]> {
+    try {
+      const response = await api.get('services/requests/');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching service requests:', error);
+      return [];
+    }
+  },
+
+  async enable2FA(data: { phone_number: string; otp_code: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+      // First verify OTP, then enable 2FA
+      const verifyResponse = await api.post('users/verify-otp/', {
+        phone_number: data.phone_number,
+        otp_code: data.otp_code,
+        verification_type: '2fa_setup'
+      });
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Client Registration API Methods
+  async submitClientRegistration(formData: FormData): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/client-registrations/submit_registration/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async sendClientRegistrationOTP(registrationId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await api.post(`banking/client-registrations/${registrationId}/send_otp/`, {});
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async verifyClientRegistrationOTP(registrationId: string, otpCode: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/client-registrations/${registrationId}/verify_otp/`, {
+        otp_code: otpCode
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
   },
 };

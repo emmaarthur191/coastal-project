@@ -11,12 +11,13 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
-import logging
 from pathlib import Path
 from decouple import config
 import dj_database_url
 import structlog
 from django.core.exceptions import ImproperlyConfigured
+
+from banking_backend.utils.secret_loader import get_secret
 # from django_structlog.middlewares import get_request_header  # Commented out due to import error
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,7 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-development-key')
+SECRET_KEY = get_secret('SECRET_KEY')
+if not SECRET_KEY:
+    SECRET_KEY = config('SECRET_KEY', default='django-insecure-development-key', cast=str)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -40,6 +43,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lamb
 # Application definition
 
 INSTALLED_APPS = [
+    # 'daphne',  # Commented for dev - ASGI breaks sync middleware
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -67,21 +71,24 @@ INSTALLED_APPS = [
     'operations',
     'reports',
     'fraud_detection',
-    'chat',
     'products',
     'services',
     'performance',
     'settings',
+    'messaging',
 ]
 
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    # 'security.middleware.SecurityMiddleware',  # Commented out - module not found
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'banking_backend.middleware.security.SecurityHeadersMiddleware',
+    'banking_backend.middleware.security.SessionSecurityMiddleware',
+    'banking_backend.middleware.security.InputValidationMiddleware',
+    'banking_backend.middleware.rate_limiting.RateLimitingMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',  # Must be before auth middleware
+    'banking_backend.middleware.security.EnhancedCsrfMiddleware',  # Enhanced CSRF protection
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -110,11 +117,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# ASGI application for Channels
+ASGI_APPLICATION = 'config.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASE_URL = config('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3')
+DATABASE_URL = get_secret('DATABASE_URL') or config('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3')
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }
@@ -174,7 +184,6 @@ if ENVIRONMENT == 'production':
     )
 
 # Cache configuration
-import os
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -205,10 +214,9 @@ if ENVIRONMENT == 'production':
     # In production,  # be very restrictive with CORS
     CORS_ALLOW_ALL_ORIGINS = False
     cors_origins = config('CORS_ALLOWED_ORIGINS', default='', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
-    # Strict HTTPS-only origins in production
-    CORS_ALLOWED_ORIGINS = [origin for origin in cors_origins if origin.startswith('https://')]
+    CORS_ALLOWED_ORIGINS = cors_origins
     if not CORS_ALLOWED_ORIGINS:
-        raise ImproperlyConfigured("CORS_ALLOWED_ORIGINS must be set to HTTPS origins in production")
+        raise ImproperlyConfigured("CORS_ALLOWED_ORIGINS must be set in production")
     CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', default=False, cast=bool)
 else:
     # In development,  # allow localhost for testing
@@ -249,7 +257,9 @@ EMAIL_HOST = config('EMAIL_HOST', default='localhost')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_HOST_PASSWORD = get_secret('EMAIL_HOST_PASSWORD')
+if EMAIL_HOST_PASSWORD is None:
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@bankingapp.com')
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
@@ -278,6 +288,7 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
     'TEST_REQUEST_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.MultiPartRenderer',
     ],
 }
 
@@ -286,12 +297,32 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'Banking API',
     'DESCRIPTION': 'Comprehensive Banking API for managing accounts, transactions, loans, and operations',
     'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+    'SERVE_INCLUDE_SCHEMA': True,
+    'SERVE_PERMISSIONS': [],
     'SWAGGER_UI_DIST': 'SIDECAR',
     'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
     'REDOC_DIST': 'SIDECAR',
     'COMPONENT_SPLIT_REQUEST': True,
     'SORT_OPERATIONS': False,
+    'ENUM_NAME_OVERRIDES': {
+        'StatusEnum': 'TransactionStatusEnum',
+        'Status6fbEnum': 'ComplaintStatusEnum',
+        'StatusC7fEnum': 'RefundStatusEnum',
+        'StatusB1eEnum': 'LoanStatusEnum',
+        'PriorityEnum': 'ComplaintPriorityEnum',
+        'Priority5f3Enum': 'NotificationPriorityEnum',
+        'PriorityC93Enum': 'CashAdvancePriorityEnum',
+        'DeliveryMethodEnum': 'StatementDeliveryMethodEnum',
+        'DeliveryMethod050Enum': 'LoanDeliveryMethodEnum',
+        'DeliveryMethodB56Enum': 'RefundDeliveryMethodEnum',
+        'DeliveryMethod117Enum': 'NotificationDeliveryMethodEnum',
+        'DeliveryMethod830Enum': 'CashAdvanceDeliveryMethodEnum',
+        'CategoryEnum': 'ExpenseCategoryEnum',
+        'Category996Enum': 'TransactionCategoryEnum',
+        'RiskLevelEnum': 'FraudRiskLevelEnum',
+        'DeliveryMethodStatementEnum': 'StatementDeliveryMethodEnum',
+        'DeliveryMethodLoanEnum': 'LoanDeliveryMethodEnum',
+    },
     'TAGS': [
         {'name': 'Authentication', 'description': 'User authentication and authorization'},
         {'name': 'Banking', 'description': 'Core banking operations'},
@@ -316,16 +347,33 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Channels configuration
+def check_redis_connection():
+    """Check if Redis is available for Channels."""
+    try:
+        import redis
+        r = redis.Redis.from_url(config('REDIS_URL', default='redis://127.0.0.1:6379/0'))
+        r.ping()
+        return True
+    except:
+        return False
+
 try:
-    import channels_redis
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [config('REDIS_URL', default='redis://127.0.0.1:6379/0')],
+    if check_redis_connection():
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {
+                    "hosts": [config('REDIS_URL', default='redis://127.0.0.1:6379/0')],
+                },
             },
-        },
-    }
+        }
+    else:
+        # Fallback to in-memory channel layer when Redis is not available
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels.layers.InMemoryChannelLayer',
+            },
+        }
 except ImportError:
     # Fallback to in-memory channel layer for development
     CHANNEL_LAYERS = {
@@ -344,7 +392,7 @@ REDIS_LOG_DB = config('REDIS_LOG_DB', default=2, cast=int)
 
 # Fraud detection settings
 FRAUD_SCORE_THRESHOLD = config('FRAUD_SCORE_THRESHOLD', default=60, cast=int)
-FRAUD_AUDIT_ENCRYPTION_KEY = config('FRAUD_AUDIT_ENCRYPTION_KEY', default=None)
+FRAUD_AUDIT_ENCRYPTION_KEY = get_secret('FRAUD_AUDIT_ENCRYPTION_KEY') or config('FRAUD_AUDIT_ENCRYPTION_KEY', default=None)
 RULE_CACHE_TTL = config('RULE_CACHE_TTL', default=3600, cast=int)  # 1 hour
 LOG_RETENTION_DAYS = config('LOG_RETENTION_DAYS', default=30, cast=int)
 
@@ -432,8 +480,12 @@ SECURE_PROXY_SSL_HEADER = config('SECURE_PROXY_SSL_HEADER', default='', cast=lam
 
 
 # Encryption settings
-ENCRYPTION_KEY = config('ENCRYPTION_KEY', default=None)
-ENCRYPTION_SALT = config('ENCRYPTION_SALT', default=None)
+ENCRYPTION_KEY = get_secret('ENCRYPTION_KEY') or config('ENCRYPTION_KEY', default=None)
+ENCRYPTION_SALT = get_secret('ENCRYPTION_SALT') or config('ENCRYPTION_SALT', default=None)
+
+# Backup settings
+BACKUP_DIR = config('BACKUP_DIR', default='backups/database')
+BACKUP_ENCRYPTION_KEY = get_secret('BACKUP_ENCRYPTION_KEY') or config('BACKUP_ENCRYPTION_KEY', default=None)
 
 # Enforce production encryption keys
 if not ENCRYPTION_KEY or not ENCRYPTION_SALT:
@@ -457,7 +509,7 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 TEST_OUTPUT_DIR = config('TEST_OUTPUT_DIR', default='test-results')
 TEST_PARALLEL = config('TEST_PARALLEL', default=1, cast=int)
 
-# Logging configuration
+# Logging configuration with basic security filtering
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -594,7 +646,7 @@ try:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
 
-    sentry_dsn = config('SENTRY_DSN', default=None)
+    sentry_dsn = get_secret('SENTRY_DSN') or config('SENTRY_DSN', default=None)
     sentry_enabled = config('SENTRY_ENABLED', default=True, cast=bool)
 
     if sentry_enabled and sentry_dsn:

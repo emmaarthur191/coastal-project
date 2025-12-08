@@ -1,9 +1,13 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { formatCurrencyGHS } from '../utils/formatters';
-import { api } from '../services/api';
+import { apiService } from '../services/api';
 
 function TransactionsSection() {
-  const { data, isLoading, error } = api.useGetTransactions();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: apiService.getTransactions
+  });
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading transactions</div>;

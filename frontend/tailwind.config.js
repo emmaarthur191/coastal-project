@@ -35,6 +35,20 @@ export default {
           900: '#374151',
           950: '#111827',
         },
+        // Mauve - #8B7D6B (warm purple/taupe)
+        mauve: {
+          50: '#faf7f5',
+          100: '#f3ede8',
+          200: '#e6d9cf',
+          300: '#d2c0ae',
+          400: '#b8a086',
+          500: '#8B7D6B', // Main mauve color
+          600: '#6f6354',
+          700: '#5a5145',
+          800: '#484238',
+          900: '#3a352e',
+          950: '#1f1c18',
+        },
         // Error Red - #CC0000
         error: {
           50: '#fef2f2',
