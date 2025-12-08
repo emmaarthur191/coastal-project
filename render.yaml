@@ -44,6 +44,8 @@ services:
         value: "https://coastal-frontend.onrender.com"
       - key: CORS_ALLOW_CREDENTIALS
         value: "True"
+      - key: FRAUD_AUDIT_ENCRYPTION_KEY
+        generateValue: true
       - key: ENVIRONMENT
         value: production
       - key: ENCRYPTION_KEY
