@@ -46,6 +46,8 @@ services:
         value: "True"
       - key: FRAUD_AUDIT_ENCRYPTION_KEY
         generateValue: true
+      - key: SECURE_SSL_REDIRECT
+        value: "False"
       - key: ENVIRONMENT
         value: production
       - key: ENCRYPTION_KEY
