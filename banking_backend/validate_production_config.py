@@ -24,9 +24,9 @@ REQUIRED_ENV_VARS = [
 PLACEHOLDER_MARKERS = [
     'your-production-domain.com',
     'your-email-provider.com',
-    'yourbank.com',
-    'your-email-app-password',
-    'your-sentry-dsn@sentry.io/project-id',
+    '<your-domain>',
+    '<your-smtp-password>',
+    '<your-sentry-dsn>',
     'your-aws-access-key',
     'your-aws-secret-key',
     'your-production-bucket',
