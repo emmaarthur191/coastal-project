@@ -45,6 +45,8 @@ ALLOWED_HOSTS = [
     # Render injects these two environment variables
     os.getenv("RENDER_EXTERNAL_HOSTNAME", ""),   # e.g. coastal-backend-bmn3.onrender.com
     os.getenv("RENDER_INSTANCE_ID", ""),         # fallback if needed
+    # Allow all Render domains for flexibility
+    ".onrender.com",
 ]
 
 
@@ -221,15 +223,15 @@ LOGIN_URL = '/users/web/login/'
 if ENVIRONMENT == 'production':
     # In production,  # be very restrictive with CORS
     CORS_ALLOW_ALL_ORIGINS = False
-    cors_origins = config('CORS_ALLOWED_ORIGINS', default='', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
+    cors_origins = config('CORS_ALLOWED_ORIGINS', default='https://coastal-frontend.onrender.com', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
     CORS_ALLOWED_ORIGINS = cors_origins
     if not CORS_ALLOWED_ORIGINS:
         raise ImproperlyConfigured("CORS_ALLOWED_ORIGINS must be set in production")
-    CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', default=False, cast=bool)
+    CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', default=True, cast=bool)
 else:
     # In development,  # allow localhost for testing
     CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
-    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173', cast=lambda v: [s.strip() for s in v.split(',')])
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:5173,http://127.0.0.1:5173,https://coastal-frontend.onrender.com', cast=lambda v: [s.strip() for s in v.split(',')])
     CORS_ALLOW_CREDENTIALS = True
 
 # Additional CORS headers for preflight requests
@@ -262,8 +264,13 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
     # Render injects these environment variables
     f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}",
+    "https://coastal-frontend.onrender.com",  # Frontend URL for production
+    # Allow all Render domains
+    ".onrender.com",
 ]
 
 # Email settings (for password reset)
