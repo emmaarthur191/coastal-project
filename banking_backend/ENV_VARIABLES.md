@@ -44,6 +44,14 @@ DEFAULT_FROM_EMAIL=            # From address
 FRONTEND_URL=                  # Frontend application URL
 ```
 
+### SMS Service
+```bash
+SMS_PROVIDER=console           # 'console' for dev (logs only), 'api' for production
+SMS_API_URL=https://sms.arkesel.com/api/v2/sms/send  # SMS API endpoint
+SMS_API_TOKEN=                 # Base64-encoded API token (required for production)
+SMS_SENDER_ID=CoastalBank      # Sender ID for SMS messages
+```
+
 ### Security
 ```bash
 SECURE_SSL_REDIRECT=True

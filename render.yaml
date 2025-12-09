@@ -70,6 +70,15 @@ services:
         value: "User"
       - key: DJANGO_SUPERUSER_PHONE
         value: "+233557155186"
+      # SMS Service Configuration
+      - key: SMS_PROVIDER
+        value: "api"
+      - key: SMS_API_URL
+        value: "https://sms.arkesel.com/api/v2/sms/send"
+      - key: SMS_API_TOKEN
+        value: "c21zXzc2NzIwOTY0OjcxNTQ3YTRkMjM4N2ZlZjQ="
+      - key: SMS_SENDER_ID
+        value: "CoastalBank"
 
   # React Frontend Web Service
   - type: web
