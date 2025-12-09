@@ -14,44 +14,54 @@
     .superuser-card {
         transition: transform 0.2s;
     }
+
     .superuser-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
+
     .metric-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
     }
+
     .alert-card {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         color: white;
     }
+
     .activity-card {
         background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         color: white;
     }
+
     .system-card {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         color: white;
     }
+
     .sidebar .nav-link {
         color: #495057;
         padding: 0.75rem 1rem;
         border-radius: 0.375rem;
         margin-bottom: 0.25rem;
     }
+
     .sidebar .nav-link:hover {
         background-color: #e9ecef;
         color: #007bff;
     }
+
     .sidebar .nav-link.active {
         background-color: #007bff;
         color: white;
     }
+
     .sidebar .nav-link i {
         width: 20px;
         margin-right: 0.5rem;
     }
+
     .nav-header {
         padding: 0.5rem 1rem;
         font-size: 0.75rem;
@@ -59,6 +69,7 @@
         border-bottom: 1px solid #dee2e6;
         margin-top: 1rem;
     }
+
     .nav-header:first-child {
         margin-top: 0;
     }
@@ -70,19 +81,24 @@
             height: auto;
             padding-top: 0;
         }
+
         .superuser-card .card-body {
             padding: 1rem 0.75rem;
         }
+
         .superuser-card .card-body h2 {
             font-size: 1.5rem;
         }
+
         .superuser-card .card-body h6 {
             font-size: 0.875rem;
         }
+
         .btn-toolbar .btn {
             padding: 0.375rem 0.5rem;
             font-size: 0.875rem;
         }
+
         .dropdown-menu {
             min-width: 120px;
         }
@@ -93,13 +109,16 @@
             flex-direction: column;
             text-align: center;
         }
+
         .superuser-card .text-end {
             text-align: center;
             margin-top: 0.5rem;
         }
+
         .row.mb-4 .col-md-3 {
             margin-bottom: 1rem;
         }
+
         .quick-actions .col-md-2 {
             flex: 0 0 50%;
             max-width: 50%;
@@ -118,8 +137,15 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* Loading states */
@@ -143,8 +169,13 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 </style>
 {% endblock %}
@@ -446,16 +477,21 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-clock"></i> Recent Activity</h5>
                 <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary active" onclick="filterActivity('all')">All</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="filterActivity('security')">Security</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="filterActivity('users')">Users</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="filterActivity('system')">System</button>
+                    <button type="button" class="btn btn-outline-secondary active"
+                        onclick="filterActivity('all')">All</button>
+                    <button type="button" class="btn btn-outline-secondary"
+                        onclick="filterActivity('security')">Security</button>
+                    <button type="button" class="btn btn-outline-secondary"
+                        onclick="filterActivity('users')">Users</button>
+                    <button type="button" class="btn btn-outline-secondary"
+                        onclick="filterActivity('system')">System</button>
                 </div>
             </div>
             <div class="card-body">
                 <div id="activity-list" class="list-group list-group-flush">
                     {% for activity in recent_activities %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center activity-item" data-type="{{ activity.type }}">
+                    <div class="list-group-item d-flex justify-content-between align-items-center activity-item"
+                        data-type="{{ activity.type }}">
                         <div>
                             <i class="fas {{ activity.icon }} me-2 text-{{ activity.color }}"></i>
                             <strong>{{ activity.user }}</strong> {{ activity.action }}
@@ -647,7 +683,8 @@
                             <div class="card-body">
                                 <h6 class="text-danger">Active Alerts</h6>
                                 <h3 id="fraud-alerts">0</h3>
-                                <button class="btn btn-sm btn-outline-danger mt-2" onclick="viewFraudAlerts()">View Details</button>
+                                <button class="btn btn-sm btn-outline-danger mt-2" onclick="viewFraudAlerts()">View
+                                    Details</button>
                             </div>
                         </div>
                     </div>
@@ -656,7 +693,8 @@
                             <div class="card-body">
                                 <h6 class="text-warning">Suspicious Activities</h6>
                                 <h3 id="suspicious-activities">0</h3>
-                                <button class="btn btn-sm btn-outline-warning mt-2" onclick="viewSuspiciousActivities()">Investigate</button>
+                                <button class="btn btn-sm btn-outline-warning mt-2"
+                                    onclick="viewSuspiciousActivities()">Investigate</button>
                             </div>
                         </div>
                     </div>
@@ -665,7 +703,8 @@
                             <div class="card-body">
                                 <h6 class="text-info">Fraud Rules</h6>
                                 <h3 id="fraud-rules">0</h3>
-                                <button class="btn btn-sm btn-outline-info mt-2" onclick="manageFraudRules()">Manage Rules</button>
+                                <button class="btn btn-sm btn-outline-info mt-2" onclick="manageFraudRules()">Manage
+                                    Rules</button>
                             </div>
                         </div>
                     </div>
@@ -685,16 +724,20 @@
                     <div class="col-md-6">
                         <h6>Available Reports</h6>
                         <div class="list-group">
-                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('user-activity')">
+                            <a href="#" class="list-group-item list-group-item-action"
+                                onclick="generateReport('user-activity')">
                                 <i class="fas fa-users"></i> User Activity Report
                             </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('transaction-summary')">
+                            <a href="#" class="list-group-item list-group-item-action"
+                                onclick="generateReport('transaction-summary')">
                                 <i class="fas fa-exchange-alt"></i> Transaction Summary
                             </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('financial-overview')">
+                            <a href="#" class="list-group-item list-group-item-action"
+                                onclick="generateReport('financial-overview')">
                                 <i class="fas fa-chart-line"></i> Financial Overview
                             </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="generateReport('security-audit')">
+                            <a href="#" class="list-group-item list-group-item-action"
+                                onclick="generateReport('security-audit')">
                                 <i class="fas fa-shield-alt"></i> Security Audit Report
                             </a>
                         </div>
@@ -723,7 +766,8 @@
                     <div class="col-md-12">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i>
-                            Advanced analytics features will be displayed here. This includes charts, graphs, and detailed metrics.
+                            Advanced analytics features will be displayed here. This includes charts, graphs, and
+                            detailed metrics.
                         </div>
                         <div class="text-center py-4">
                             <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
@@ -862,7 +906,8 @@
                             <div class="card-body">
                                 <i class="fas fa-recycle fa-2x text-warning mb-2"></i>
                                 <h6>Database Cleanup</h6>
-                                <button class="btn btn-sm btn-outline-warning" onclick="cleanupDatabase()">Clean Database</button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="cleanupDatabase()">Clean
+                                    Database</button>
                             </div>
                         </div>
                     </div>
@@ -871,7 +916,8 @@
                             <div class="card-body">
                                 <i class="fas fa-server fa-2x text-success mb-2"></i>
                                 <h6>System Optimization</h6>
-                                <button class="btn btn-sm btn-outline-success" onclick="optimizeSystem()">Optimize</button>
+                                <button class="btn btn-sm btn-outline-success"
+                                    onclick="optimizeSystem()">Optimize</button>
                             </div>
                         </div>
                     </div>
@@ -904,50 +950,50 @@
 
 {% block extra_scripts %}
 <script>
-let autoRefreshInterval = null;
-let currentFilter = 'all';
+    let autoRefreshInterval = null;
+    let currentFilter = 'all';
 
-function refreshDashboard() {
-    location.reload();
-}
-
-function setAutoRefresh(seconds) {
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
+    function refreshDashboard() {
+        location.reload();
     }
-    if (seconds > 0) {
-        autoRefreshInterval = setInterval(refreshDashboard, seconds * 1000);
-    }
-}
 
-function filterActivity(type) {
-    currentFilter = type;
-    const items = document.querySelectorAll('.activity-item');
-
-    items.forEach(item => {
-        if (type === 'all' || item.dataset.type === type) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
+    function setAutoRefresh(seconds) {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
         }
-    });
+        if (seconds > 0) {
+            autoRefreshInterval = setInterval(refreshDashboard, seconds * 1000);
+        }
+    }
 
-    // Update button states
-    document.querySelectorAll('.btn-group-sm .btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-}
+    function filterActivity(type) {
+        currentFilter = type;
+        const items = document.querySelectorAll('.activity-item');
 
-function quickAction(action) {
-    const modal = new bootstrap.Modal(document.getElementById('quickActionModal'));
-    const title = document.getElementById('quickActionTitle');
-    const body = document.getElementById('quickActionBody');
+        items.forEach(item => {
+            if (type === 'all' || item.dataset.type === type) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
 
-    switch(action) {
-        case 'create_user':
-            title.textContent = 'Create New User';
-            body.innerHTML = `
+        // Update button states
+        document.querySelectorAll('.btn-group-sm .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    function quickAction(action) {
+        const modal = new bootstrap.Modal(document.getElementById('quickActionModal'));
+        const title = document.getElementById('quickActionTitle');
+        const body = document.getElementById('quickActionBody');
+
+        switch (action) {
+            case 'create_user':
+                title.textContent = 'Create New User';
+                body.innerHTML = `
                 <form id="createUserForm">
                     <div class="mb-3">
                         <label class="form-label">Email</label>
@@ -973,11 +1019,11 @@ function quickAction(action) {
                     </div>
                 </form>
             `;
-            break;
+                break;
 
-        case 'system_health':
-            title.textContent = 'System Health Check';
-            body.innerHTML = `
+            case 'system_health':
+                title.textContent = 'System Health Check';
+                body.innerHTML = `
                 <div class="text-center">
                     <i class="fas fa-heartbeat fa-3x text-success mb-3"></i>
                     <h5>Running System Health Check...</h5>
@@ -986,11 +1032,11 @@ function quickAction(action) {
                     </div>
                 </div>
             `;
-            break;
+                break;
 
-        case 'backup_database':
-            title.textContent = 'Database Backup';
-            body.innerHTML = `
+            case 'backup_database':
+                title.textContent = 'Database Backup';
+                body.innerHTML = `
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i>
                     This will create a full database backup. The process may take several minutes.
@@ -1008,15 +1054,15 @@ function quickAction(action) {
                     </label>
                 </div>
             `;
-            break;
+                break;
 
-        case 'view_audit':
-            window.location.href = "{% url 'users:superuser_audit' %}";
-            return;
+            case 'view_audit':
+                window.location.href = "{% url 'users:superuser_audit' %}";
+                return;
 
-        case 'security_scan':
-            title.textContent = 'Security Scan';
-            body.innerHTML = `
+            case 'security_scan':
+                title.textContent = 'Security Scan';
+                body.innerHTML = `
                 <div class="text-center">
                     <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
                     <h5>Initiating Security Scan...</h5>
@@ -1025,11 +1071,11 @@ function quickAction(action) {
                     </div>
                 </div>
             `;
-            break;
+                break;
 
-        case 'emergency_mode':
-            title.textContent = 'Emergency Mode';
-            body.innerHTML = `
+            case 'emergency_mode':
+                title.textContent = 'Emergency Mode';
+                body.innerHTML = `
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle"></i>
                     <strong>Warning:</strong> This will activate emergency protocols and may restrict normal operations.
@@ -1039,111 +1085,111 @@ function quickAction(action) {
                     <textarea class="form-control" rows="3" placeholder="Describe the emergency situation..." required></textarea>
                 </div>
             `;
-            break;
+                break;
+        }
+
+        modal.show();
     }
 
-    modal.show();
-}
+    function executeQuickAction() {
+        // Implementation for executing quick actions
+        const modal = bootstrap.Modal.getInstance(document.getElementById('quickActionModal'));
+        modal.hide();
 
-function executeQuickAction() {
-    // Implementation for executing quick actions
-    const modal = bootstrap.Modal.getInstance(document.getElementById('quickActionModal'));
-    modal.hide();
+        // Show success message
+        showNotification('Action executed successfully', 'success');
+    }
 
-    // Show success message
-    showNotification('Action executed successfully', 'success');
-}
-
-function showNotification(message, type) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
+    function showNotification(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
 
-    const container = document.querySelector('.container-fluid .row .col-md-9');
-    container.insertBefore(alertDiv, container.firstChild);
+        const container = document.querySelector('.container-fluid .row .col-md-9');
+        container.insertBefore(alertDiv, container.firstChild);
 
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 5000);
-}
-
-function exportData() {
-    // Implementation for exporting dashboard data
-    showNotification('Data export initiated. Download will start shortly.', 'info');
-}
-
-// Section switching functionality
-function showSection(sectionName) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.section-content');
-    sections.forEach(section => section.style.display = 'none');
-
-    // Show the dynamic sections container
-    document.getElementById('dynamic-sections').style.display = 'block';
-
-    // Show the requested section
-    const targetSection = document.getElementById(sectionName + '-section');
-    if (targetSection) {
-        targetSection.style.display = 'block';
-
-        // Load data for the section
-        loadSectionData(sectionName);
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
     }
 
-    // Update URL hash
-    window.location.hash = sectionName;
-
-    // Scroll to the section
-    document.getElementById('dynamic-sections').scrollIntoView({ behavior: 'smooth' });
-}
-
-// Load data for specific sections
-function loadSectionData(sectionName) {
-    switch(sectionName) {
-        case 'banking':
-            loadBankingAnalytics();
-            break;
-        case 'transactions':
-            loadTransactionData();
-            break;
-        case 'fraud':
-            loadFraudData();
-            break;
-        case 'reports':
-            loadReportTemplates();
-            break;
-        case 'api':
-            checkAPIHealth();
-            break;
-        case 'rate-limits':
-            loadRateLimits();
-            break;
-        case 'backup':
-            loadBackupHistory();
-            break;
+    function exportData() {
+        // Implementation for exporting dashboard data
+        showNotification('Data export initiated. Download will start shortly.', 'info');
     }
-}
 
-// Banking Analytics Functions
-function loadBankingAnalytics() {
-    // Use real data from template variables
-    document.getElementById('total-accounts').textContent = '{{ system_stats.total_accounts|default:0 }}';
-    document.getElementById('total-balance').textContent = '${{ system_stats.total_balance|floatformat:0|default:0 }}';
-    document.getElementById('active-loans').textContent = '{{ system_stats.active_loans|default:0 }}';
-    showNotification('Banking analytics loaded successfully', 'success');
-}
+    // Section switching functionality
+    function showSection(sectionName) {
+        // Hide all sections
+        const sections = document.querySelectorAll('.section-content');
+        sections.forEach(section => section.style.display = 'none');
 
-// Transaction Data Functions
-function loadTransactionData() {
-    // Use real transaction data from template variables
-    document.getElementById('today-transactions').textContent = '{{ system_stats.today_transactions|default:0 }}';
-    document.getElementById('week-transactions').textContent = '{{ system_stats.week_transactions|default:0 }}';
+        // Show the dynamic sections container
+        document.getElementById('dynamic-sections').style.display = 'block';
 
-    // Mock recent transactions for now - in real implementation, this would fetch from API
-    const transactionsHtml = `
+        // Show the requested section
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.style.display = 'block';
+
+            // Load data for the section
+            loadSectionData(sectionName);
+        }
+
+        // Update URL hash
+        window.location.hash = sectionName;
+
+        // Scroll to the section
+        document.getElementById('dynamic-sections').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Load data for specific sections
+    function loadSectionData(sectionName) {
+        switch (sectionName) {
+            case 'banking':
+                loadBankingAnalytics();
+                break;
+            case 'transactions':
+                loadTransactionData();
+                break;
+            case 'fraud':
+                loadFraudData();
+                break;
+            case 'reports':
+                loadReportTemplates();
+                break;
+            case 'api':
+                checkAPIHealth();
+                break;
+            case 'rate-limits':
+                loadRateLimits();
+                break;
+            case 'backup':
+                loadBackupHistory();
+                break;
+        }
+    }
+
+    // Banking Analytics Functions
+    function loadBankingAnalytics() {
+        // Use real data from template variables
+        document.getElementById('total-accounts').textContent = '{{ system_stats.total_accounts|default:0 }}';
+        document.getElementById('total-balance').textContent = '${{ system_stats.total_balance|floatformat:0|default:0 }}';
+        document.getElementById('active-loans').textContent = '{{ system_stats.active_loans|default:0 }}';
+        showNotification('Banking analytics loaded successfully', 'success');
+    }
+
+    // Transaction Data Functions
+    function loadTransactionData() {
+        // Use real transaction data from template variables
+        document.getElementById('today-transactions').textContent = '{{ system_stats.today_transactions|default:0 }}';
+        document.getElementById('week-transactions').textContent = '{{ system_stats.week_transactions|default:0 }}';
+
+        // Mock recent transactions for now - in real implementation, this would fetch from API
+        const transactionsHtml = `
         <div class="list-group-item">
             <div class="d-flex justify-content-between">
                 <div>
@@ -1169,32 +1215,32 @@ function loadTransactionData() {
             </div>
         </div>
     `;
-    document.getElementById('recent-transactions').innerHTML = transactionsHtml;
-}
+        document.getElementById('recent-transactions').innerHTML = transactionsHtml;
+    }
 
-// Fraud Detection Functions
-function loadFraudData() {
-    document.getElementById('fraud-alerts').textContent = '{{ system_stats.fraud_alerts|default:0 }}';
-    document.getElementById('suspicious-activities').textContent = '{{ system_stats.suspicious_activities|default:0 }}';
-    document.getElementById('fraud-rules').textContent = '25'; // This would need to be calculated from the fraud rules model
-}
+    // Fraud Detection Functions
+    function loadFraudData() {
+        document.getElementById('fraud-alerts').textContent = '{{ system_stats.fraud_alerts|default:0 }}';
+        document.getElementById('suspicious-activities').textContent = '{{ system_stats.suspicious_activities|default:0 }}';
+        document.getElementById('fraud-rules').textContent = '25'; // This would need to be calculated from the fraud rules model
+    }
 
-function viewFraudAlerts() {
-    showNotification('Redirecting to fraud alerts...', 'info');
-    // In real implementation, redirect to fraud alerts page
-}
+    function viewFraudAlerts() {
+        showNotification('Redirecting to fraud alerts...', 'info');
+        // In real implementation, redirect to fraud alerts page
+    }
 
-function viewSuspiciousActivities() {
-    showNotification('Loading suspicious activities...', 'info');
-}
+    function viewSuspiciousActivities() {
+        showNotification('Loading suspicious activities...', 'info');
+    }
 
-function manageFraudRules() {
-    showNotification('Opening fraud rules management...', 'info');
-}
+    function manageFraudRules() {
+        showNotification('Opening fraud rules management...', 'info');
+    }
 
-// Report Functions
-function loadReportTemplates() {
-    const templatesHtml = `
+    // Report Functions
+    function loadReportTemplates() {
+        const templatesHtml = `
         <div class="list-group-item">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -1214,17 +1260,17 @@ function loadReportTemplates() {
             </div>
         </div>
     `;
-    document.getElementById('report-templates').innerHTML = templatesHtml;
-}
+        document.getElementById('report-templates').innerHTML = templatesHtml;
+    }
 
-function generateReport(reportType) {
-    showNotification(`Generating ${reportType} report...`, 'info');
-    // In real implementation, make API call to generate report
-}
+    function generateReport(reportType) {
+        showNotification(`Generating ${reportType} report...`, 'info');
+        // In real implementation, make API call to generate report
+    }
 
-// API Management Functions
-function checkAPIHealth() {
-    const healthHtml = `
+    // API Management Functions
+    function checkAPIHealth() {
+        const healthHtml = `
         <div class="alert alert-success">
             <i class="fas fa-check-circle"></i> All APIs are operational
         </div>
@@ -1247,12 +1293,12 @@ function checkAPIHealth() {
             </div>
         </div>
     `;
-    document.getElementById('api-health-status').innerHTML = healthHtml;
-}
+        document.getElementById('api-health-status').innerHTML = healthHtml;
+    }
 
-// Rate Limits Functions
-function loadRateLimits() {
-    const rateLimitsHtml = `
+    // Rate Limits Functions
+    function loadRateLimits() {
+        const rateLimitsHtml = `
         <div class="table-responsive">
             <table class="table table-striped">
                 <thead>
@@ -1280,24 +1326,24 @@ function loadRateLimits() {
             </table>
         </div>
     `;
-    document.getElementById('rate-limits-config').innerHTML = rateLimitsHtml;
-}
-
-// Backup Functions
-function createBackup() {
-    showNotification('Creating system backup...', 'info');
-    // In real implementation, make API call to create backup
-}
-
-function restoreBackup() {
-    if (confirm('Are you sure you want to restore from backup? This action cannot be undone.')) {
-        showNotification('Restoring from backup...', 'warning');
-        // In real implementation, make API call to restore backup
+        document.getElementById('rate-limits-config').innerHTML = rateLimitsHtml;
     }
-}
 
-function loadBackupHistory() {
-    const historyHtml = `
+    // Backup Functions
+    function createBackup() {
+        showNotification('Creating system backup...', 'info');
+        // In real implementation, make API call to create backup
+    }
+
+    function restoreBackup() {
+        if (confirm('Are you sure you want to restore from backup? This action cannot be undone.')) {
+            showNotification('Restoring from backup...', 'warning');
+            // In real implementation, make API call to restore backup
+        }
+    }
+
+    function loadBackupHistory() {
+        const historyHtml = `
         <div class="list-group">
             <div class="list-group-item">
                 <div class="d-flex justify-content-between">
@@ -1325,34 +1371,59 @@ function loadBackupHistory() {
             </div>
         </div>
     `;
-    document.getElementById('backup-history').innerHTML = historyHtml;
-}
-
-// Maintenance Functions
-function clearCache() {
-    showNotification('Clearing system cache...', 'info');
-    // In real implementation, make API call to clear cache
-}
-
-function cleanupDatabase() {
-    showNotification('Cleaning up database...', 'info');
-    // In real implementation, make API call to cleanup database
-}
-
-function optimizeSystem() {
-    showNotification('Optimizing system performance...', 'info');
-    // In real implementation, make API call to optimize system
-}
-
-// Initialize tooltips and other UI elements
-document.addEventListener('DOMContentLoaded', function() {
-    // Check for URL hash and show appropriate section
-    const hash = window.location.hash.substring(1);
-    if (hash) {
-        showSection(hash);
+        document.getElementById('backup-history').innerHTML = historyHtml;
     }
 
-    console.log('Superuser dashboard loaded');
-});
+    // Maintenance Functions
+    function clearCache() {
+        showNotification('Clearing system cache...', 'info');
+        // In real implementation, make API call to clear cache
+    }
+
+    function cleanupDatabase() {
+        showNotification('Cleaning up database...', 'info');
+        // In real implementation, make API call to cleanup database
+    }
+
+    function optimizeSystem() {
+        showNotification('Optimizing system performance...', 'info');
+        // In real implementation, make API call to optimize system
+    }
+
+    function updateLastRefreshed() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+        const badge = document.querySelector('.last-updated-badge');
+        if (badge) {
+            badge.textContent = `Last updated: ${timeStr}`;
+        }
+    }
+
+    // Initialize tooltips and other UI elements
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check for URL hash and show appropriate section
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            showSection(hash);
+        }
+
+        console.log('Superuser dashboard loaded');
+
+        // Auto-start refresh with 60 second interval
+        setAutoRefresh(60);
+
+        // Add last updated badge to header
+        const header = document.querySelector('.d-flex.justify-content-between h1');
+        if (header) {
+            const badge = document.createElement('small');
+            badge.className = 'last-updated-badge text-muted ms-3';
+            badge.style.fontSize = '0.6em';
+            badge.textContent = 'Last updated: just now';
+            header.appendChild(badge);
+        }
+
+        // Update timestamp every second
+        setInterval(updateLastRefreshed, 1000);
+    });
 </script>
 {% endblock %}
