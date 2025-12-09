@@ -61,7 +61,7 @@ urlpatterns = [
     path('web/register/', views.register_view, name='register'),
     path('web/dashboard/', views.dashboard_view, name='dashboard'),
     path('web/analytics/', views.analytics_view, name='analytics'),
-    path('web/profile/', views.profile_view, name='profile'),
+    path('web/profile/', views.profile_view, name='web_profile'),
     path('web/change-password/', views.change_password_view, name='change_password'),
 
     # Staff user management URLs
