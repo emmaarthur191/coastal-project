@@ -1,4 +1,4 @@
-from rest_framework import serializers, views, permissions, status
+from rest_framework import serializers, views, permissions, status, authentication
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -430,6 +430,7 @@ class ProfileSettingsView(views.APIView):
     GET: Retrieve profile.
     PATCH: Update general profile details.
     """
+    authentication_classes = [authentication.SessionAuthentication, authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = None  # No serializer needed for this view
 
@@ -452,6 +453,7 @@ class ProfileSettingsView(views.APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class NotificationSettingsView(views.APIView):
     """PATCH: Update notification preferences (notify_email, notify_sms, notify_push)."""
+    authentication_classes = [authentication.SessionAuthentication, authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = None  # No serializer needed for this view
 
