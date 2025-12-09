@@ -1868,17 +1868,19 @@ class SuperuserOperationsView(views.APIView):
     class SuperuserOperationSerializer(serializers.Serializer):
         operation = serializers.ChoiceField(choices=[
             'bypass_security', 'emergency_access', 'system_reset', 'audit_bypass',
-            'create_user', 'modify_user_role', 'activate_user', 'deactivate_user',
+            'create_user', 'update_user', 'modify_user_role', 'activate_user', 'deactivate_user',
             'create_branch', 'system_health', 'backup_database', 'monitor_activity',
             'update_system_setting', 'get_system_settings', 'reset_system_setting'
         ])
         reason = serializers.CharField(required=True)
         target = serializers.CharField(required=False)
         # Additional fields for specific operations
+        user_id = serializers.UUIDField(required=False)
         email = serializers.EmailField(required=False)
         first_name = serializers.CharField(required=False)
         last_name = serializers.CharField(required=False)
         role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=False)
+        is_active = serializers.BooleanField(required=False)
         branch_name = serializers.CharField(required=False)
         branch_location = serializers.CharField(required=False)
         manager_id = serializers.UUIDField(required=False)
@@ -1939,6 +1941,8 @@ class SuperuserOperationsView(views.APIView):
             #     result = self._audit_bypass(target, reason)
             elif operation == 'create_user':
                 result = self._create_user(serializer.validated_data, reason)
+            elif operation == 'update_user':
+                result = self._update_user(serializer.validated_data, reason)
             elif operation == 'modify_user_role':
                 result = self._modify_user_role(target, serializer.validated_data.get('role'), reason)
             elif operation == 'activate_user':
@@ -2042,6 +2046,48 @@ class SuperuserOperationsView(views.APIView):
             'role': user.role,
             'status': 'created'
         }
+
+    def _update_user(self, data, reason):
+        """Update an existing user account."""
+        try:
+            user_id = data.get('user_id')
+            if not user_id:
+                raise ValueError("user_id is required for update operation")
+            
+            user = User.objects.get(id=user_id)
+            old_data = {
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'is_active': user.is_active
+            }
+            
+            # Update fields if provided
+            if 'email' in data and data['email']:
+                user.email = data['email']
+            if 'first_name' in data and data['first_name']:
+                user.first_name = data['first_name']
+            if 'last_name' in data and data['last_name']:
+                user.last_name = data['last_name']
+            if 'role' in data and data['role']:
+                user.role = data['role']
+            if 'is_active' in data:
+                user.is_active = data['is_active']
+            
+            user.save()
+            
+            logger.info(f"User updated by superuser {self.request.user.email}: {user.email}")
+            return {
+                'user_id': str(user.id),
+                'email': user.email,
+                'role': user.role,
+                'is_active': user.is_active,
+                'old_data': old_data,
+                'status': 'updated'
+            }
+        except User.DoesNotExist:
+            raise ValueError("User not found")
 
     def _modify_user_role(self, user_id, new_role, reason):
         """Modify user role."""
@@ -3353,9 +3399,250 @@ class PendingDocumentsView(views.APIView):
     )
     def get(self, request):
         """List all pending documents for approval."""
-        pending_documents = UserDocuments.objects.filter(
-            status__in=['uploaded', 'pending_review']
-        ).select_related('user', 'verified_by')
-
         serializer = UserDocumentsSerializer(pending_documents, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Banking Management Views (Superuser)
+
+@login_required
+def superuser_accounts(request):
+    """Superuser account management interface."""
+    if request.user.role != 'superuser':
+        messages.error(request, 'Access denied. Superuser privileges required.')
+        return redirect('users:dashboard')
+
+    from banking.models import Account
+
+    # Get all accounts with pagination and filtering
+    accounts = Account.objects.all().order_by('-created_at')
+    
+    # Filtering
+    type_filter = request.GET.get('type')
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('search')
+
+    if type_filter:
+        accounts = accounts.filter(type=type_filter)
+    if status_filter:
+        if status_filter == 'active':
+            accounts = accounts.filter(is_active=True)
+        elif status_filter == 'inactive':
+            accounts = accounts.filter(is_active=False)
+            
+    if search_query:
+        accounts = accounts.filter(
+            Q(account_number__icontains=search_query) |
+            Q(owner__email__icontains=search_query) |
+            Q(owner__first_name__icontains=search_query) |
+            Q(owner__last_name__icontains=search_query)
+        )
+
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(accounts, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get choices
+    account_types = [choice[0] for choice in Account.ACCOUNT_TYPES] if hasattr(Account, 'ACCOUNT_TYPES') else ['savings', 'checking', 'business']
+
+    context = {
+        'page_obj': page_obj,
+        'account_types': account_types,
+        'current_filters': {
+            'type': type_filter,
+            'status': status_filter,
+            'search': search_query,
+        }
+    }
+
+    return render(request, 'users/superuser_accounts.html', context)
+
+
+@login_required
+def superuser_transactions(request):
+    """Superuser transaction management interface."""
+    if request.user.role != 'superuser':
+        messages.error(request, 'Access denied. Superuser privileges required.')
+        return redirect('users:dashboard')
+
+    try:
+        from transactions.models import Transaction
+    except ImportError:
+        from banking.models import Transaction
+
+    # Get all transactions with pagination and filtering
+    transactions = Transaction.objects.all().order_by('-timestamp')
+    
+    # Filtering
+    type_filter = request.GET.get('type')
+    status_filter = request.GET.get('status')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    search_query = request.GET.get('search')
+
+    if type_filter:
+        transactions = transactions.filter(transaction_type=type_filter)
+    if status_filter:
+        transactions = transactions.filter(status=status_filter)
+    if date_from:
+        transactions = transactions.filter(timestamp__date__gte=date_from)
+    if date_to:
+        transactions = transactions.filter(timestamp__date__lte=date_to)
+            
+    if search_query:
+        transactions = transactions.filter(
+            Q(description__icontains=search_query) |
+            Q(account__account_number__icontains=search_query) |
+            Q(account__owner__email__icontains=search_query)
+        )
+
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(transactions, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'current_filters': {
+            'type': type_filter,
+            'status': status_filter,
+            'date_from': date_from,
+            'date_to': date_to,
+            'search': search_query,
+        }
+    }
+
+    return render(request, 'users/superuser_transactions.html', context)
+
+
+@login_required
+def superuser_loans(request):
+    """Superuser loan management interface."""
+    if request.user.role != 'superuser':
+        messages.error(request, 'Access denied. Superuser privileges required.')
+        return redirect('users:dashboard')
+
+    from banking.models import Loan
+
+    # Get all loans with pagination and filtering
+    loans = Loan.objects.all().order_by('-applied_at')
+    
+    # Filtering
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('search')
+
+    if status_filter:
+        loans = loans.filter(status=status_filter)
+            
+    if search_query:
+        loans = loans.filter(
+            Q(account__owner__email__icontains=search_query) |
+            Q(account__account_number__icontains=search_query)
+        )
+
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(loans, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'current_filters': {
+            'status': status_filter,
+            'search': search_query,
+        }
+    }
+
+    return render(request, 'users/superuser_loans.html', context)
+
+
+@login_required
+def superuser_complaints(request):
+    """Superuser complaints management interface."""
+    if request.user.role != 'superuser':
+        messages.error(request, 'Access denied. Superuser privileges required.')
+        return redirect('users:dashboard')
+
+    from banking.models import Complaint
+
+    # Get all complaints
+    complaints = Complaint.objects.all().order_by('-submitted_at')
+    
+    # Filtering
+    status_filter = request.GET.get('status')
+    priority_filter = request.GET.get('priority')
+    search_query = request.GET.get('search')
+
+    if status_filter:
+        complaints = complaints.filter(status=status_filter)
+    if priority_filter:
+        complaints = complaints.filter(priority=priority_filter)
+            
+    if search_query:
+        complaints = complaints.filter(
+            Q(subject__icontains=search_query) |
+            Q(submitted_by__email__icontains=search_query)
+        )
+
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(complaints, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'current_filters': {
+            'status': status_filter,
+            'priority': priority_filter,
+            'search': search_query,
+        }
+    }
+
+    return render(request, 'users/superuser_complaints.html', context)
+
+
+@login_required
+def superuser_refunds(request):
+    """Superuser refunds management interface."""
+    if request.user.role != 'superuser':
+        messages.error(request, 'Access denied. Superuser privileges required.')
+        return redirect('users:dashboard')
+
+    from banking.models import Refund
+
+    # Get all refunds
+    refunds = Refund.objects.all().order_by('-requested_at')
+    
+    # Filtering
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('search')
+
+    if status_filter:
+        refunds = refunds.filter(status=status_filter)
+            
+    if search_query:
+        refunds = refunds.filter(
+            Q(transaction__id__icontains=search_query) |
+            Q(requested_by__email__icontains=search_query)
+        )
+
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(refunds, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'current_filters': {
+            'status': status_filter,
+            'search': search_query,
+        }
+    }
+
+    return render(request, 'users/superuser_refunds.html', context)
