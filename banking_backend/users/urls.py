@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from .export_views import export_users_csv, export_audit_json, export_security_pdf
 
 app_name = 'users'
 
@@ -54,6 +55,11 @@ urlpatterns = [
     path('web/superuser/audit/', views.superuser_audit, name='superuser_audit'),
     path('web/superuser/monitoring/', views.superuser_monitoring, name='superuser_monitoring'),
     path('web/superuser/security/', views.superuser_security, name='superuser_security'),
+    
+    # Export endpoints (superuser only)
+    path('web/superuser/export/users/', export_users_csv, name='export_users_csv'),
+    path('web/superuser/export/audit/', export_audit_json, name='export_audit_json'),
+    path('web/superuser/export/security/', export_security_pdf, name='export_security_pdf'),
 
     # Web interface URLs
     path('web/login/', views.login_view, name='login'),
