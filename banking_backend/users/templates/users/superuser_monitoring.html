@@ -402,6 +402,7 @@
 {% block extra_scripts %}
 <script>
 let autoRefreshInterval = null;
+let lastUpdated = new Date();
 
 function refreshMonitoring() {
     location.reload();
@@ -413,6 +414,9 @@ function setAutoRefresh(seconds) {
     }
     if (seconds > 0) {
         autoRefreshInterval = setInterval(refreshMonitoring, seconds * 1000);
+        showNotification(`Auto-refresh set to ${seconds} seconds`, 'success');
+    } else {
+        showNotification('Auto-refresh disabled', 'info');
     }
 }
 
@@ -452,16 +456,43 @@ function showNotification(message, type) {
     `;
 
     const container = document.querySelector('.container-fluid .row .col-md-9');
-    container.insertBefore(alertDiv, container.firstChild);
+    if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+    }
 
     setTimeout(() => {
         alertDiv.remove();
     }, 5000);
 }
 
+function updateLastRefreshed() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString();
+    const badge = document.querySelector('.last-updated-badge');
+    if (badge) {
+        badge.textContent = `Last updated: ${timeStr}`;
+    }
+}
+
 // Initialize tooltips and other UI elements
 document.addEventListener('DOMContentLoaded', function() {
     console.log('System monitoring page loaded');
+    
+    // Auto-start refresh with 10 second interval
+    setAutoRefresh(10);
+    
+    // Add last updated badge to header
+    const header = document.querySelector('.d-flex.justify-content-between h1');
+    if (header) {
+        const badge = document.createElement('small');
+        badge.className = 'last-updated-badge text-muted ms-3';
+        badge.style.fontSize = '0.6em';
+        badge.textContent = 'Last updated: {{ last_updated|date:"H:i:s" }}';
+        header.appendChild(badge);
+    }
+    
+    // Update timestamp every second
+    setInterval(updateLastRefreshed, 1000);
 });
 </script>
 {% endblock %}
