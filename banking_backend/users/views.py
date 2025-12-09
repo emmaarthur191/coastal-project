@@ -341,6 +341,24 @@ class PasswordResetRequestView(views.APIView):
                 [email],
                 fail_silently=False,
             )
+            
+            # Send SMS notification if user has phone and SMS enabled
+            try:
+                if hasattr(user, 'profile') and user.profile.phone and user.profile.notify_sms:
+                    sms_result = send_notification_sms(
+                        user.profile.phone,
+                        f"Password reset requested for your Coastal Banking account. "
+                        f"Check your email for the reset link. "
+                        f"If you didn't request this, contact support immediately."
+                    )
+                    if sms_result.get('success'):
+                        logger.info(f"Password reset SMS sent to {user.email}")
+                    else:
+                        logger.warning(f"Failed to send password reset SMS to {user.email}: {sms_result.get('error')}")
+            except Exception as e:
+                # Don't fail the request if SMS fails
+                logger.error(f"Error sending password reset SMS: {str(e)}")
+            
             return Response({"detail": "Password reset email sent."})
         except User.DoesNotExist:
             return Response({"detail": "If the email exists, a reset link has been sent."})
@@ -382,6 +400,24 @@ class PasswordResetConfirmView(views.APIView):
         if user_found:
             user_found.set_password(new_password)
             user_found.clear_reset_token()
+            
+            # Send SMS confirmation if user has phone and SMS enabled
+            try:
+                if hasattr(user_found, 'profile') and user_found.profile.phone and user_found.profile.notify_sms:
+                    timestamp = timezone.now().strftime('%Y-%m-%d at %H:%M')
+                    sms_result = send_notification_sms(
+                        user_found.profile.phone,
+                        f"Your Coastal Banking password was successfully reset on {timestamp}. "
+                        f"If you didn't make this change, contact support immediately."
+                    )
+                    if sms_result.get('success'):
+                        logger.info(f"Password reset confirmation SMS sent to {user_found.email}")
+                    else:
+                        logger.warning(f"Failed to send password reset confirmation SMS: {sms_result.get('error')}")
+            except Exception as e:
+                # Don't fail the request if SMS fails
+                logger.error(f"Error sending password reset confirmation SMS: {str(e)}")
+            
             return Response({"detail": "Password reset successfully."})
         
         # Always return same error message to prevent user enumeration
@@ -450,6 +486,23 @@ class PasswordChangeView(views.APIView):
 
         user.set_password(new_password)
         user.save()
+        
+        # Send SMS confirmation if user has phone and SMS enabled
+        try:
+            if hasattr(user, 'profile') and user.profile.phone and user.profile.notify_sms:
+                timestamp = timezone.now().strftime('%Y-%m-%d at %H:%M')
+                sms_result = send_notification_sms(
+                    user.profile.phone,
+                    f"Your Coastal Banking password was successfully changed on {timestamp}. "
+                    f"If you didn't make this change, contact support immediately."
+                )
+                if sms_result.get('success'):
+                    logger.info(f"Password change confirmation SMS sent to {user.email}")
+                else:
+                    logger.warning(f"Failed to send password change confirmation SMS: {sms_result.get('error')}")
+        except Exception as e:
+            # Don't fail the request if SMS fails
+            logger.error(f"Error sending password change confirmation SMS: {str(e)}")
 
         return Response({"detail": "Password updated successfully."})
 
@@ -1771,6 +1824,21 @@ class Enable2FAView(views.APIView):
             user.save()
 
             logger.info(f"2FA enabled for user {user.email}")
+            
+            # Send SMS confirmation
+            try:
+                sms_result = send_notification_sms(
+                    phone_number,
+                    "Two-factor authentication has been successfully enabled for your "
+                    "Coastal Banking account. Your account is now more secure."
+                )
+                if sms_result.get('success'):
+                    logger.info(f"2FA activation confirmation SMS sent to {user.email}")
+                else:
+                    logger.warning(f"Failed to send 2FA confirmation SMS: {sms_result.get('error')}")
+            except Exception as e:
+                # Don't fail the request if SMS fails
+                logger.error(f"Error sending 2FA confirmation SMS: {str(e)}")
 
             return Response({
                 'message': 'Two-factor authentication enabled successfully'
