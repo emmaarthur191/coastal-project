@@ -37,9 +37,7 @@ services:
           name: coastal-redis
           property: connectionString
       - key: ALLOWED_HOSTS
-        value: "coastal-backend.onrender.com,coastal-frontend.onrender.com"
-      - key: CSRF_TRUSTED_ORIGINS
-        value: "https://coastal-backend.onrender.com,https://coastal-frontend.onrender.com"
+        value: ".onrender.com,coastal-backend.onrender.com,coastal-frontend.onrender.com"
       - key: CORS_ALLOWED_ORIGINS
         value: "https://coastal-frontend.onrender.com"
       - key: CORS_ALLOW_CREDENTIALS
@@ -56,6 +54,10 @@ services:
         generateValue: true
       - key: SECURE_PROXY_SSL_HEADER
         value: "HTTP_X_FORWARDED_PROTO, https"
+      - key: USE_X_FORWARDED_HOST
+        value: "True"
+      - key: SECURE_CROSS_ORIGIN_OPENER_POLICY
+        value: "same-origin-allow-popups"
 
   # React Frontend Web Service
   - type: web
