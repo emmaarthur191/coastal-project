@@ -1,363 +1,27 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
-import { formatCurrencyGHS } from '../utils/formatters';
 import EmojiPicker from 'emoji-picker-react';
 import { useDropzone } from 'react-dropzone';
 import {
-  Send, Search, Settings, Users, Plus, MoreVertical, Phone, Video,
-  Image, File, Smile, Paperclip, Mic, MicOff, Volume2, VolumeX,
-  Eye, EyeOff, Shield, Ban, Flag, UserPlus, UserMinus, Crown,
-  Moon, Sun, Palette, Bell, BellOff, Wifi, WifiOff, Check, CheckCheck,
-  MessageCircle, Hash, AtSign, Star, Archive, Trash2, Edit3, Copy,
-  Download, ExternalLink, Zap, Lock, Unlock, Camera, VideoIcon, ArrowLeft
+  Send, Search, Settings, Plus, Phone, Video, Smile, Paperclip, Mic,
+  Wifi, WifiOff, MessageCircle, ArrowLeft
 } from 'lucide-react';
 
-// Enhanced Encryption with proper ECDH key exchange
-class SecureMessagingEncryption {
-  static async generateECDHKeypair() {
-    try {
-      console.log('[ENCRYPTION] Generating ECDH keypair...');
-      const keyPair = await window.crypto.subtle.generateKey(
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        true,
-        ['deriveKey', 'deriveBits']
-      );
+// Lazy load components
+const UserAvatar = lazy(() => import('../components/messaging/UserAvatar'));
+const MessageItem = lazy(() => import('../components/messaging/MessageItem'));
+const NewThreadModal = lazy(() => import('../components/messaging/NewThreadModal'));
+const SearchModal = lazy(() => import('../components/messaging/SearchModal'));
+const SettingsModal = lazy(() => import('../components/messaging/SettingsModal'));
+const CallModal = lazy(() => import('../components/messaging/CallModal'));
 
-      const publicKey = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
-      const privateKey = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-
-      const keypairData = {
-        privateKey: btoa(String.fromCharCode(...new Uint8Array(privateKey))),
-        publicKey: btoa(String.fromCharCode(...new Uint8Array(publicKey))),
-        keyPair
-      };
-
-      console.log('[ENCRYPTION] ECDH keypair generated successfully');
-      return keypairData;
-    } catch (error) {
-      console.error('[ENCRYPTION] Error generating ECDH keypair:', error);
-      throw new Error('Failed to generate encryption keys');
-    }
-  }
-
-  static async deriveSharedSecret(privateKeyPem, peerPublicKeyPem) {
-    try {
-      console.log('[ENCRYPTION] Deriving shared secret...');
-
-      // Import private key
-      const privateKeyData = Uint8Array.from(atob(privateKeyPem), c => c.charCodeAt(0));
-      const privateKey = await window.crypto.subtle.importKey(
-        'pkcs8',
-        privateKeyData,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        ['deriveBits']
-      );
-
-      // Import peer public key
-      const peerPublicKeyData = Uint8Array.from(atob(peerPublicKeyPem), c => c.charCodeAt(0));
-      const peerPublicKey = await window.crypto.subtle.importKey(
-        'spki',
-        peerPublicKeyData,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        []
-      );
-
-      // Derive shared secret
-      const sharedSecret = await window.crypto.subtle.deriveBits(
-        {
-          name: 'ECDH',
-          public: peerPublicKey,
-        },
-        privateKey,
-        256
-      );
-
-      // Use HKDF to derive AES key
-      const hkdfKey = await window.crypto.subtle.importKey(
-        'raw',
-        sharedSecret,
-        'HKDF',
-        false,
-        ['deriveKey']
-      );
-
-      const aesKey = await window.crypto.subtle.deriveKey(
-        {
-          name: 'HKDF',
-          hash: 'SHA-256',
-          salt: new Uint8Array(32), // Random salt for each conversation
-          info: new TextEncoder().encode('secure-messaging-key'),
-        },
-        hkdfKey,
-        {
-          name: 'AES-GCM',
-          length: 256,
-        },
-        false,
-        ['encrypt', 'decrypt']
-      );
-
-      console.log('[ENCRYPTION] Shared secret derived successfully');
-      return aesKey;
-    } catch (error) {
-      console.error('[ENCRYPTION] Error deriving shared secret:', error);
-      throw new Error('Failed to derive encryption key');
-    }
-  }
-
-  static async encryptMessage(plaintext, sharedSecret) {
-    try {
-      console.log('[ENCRYPTION] Encrypting message...');
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
-      const encodedPlaintext = new TextEncoder().encode(plaintext);
-
-      const ciphertext = await window.crypto.subtle.encrypt(
-        {
-          name: 'AES-GCM',
-          iv: iv,
-        },
-        sharedSecret,
-        encodedPlaintext
-      );
-
-      const encryptedContent = new Uint8Array(ciphertext);
-      const authTag = encryptedContent.slice(-16);
-      const encryptedData = encryptedContent.slice(0, -16);
-
-      return {
-        ciphertext: btoa(String.fromCharCode(...encryptedData)),
-        iv: btoa(String.fromCharCode(...iv)),
-        auth_tag: btoa(String.fromCharCode(...authTag)),
-      };
-    } catch (error) {
-      console.error('[ENCRYPTION] Error encrypting message:', error);
-      throw new Error('Failed to encrypt message');
-    }
-  }
-
-  static async decryptMessage(encryptedData, sharedSecret) {
-    try {
-      console.log('[DECRYPTION] Decrypting message...');
-      const ciphertext = Uint8Array.from(atob(encryptedData.ciphertext), c => c.charCodeAt(0));
-      const iv = Uint8Array.from(atob(encryptedData.iv), c => c.charCodeAt(0));
-      const authTag = Uint8Array.from(atob(encryptedData.auth_tag), c => c.charCodeAt(0));
-
-      // Combine ciphertext and auth tag
-      const combined = new Uint8Array(ciphertext.length + authTag.length);
-      combined.set(ciphertext);
-      combined.set(authTag, ciphertext.length);
-
-      const decrypted = await window.crypto.subtle.decrypt(
-        {
-          name: 'AES-GCM',
-          iv: iv,
-        },
-        sharedSecret,
-        combined
-      );
-
-      const result = new TextDecoder().decode(decrypted);
-      console.log('[DECRYPTION] Message decrypted successfully');
-      return result;
-    } catch (error) {
-      console.error('[DECRYPTION] Error decrypting message:', error);
-      throw new Error('Failed to decrypt message');
-    }
-  }
-}
-
-// Enhanced WebSocket Manager with typing indicators and presence
-class EnhancedWebSocketManager {
-  constructor(threadId, onMessage, onError, onConnectionChange, onTyping, onPresence, onReaction) {
-    this.threadId = threadId;
-    this.onMessage = onMessage;
-    this.onError = onError;
-    this.onConnectionChange = onConnectionChange;
-    this.onTyping = onTyping;
-    this.onPresence = onPresence;
-    this.onReaction = onReaction;
-    this.ws = null;
-    this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-    this.reconnectDelay = 1000;
-    this.isConnecting = false;
-    this.heartbeatInterval = null;
-    this.typingTimeout = null;
-  }
-
-  connect() {
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
-      return;
-    }
-
-    this.isConnecting = true;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const token = localStorage.getItem('accessToken');
-
-    // Get WebSocket base URL from environment or fallback to localhost:8001
-    const getWebSocketBaseUrl = () => {
-      // Check for VITE_WS_BASE_URL (used in docker-compose)
-      if (import.meta.env.VITE_WS_BASE_URL) {
-        return import.meta.env.VITE_WS_BASE_URL;
-      }
-      // Check for VITE_WS_URL for Railway
-      if (import.meta.env.VITE_WS_URL) {
-        return import.meta.env.VITE_WS_URL;
-      }
-      // In production, use environment variable or fallback
-      if (import.meta.env.PROD) {
-        if (import.meta.env.VITE_PROD_WS_URL) {
-          return import.meta.env.VITE_PROD_WS_URL;
-        }
-        throw new Error('VITE_PROD_WS_URL environment variable is required in production');
-      }
-      // In development, use localhost:8001 (since 8000 is occupied)
-      if (import.meta.env.VITE_DEV_WS_URL) {
-        return import.meta.env.VITE_DEV_WS_URL;
-      }
-      return 'localhost:8001';
-    };
-
-    const wsBaseUrl = getWebSocketBaseUrl();
-    const wsUrl = `${protocol}//${wsBaseUrl}/ws/messaging/${this.threadId}/?token=${token}`;
-
-    try {
-      console.log('[WEBSOCKET] Connecting to:', wsUrl.replace(token, '[TOKEN]'));
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        console.log('[WEBSOCKET] Connected to thread:', this.threadId);
-        this.isConnecting = false;
-        this.reconnectAttempts = 0;
-        this.onConnectionChange?.(true);
-        this.startHeartbeat();
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('[WEBSOCKET] Received:', data.type);
-
-          switch (data.type) {
-            case 'new_message':
-              this.onMessage?.(data);
-              break;
-            case 'reaction_added':
-            case 'reaction_removed':
-              this.onReaction?.(data);
-              break;
-            case 'typing_start':
-            case 'typing_stop':
-              this.onTyping?.(data);
-              break;
-            case 'presence_update':
-              this.onPresence?.(data);
-              break;
-            case 'pong':
-              // Heartbeat response
-              break;
-            default:
-              this.onMessage?.(data);
-          }
-        } catch (error) {
-          console.error('[WEBSOCKET] Error parsing message:', error);
-          this.onError?.(error);
-        }
-      };
-
-      this.ws.onclose = (event) => {
-        console.log('[WEBSOCKET] Disconnected:', event.code, event.reason);
-        this.isConnecting = false;
-        this.stopHeartbeat();
-        this.onConnectionChange?.(false);
-
-        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.attemptReconnect();
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('[WEBSOCKET] Error:', error);
-        this.onError?.(error);
-        this.isConnecting = false;
-      };
-
-    } catch (error) {
-      console.error('[WEBSOCKET] Error creating connection:', error);
-      this.onError?.(error);
-      this.isConnecting = false;
-    }
-  }
-
-  startHeartbeat() {
-    this.heartbeatInterval = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'ping' }));
-      }
-    }, 30000); // 30 seconds
-  }
-
-  stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
-
-  attemptReconnect() {
-    this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-
-    console.log(`[WEBSOCKET] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
-
-    setTimeout(() => {
-      this.connect();
-    }, delay);
-  }
-
-  sendMessage(messageData) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('[WEBSOCKET] Sending message:', messageData.type);
-      this.ws.send(JSON.stringify(messageData));
-      return true;
-    } else {
-      console.warn('[WEBSOCKET] Not connected, cannot send message');
-      return false;
-    }
-  }
-
-  sendTyping(isTyping) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: isTyping ? 'typing_start' : 'typing_stop',
-        user_id: null // Will be set by backend
-      }));
-    }
-  }
-
-  disconnect() {
-    console.log('[WEBSOCKET] Disconnecting...');
-    this.stopHeartbeat();
-    if (this.ws) {
-      this.ws.close(1000, 'Component unmounting');
-      this.ws = null;
-    }
-    this.isConnecting = false;
-  }
-}
+// Import utilities
+import SecureMessagingEncryption from '../utils/messaging/SecureMessagingEncryption';
+import EnhancedWebSocketManager from '../utils/messaging/EnhancedWebSocketManager';
+import NotificationManager from '../utils/messaging/NotificationManager';
+import FileUploadHandler from '../utils/messaging/FileUploadHandler';
 
 // Theme system
 const themes = {
@@ -404,94 +68,6 @@ const themes = {
     }
   }
 };
-
-// Notification Manager
-class NotificationManager {
-  static async requestPermission() {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
-    }
-    return false;
-  }
-
-  static async showNotification(title, body, icon = null) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body,
-        icon,
-        badge: '/favicon.ico',
-        tag: 'secure-messaging'
-      });
-
-      // Auto-close after 5 seconds
-      setTimeout(() => notification.close(), 5000);
-
-      return notification;
-    }
-  }
-}
-
-// File Upload Handler
-class FileUploadHandler {
-  static validateFile(file) {
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain', 'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
-
-    if (file.size > maxSize) {
-      throw new Error('File size must be less than 10MB');
-    }
-
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('File type not supported');
-    }
-
-    return true;
-  }
-
-  static async uploadFile(file, onProgress) {
-    this.validateFile(file);
-
-    // Simulate upload progress
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = (event.loaded / event.total) * 100;
-          onProgress?.(percentComplete);
-        }
-      });
-
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          resolve(JSON.parse(xhr.responseText));
-        } else {
-          reject(new Error('Upload failed'));
-        }
-      });
-
-      xhr.addEventListener('error', () => reject(new Error('Upload failed')));
-
-      // In a real implementation, this would upload to your server
-      // For now, we'll simulate a successful upload
-      setTimeout(() => {
-        resolve({
-          id: Date.now().toString(),
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: URL.createObjectURL(file)
-        });
-      }, 2000);
-    });
-  }
-}
 
 function MessagingPage() {
   const { user, logout } = useAuth();
@@ -1349,211 +925,6 @@ function MessagingPage() {
   // Check if back navigation is available
   const canGoBack = window.history.length > 1;
 
-  // User avatar component
-  const UserAvatar = ({ user, size = 32, showStatus = false }) => {
-    const initials = user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase() : '?';
-    const isOnline = onlineUsers.get(user?.id) === 'online';
-
-    return (
-      <div className="relative">
-        <div
-          className="rounded-full flex items-center justify-center font-semibold text-white"
-          style={{
-            width: size,
-            height: size,
-            background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
-            fontSize: size * 0.4
-          }}
-        >
-          {initials}
-        </div>
-        {showStatus && (
-          <div
-            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 ${
-              isOnline ? 'bg-green-500' : 'bg-gray-400'
-            }`}
-            style={{ borderColor: theme.colors.surface }}
-          />
-        )}
-      </div>
-    );
-  };
-
-  // Message component
-  const MessageItem = ({ message }) => {
-    const isFromCurrentUser = message.is_from_current_user || message.sender_id === user.id;
-    const decryptedContent = decryptedMessages.get(message.id) || 'Decrypting...';
-    const reactions = messageReactions.get(message.id) || [];
-    const [showReactionPicker, setShowReactionPicker] = useState(false);
-
-    const handleAddReaction = async (emoji) => {
-      try {
-        const result = await authService.addMessageReaction(message.id, emoji);
-        if (result.success) {
-          // Update local state immediately for better UX
-          const currentReactions = messageReactions.get(message.id) || [];
-          const existingReaction = currentReactions.find(r => r.emoji === emoji);
-
-          if (existingReaction) {
-            existingReaction.count += 1;
-            if (!existingReaction.users.some(u => u.id === user.id)) {
-              existingReaction.users.push({
-                id: user.id,
-                name: `${user.first_name} ${user.last_name}`
-              });
-            }
-          } else {
-            currentReactions.push({
-              emoji: emoji,
-              count: 1,
-              users: [{
-                id: user.id,
-                name: `${user.first_name} ${user.last_name}`
-              }]
-            });
-          }
-
-          setMessageReactions(prev => new Map(prev.set(message.id, currentReactions)));
-        }
-      } catch (error) {
-        console.error('Failed to add reaction:', error);
-      }
-      setShowReactionPicker(false);
-    };
-
-    const handleRemoveReaction = async (emoji) => {
-      try {
-        const result = await authService.removeMessageReaction(message.id, emoji);
-        if (result.success) {
-          // Update local state immediately for better UX
-          const currentReactions = messageReactions.get(message.id) || [];
-          const existingReaction = currentReactions.find(r => r.emoji === emoji);
-
-          if (existingReaction) {
-            existingReaction.count -= 1;
-            existingReaction.users = existingReaction.users.filter(u => u.id !== user.id);
-            if (existingReaction.count <= 0) {
-              const updatedReactions = currentReactions.filter(r => r.emoji !== emoji);
-              setMessageReactions(prev => new Map(prev.set(message.id, updatedReactions)));
-            } else {
-              setMessageReactions(prev => new Map(prev.set(message.id, currentReactions)));
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to remove reaction:', error);
-      }
-    };
-
-    const handleReply = () => {
-      // Set reply context for the message input
-      setNewMessage(`@${message.sender_name} `);
-      messageInputRef.current?.focus();
-    };
-
-    return (
-      <div id={`message-${message.id}`} className={`flex ${isFromCurrentUser ? 'justify-end' : 'justify-start'} mb-4 group`}>
-        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative ${
-          isFromCurrentUser
-            ? 'bg-blue-500 text-white'
-            : 'bg-gray-200 text-gray-900'
-        }`}>
-          {/* Reply indicator */}
-          {message.reply_to_message && (
-            <div className={`mb-2 p-2 rounded text-xs ${
-              isFromCurrentUser ? 'bg-blue-600' : 'bg-gray-300'
-            }`}>
-              <div className="font-medium">{message.reply_to_message.sender_name}</div>
-              <div className="truncate">{message.reply_to_message.content || '[Encrypted]'}</div>
-            </div>
-          )}
-
-          {/* Forwarded indicator */}
-          {message.forwarded_from_message && (
-            <div className={`mb-1 text-xs opacity-70 ${
-              isFromCurrentUser ? 'text-blue-200' : 'text-gray-600'
-            }`}>
-              Forwarded from {message.forwarded_from_message.sender_name}
-            </div>
-          )}
-
-          {!isFromCurrentUser && (
-            <div className="flex items-center mb-1">
-              <UserAvatar user={message.sender} size={20} />
-              <span className="ml-2 text-xs font-medium">{message.sender_name}</span>
-            </div>
-          )}
-          <p className="text-sm">{decryptedContent}</p>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-xs opacity-70">
-              {new Date(message.timestamp).toLocaleTimeString()}
-            </span>
-            {isFromCurrentUser && (
-              <CheckCheck className="w-4 h-4 opacity-70" />
-            )}
-          </div>
-
-          {/* Reactions */}
-          {reactions.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {reactions.map((reaction, index) => {
-                const hasUserReacted = reaction.users.some(u => u.id === user.id);
-                return (
-                  <button
-                    key={index}
-                    onClick={() => hasUserReacted ? handleRemoveReaction(reaction.emoji) : handleAddReaction(reaction.emoji)}
-                    className={`text-xs rounded px-2 py-1 transition-colors ${
-                      hasUserReacted
-                        ? (isFromCurrentUser ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800')
-                        : (isFromCurrentUser ? 'bg-blue-600 bg-opacity-50 text-blue-200' : 'bg-white text-gray-700')
-                    }`}
-                    title={`${reaction.users.map(u => u.name).join(', ')} reacted with ${reaction.emoji}`}
-                  >
-                    {reaction.emoji} {reaction.count}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Message actions (visible on hover) */}
-          <div className={`absolute ${isFromCurrentUser ? '-left-12' : '-right-12'} top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1`}>
-            <button
-              onClick={() => setShowReactionPicker(!showReactionPicker)}
-              className="p-1 rounded bg-gray-600 text-white hover:bg-gray-700 transition-colors"
-              title="Add reaction"
-            >
-              <Smile className="w-3 h-3" />
-            </button>
-            <button
-              onClick={handleReply}
-              className="p-1 rounded bg-gray-600 text-white hover:bg-gray-700 transition-colors"
-              title="Reply"
-            >
-              <MessageCircle className="w-3 h-3" />
-            </button>
-          </div>
-
-          {/* Reaction picker */}
-          {showReactionPicker && (
-            <div className={`absolute ${isFromCurrentUser ? '-left-32' : '-right-32'} bottom-0 mb-2 p-2 bg-white border rounded shadow-lg z-10`}>
-              <div className="flex gap-1">
-                {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleAddReaction(emoji)}
-                    className="text-lg hover:bg-gray-100 p-1 rounded transition-colors"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   if (!hasMessagingAccess()) {
     return (
@@ -1696,7 +1067,9 @@ function MessagingPage() {
                   <h2 className="text-lg font-medium">{selectedThread.subject}</h2>
                   <div className="flex -space-x-2">
                     {selectedThread.participants?.slice(0, 3).map(participant => (
-                      <UserAvatar key={participant.id} user={participant} size={24} showStatus />
+                      <Suspense key={participant.id} fallback={<div className="w-6 h-6 bg-gray-300 rounded-full animate-pulse" />}>
+                        <UserAvatar user={participant} size={24} showStatus onlineUsers={onlineUsers} theme={theme} />
+                      </Suspense>
                     ))}
                     {selectedThread.participants?.length > 3 && (
                       <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs">
@@ -1729,7 +1102,17 @@ function MessagingPage() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4" {...getRootProps()}>
                 {messages.map(message => (
-                  <MessageItem key={message.id} message={message} />
+                  <Suspense key={message.id} fallback={<div className="animate-pulse bg-gray-200 rounded-lg p-4 mb-4">Loading message...</div>}>
+                    <MessageItem
+                      message={message}
+                      user={user}
+                      decryptedMessages={decryptedMessages}
+                      messageReactions={messageReactions}
+                      setMessageReactions={setMessageReactions}
+                      authService={authService}
+                      theme={theme}
+                    />
+                  </Suspense>
                 ))}
                 <div ref={messagesEndRef} />
               </div>
@@ -1937,244 +1320,64 @@ function MessagingPage() {
 
       {/* New Thread Modal */}
       {showNewThread && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-bold mb-4">Create New Thread</h3>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Subject</label>
-              <input
-                type="text"
-                value={newThreadData.subject}
-                onChange={(e) => setNewThreadData(prev => ({ ...prev, subject: e.target.value }))}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter thread subject"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Participants</label>
-              <div className="max-h-40 overflow-y-auto border rounded p-2">
-                {staffUsers.filter(u => u.id !== user.id).map(staff => (
-                  <label key={staff.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newThreadData.participants.includes(staff.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setNewThreadData(prev => ({
-                            ...prev,
-                            participants: [...prev.participants, staff.id]
-                          }));
-                        } else {
-                          setNewThreadData(prev => ({
-                            ...prev,
-                            participants: prev.participants.filter(id => id !== staff.id)
-                          }));
-                        }
-                      }}
-                    />
-                    <UserAvatar user={staff} size={24} />
-                    <span>{staff.first_name} {staff.last_name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Initial Message (Optional)</label>
-              <textarea
-                value={newThreadData.initial_message}
-                onChange={(e) => setNewThreadData(prev => ({ ...prev, initial_message: e.target.value }))}
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Start the conversation..."
-              />
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => {
-                  setShowNewThread(false);
-                  setNewThreadData({ participants: [], subject: '', initial_message: '' });
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateThread}
-                disabled={!newThreadData.participants.length || !newThreadData.subject.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                Create Thread
-              </button>
-            </div>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <NewThreadModal
+            showNewThread={showNewThread}
+            setShowNewThread={setShowNewThread}
+            newThreadData={newThreadData}
+            setNewThreadData={setNewThreadData}
+            staffUsers={staffUsers}
+            user={user}
+            handleCreateThread={handleCreateThread}
+            theme={theme}
+          />
+        </Suspense>
       )}
 
       {/* Search Modal */}
       {showSearch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-96 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Search Messages</h3>
-              <button
-                onClick={() => setShowSearch(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-2 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Search messages..."
-              autoFocus
-            />
-
-            <div className="flex-1 overflow-y-auto">
-              {searchResults.map(message => (
-                <div
-                  key={message.id}
-                  className="p-3 border-b hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    // Scroll to message
-                    const messageElement = document.getElementById(`message-${message.id}`);
-                    messageElement?.scrollIntoView({ behavior: 'smooth' });
-                    setShowSearch(false);
-                  }}
-                >
-                  <div className="flex items-center space-x-2 mb-1">
-                    <UserAvatar user={message.sender} size={20} />
-                    <span className="font-medium">{message.sender_name}</span>
-                    <span className="text-sm text-gray-500">
-                      {new Date(message.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    {decryptedMessages.get(message.id) || 'Decrypting...'}
-                  </p>
-                </div>
-              ))}
-              {searchQuery && searchResults.length === 0 && (
-                <p className="text-center text-gray-500 py-8">No messages found</p>
-              )}
-            </div>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <SearchModal
+            showSearch={showSearch}
+            setShowSearch={setShowSearch}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            decryptedMessages={decryptedMessages}
+            handleSearch={handleSearch}
+          />
+        </Suspense>
       )}
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Settings</h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Theme</label>
-                <select
-                  value={currentTheme}
-                  onChange={(e) => setCurrentTheme(e.target.value)}
-                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {Object.entries(themes).map(([key, theme]) => (
-                    <option key={key} value={key}>{theme.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={notificationsEnabled}
-                    onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                  />
-                  <span className="text-sm">Enable notifications</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Keyboard Shortcuts</label>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p><kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Alt+←</kbd> Go back</p>
-                  <p><kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl+K</kbd> Search messages</p>
-                  <p><kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl+N</kbd> New thread</p>
-                  <p><kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl+/</kbd> Focus message input</p>
-                  <p><kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Esc</kbd> Close modals</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <SettingsModal
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            currentTheme={currentTheme}
+            setCurrentTheme={setCurrentTheme}
+            notificationsEnabled={notificationsEnabled}
+            setNotificationsEnabled={setNotificationsEnabled}
+            themes={themes}
+          />
+        </Suspense>
       )}
 
       {/* Call Modal */}
       {showCallModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4 max-h-96 overflow-y-auto">
-            <div className="text-center mb-4">
-              <div className="text-6xl mb-4">
-                {callType === 'video' ? '📹' : '🎤'}
-              </div>
-              <h3 className="text-lg font-bold mb-2">Secure {callType === 'video' ? 'Video' : 'Voice'} Call</h3>
-              <p className="text-gray-600 mb-4">
-                Select participants and start the call.
-              </p>
-            </div>
-            <div className="mb-4">
-              <h4 className="font-medium mb-2">Participants:</h4>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {selectedThread?.participants?.filter(p => p.id !== user.id).map(participant => (
-                  <label key={participant.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedCallParticipants.some(p => p.id === participant.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCallParticipants(prev => [...prev, participant]);
-                        } else {
-                          setSelectedCallParticipants(prev => prev.filter(p => p.id !== participant.id));
-                        }
-                      }}
-                    />
-                    <UserAvatar user={participant} size={24} />
-                    <span>{participant.first_name} {participant.last_name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={startCall}
-                disabled={selectedCallParticipants.length === 0}
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                Start Call ({selectedCallParticipants.length} participants)
-              </button>
-              <button
-                onClick={() => setShowCallModal(false)}
-                className="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <CallModal
+            showCallModal={showCallModal}
+            setShowCallModal={setShowCallModal}
+            callType={callType}
+            selectedCallParticipants={selectedCallParticipants}
+            setSelectedCallParticipants={setSelectedCallParticipants}
+            selectedThread={selectedThread}
+            user={user}
+            startCall={startCall}
+          />
+        </Suspense>
       )}
 
       {/* Error Display */}
