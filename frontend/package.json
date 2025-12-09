@@ -9,8 +9,8 @@
     "analyze": "npx vite-bundle-visualizer dist",
     "test": "npx vitest",
     "precommit": "npm run api:sync && git diff --exit-code src/api",
-    "prebuild": "rm -rf dist && mkdir -p dist/assets",
-    "postbuild": "echo 'Build completed with local assets only'"
+    "prebuild": "rimraf dist && mkdirp dist/assets",
+    "postbuild": "echo Build completed with local assets only"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -44,7 +44,9 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "jsdom": "^24.1.1",
+    "mkdirp": "^3.0.1",
     "openapi-typescript-codegen": "^0.29.0",
+    "rimraf": "^6.1.2",
     "vite-bundle-visualizer": "^1.2.1",
     "vitest": "^4.0.12"
   }

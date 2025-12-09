@@ -53,13 +53,13 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
                 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
             })
 
-            # CSP for production - Minimal & Secure (No external CDNs)
+            # CSP for production - Secure with trusted CDNs
             self.security_headers.update({
                 'Content-Security-Policy': (
                     "default-src 'self'; "
-                    "script-src 'self' 'wasm-unsafe-eval'; "
-                    "style-src 'self'; "
-                    "font-src 'self' data:; "
+                    "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
+                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+                    "font-src 'self' data: https://cdnjs.cloudflare.com; "
                     "img-src 'self' data: https:; "
                     "connect-src 'self' https://coastal-backend.onrender.com https://coastal-frontend.onrender.com; "
                     "frame-src 'none'; "
