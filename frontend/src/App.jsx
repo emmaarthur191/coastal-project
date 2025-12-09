@@ -5,31 +5,32 @@ import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import './App.css'
 
-// Import pages
-import Dashboard from './pages/Dashboard'
+// Import pages (keep Login eager-loaded as it's the entry point)
 import Login from './pages/Login'
-import Accounts from './pages/Accounts'
-import Transactions from './pages/Transactions'
-import Transfer from './pages/Transfer'
-import MemberDashboard from './pages/MemberDashboard'
-import Membership from './pages/Membership'
-import OperationsManagerDashboard from './pages/OperationsManagerDashboard'
-import CashierDashboard from './pages/CashierDashboard'
-import ManagerDashboard from './pages/ManagerDashboard'
-import MobileBankerDashboard from './pages/MobileBankerDashboard'
-import MessagingPage from './pages/MessagingPage'
-import Products from './pages/Products'
-import Services from './pages/Services'
-import Reports from './pages/Reports'
-import Settings from './pages/Settings'
 
-// Lazy loaded pages
+// Lazy loaded pages (all other pages for code-splitting)
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Accounts = lazy(() => import('./pages/Accounts'));
+const Transactions = lazy(() => import('./pages/Transactions'));
+const Transfer = lazy(() => import('./pages/Transfer'));
+const MemberDashboard = lazy(() => import('./pages/MemberDashboard'));
+const Membership = lazy(() => import('./pages/Membership'));
+const OperationsManagerDashboard = lazy(() => import('./pages/OperationsManagerDashboard'));
+const CashierDashboard = lazy(() => import('./pages/CashierDashboard'));
+const ManagerDashboard = lazy(() => import('./pages/ManagerDashboard'));
+const MobileBankerDashboard = lazy(() => import('./pages/MobileBankerDashboard'));
+const MessagingPage = lazy(() => import('./pages/MessagingPage'));
+const Products = lazy(() => import('./pages/Products'));
+const Services = lazy(() => import('./pages/Services'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
 const FraudAlerts = lazy(() => import('./pages/FraudAlerts'));
 const FraudCases = lazy(() => import('./pages/FraudCases'));
 const FraudRules = lazy(() => import('./pages/FraudRules'));
 
 // Import components
 import ProtectedMemberRoute from './components/ProtectedMemberRoute'
+import PageLoading from './components/PageLoading'
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -101,104 +102,135 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={
             <ProtectedRoute>
-              <Dashboard />
+              <Suspense fallback={<PageLoading />}>
+                <Dashboard />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <Dashboard />
+              <Suspense fallback={<PageLoading />}>
+                <Dashboard />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/accounts" element={
             <ProtectedRoute>
-              <Accounts />
+              <Suspense fallback={<PageLoading />}>
+                <Accounts />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/transactions" element={
             <ProtectedRoute>
-              <Transactions />
+              <Suspense fallback={<PageLoading />}>
+                <Transactions />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/transfer" element={
             <ProtectedRoute>
-              <Transfer />
+              <Suspense fallback={<PageLoading />}>
+                <Transfer />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/member-dashboard" element={
             <ProtectedMemberRoute>
-              <MemberDashboard />
+              <Suspense fallback={<PageLoading />}>
+                <MemberDashboard />
+              </Suspense>
             </ProtectedMemberRoute>
           } />
           <Route path="/membership" element={
             <ProtectedRoute>
-              <Membership />
+              <Suspense fallback={<PageLoading />}>
+                <Membership />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/operations-dashboard" element={
             <ProtectedRoute>
-              <OperationsManagerDashboard />
+              <Suspense fallback={<PageLoading />}>
+                <OperationsManagerDashboard />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/cashier-dashboard" element={
             <ProtectedRoute>
-              <CashierDashboard />
+              <Suspense fallback={<PageLoading />}>
+                <CashierDashboard />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/manager-dashboard" element={
             <ProtectedRoute>
-              <ManagerDashboard />
+              <Suspense fallback={<PageLoading />}>
+                <ManagerDashboard />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/mobile-banker-dashboard" element={
             <ProtectedRoute>
-              <MobileBankerDashboard />
+              <Suspense fallback={<PageLoading />}>
+                <MobileBankerDashboard />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/messaging" element={
             <ProtectedRoute>
-              <MessagingPage />
+              <Suspense fallback={<PageLoading />}>
+                <MessagingPage />
+              </Suspense>
             </ProtectedRoute>
           } />
-          {/* Lazy loaded routes */}
           <Route path="/fraud/alerts" element={
             <ProtectedRoute>
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<PageLoading />}>
                 <FraudAlerts />
               </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/fraud/cases" element={
             <ProtectedRoute>
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<PageLoading />}>
                 <FraudCases />
               </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/fraud/rules" element={
             <ProtectedRoute>
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<PageLoading />}>
                 <FraudRules />
               </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/products" element={
             <ProtectedRoute>
-              <Products />
+              <Suspense fallback={<PageLoading />}>
+                <Products />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/services" element={
             <ProtectedRoute>
-              <Services />
+              <Suspense fallback={<PageLoading />}>
+                <Services />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/reports" element={
             <ProtectedRoute>
-              <Reports />
+              <Suspense fallback={<PageLoading />}>
+                <Reports />
+              </Suspense>
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
             <ProtectedRoute>
-              <Settings />
+              <Suspense fallback={<PageLoading />}>
+                <Settings />
+              </Suspense>
             </ProtectedRoute>
           } />
         </Routes>

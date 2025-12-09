@@ -6,6 +6,7 @@
     "dev": "npm run api:sync && npx vite",
     "build": "npx vite build",
     "preview": "npx vite preview",
+    "analyze": "npx vite-bundle-visualizer dist",
     "test": "npx vitest",
     "precommit": "npm run api:sync && git diff --exit-code src/api"
   },
@@ -42,6 +43,7 @@
     "@types/react-dom": "^19.2.1",
     "jsdom": "^24.1.1",
     "openapi-typescript-codegen": "^0.29.0",
+    "vite-bundle-visualizer": "^1.2.1",
     "vitest": "^4.0.12"
   }
 }

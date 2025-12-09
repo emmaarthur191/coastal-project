@@ -261,6 +261,18 @@ export class ApiService {
     /**
      * Handles system notifications for users.
      * Endpoint: /api/banking/notifications/
+     * @returns Notification
+     * @throws ApiError
+     */
+    public static apiBankingNotificationsList(): CancelablePromise<Array<Notification>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/notifications/',
+        });
+    }
+    /**
+     * Handles system notifications for users.
+     * Endpoint: /api/banking/notifications/
      * @param requestBody
      * @returns Notification
      * @throws ApiError
@@ -276,18 +288,6 @@ export class ApiService {
         });
     }
     /**
-     * Handles system notifications for users.
-     * Endpoint: /api/banking/notifications/
-     * @returns Notification
-     * @throws ApiError
-     */
-    public static apiBankingNotificationsList(): CancelablePromise<Array<Notification>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/notifications/',
-        });
-    }
-    /**
      * Get count of unread notifications.
      * @returns Notification
      * @throws ApiError
@@ -296,28 +296,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/banking/notifications/unread_count/',
-        });
-    }
-    /**
-     * Handles system notifications for users.
-     * Endpoint: /api/banking/notifications/
-     * @param id
-     * @param requestBody
-     * @returns Notification
-     * @throws ApiError
-     */
-    public static apiBankingNotificationsPartialUpdate(
-        id: string,
-        requestBody?: PatchedNotificationRequest,
-    ): CancelablePromise<Notification> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/notifications/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -379,6 +357,28 @@ export class ApiService {
         });
     }
     /**
+     * Handles system notifications for users.
+     * Endpoint: /api/banking/notifications/
+     * @param id
+     * @param requestBody
+     * @returns Notification
+     * @throws ApiError
+     */
+    public static apiBankingNotificationsPartialUpdate(
+        id: string,
+        requestBody?: PatchedNotificationRequest,
+    ): CancelablePromise<Notification> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/notifications/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Archive a notification.
      * @param id
      * @param requestBody
@@ -423,6 +423,18 @@ export class ApiService {
     /**
      * Handles cash advance requests and processing with approval workflows.
      * Endpoint: /api/banking/cash-advances/
+     * @returns CashAdvance
+     * @throws ApiError
+     */
+    public static apiBankingCashAdvancesList(): CancelablePromise<Array<CashAdvance>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/cash-advances/',
+        });
+    }
+    /**
+     * Handles cash advance requests and processing with approval workflows.
+     * Endpoint: /api/banking/cash-advances/
      * @param requestBody
      * @returns CashAdvance
      * @throws ApiError
@@ -438,18 +450,6 @@ export class ApiService {
         });
     }
     /**
-     * Handles cash advance requests and processing with approval workflows.
-     * Endpoint: /api/banking/cash-advances/
-     * @returns CashAdvance
-     * @throws ApiError
-     */
-    public static apiBankingCashAdvancesList(): CancelablePromise<Array<CashAdvance>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/cash-advances/',
-        });
-    }
-    /**
      * Request a new cash advance.
      * @param requestBody
      * @returns CashAdvance
@@ -461,28 +461,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/cash-advances/request_advance/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles cash advance requests and processing with approval workflows.
-     * Endpoint: /api/banking/cash-advances/
-     * @param id
-     * @param requestBody
-     * @returns CashAdvance
-     * @throws ApiError
-     */
-    public static apiBankingCashAdvancesPartialUpdate(
-        id: string,
-        requestBody?: PatchedCashAdvanceRequest,
-    ): CancelablePromise<CashAdvance> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/cash-advances/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -543,6 +521,28 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * Handles cash advance requests and processing with approval workflows.
+     * Endpoint: /api/banking/cash-advances/
+     * @param id
+     * @param requestBody
+     * @returns CashAdvance
+     * @throws ApiError
+     */
+    public static apiBankingCashAdvancesPartialUpdate(
+        id: string,
+        requestBody?: PatchedCashAdvanceRequest,
+    ): CancelablePromise<CashAdvance> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/cash-advances/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -632,6 +632,18 @@ export class ApiService {
     /**
      * Handles refund requests and processing with validation and approval.
      * Endpoint: /api/banking/refunds/
+     * @returns Refund
+     * @throws ApiError
+     */
+    public static apiBankingRefundsList(): CancelablePromise<Array<Refund>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/refunds/',
+        });
+    }
+    /**
+     * Handles refund requests and processing with validation and approval.
+     * Endpoint: /api/banking/refunds/
      * @param requestBody
      * @returns Refund
      * @throws ApiError
@@ -647,18 +659,6 @@ export class ApiService {
         });
     }
     /**
-     * Handles refund requests and processing with validation and approval.
-     * Endpoint: /api/banking/refunds/
-     * @returns Refund
-     * @throws ApiError
-     */
-    public static apiBankingRefundsList(): CancelablePromise<Array<Refund>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/refunds/',
-        });
-    }
-    /**
      * Request a new refund.
      * @param requestBody
      * @returns Refund
@@ -670,28 +670,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/refunds/request_refund/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles refund requests and processing with validation and approval.
-     * Endpoint: /api/banking/refunds/
-     * @param id
-     * @param requestBody
-     * @returns Refund
-     * @throws ApiError
-     */
-    public static apiBankingRefundsPartialUpdate(
-        id: string,
-        requestBody?: PatchedRefundRequest,
-    ): CancelablePromise<Refund> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/refunds/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -755,18 +733,23 @@ export class ApiService {
         });
     }
     /**
-     * Handles customer complaints logging and management with escalation procedures.
-     * Endpoint: /api/banking/complaints/
+     * Handles refund requests and processing with validation and approval.
+     * Endpoint: /api/banking/refunds/
+     * @param id
      * @param requestBody
-     * @returns Complaint
+     * @returns Refund
      * @throws ApiError
      */
-    public static apiBankingComplaintsCreate(
-        requestBody: ComplaintRequest,
-    ): CancelablePromise<Complaint> {
+    public static apiBankingRefundsPartialUpdate(
+        id: string,
+        requestBody?: PatchedRefundRequest,
+    ): CancelablePromise<Refund> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/complaints/',
+            method: 'PATCH',
+            url: '/api/banking/refunds/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -784,6 +767,23 @@ export class ApiService {
         });
     }
     /**
+     * Handles customer complaints logging and management with escalation procedures.
+     * Endpoint: /api/banking/complaints/
+     * @param requestBody
+     * @returns Complaint
+     * @throws ApiError
+     */
+    public static apiBankingComplaintsCreate(
+        requestBody: ComplaintRequest,
+    ): CancelablePromise<Complaint> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/complaints/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Submit a new customer complaint.
      * @param requestBody
      * @returns Complaint
@@ -795,28 +795,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/complaints/submit_complaint/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles customer complaints logging and management with escalation procedures.
-     * Endpoint: /api/banking/complaints/
-     * @param id
-     * @param requestBody
-     * @returns Complaint
-     * @throws ApiError
-     */
-    public static apiBankingComplaintsPartialUpdate(
-        id: string,
-        requestBody?: PatchedComplaintRequest,
-    ): CancelablePromise<Complaint> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/complaints/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -877,6 +855,28 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * Handles customer complaints logging and management with escalation procedures.
+     * Endpoint: /api/banking/complaints/
+     * @param id
+     * @param requestBody
+     * @returns Complaint
+     * @throws ApiError
+     */
+    public static apiBankingComplaintsPartialUpdate(
+        id: string,
+        requestBody?: PatchedComplaintRequest,
+    ): CancelablePromise<Complaint> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/complaints/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -987,6 +987,18 @@ export class ApiService {
     /**
      * Handles loan management and approval workflows.
      * Endpoint: /api/banking/loans/
+     * @returns Loan
+     * @throws ApiError
+     */
+    public static apiBankingLoansList(): CancelablePromise<Array<Loan>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/loans/',
+        });
+    }
+    /**
+     * Handles loan management and approval workflows.
+     * Endpoint: /api/banking/loans/
      * @param requestBody
      * @returns Loan
      * @throws ApiError
@@ -1002,18 +1014,6 @@ export class ApiService {
         });
     }
     /**
-     * Handles loan management and approval workflows.
-     * Endpoint: /api/banking/loans/
-     * @returns Loan
-     * @throws ApiError
-     */
-    public static apiBankingLoansList(): CancelablePromise<Array<Loan>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/loans/',
-        });
-    }
-    /**
      * Get pending loans for approval.
      * @returns Loan
      * @throws ApiError
@@ -1022,28 +1022,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/banking/loans/pending/',
-        });
-    }
-    /**
-     * Handles loan management and approval workflows.
-     * Endpoint: /api/banking/loans/
-     * @param id
-     * @param requestBody
-     * @returns Loan
-     * @throws ApiError
-     */
-    public static apiBankingLoansPartialUpdate(
-        id: string,
-        requestBody?: PatchedLoanRequest,
-    ): CancelablePromise<Loan> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/loans/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -1102,6 +1080,28 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * Handles loan management and approval workflows.
+     * Endpoint: /api/banking/loans/
+     * @param id
+     * @param requestBody
+     * @returns Loan
+     * @throws ApiError
+     */
+    public static apiBankingLoansPartialUpdate(
+        id: string,
+        requestBody?: PatchedLoanRequest,
+    ): CancelablePromise<Loan> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/loans/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -1189,6 +1189,18 @@ export class ApiService {
         });
     }
     /**
+     * Handles user encryption keys for end-to-end messaging.
+     * Endpoint: /api/banking/encryption-keys/
+     * @returns UserEncryptionKey
+     * @throws ApiError
+     */
+    public static apiBankingEncryptionKeysList(): CancelablePromise<Array<UserEncryptionKey>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/encryption-keys/',
+        });
+    }
+    /**
      * Create or update encryption keys for the current user.
      * @param requestBody
      * @returns UserEncryptionKey
@@ -1205,18 +1217,6 @@ export class ApiService {
         });
     }
     /**
-     * Handles user encryption keys for end-to-end messaging.
-     * Endpoint: /api/banking/encryption-keys/
-     * @returns UserEncryptionKey
-     * @throws ApiError
-     */
-    public static apiBankingEncryptionKeysList(): CancelablePromise<Array<UserEncryptionKey>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/encryption-keys/',
-        });
-    }
-    /**
      * Generate encryption keys for the current user.
      * @param requestBody
      * @returns UserEncryptionKey
@@ -1228,28 +1228,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/encryption-keys/generate_keys/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles user encryption keys for end-to-end messaging.
-     * Endpoint: /api/banking/encryption-keys/
-     * @param id
-     * @param requestBody
-     * @returns UserEncryptionKey
-     * @throws ApiError
-     */
-    public static apiBankingEncryptionKeysPartialUpdate(
-        id: string,
-        requestBody?: PatchedUserEncryptionKeyRequest,
-    ): CancelablePromise<UserEncryptionKey> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/encryption-keys/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -1312,17 +1290,23 @@ export class ApiService {
         });
     }
     /**
-     * Create a new message thread using MessageThreadCreateSerializer.
+     * Handles user encryption keys for end-to-end messaging.
+     * Endpoint: /api/banking/encryption-keys/
+     * @param id
      * @param requestBody
-     * @returns BankingMessageThread
+     * @returns UserEncryptionKey
      * @throws ApiError
      */
-    public static apiBankingMessageThreadsCreate(
-        requestBody?: BankingMessageThreadRequest,
-    ): CancelablePromise<BankingMessageThread> {
+    public static apiBankingEncryptionKeysPartialUpdate(
+        id: string,
+        requestBody?: PatchedUserEncryptionKeyRequest,
+    ): CancelablePromise<UserEncryptionKey> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/message-threads/',
+            method: 'PATCH',
+            url: '/api/banking/encryption-keys/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -1340,6 +1324,22 @@ export class ApiService {
         });
     }
     /**
+     * Create a new message thread using MessageThreadCreateSerializer.
+     * @param requestBody
+     * @returns BankingMessageThread
+     * @throws ApiError
+     */
+    public static apiBankingMessageThreadsCreate(
+        requestBody?: BankingMessageThreadRequest,
+    ): CancelablePromise<BankingMessageThread> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/message-threads/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Create a new message thread.
      * @param requestBody
      * @returns BankingMessageThread
@@ -1351,28 +1351,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/message-threads/create_thread/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles message threads for staff communication.
-     * Endpoint: /api/banking/message-threads/
-     * @param id
-     * @param requestBody
-     * @returns BankingMessageThread
-     * @throws ApiError
-     */
-    public static apiBankingMessageThreadsPartialUpdate(
-        id: string,
-        requestBody?: PatchedBankingMessageThreadRequest,
-    ): CancelablePromise<BankingMessageThread> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/message-threads/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -1436,18 +1414,23 @@ export class ApiService {
         });
     }
     /**
-     * Handles messages within threads.
-     * Endpoint: /api/banking/messages/
+     * Handles message threads for staff communication.
+     * Endpoint: /api/banking/message-threads/
+     * @param id
      * @param requestBody
-     * @returns BankingMessage
+     * @returns BankingMessageThread
      * @throws ApiError
      */
-    public static apiBankingMessagesCreate(
-        requestBody: BankingMessageRequest,
-    ): CancelablePromise<BankingMessage> {
+    public static apiBankingMessageThreadsPartialUpdate(
+        id: string,
+        requestBody?: PatchedBankingMessageThreadRequest,
+    ): CancelablePromise<BankingMessageThread> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/messages/',
+            method: 'PATCH',
+            url: '/api/banking/message-threads/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -1465,6 +1448,23 @@ export class ApiService {
         });
     }
     /**
+     * Handles messages within threads.
+     * Endpoint: /api/banking/messages/
+     * @param requestBody
+     * @returns BankingMessage
+     * @throws ApiError
+     */
+    public static apiBankingMessagesCreate(
+        requestBody: BankingMessageRequest,
+    ): CancelablePromise<BankingMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/messages/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Send a new message to a thread.
      * @param requestBody
      * @returns BankingMessage
@@ -1476,28 +1476,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/messages/send_message/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles messages within threads.
-     * Endpoint: /api/banking/messages/
-     * @param id
-     * @param requestBody
-     * @returns BankingMessage
-     * @throws ApiError
-     */
-    public static apiBankingMessagesPartialUpdate(
-        id: string,
-        requestBody?: PatchedBankingMessageRequest,
-    ): CancelablePromise<BankingMessage> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/messages/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -1561,6 +1539,28 @@ export class ApiService {
         });
     }
     /**
+     * Handles messages within threads.
+     * Endpoint: /api/banking/messages/
+     * @param id
+     * @param requestBody
+     * @returns BankingMessage
+     * @throws ApiError
+     */
+    public static apiBankingMessagesPartialUpdate(
+        id: string,
+        requestBody?: PatchedBankingMessageRequest,
+    ): CancelablePromise<BankingMessage> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/messages/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Add a reaction to a message.
      * @param id
      * @param requestBody
@@ -1603,132 +1603,15 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns Device
+     * Handles client registration applications with OTP verification.
+     * Endpoint: /api/banking/client-registrations/
+     * @returns ClientRegistration
      * @throws ApiError
      */
-    public static apiBankingDevicesCreate(
-        requestBody: DeviceRequest,
-    ): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/devices/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiBankingDevicesList(): CancelablePromise<Array<Device>> {
+    public static apiBankingClientRegistrationsList(): CancelablePromise<Array<ClientRegistration>> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/banking/devices/',
-        });
-    }
-    /**
-     * Get synchronization data for the current device
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiBankingDevicesSyncDataRetrieve(): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/devices/sync_data/',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this device.
-     * @param requestBody
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiBankingDevicesPartialUpdate(
-        id: string,
-        requestBody?: PatchedDeviceRequest,
-    ): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/devices/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this device.
-     * @param requestBody
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiBankingDevicesUpdate(
-        id: string,
-        requestBody: DeviceRequest,
-    ): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/banking/devices/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this device.
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiBankingDevicesRetrieve(
-        id: string,
-    ): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/devices/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * @param id A UUID string identifying this device.
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiBankingDevicesDestroy(
-        id: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/banking/devices/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * Update device's last seen timestamp
-     * @param id A UUID string identifying this device.
-     * @param requestBody
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiBankingDevicesUpdateLastSeenCreate(
-        id: string,
-        requestBody: DeviceRequest,
-    ): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/devices/{id}/update_last_seen/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
+            url: '/api/banking/client-registrations/',
         });
     }
     /**
@@ -1746,18 +1629,6 @@ export class ApiService {
             url: '/api/banking/client-registrations/',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles client registration applications with OTP verification.
-     * Endpoint: /api/banking/client-registrations/
-     * @returns ClientRegistration
-     * @throws ApiError
-     */
-    public static apiBankingClientRegistrationsList(): CancelablePromise<Array<ClientRegistration>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/client-registrations/',
         });
     }
     /**
@@ -1804,28 +1675,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/client-registrations/verify_otp_public/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles client registration applications with OTP verification.
-     * Endpoint: /api/banking/client-registrations/
-     * @param id
-     * @param requestBody
-     * @returns ClientRegistration
-     * @throws ApiError
-     */
-    public static apiBankingClientRegistrationsPartialUpdate(
-        id: string,
-        requestBody?: PatchedClientRegistrationRequest,
-    ): CancelablePromise<ClientRegistration> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/banking/client-registrations/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -1886,6 +1735,28 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * Handles client registration applications with OTP verification.
+     * Endpoint: /api/banking/client-registrations/
+     * @param id
+     * @param requestBody
+     * @returns ClientRegistration
+     * @throws ApiError
+     */
+    public static apiBankingClientRegistrationsPartialUpdate(
+        id: string,
+        requestBody?: PatchedClientRegistrationRequest,
+    ): CancelablePromise<ClientRegistration> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/client-registrations/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -2201,6 +2072,18 @@ export class ApiService {
         });
     }
     /**
+     * Member/Staff: View Transaction History (GET /api/v1/transactions/).
+     * Supports advanced filtering, sorting, search, and pagination capabilities.
+     * @returns TransactionList
+     * @throws ApiError
+     */
+    public static apiTransactionsTransactionsList(): CancelablePromise<Array<TransactionList>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/transactions/transactions/',
+        });
+    }
+    /**
      * Handles transaction operations including history, processing, transfers, and account summaries.
      * Uses TransactionListSerializer for frontend compatibility in list operations.
      * Endpoint: /api/v1/transactions/process/
@@ -2216,18 +2099,6 @@ export class ApiService {
             url: '/api/transactions/transactions/',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * Member/Staff: View Transaction History (GET /api/v1/transactions/).
-     * Supports advanced filtering, sorting, search, and pagination capabilities.
-     * @returns TransactionList
-     * @throws ApiError
-     */
-    public static apiTransactionsTransactionsList(): CancelablePromise<Array<TransactionList>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/transactions/transactions/',
         });
     }
     /**
@@ -2343,29 +2214,6 @@ export class ApiService {
      * @returns Transaction
      * @throws ApiError
      */
-    public static apiTransactionsTransactionsPartialUpdate(
-        id: string,
-        requestBody?: PatchedTransactionRequest,
-    ): CancelablePromise<Transaction> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/transactions/transactions/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles transaction operations including history, processing, transfers, and account summaries.
-     * Uses TransactionListSerializer for frontend compatibility in list operations.
-     * Endpoint: /api/v1/transactions/process/
-     * @param id
-     * @param requestBody
-     * @returns Transaction
-     * @throws ApiError
-     */
     public static apiTransactionsTransactionsUpdate(
         id: string,
         requestBody: TransactionRequest,
@@ -2416,6 +2264,29 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * Handles transaction operations including history, processing, transfers, and account summaries.
+     * Uses TransactionListSerializer for frontend compatibility in list operations.
+     * Endpoint: /api/v1/transactions/process/
+     * @param id
+     * @param requestBody
+     * @returns Transaction
+     * @throws ApiError
+     */
+    public static apiTransactionsTransactionsPartialUpdate(
+        id: string,
+        requestBody?: PatchedTransactionRequest,
+    ): CancelablePromise<Transaction> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/transactions/transactions/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -2496,6 +2367,18 @@ export class ApiService {
     /**
      * Handles electronic check deposit processing with OCR and image upload.
      * Endpoint: /api/v1/check-deposits/
+     * @returns CheckDeposit
+     * @throws ApiError
+     */
+    public static apiTransactionsCheckDepositsList(): CancelablePromise<Array<CheckDeposit>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/transactions/check-deposits/',
+        });
+    }
+    /**
+     * Handles electronic check deposit processing with OCR and image upload.
+     * Endpoint: /api/v1/check-deposits/
      * @param requestBody
      * @returns CheckDeposit
      * @throws ApiError
@@ -2511,18 +2394,6 @@ export class ApiService {
         });
     }
     /**
-     * Handles electronic check deposit processing with OCR and image upload.
-     * Endpoint: /api/v1/check-deposits/
-     * @returns CheckDeposit
-     * @throws ApiError
-     */
-    public static apiTransactionsCheckDepositsList(): CancelablePromise<Array<CheckDeposit>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/transactions/check-deposits/',
-        });
-    }
-    /**
      * Process a check deposit with image upload and OCR.
      * Requires: member_id, amount, account_type, front_image (required), back_image (optional)
      * @param requestBody
@@ -2535,28 +2406,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/transactions/check-deposits/process_check_deposit/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles electronic check deposit processing with OCR and image upload.
-     * Endpoint: /api/v1/check-deposits/
-     * @param id A UUID string identifying this check deposit.
-     * @param requestBody
-     * @returns CheckDeposit
-     * @throws ApiError
-     */
-    public static apiTransactionsCheckDepositsPartialUpdate(
-        id: string,
-        requestBody?: PatchedCheckDepositRequest,
-    ): CancelablePromise<CheckDeposit> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/transactions/check-deposits/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -2617,6 +2466,28 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * Handles electronic check deposit processing with OCR and image upload.
+     * Endpoint: /api/v1/check-deposits/
+     * @param id A UUID string identifying this check deposit.
+     * @param requestBody
+     * @returns CheckDeposit
+     * @throws ApiError
+     */
+    public static apiTransactionsCheckDepositsPartialUpdate(
+        id: string,
+        requestBody?: PatchedCheckDepositRequest,
+    ): CancelablePromise<CheckDeposit> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/transactions/check-deposits/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -2752,9 +2623,9 @@ export class ApiService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsServiceChargesRetrieve(): CancelablePromise<any> {
+    public static apiOperationsServiceChargesCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
-            method: 'GET',
+            method: 'POST',
             url: '/api/operations/service-charges/',
         });
     }
@@ -2764,9 +2635,9 @@ export class ApiService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsServiceChargesCreate(): CancelablePromise<any> {
+    public static apiOperationsServiceChargesRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
-            method: 'POST',
+            method: 'GET',
             url: '/api/operations/service-charges/',
         });
     }
@@ -2838,22 +2709,6 @@ export class ApiService {
     }
     /**
      * Handles workflow management for operations managers.
-     * @param requestBody
-     * @returns Workflow
-     * @throws ApiError
-     */
-    public static apiOperationsWorkflowsCreate(
-        requestBody: WorkflowRequest,
-    ): CancelablePromise<Workflow> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/workflows/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles workflow management for operations managers.
      * @returns Workflow
      * @throws ApiError
      */
@@ -2865,21 +2720,16 @@ export class ApiService {
     }
     /**
      * Handles workflow management for operations managers.
-     * @param id A UUID string identifying this workflow.
      * @param requestBody
      * @returns Workflow
      * @throws ApiError
      */
-    public static apiOperationsWorkflowsPartialUpdate(
-        id: string,
-        requestBody?: PatchedWorkflowRequest,
+    public static apiOperationsWorkflowsCreate(
+        requestBody: WorkflowRequest,
     ): CancelablePromise<Workflow> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/workflows/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/workflows/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -2940,17 +2790,22 @@ export class ApiService {
         });
     }
     /**
-     * Handles workflow step management.
+     * Handles workflow management for operations managers.
+     * @param id A UUID string identifying this workflow.
      * @param requestBody
-     * @returns WorkflowStep
+     * @returns Workflow
      * @throws ApiError
      */
-    public static apiOperationsWorkflowStepsCreate(
-        requestBody: WorkflowStepRequest,
-    ): CancelablePromise<WorkflowStep> {
+    public static apiOperationsWorkflowsPartialUpdate(
+        id: string,
+        requestBody?: PatchedWorkflowRequest,
+    ): CancelablePromise<Workflow> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/workflow-steps/',
+            method: 'PATCH',
+            url: '/api/operations/workflows/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -2968,21 +2823,16 @@ export class ApiService {
     }
     /**
      * Handles workflow step management.
-     * @param id A UUID string identifying this workflow step.
      * @param requestBody
      * @returns WorkflowStep
      * @throws ApiError
      */
-    public static apiOperationsWorkflowStepsPartialUpdate(
-        id: string,
-        requestBody?: PatchedWorkflowStepRequest,
+    public static apiOperationsWorkflowStepsCreate(
+        requestBody: WorkflowStepRequest,
     ): CancelablePromise<WorkflowStep> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/workflow-steps/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/workflow-steps/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3043,17 +2893,22 @@ export class ApiService {
         });
     }
     /**
-     * Handles Client KYC submissions and reviews.
+     * Handles workflow step management.
+     * @param id A UUID string identifying this workflow step.
      * @param requestBody
-     * @returns ClientKYC
+     * @returns WorkflowStep
      * @throws ApiError
      */
-    public static apiOperationsClientKycCreate(
-        requestBody: ClientKYCRequest,
-    ): CancelablePromise<ClientKYC> {
+    public static apiOperationsWorkflowStepsPartialUpdate(
+        id: string,
+        requestBody?: PatchedWorkflowStepRequest,
+    ): CancelablePromise<WorkflowStep> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/client-kyc/',
+            method: 'PATCH',
+            url: '/api/operations/workflow-steps/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3071,21 +2926,16 @@ export class ApiService {
     }
     /**
      * Handles Client KYC submissions and reviews.
-     * @param id
      * @param requestBody
      * @returns ClientKYC
      * @throws ApiError
      */
-    public static apiOperationsClientKycPartialUpdate(
-        id: string,
-        requestBody?: PatchedClientKYCRequest,
+    public static apiOperationsClientKycCreate(
+        requestBody: ClientKYCRequest,
     ): CancelablePromise<ClientKYC> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/client-kyc/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/client-kyc/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3146,6 +2996,27 @@ export class ApiService {
         });
     }
     /**
+     * Handles Client KYC submissions and reviews.
+     * @param id
+     * @param requestBody
+     * @returns ClientKYC
+     * @throws ApiError
+     */
+    public static apiOperationsClientKycPartialUpdate(
+        id: string,
+        requestBody?: PatchedClientKYCRequest,
+    ): CancelablePromise<ClientKYC> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/operations/client-kyc/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Operations Manager: Review and approve/reject KYC application.
      * @param id
      * @param requestBody
@@ -3168,22 +3039,6 @@ export class ApiService {
     }
     /**
      * Handles field collection operations for mobile bankers.
-     * @param requestBody
-     * @returns FieldCollection
-     * @throws ApiError
-     */
-    public static apiOperationsFieldCollectionsCreate(
-        requestBody: FieldCollectionRequest,
-    ): CancelablePromise<FieldCollection> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/field-collections/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles field collection operations for mobile bankers.
      * @returns FieldCollection
      * @throws ApiError
      */
@@ -3195,21 +3050,16 @@ export class ApiService {
     }
     /**
      * Handles field collection operations for mobile bankers.
-     * @param id
      * @param requestBody
      * @returns FieldCollection
      * @throws ApiError
      */
-    public static apiOperationsFieldCollectionsPartialUpdate(
-        id: string,
-        requestBody?: PatchedFieldCollectionRequest,
+    public static apiOperationsFieldCollectionsCreate(
+        requestBody: FieldCollectionRequest,
     ): CancelablePromise<FieldCollection> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/field-collections/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/field-collections/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3270,17 +3120,22 @@ export class ApiService {
         });
     }
     /**
-     * Handles commission tracking and reporting.
+     * Handles field collection operations for mobile bankers.
+     * @param id
      * @param requestBody
-     * @returns Commission
+     * @returns FieldCollection
      * @throws ApiError
      */
-    public static apiOperationsCommissionsCreate(
-        requestBody: CommissionRequest,
-    ): CancelablePromise<Commission> {
+    public static apiOperationsFieldCollectionsPartialUpdate(
+        id: string,
+        requestBody?: PatchedFieldCollectionRequest,
+    ): CancelablePromise<FieldCollection> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/commissions/',
+            method: 'PATCH',
+            url: '/api/operations/field-collections/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3297,6 +3152,22 @@ export class ApiService {
         });
     }
     /**
+     * Handles commission tracking and reporting.
+     * @param requestBody
+     * @returns Commission
+     * @throws ApiError
+     */
+    public static apiOperationsCommissionsCreate(
+        requestBody: CommissionRequest,
+    ): CancelablePromise<Commission> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/operations/commissions/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Get commission summary with daily, weekly, and monthly breakdowns.
      * @returns Commission
      * @throws ApiError
@@ -3305,27 +3176,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/commissions/summary/',
-        });
-    }
-    /**
-     * Handles commission tracking and reporting.
-     * @param id A UUID string identifying this commission.
-     * @param requestBody
-     * @returns Commission
-     * @throws ApiError
-     */
-    public static apiOperationsCommissionsPartialUpdate(
-        id: string,
-        requestBody?: PatchedCommissionRequest,
-    ): CancelablePromise<Commission> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/commissions/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -3384,17 +3234,22 @@ export class ApiService {
         });
     }
     /**
-     * Handles expense tracking and management.
+     * Handles commission tracking and reporting.
+     * @param id A UUID string identifying this commission.
      * @param requestBody
-     * @returns Expense
+     * @returns Commission
      * @throws ApiError
      */
-    public static apiOperationsExpensesCreate(
-        requestBody: ExpenseRequest,
-    ): CancelablePromise<Expense> {
+    public static apiOperationsCommissionsPartialUpdate(
+        id: string,
+        requestBody?: PatchedCommissionRequest,
+    ): CancelablePromise<Commission> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/expenses/',
+            method: 'PATCH',
+            url: '/api/operations/commissions/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3412,21 +3267,16 @@ export class ApiService {
     }
     /**
      * Handles expense tracking and management.
-     * @param id A UUID string identifying this expense.
      * @param requestBody
      * @returns Expense
      * @throws ApiError
      */
-    public static apiOperationsExpensesPartialUpdate(
-        id: string,
-        requestBody?: PatchedExpenseRequest,
+    public static apiOperationsExpensesCreate(
+        requestBody: ExpenseRequest,
     ): CancelablePromise<Expense> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/expenses/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/expenses/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3487,6 +3337,27 @@ export class ApiService {
         });
     }
     /**
+     * Handles expense tracking and management.
+     * @param id A UUID string identifying this expense.
+     * @param requestBody
+     * @returns Expense
+     * @throws ApiError
+     */
+    public static apiOperationsExpensesPartialUpdate(
+        id: string,
+        requestBody?: PatchedExpenseRequest,
+    ): CancelablePromise<Expense> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/operations/expenses/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Approve an expense (Operations Manager only).
      * @param id A UUID string identifying this expense.
      * @param requestBody
@@ -3530,22 +3401,6 @@ export class ApiService {
     }
     /**
      * Handles visit scheduling for mobile bankers.
-     * @param requestBody
-     * @returns VisitSchedule
-     * @throws ApiError
-     */
-    public static apiOperationsVisitSchedulesCreate(
-        requestBody: VisitScheduleRequest,
-    ): CancelablePromise<VisitSchedule> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/visit_schedules/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles visit scheduling for mobile bankers.
      * @returns VisitSchedule
      * @throws ApiError
      */
@@ -3557,21 +3412,16 @@ export class ApiService {
     }
     /**
      * Handles visit scheduling for mobile bankers.
-     * @param id
      * @param requestBody
      * @returns VisitSchedule
      * @throws ApiError
      */
-    public static apiOperationsVisitSchedulesPartialUpdate(
-        id: string,
-        requestBody?: PatchedVisitScheduleRequest,
+    public static apiOperationsVisitSchedulesCreate(
+        requestBody: VisitScheduleRequest,
     ): CancelablePromise<VisitSchedule> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/visit_schedules/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/visit_schedules/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3632,6 +3482,27 @@ export class ApiService {
         });
     }
     /**
+     * Handles visit scheduling for mobile bankers.
+     * @param id
+     * @param requestBody
+     * @returns VisitSchedule
+     * @throws ApiError
+     */
+    public static apiOperationsVisitSchedulesPartialUpdate(
+        id: string,
+        requestBody?: PatchedVisitScheduleRequest,
+    ): CancelablePromise<VisitSchedule> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/operations/visit_schedules/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Mark a visit as completed (Mobile Banker only).
      * @param id
      * @param requestBody
@@ -3675,22 +3546,6 @@ export class ApiService {
     }
     /**
      * Handles messaging functionality for users.
-     * @param requestBody
-     * @returns OperationsMessage
-     * @throws ApiError
-     */
-    public static apiOperationsMessagesCreate(
-        requestBody: OperationsMessageRequest,
-    ): CancelablePromise<OperationsMessage> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/messages/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Handles messaging functionality for users.
      * @returns OperationsMessage
      * @throws ApiError
      */
@@ -3702,21 +3557,16 @@ export class ApiService {
     }
     /**
      * Handles messaging functionality for users.
-     * @param id
      * @param requestBody
      * @returns OperationsMessage
      * @throws ApiError
      */
-    public static apiOperationsMessagesPartialUpdate(
-        id: string,
-        requestBody?: PatchedOperationsMessageRequest,
+    public static apiOperationsMessagesCreate(
+        requestBody: OperationsMessageRequest,
     ): CancelablePromise<OperationsMessage> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/messages/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/operations/messages/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3777,6 +3627,27 @@ export class ApiService {
         });
     }
     /**
+     * Handles messaging functionality for users.
+     * @param id
+     * @param requestBody
+     * @returns OperationsMessage
+     * @throws ApiError
+     */
+    public static apiOperationsMessagesPartialUpdate(
+        id: string,
+        requestBody?: PatchedOperationsMessageRequest,
+    ): CancelablePromise<OperationsMessage> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/operations/messages/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Mark a message as read
      * @param id
      * @param requestBody
@@ -3799,22 +3670,6 @@ export class ApiService {
     }
     /**
      * ViewSet for managing report templates.
-     * @param requestBody
-     * @returns ReportTemplate
-     * @throws ApiError
-     */
-    public static apiReportsTemplatesCreate(
-        requestBody: ReportTemplateRequest,
-    ): CancelablePromise<ReportTemplate> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/reports/templates/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing report templates.
      * @returns ReportTemplate
      * @throws ApiError
      */
@@ -3826,21 +3681,16 @@ export class ApiService {
     }
     /**
      * ViewSet for managing report templates.
-     * @param id A UUID string identifying this report template.
      * @param requestBody
      * @returns ReportTemplate
      * @throws ApiError
      */
-    public static apiReportsTemplatesPartialUpdate(
-        id: string,
-        requestBody?: PatchedReportTemplateRequest,
+    public static apiReportsTemplatesCreate(
+        requestBody: ReportTemplateRequest,
     ): CancelablePromise<ReportTemplate> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/reports/templates/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/reports/templates/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3901,17 +3751,22 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for managing reports.
+     * ViewSet for managing report templates.
+     * @param id A UUID string identifying this report template.
      * @param requestBody
-     * @returns Report
+     * @returns ReportTemplate
      * @throws ApiError
      */
-    public static apiReportsReportsCreate(
-        requestBody: ReportRequest,
-    ): CancelablePromise<Report> {
+    public static apiReportsTemplatesPartialUpdate(
+        id: string,
+        requestBody?: PatchedReportTemplateRequest,
+    ): CancelablePromise<ReportTemplate> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/reports/reports/',
+            method: 'PATCH',
+            url: '/api/reports/templates/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -3928,6 +3783,22 @@ export class ApiService {
         });
     }
     /**
+     * ViewSet for managing reports.
+     * @param requestBody
+     * @returns Report
+     * @throws ApiError
+     */
+    public static apiReportsReportsCreate(
+        requestBody: ReportRequest,
+    ): CancelablePromise<Report> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/reports/reports/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Generate a new report.
      * @param requestBody
      * @returns Report
@@ -3939,27 +3810,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/reports/reports/generate/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing reports.
-     * @param id A UUID string identifying this report.
-     * @param requestBody
-     * @returns Report
-     * @throws ApiError
-     */
-    public static apiReportsReportsPartialUpdate(
-        id: string,
-        requestBody?: PatchedReportRequest,
-    ): CancelablePromise<Report> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/reports/reports/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -4020,6 +3870,27 @@ export class ApiService {
         });
     }
     /**
+     * ViewSet for managing reports.
+     * @param id A UUID string identifying this report.
+     * @param requestBody
+     * @returns Report
+     * @throws ApiError
+     */
+    public static apiReportsReportsPartialUpdate(
+        id: string,
+        requestBody?: PatchedReportRequest,
+    ): CancelablePromise<Report> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/reports/reports/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Download exported report file.
      * @param id A UUID string identifying this report.
      * @returns Report
@@ -4059,22 +3930,6 @@ export class ApiService {
     }
     /**
      * ViewSet for managing report schedules.
-     * @param requestBody
-     * @returns ReportScheduleCreate
-     * @throws ApiError
-     */
-    public static apiReportsSchedulesCreate(
-        requestBody: ReportScheduleCreateRequest,
-    ): CancelablePromise<ReportScheduleCreate> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/reports/schedules/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing report schedules.
      * @returns ReportSchedule
      * @throws ApiError
      */
@@ -4086,21 +3941,16 @@ export class ApiService {
     }
     /**
      * ViewSet for managing report schedules.
-     * @param id A UUID string identifying this report schedule.
      * @param requestBody
-     * @returns ReportSchedule
+     * @returns ReportScheduleCreate
      * @throws ApiError
      */
-    public static apiReportsSchedulesPartialUpdate(
-        id: string,
-        requestBody?: PatchedReportScheduleRequest,
-    ): CancelablePromise<ReportSchedule> {
+    public static apiReportsSchedulesCreate(
+        requestBody: ReportScheduleCreateRequest,
+    ): CancelablePromise<ReportScheduleCreate> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/reports/schedules/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/reports/schedules/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -4158,6 +4008,27 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for managing report schedules.
+     * @param id A UUID string identifying this report schedule.
+     * @param requestBody
+     * @returns ReportSchedule
+     * @throws ApiError
+     */
+    public static apiReportsSchedulesPartialUpdate(
+        id: string,
+        requestBody?: PatchedReportScheduleRequest,
+    ): CancelablePromise<ReportSchedule> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/reports/schedules/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -4254,6 +4125,18 @@ export class ApiService {
     /**
      * ViewSet for managing fraud detection rules.
      * Provides CRUD operations with real-time synchronization.
+     * @returns FraudRule
+     * @throws ApiError
+     */
+    public static apiFraudRulesList(): CancelablePromise<Array<FraudRule>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/fraud/rules/',
+        });
+    }
+    /**
+     * ViewSet for managing fraud detection rules.
+     * Provides CRUD operations with real-time synchronization.
      * @param requestBody
      * @returns FraudRule
      * @throws ApiError
@@ -4266,18 +4149,6 @@ export class ApiService {
             url: '/api/fraud/rules/',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing fraud detection rules.
-     * Provides CRUD operations with real-time synchronization.
-     * @returns FraudRule
-     * @throws ApiError
-     */
-    public static apiFraudRulesList(): CancelablePromise<Array<FraudRule>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/fraud/rules/',
         });
     }
     /**
@@ -4305,28 +4176,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/fraud/rules/statistics/',
-        });
-    }
-    /**
-     * ViewSet for managing fraud detection rules.
-     * Provides CRUD operations with real-time synchronization.
-     * @param id A UUID string identifying this fraud rule.
-     * @param requestBody
-     * @returns FraudRule
-     * @throws ApiError
-     */
-    public static apiFraudRulesPartialUpdate(
-        id: string,
-        requestBody?: PatchedFraudRuleRequest,
-    ): CancelablePromise<FraudRule> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/fraud/rules/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -4385,6 +4234,28 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for managing fraud detection rules.
+     * Provides CRUD operations with real-time synchronization.
+     * @param id A UUID string identifying this fraud rule.
+     * @param requestBody
+     * @returns FraudRule
+     * @throws ApiError
+     */
+    public static apiFraudRulesPartialUpdate(
+        id: string,
+        requestBody?: PatchedFraudRuleRequest,
+    ): CancelablePromise<FraudRule> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/fraud/rules/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -4675,6 +4546,17 @@ export class ApiService {
     }
     /**
      * ViewSet for user settings management.
+     * @returns UserSettings
+     * @throws ApiError
+     */
+    public static apiSettingsUserSettingsList(): CancelablePromise<Array<UserSettings>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/user-settings/',
+        });
+    }
+    /**
+     * ViewSet for user settings management.
      * @param requestBody
      * @returns UserSettings
      * @throws ApiError
@@ -4687,17 +4569,6 @@ export class ApiService {
             url: '/api/settings/user-settings/',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for user settings management.
-     * @returns UserSettings
-     * @throws ApiError
-     */
-    public static apiSettingsUserSettingsList(): CancelablePromise<Array<UserSettings>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/settings/user-settings/',
         });
     }
     /**
@@ -4723,27 +4594,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/settings/user-settings/update_my_settings/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for user settings management.
-     * @param id
-     * @param requestBody
-     * @returns UserSettings
-     * @throws ApiError
-     */
-    public static apiSettingsUserSettingsPartialUpdate(
-        id: string,
-        requestBody?: PatchedUserSettingsRequest,
-    ): CancelablePromise<UserSettings> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/settings/user-settings/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -4804,17 +4654,22 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for system settings management.
+     * ViewSet for user settings management.
+     * @param id
      * @param requestBody
-     * @returns SystemSettings
+     * @returns UserSettings
      * @throws ApiError
      */
-    public static apiSettingsSystemSettingsCreate(
-        requestBody: SystemSettingsRequest,
-    ): CancelablePromise<SystemSettings> {
+    public static apiSettingsUserSettingsPartialUpdate(
+        id: string,
+        requestBody?: PatchedUserSettingsRequest,
+    ): CancelablePromise<UserSettings> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/settings/system-settings/',
+            method: 'PATCH',
+            url: '/api/settings/user-settings/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -4831,6 +4686,22 @@ export class ApiService {
         });
     }
     /**
+     * ViewSet for system settings management.
+     * @param requestBody
+     * @returns SystemSettings
+     * @throws ApiError
+     */
+    public static apiSettingsSystemSettingsCreate(
+        requestBody: SystemSettingsRequest,
+    ): CancelablePromise<SystemSettings> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/system-settings/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Get public system settings.
      * @returns SystemSettings
      * @throws ApiError
@@ -4839,27 +4710,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/system-settings/public_settings/',
-        });
-    }
-    /**
-     * ViewSet for system settings management.
-     * @param id A UUID string identifying this system settings.
-     * @param requestBody
-     * @returns SystemSettings
-     * @throws ApiError
-     */
-    public static apiSettingsSystemSettingsPartialUpdate(
-        id: string,
-        requestBody?: PatchedSystemSettingsRequest,
-    ): CancelablePromise<SystemSettings> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/settings/system-settings/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -4915,6 +4765,27 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for system settings management.
+     * @param id A UUID string identifying this system settings.
+     * @param requestBody
+     * @returns SystemSettings
+     * @throws ApiError
+     */
+    public static apiSettingsSystemSettingsPartialUpdate(
+        id: string,
+        requestBody?: PatchedSystemSettingsRequest,
+    ): CancelablePromise<SystemSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/system-settings/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -4979,22 +4850,6 @@ export class ApiService {
     }
     /**
      * ViewSet for API rate limiting configuration.
-     * @param requestBody
-     * @returns APIRateLimit
-     * @throws ApiError
-     */
-    public static apiSettingsRateLimitsCreate(
-        requestBody: APIRateLimitRequest,
-    ): CancelablePromise<APIRateLimit> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/settings/rate-limits/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for API rate limiting configuration.
      * @returns APIRateLimit
      * @throws ApiError
      */
@@ -5006,21 +4861,16 @@ export class ApiService {
     }
     /**
      * ViewSet for API rate limiting configuration.
-     * @param id A UUID string identifying this api rate limit.
      * @param requestBody
      * @returns APIRateLimit
      * @throws ApiError
      */
-    public static apiSettingsRateLimitsPartialUpdate(
-        id: string,
-        requestBody?: PatchedAPIRateLimitRequest,
+    public static apiSettingsRateLimitsCreate(
+        requestBody: APIRateLimitRequest,
     ): CancelablePromise<APIRateLimit> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/settings/rate-limits/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/settings/rate-limits/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -5081,6 +4931,27 @@ export class ApiService {
         });
     }
     /**
+     * ViewSet for API rate limiting configuration.
+     * @param id A UUID string identifying this api rate limit.
+     * @param requestBody
+     * @returns APIRateLimit
+     * @throws ApiError
+     */
+    public static apiSettingsRateLimitsPartialUpdate(
+        id: string,
+        requestBody?: PatchedAPIRateLimitRequest,
+    ): CancelablePromise<APIRateLimit> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/rate-limits/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Test if a URL pattern matches the rate limit.
      * @param id A UUID string identifying this api rate limit.
      * @param requestBody
@@ -5103,6 +4974,17 @@ export class ApiService {
     }
     /**
      * ViewSet for health check management.
+     * @returns HealthCheck
+     * @throws ApiError
+     */
+    public static apiSettingsHealthChecksList(): CancelablePromise<Array<HealthCheck>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/health-checks/',
+        });
+    }
+    /**
+     * ViewSet for health check management.
      * @param requestBody
      * @returns HealthCheck
      * @throws ApiError
@@ -5115,17 +4997,6 @@ export class ApiService {
             url: '/api/settings/health-checks/',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for health check management.
-     * @returns HealthCheck
-     * @throws ApiError
-     */
-    public static apiSettingsHealthChecksList(): CancelablePromise<Array<HealthCheck>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/settings/health-checks/',
         });
     }
     /**
@@ -5153,27 +5024,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/health-checks/overview/',
-        });
-    }
-    /**
-     * ViewSet for health check management.
-     * @param id A UUID string identifying this health check.
-     * @param requestBody
-     * @returns HealthCheck
-     * @throws ApiError
-     */
-    public static apiSettingsHealthChecksPartialUpdate(
-        id: string,
-        requestBody?: PatchedHealthCheckRequest,
-    ): CancelablePromise<HealthCheck> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/settings/health-checks/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -5232,6 +5082,27 @@ export class ApiService {
         });
     }
     /**
+     * ViewSet for health check management.
+     * @param id A UUID string identifying this health check.
+     * @param requestBody
+     * @returns HealthCheck
+     * @throws ApiError
+     */
+    public static apiSettingsHealthChecksPartialUpdate(
+        id: string,
+        requestBody?: PatchedHealthCheckRequest,
+    ): CancelablePromise<HealthCheck> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/health-checks/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Manually run a health check.
      * @param id A UUID string identifying this health check.
      * @param requestBody
@@ -5275,21 +5146,6 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns ProductCategory
-     * @throws ApiError
-     */
-    public static apiProductsCategoriesCreate(
-        requestBody: ProductCategoryRequest,
-    ): CancelablePromise<ProductCategory> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/products/categories/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @returns ProductCategory
      * @throws ApiError
      */
@@ -5300,21 +5156,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this product category.
      * @param requestBody
      * @returns ProductCategory
      * @throws ApiError
      */
-    public static apiProductsCategoriesPartialUpdate(
-        id: string,
-        requestBody?: PatchedProductCategoryRequest,
+    public static apiProductsCategoriesCreate(
+        requestBody: ProductCategoryRequest,
     ): CancelablePromise<ProductCategory> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/products/categories/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/products/categories/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -5372,16 +5223,21 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this product category.
      * @param requestBody
-     * @returns Product
+     * @returns ProductCategory
      * @throws ApiError
      */
-    public static apiProductsProductsCreate(
-        requestBody: ProductRequest,
-    ): CancelablePromise<Product> {
+    public static apiProductsCategoriesPartialUpdate(
+        id: string,
+        requestBody?: PatchedProductCategoryRequest,
+    ): CancelablePromise<ProductCategory> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/products/products/',
+            method: 'PATCH',
+            url: '/api/products/categories/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -5394,6 +5250,21 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/products/products/',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns Product
+     * @throws ApiError
+     */
+    public static apiProductsProductsCreate(
+        requestBody: ProductRequest,
+    ): CancelablePromise<Product> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/products/products/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -5416,26 +5287,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/products/products/featured/',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this product.
-     * @param requestBody
-     * @returns Product
-     * @throws ApiError
-     */
-    public static apiProductsProductsPartialUpdate(
-        id: string,
-        requestBody?: PatchedProductRequest,
-    ): CancelablePromise<Product> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/products/products/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -5491,6 +5342,26 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this product.
+     * @param requestBody
+     * @returns Product
+     * @throws ApiError
+     */
+    public static apiProductsProductsPartialUpdate(
+        id: string,
+        requestBody?: PatchedProductRequest,
+    ): CancelablePromise<Product> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/products/products/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Get active promotions for a specific product.
      * @param id A UUID string identifying this product.
      * @returns Product
@@ -5508,6 +5379,16 @@ export class ApiService {
         });
     }
     /**
+     * @returns Promotion
+     * @throws ApiError
+     */
+    public static apiProductsPromotionsList(): CancelablePromise<Array<Promotion>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/products/promotions/',
+        });
+    }
+    /**
      * @param requestBody
      * @returns Promotion
      * @throws ApiError
@@ -5520,16 +5401,6 @@ export class ApiService {
             url: '/api/products/promotions/',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * @returns Promotion
-     * @throws ApiError
-     */
-    public static apiProductsPromotionsList(): CancelablePromise<Array<Promotion>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/products/promotions/',
         });
     }
     /**
@@ -5552,26 +5423,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/products/promotions/eligible/',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this promotion.
-     * @param requestBody
-     * @returns Promotion
-     * @throws ApiError
-     */
-    public static apiProductsPromotionsPartialUpdate(
-        id: string,
-        requestBody?: PatchedPromotionRequest,
-    ): CancelablePromise<Promotion> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/products/promotions/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -5627,16 +5478,21 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this promotion.
      * @param requestBody
-     * @returns ProductRecommendation
+     * @returns Promotion
      * @throws ApiError
      */
-    public static apiProductsRecommendationsCreate(
-        requestBody: ProductRecommendationRequest,
-    ): CancelablePromise<ProductRecommendation> {
+    public static apiProductsPromotionsPartialUpdate(
+        id: string,
+        requestBody?: PatchedPromotionRequest,
+    ): CancelablePromise<Promotion> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/products/recommendations/',
+            method: 'PATCH',
+            url: '/api/products/promotions/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -5652,6 +5508,21 @@ export class ApiService {
         });
     }
     /**
+     * @param requestBody
+     * @returns ProductRecommendation
+     * @throws ApiError
+     */
+    public static apiProductsRecommendationsCreate(
+        requestBody: ProductRecommendationRequest,
+    ): CancelablePromise<ProductRecommendation> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/products/recommendations/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Generate recommendations for a customer based on their profile and transaction history.
      * @param requestBody
      * @returns ProductRecommendation
@@ -5663,26 +5534,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/products/recommendations/generate/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this product recommendation.
-     * @param requestBody
-     * @returns ProductRecommendation
-     * @throws ApiError
-     */
-    public static apiProductsRecommendationsPartialUpdate(
-        id: string,
-        requestBody?: PatchedProductRecommendationRequest,
-    ): CancelablePromise<ProductRecommendation> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/products/recommendations/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -5740,6 +5591,26 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this product recommendation.
+     * @param requestBody
+     * @returns ProductRecommendation
+     * @throws ApiError
+     */
+    public static apiProductsRecommendationsPartialUpdate(
+        id: string,
+        requestBody?: PatchedProductRecommendationRequest,
+    ): CancelablePromise<ProductRecommendation> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/products/recommendations/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Handle product enrollment requests.
      * @returns any No response body
      * @throws ApiError
@@ -5777,25 +5648,6 @@ export class ApiService {
      *
      * Provides CRUD operations for service requests with role-based access control.
      * Cashiers can create and manage requests, managers can approve/reject, etc.
-     * @param requestBody
-     * @returns ServiceRequestCreate
-     * @throws ApiError
-     */
-    public static apiServicesRequestsCreate(
-        requestBody: ServiceRequestCreateRequest,
-    ): CancelablePromise<ServiceRequestCreate> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/requests/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing service requests.
-     *
-     * Provides CRUD operations for service requests with role-based access control.
-     * Cashiers can create and manage requests, managers can approve/reject, etc.
      * @returns ServiceRequest
      * @throws ApiError
      */
@@ -5810,21 +5662,16 @@ export class ApiService {
      *
      * Provides CRUD operations for service requests with role-based access control.
      * Cashiers can create and manage requests, managers can approve/reject, etc.
-     * @param id A UUID string identifying this service request.
      * @param requestBody
-     * @returns ServiceRequestUpdate
+     * @returns ServiceRequestCreate
      * @throws ApiError
      */
-    public static apiServicesRequestsPartialUpdate(
-        id: string,
-        requestBody?: PatchedServiceRequestUpdateRequest,
-    ): CancelablePromise<ServiceRequestUpdate> {
+    public static apiServicesRequestsCreate(
+        requestBody: ServiceRequestCreateRequest,
+    ): CancelablePromise<ServiceRequestCreate> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/services/requests/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/services/requests/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -5891,6 +5738,30 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for managing service requests.
+     *
+     * Provides CRUD operations for service requests with role-based access control.
+     * Cashiers can create and manage requests, managers can approve/reject, etc.
+     * @param id A UUID string identifying this service request.
+     * @param requestBody
+     * @returns ServiceRequestUpdate
+     * @throws ApiError
+     */
+    public static apiServicesRequestsPartialUpdate(
+        id: string,
+        requestBody?: PatchedServiceRequestUpdateRequest,
+    ): CancelablePromise<ServiceRequestUpdate> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/services/requests/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -6010,22 +5881,6 @@ export class ApiService {
     }
     /**
      * ViewSet for checkbook requests.
-     * @param requestBody
-     * @returns ServiceRequestCreate
-     * @throws ApiError
-     */
-    public static apiServicesCheckbookRequestsCreate(
-        requestBody: ServiceRequestCreateRequest,
-    ): CancelablePromise<ServiceRequestCreate> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/checkbook-requests/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for checkbook requests.
      * @returns CheckbookRequest
      * @throws ApiError
      */
@@ -6037,21 +5892,16 @@ export class ApiService {
     }
     /**
      * ViewSet for checkbook requests.
-     * @param id A UUID string identifying this checkbook request.
      * @param requestBody
-     * @returns ServiceRequestUpdate
+     * @returns ServiceRequestCreate
      * @throws ApiError
      */
-    public static apiServicesCheckbookRequestsPartialUpdate(
-        id: string,
-        requestBody?: PatchedServiceRequestUpdateRequest,
-    ): CancelablePromise<ServiceRequestUpdate> {
+    public static apiServicesCheckbookRequestsCreate(
+        requestBody: ServiceRequestCreateRequest,
+    ): CancelablePromise<ServiceRequestCreate> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/services/checkbook-requests/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/services/checkbook-requests/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -6109,6 +5959,27 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for checkbook requests.
+     * @param id A UUID string identifying this checkbook request.
+     * @param requestBody
+     * @returns ServiceRequestUpdate
+     * @throws ApiError
+     */
+    public static apiServicesCheckbookRequestsPartialUpdate(
+        id: string,
+        requestBody?: PatchedServiceRequestUpdateRequest,
+    ): CancelablePromise<ServiceRequestUpdate> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/services/checkbook-requests/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -6228,22 +6099,6 @@ export class ApiService {
     }
     /**
      * ViewSet for statement requests.
-     * @param requestBody
-     * @returns ServiceRequestCreate
-     * @throws ApiError
-     */
-    public static apiServicesStatementRequestsCreate(
-        requestBody: ServiceRequestCreateRequest,
-    ): CancelablePromise<ServiceRequestCreate> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/statement-requests/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for statement requests.
      * @returns StatementRequest
      * @throws ApiError
      */
@@ -6255,21 +6110,16 @@ export class ApiService {
     }
     /**
      * ViewSet for statement requests.
-     * @param id A UUID string identifying this statement request.
      * @param requestBody
-     * @returns ServiceRequestUpdate
+     * @returns ServiceRequestCreate
      * @throws ApiError
      */
-    public static apiServicesStatementRequestsPartialUpdate(
-        id: string,
-        requestBody?: PatchedServiceRequestUpdateRequest,
-    ): CancelablePromise<ServiceRequestUpdate> {
+    public static apiServicesStatementRequestsCreate(
+        requestBody: ServiceRequestCreateRequest,
+    ): CancelablePromise<ServiceRequestCreate> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/services/statement-requests/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/services/statement-requests/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -6327,6 +6177,27 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for statement requests.
+     * @param id A UUID string identifying this statement request.
+     * @param requestBody
+     * @returns ServiceRequestUpdate
+     * @throws ApiError
+     */
+    public static apiServicesStatementRequestsPartialUpdate(
+        id: string,
+        requestBody?: PatchedServiceRequestUpdateRequest,
+    ): CancelablePromise<ServiceRequestUpdate> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/services/statement-requests/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -6446,22 +6317,6 @@ export class ApiService {
     }
     /**
      * ViewSet for loan information requests.
-     * @param requestBody
-     * @returns ServiceRequestCreate
-     * @throws ApiError
-     */
-    public static apiServicesLoanInfoRequestsCreate(
-        requestBody: ServiceRequestCreateRequest,
-    ): CancelablePromise<ServiceRequestCreate> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/loan-info-requests/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for loan information requests.
      * @returns LoanInfoRequest
      * @throws ApiError
      */
@@ -6473,21 +6328,16 @@ export class ApiService {
     }
     /**
      * ViewSet for loan information requests.
-     * @param id A UUID string identifying this loan info request.
      * @param requestBody
-     * @returns ServiceRequestUpdate
+     * @returns ServiceRequestCreate
      * @throws ApiError
      */
-    public static apiServicesLoanInfoRequestsPartialUpdate(
-        id: string,
-        requestBody?: PatchedServiceRequestUpdateRequest,
-    ): CancelablePromise<ServiceRequestUpdate> {
+    public static apiServicesLoanInfoRequestsCreate(
+        requestBody: ServiceRequestCreateRequest,
+    ): CancelablePromise<ServiceRequestCreate> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/services/loan-info-requests/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/services/loan-info-requests/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -6545,6 +6395,27 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * ViewSet for loan information requests.
+     * @param id A UUID string identifying this loan info request.
+     * @param requestBody
+     * @returns ServiceRequestUpdate
+     * @throws ApiError
+     */
+    public static apiServicesLoanInfoRequestsPartialUpdate(
+        id: string,
+        requestBody?: PatchedServiceRequestUpdateRequest,
+    ): CancelablePromise<ServiceRequestUpdate> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/services/loan-info-requests/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -6735,21 +6606,6 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns PerformanceMetric
-     * @throws ApiError
-     */
-    public static apiPerformanceMetricsCreate(
-        requestBody: PerformanceMetricRequest,
-    ): CancelablePromise<PerformanceMetric> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/performance/metrics/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @param page A page number within the paginated result set.
      * @returns PaginatedPerformanceMetricList
      * @throws ApiError
@@ -6766,6 +6622,21 @@ export class ApiService {
         });
     }
     /**
+     * @param requestBody
+     * @returns PerformanceMetric
+     * @throws ApiError
+     */
+    public static apiPerformanceMetricsCreate(
+        requestBody: PerformanceMetricRequest,
+    ): CancelablePromise<PerformanceMetric> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/performance/metrics/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Get performance metrics summary.
      * @returns PerformanceMetric
      * @throws ApiError
@@ -6774,26 +6645,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/performance/metrics/summary/',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this performance metric.
-     * @param requestBody
-     * @returns PerformanceMetric
-     * @throws ApiError
-     */
-    public static apiPerformanceMetricsPartialUpdate(
-        id: string,
-        requestBody?: PatchedPerformanceMetricRequest,
-    ): CancelablePromise<PerformanceMetric> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/performance/metrics/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -6849,16 +6700,21 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this performance metric.
      * @param requestBody
-     * @returns SystemHealth
+     * @returns PerformanceMetric
      * @throws ApiError
      */
-    public static apiPerformanceSystemHealthCreate(
-        requestBody: SystemHealthRequest,
-    ): CancelablePromise<SystemHealth> {
+    public static apiPerformanceMetricsPartialUpdate(
+        id: string,
+        requestBody?: PatchedPerformanceMetricRequest,
+    ): CancelablePromise<PerformanceMetric> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/performance/system-health/',
+            method: 'PATCH',
+            url: '/api/performance/metrics/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -6874,6 +6730,21 @@ export class ApiService {
         });
     }
     /**
+     * @param requestBody
+     * @returns SystemHealth
+     * @throws ApiError
+     */
+    public static apiPerformanceSystemHealthCreate(
+        requestBody: SystemHealthRequest,
+    ): CancelablePromise<SystemHealth> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/performance/system-health/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Get system health summary.
      * @returns SystemHealth
      * @throws ApiError
@@ -6882,26 +6753,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/performance/system-health/summary/',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this system health.
-     * @param requestBody
-     * @returns SystemHealth
-     * @throws ApiError
-     */
-    public static apiPerformanceSystemHealthPartialUpdate(
-        id: string,
-        requestBody?: PatchedSystemHealthRequest,
-    ): CancelablePromise<SystemHealth> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/performance/system-health/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -6957,6 +6808,26 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this system health.
+     * @param requestBody
+     * @returns SystemHealth
+     * @throws ApiError
+     */
+    public static apiPerformanceSystemHealthPartialUpdate(
+        id: string,
+        requestBody?: PatchedSystemHealthRequest,
+    ): CancelablePromise<SystemHealth> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/performance/system-health/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Manually trigger health check for a component.
      * @param id A UUID string identifying this system health.
      * @param requestBody
@@ -6978,21 +6849,6 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns DashboardWidget
-     * @throws ApiError
-     */
-    public static apiPerformanceDashboardWidgetsCreate(
-        requestBody: DashboardWidgetRequest,
-    ): CancelablePromise<DashboardWidget> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/performance/dashboard-widgets/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @returns DashboardWidget
      * @throws ApiError
      */
@@ -7003,21 +6859,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id
      * @param requestBody
      * @returns DashboardWidget
      * @throws ApiError
      */
-    public static apiPerformanceDashboardWidgetsPartialUpdate(
-        id: string,
-        requestBody?: PatchedDashboardWidgetRequest,
+    public static apiPerformanceDashboardWidgetsCreate(
+        requestBody: DashboardWidgetRequest,
     ): CancelablePromise<DashboardWidget> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/performance/dashboard-widgets/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/performance/dashboard-widgets/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7075,16 +6926,21 @@ export class ApiService {
         });
     }
     /**
+     * @param id
      * @param requestBody
-     * @returns PerformanceAlert
+     * @returns DashboardWidget
      * @throws ApiError
      */
-    public static apiPerformanceAlertsCreate(
-        requestBody: PerformanceAlertRequest,
-    ): CancelablePromise<PerformanceAlert> {
+    public static apiPerformanceDashboardWidgetsPartialUpdate(
+        id: string,
+        requestBody?: PatchedDashboardWidgetRequest,
+    ): CancelablePromise<DashboardWidget> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/performance/alerts/',
+            method: 'PATCH',
+            url: '/api/performance/dashboard-widgets/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7100,21 +6956,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this performance alert.
      * @param requestBody
      * @returns PerformanceAlert
      * @throws ApiError
      */
-    public static apiPerformanceAlertsPartialUpdate(
-        id: string,
-        requestBody?: PatchedPerformanceAlertRequest,
+    public static apiPerformanceAlertsCreate(
+        requestBody: PerformanceAlertRequest,
     ): CancelablePromise<PerformanceAlert> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/performance/alerts/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/performance/alerts/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7172,6 +7023,26 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this performance alert.
+     * @param requestBody
+     * @returns PerformanceAlert
+     * @throws ApiError
+     */
+    public static apiPerformanceAlertsPartialUpdate(
+        id: string,
+        requestBody?: PatchedPerformanceAlertRequest,
+    ): CancelablePromise<PerformanceAlert> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/performance/alerts/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Acknowledge an alert.
      * @param id A UUID string identifying this performance alert.
      * @param requestBody
@@ -7214,21 +7085,6 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns PerformanceRecommendation
-     * @throws ApiError
-     */
-    public static apiPerformanceRecommendationsCreate(
-        requestBody: PerformanceRecommendationRequest,
-    ): CancelablePromise<PerformanceRecommendation> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/performance/recommendations/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @returns PerformanceRecommendation
      * @throws ApiError
      */
@@ -7239,21 +7095,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this performance recommendation.
      * @param requestBody
      * @returns PerformanceRecommendation
      * @throws ApiError
      */
-    public static apiPerformanceRecommendationsPartialUpdate(
-        id: string,
-        requestBody?: PatchedPerformanceRecommendationRequest,
+    public static apiPerformanceRecommendationsCreate(
+        requestBody: PerformanceRecommendationRequest,
     ): CancelablePromise<PerformanceRecommendation> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/performance/recommendations/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/performance/recommendations/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7311,6 +7162,26 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this performance recommendation.
+     * @param requestBody
+     * @returns PerformanceRecommendation
+     * @throws ApiError
+     */
+    public static apiPerformanceRecommendationsPartialUpdate(
+        id: string,
+        requestBody?: PatchedPerformanceRecommendationRequest,
+    ): CancelablePromise<PerformanceRecommendation> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/performance/recommendations/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Mark recommendation as implemented.
      * @param id A UUID string identifying this performance recommendation.
      * @param requestBody
@@ -7365,21 +7236,6 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns CreateMessageThread
-     * @throws ApiError
-     */
-    public static apiMessagingThreadsCreate(
-        requestBody: CreateMessageThreadRequest,
-    ): CancelablePromise<CreateMessageThread> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/messaging/threads/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @returns MessagingMessageThread
      * @throws ApiError
      */
@@ -7390,21 +7246,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this message thread.
      * @param requestBody
-     * @returns MessagingMessageThread
+     * @returns CreateMessageThread
      * @throws ApiError
      */
-    public static apiMessagingThreadsPartialUpdate(
-        id: string,
-        requestBody?: PatchedMessagingMessageThreadRequest,
-    ): CancelablePromise<MessagingMessageThread> {
+    public static apiMessagingThreadsCreate(
+        requestBody: CreateMessageThreadRequest,
+    ): CancelablePromise<CreateMessageThread> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/threads/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/messaging/threads/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7459,6 +7310,26 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * @param id A UUID string identifying this message thread.
+     * @param requestBody
+     * @returns MessagingMessageThread
+     * @throws ApiError
+     */
+    public static apiMessagingThreadsPartialUpdate(
+        id: string,
+        requestBody?: PatchedMessagingMessageThreadRequest,
+    ): CancelablePromise<MessagingMessageThread> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/messaging/threads/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -7583,6 +7454,16 @@ export class ApiService {
         });
     }
     /**
+     * @returns MessagingMessage
+     * @throws ApiError
+     */
+    public static apiMessagingMessagesList(): CancelablePromise<Array<MessagingMessage>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/messaging/messages/',
+        });
+    }
+    /**
      * @param requestBody
      * @returns MessagingMessage
      * @throws ApiError
@@ -7598,16 +7479,6 @@ export class ApiService {
         });
     }
     /**
-     * @returns MessagingMessage
-     * @throws ApiError
-     */
-    public static apiMessagingMessagesList(): CancelablePromise<Array<MessagingMessage>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/messaging/messages/',
-        });
-    }
-    /**
      * Upload media files for messages (photos, videos, documents, voice notes)
      * @param requestBody
      * @returns MessagingMessage
@@ -7619,26 +7490,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/messaging/messages/upload_media/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this message.
-     * @param requestBody
-     * @returns MessagingMessage
-     * @throws ApiError
-     */
-    public static apiMessagingMessagesPartialUpdate(
-        id: string,
-        requestBody?: PatchedMessagingMessageRequest,
-    ): CancelablePromise<MessagingMessage> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/messages/{id}/',
-            path: {
-                'id': id,
-            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7693,6 +7544,26 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * @param id A UUID string identifying this message.
+     * @param requestBody
+     * @returns MessagingMessage
+     * @throws ApiError
+     */
+    public static apiMessagingMessagesPartialUpdate(
+        id: string,
+        requestBody?: PatchedMessagingMessageRequest,
+    ): CancelablePromise<MessagingMessage> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/messaging/messages/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -7780,6 +7651,16 @@ export class ApiService {
         });
     }
     /**
+     * @returns EncryptionKey
+     * @throws ApiError
+     */
+    public static apiMessagingEncryptionKeysList(): CancelablePromise<Array<EncryptionKey>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/messaging/encryption-keys/',
+        });
+    }
+    /**
      * @param requestBody
      * @returns EncryptionKey
      * @throws ApiError
@@ -7798,40 +7679,10 @@ export class ApiService {
      * @returns EncryptionKey
      * @throws ApiError
      */
-    public static apiMessagingEncryptionKeysList(): CancelablePromise<Array<EncryptionKey>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/messaging/encryption-keys/',
-        });
-    }
-    /**
-     * @returns EncryptionKey
-     * @throws ApiError
-     */
     public static apiMessagingEncryptionKeysUserKeyRetrieve(): CancelablePromise<EncryptionKey> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/messaging/encryption-keys/user_key/',
-        });
-    }
-    /**
-     * @param id A unique integer value identifying this encryption key.
-     * @param requestBody
-     * @returns EncryptionKey
-     * @throws ApiError
-     */
-    public static apiMessagingEncryptionKeysPartialUpdate(
-        id: number,
-        requestBody?: PatchedEncryptionKeyRequest,
-    ): CancelablePromise<EncryptionKey> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/encryption-keys/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -7887,16 +7738,21 @@ export class ApiService {
         });
     }
     /**
+     * @param id A unique integer value identifying this encryption key.
      * @param requestBody
-     * @returns CreateCallLog
+     * @returns EncryptionKey
      * @throws ApiError
      */
-    public static apiMessagingCallLogsCreate(
-        requestBody: CreateCallLogRequest,
-    ): CancelablePromise<CreateCallLog> {
+    public static apiMessagingEncryptionKeysPartialUpdate(
+        id: number,
+        requestBody?: PatchedEncryptionKeyRequest,
+    ): CancelablePromise<EncryptionKey> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/messaging/call-logs/',
+            method: 'PATCH',
+            url: '/api/messaging/encryption-keys/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7912,21 +7768,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this call log.
      * @param requestBody
-     * @returns CallLog
+     * @returns CreateCallLog
      * @throws ApiError
      */
-    public static apiMessagingCallLogsPartialUpdate(
-        id: string,
-        requestBody?: PatchedCallLogRequest,
-    ): CancelablePromise<CallLog> {
+    public static apiMessagingCallLogsCreate(
+        requestBody: CreateCallLogRequest,
+    ): CancelablePromise<CreateCallLog> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/call-logs/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/messaging/call-logs/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -7989,6 +7840,26 @@ export class ApiService {
      * @returns CallLog
      * @throws ApiError
      */
+    public static apiMessagingCallLogsPartialUpdate(
+        id: string,
+        requestBody?: PatchedCallLogRequest,
+    ): CancelablePromise<CallLog> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/messaging/call-logs/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param id A UUID string identifying this call log.
+     * @param requestBody
+     * @returns CallLog
+     * @throws ApiError
+     */
     public static apiMessagingCallLogsEndCallCreate(
         id: string,
         requestBody: CallLogRequest,
@@ -8024,6 +7895,16 @@ export class ApiService {
         });
     }
     /**
+     * @returns Device
+     * @throws ApiError
+     */
+    public static apiMessagingDevicesList(): CancelablePromise<Array<Device>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/messaging/devices/',
+        });
+    }
+    /**
      * @param requestBody
      * @returns Device
      * @throws ApiError
@@ -8039,16 +7920,6 @@ export class ApiService {
         });
     }
     /**
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiMessagingDevicesList(): CancelablePromise<Array<Device>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/messaging/devices/',
-        });
-    }
-    /**
      * Get synchronization data for the current device
      * @returns Device
      * @throws ApiError
@@ -8057,26 +7928,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/messaging/devices/sync_data/',
-        });
-    }
-    /**
-     * @param id A UUID string identifying this device.
-     * @param requestBody
-     * @returns Device
-     * @throws ApiError
-     */
-    public static apiMessagingDevicesPartialUpdate(
-        id: string,
-        requestBody?: PatchedDeviceRequest,
-    ): CancelablePromise<Device> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/devices/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -8132,6 +7983,26 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this device.
+     * @param requestBody
+     * @returns Device
+     * @throws ApiError
+     */
+    public static apiMessagingDevicesPartialUpdate(
+        id: string,
+        requestBody?: PatchedDeviceRequest,
+    ): CancelablePromise<Device> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/messaging/devices/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Update device's last seen timestamp
      * @param id A UUID string identifying this device.
      * @param requestBody
@@ -8153,21 +8024,6 @@ export class ApiService {
         });
     }
     /**
-     * @param requestBody
-     * @returns MessageReadStatus
-     * @throws ApiError
-     */
-    public static apiMessagingReadStatusesCreate(
-        requestBody: MessageReadStatusRequest,
-    ): CancelablePromise<MessageReadStatus> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/messaging/read-statuses/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @returns MessageReadStatus
      * @throws ApiError
      */
@@ -8178,21 +8034,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this message read status.
      * @param requestBody
      * @returns MessageReadStatus
      * @throws ApiError
      */
-    public static apiMessagingReadStatusesPartialUpdate(
-        id: string,
-        requestBody?: PatchedMessageReadStatusRequest,
+    public static apiMessagingReadStatusesCreate(
+        requestBody: MessageReadStatusRequest,
     ): CancelablePromise<MessageReadStatus> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/read-statuses/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/messaging/read-statuses/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -8250,16 +8101,21 @@ export class ApiService {
         });
     }
     /**
+     * @param id A UUID string identifying this message read status.
      * @param requestBody
-     * @returns MessageBackup
+     * @returns MessageReadStatus
      * @throws ApiError
      */
-    public static apiMessagingBackupsCreate(
-        requestBody?: MessageBackupRequest,
-    ): CancelablePromise<MessageBackup> {
+    public static apiMessagingReadStatusesPartialUpdate(
+        id: string,
+        requestBody?: PatchedMessageReadStatusRequest,
+    ): CancelablePromise<MessageReadStatus> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/messaging/backups/',
+            method: 'PATCH',
+            url: '/api/messaging/read-statuses/{id}/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -8275,21 +8131,16 @@ export class ApiService {
         });
     }
     /**
-     * @param id A UUID string identifying this message backup.
      * @param requestBody
      * @returns MessageBackup
      * @throws ApiError
      */
-    public static apiMessagingBackupsPartialUpdate(
-        id: string,
-        requestBody?: PatchedMessageBackupRequest,
+    public static apiMessagingBackupsCreate(
+        requestBody?: MessageBackupRequest,
     ): CancelablePromise<MessageBackup> {
         return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/messaging/backups/{id}/',
-            path: {
-                'id': id,
-            },
+            method: 'POST',
+            url: '/api/messaging/backups/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -8344,6 +8195,26 @@ export class ApiService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * @param id A UUID string identifying this message backup.
+     * @param requestBody
+     * @returns MessageBackup
+     * @throws ApiError
+     */
+    public static apiMessagingBackupsPartialUpdate(
+        id: string,
+        requestBody?: PatchedMessageBackupRequest,
+    ): CancelablePromise<MessageBackup> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/messaging/backups/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
