@@ -6,6 +6,7 @@ Environment variables:
   - DJANGO_SUPERUSER_PASSWORD (required)
   - DJANGO_SUPERUSER_FIRST_NAME (optional)
   - DJANGO_SUPERUSER_LAST_NAME (optional)
+  - DJANGO_SUPERUSER_PHONE (optional)
 """
 import os
 import logging
@@ -39,6 +40,7 @@ class Command(BaseCommand):
         password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
         first_name = os.environ.get('DJANGO_SUPERUSER_FIRST_NAME', 'Admin')
         last_name = os.environ.get('DJANGO_SUPERUSER_LAST_NAME', 'User')
+        phone = os.environ.get('DJANGO_SUPERUSER_PHONE', '')
 
         # Validate required environment variables
         if not email:
@@ -99,7 +101,10 @@ class Command(BaseCommand):
         user.save(update_fields=['password_changed_at'])
 
         # Create user profile
-        UserProfile.objects.get_or_create(user=user)
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        if phone:
+            profile.phone = phone
+            profile.save(update_fields=['phone'])
 
         # Create immutable audit log entry
         ImmutableAuditLog.objects.create(

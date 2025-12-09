@@ -17,6 +17,7 @@ services:
     startCommand: >
       cd banking_backend &&
       python manage.py migrate --noinput &&
+      python manage.py create_production_superuser --skip-if-exists &&
       gunicorn config.wsgi:application
       --bind 0.0.0.0:$PORT
       --workers 3
@@ -58,6 +59,17 @@ services:
         value: "True"
       - key: SECURE_CROSS_ORIGIN_OPENER_POLICY
         value: "same-origin-allow-popups"
+      # Superuser credentials for automatic creation
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      - key: DJANGO_SUPERUSER_FIRST_NAME
+        value: "Admin"
+      - key: DJANGO_SUPERUSER_LAST_NAME
+        value: "User"
+      - key: DJANGO_SUPERUSER_PHONE
+        value: "+233557155186"
 
   # React Frontend Web Service
   - type: web
