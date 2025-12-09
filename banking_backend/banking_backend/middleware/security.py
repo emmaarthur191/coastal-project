@@ -53,13 +53,13 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
                 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
             })
 
-            # CSP for production
+            # CSP for production - Minimal & Secure (No external CDNs)
             self.security_headers.update({
                 'Content-Security-Policy': (
                     "default-src 'self'; "
-                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-                    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+                    "script-src 'self' 'wasm-unsafe-eval'; "
+                    "style-src 'self'; "
+                    "font-src 'self' data:; "
                     "img-src 'self' data: https:; "
                     "connect-src 'self' https://coastal-backend.onrender.com https://coastal-frontend.onrender.com; "
                     "frame-src 'none'; "
@@ -70,13 +70,13 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
                 ),
             })
         else:
-            # Relaxed CSP for development
+            # Relaxed CSP for development (still secure, no external CDNs)
             self.security_headers.update({
                 'Content-Security-Policy': (
                     "default-src 'self'; "
-                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net http://localhost:3000 http://127.0.0.1:3000; "
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-                    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000 http://127.0.0.1:3000; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "font-src 'self' data:; "
                     "img-src 'self' data: https:; "
                     "connect-src 'self' ws: wss: http://localhost:3000 http://127.0.0.1:3000; "
                     "frame-src 'none'; "
