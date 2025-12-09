@@ -83,15 +83,10 @@ services:
   # React Frontend Web Service
   - type: web
     name: coastal-frontend
-    runtime: node
+    runtime: docker
     plan: starter
-    buildCommand: >
-      cd frontend &&
-      npm ci &&
-      npm run build
-    startCommand: >
-      cd frontend &&
-      npx serve -s dist -l $PORT
+    dockerfilePath: ./frontend/Dockerfile.prod
+    dockerContext: ./frontend
     envVars:
       - key: VITE_API_BASE_URL
         value: "https://coastal-backend.onrender.com/api"
