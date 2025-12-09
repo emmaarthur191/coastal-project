@@ -9,7 +9,6 @@
     "analyze": "npx vite-bundle-visualizer dist",
     "test": "npx vitest",
     "precommit": "npm run api:sync && git diff --exit-code src/api",
-    "prebuild": "rimraf dist && mkdirp dist/assets",
     "postbuild": "echo Build completed with local assets only"
   },
   "dependencies": {
