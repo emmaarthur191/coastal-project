@@ -1,12 +1,16 @@
 import uuid
+import random
+import logging
 from decimal import Decimal
-from datetime import date
+from datetime import date, timedelta
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from users.models import User
 from banking_backend.utils.encryption import encrypt_field, decrypt_field
+
+logger = logging.getLogger('banking_security')
 
 
 class Account(models.Model):
@@ -2175,6 +2179,127 @@ class ClientRegistration(models.Model):
     
     def __str__(self):
         return f"Registration - {self.first_name} {self.last_name} ({self.status})"
+    
+    def send_otp(self):
+        """Generate and send OTP via SMS."""
+        from banking_backend.utils.sms import send_otp_sms
+        
+        # Generate 6-digit OTP
+        self.otp_code = str(random.randint(100000, 999999))
+        self.otp_sent_at = timezone.now()
+        self.otp_attempts = 0
+        self.save()
+        
+        # Send SMS
+        sms_result = send_otp_sms(self.phone_number, self.otp_code)
+        
+        if sms_result.get('success'):
+            logger.info(f"OTP sent to {self.phone_number} for registration {self.id}")
+        else:
+            logger.error(f"Failed to send OTP to {self.phone_number}: {sms_result.get('error')}")
+        
+        return self.otp_code
+    
+    def verify_otp(self, otp_code):
+        """Verify the OTP code."""
+        # Check if OTP is expired (5 minutes)
+        if self.otp_sent_at and timezone.now() > self.otp_sent_at + timedelta(minutes=5):
+            return False, "OTP has expired. Please request a new one."
+        
+        # Check attempts
+        if self.otp_attempts >= 3:
+            return False, "Maximum verification attempts exceeded. Please request a new OTP."
+        
+        # Verify OTP
+        if self.otp_code == otp_code:
+            self.otp_verified_at = timezone.now()
+            self.status = 'otp_verified'
+            self.save()
+            logger.info(f"OTP verified successfully for registration {self.id}")
+            return True, "OTP verified successfully"
+        else:
+            self.otp_attempts += 1
+            self.save()
+            remaining = 3 - self.otp_attempts
+            logger.warning(f"Invalid OTP attempt for registration {self.id}. {remaining} attempts remaining.")
+            return False, f"Invalid OTP. {remaining} attempts remaining."
+    
+    def submit_application(self):
+        """Submit the registration for OTP verification."""
+        if self.status == 'draft':
+            self.status = 'otp_pending'
+            self.submitted_at = timezone.now()
+            self.save()
+            logger.info(f"Client registration {self.id} submitted for OTP verification")
+    
+    def approve_registration(self, approver, notes=''):
+        """Approve the client registration."""
+        if self.status == 'otp_verified':
+            self.status = 'approved'
+            self.reviewed_by = approver
+            self.reviewed_at = timezone.now()
+            self.approval_notes = notes
+            self.save()
+            logger.info(f"Client registration {self.id} approved by {approver.email}")
+        else:
+            logger.warning(f"Attempted to approve registration {self.id} with status {self.status}")
+    
+    def reject_registration(self, approver, notes=''):
+        """Reject the client registration."""
+        self.status = 'rejected'
+        self.reviewed_by = approver
+        self.reviewed_at = timezone.now()
+        self.approval_notes = notes
+        self.save()
+        logger.info(f"Client registration {self.id} rejected by {approver.email}")
+    
+    def create_user_account(self):
+        """Create user account after approval."""
+        if self.status == 'approved' and not self.user_account:
+            from users.models import UserProfile
+            
+            # Create user
+            user = User.objects.create_user(
+                email=self.email or f"{self.phone_number}@coastal-banking.com",
+                first_name=self.first_name,
+                last_name=self.last_name,
+                role='customer'
+            )
+            
+            # Set a temporary password (user should reset it)
+            temp_password = User.objects.make_random_password(length=12)
+            user.set_password(temp_password)
+            user.save()
+            
+            # Update profile with phone
+            user.profile.phone = self.phone_number
+            user.profile.save()
+            
+            self.user_account = user
+            self.save()
+            
+            logger.info(f"User account created for registration {self.id}: {user.email}")
+            return user
+        return None
+    
+    def create_bank_account(self):
+        """Create bank account after user creation."""
+        if self.user_account and not self.bank_account:
+            # Create savings account
+            account = Account.objects.create(
+                owner=self.user_account,
+                account_number=f"CL{self.id.hex[:8].upper()}",
+                type='savings',
+                balance=Decimal('0.00')
+            )
+            
+            self.bank_account = account
+            self.status = 'completed'
+            self.save()
+            
+            logger.info(f"Bank account created for registration {self.id}: {account.get_decrypted_account_number()}")
+            return account
+        return None
 
 
 # Banking-specific messaging models
