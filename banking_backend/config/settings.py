@@ -717,6 +717,26 @@ except Exception as e:
     print(f"[ERROR] Sentry configuration failed: {str(e)}")
     print("[INFO] Continuing without Sentry configuration")
 
+# =============================================================================
+# SMS CONFIGURATION
+# =============================================================================
+# SMS provider: 'console' for development (logs only), 'api' for production
+SMS_PROVIDER = config('SMS_PROVIDER', default='console')
+
+# SMS API settings (for production)
+SMS_API_URL = config('SMS_API_URL', default='https://sms.arkesel.com/api/v2/sms/send')
+SMS_API_TOKEN = config('SMS_API_TOKEN', default='')  # Base64 token
+SMS_SENDER_ID = config('SMS_SENDER_ID', default='CoastalBank')
+
+# Log SMS configuration
+if SMS_PROVIDER == 'api':
+    if SMS_API_TOKEN:
+        print("[INFO] SMS service configured with API provider")
+    else:
+        print("[WARNING] SMS_API_TOKEN not set - SMS will fail in production")
+else:
+    print(f"[INFO] SMS service using '{SMS_PROVIDER}' provider (messages will be logged)")
+
 # Test database settings
 import sys
 if 'test' in sys.argv:

@@ -41,6 +41,7 @@ from .forms import (
     CustomUserChangeForm, UserProfileForm, PasswordChangeForm
 )
 from banking.models import Account, Transaction, Loan
+from banking_backend.utils.sms import send_otp_sms, send_notification_sms
 import random
 import logging
 
@@ -880,15 +881,20 @@ class SendOTPView(views.APIView):
         
         response_data = {
             'message': 'OTP sent successfully',
-            'expires_in': 300,  # minutes in seconds
+            'expires_in': 300,  # 5 minutes in seconds
         }
         
         if test_mode:
             # Only log in debug mode, do not return in response
             logger.info(f"TEST MODE: OTP for {phone_number}: {otp_code}")
+            response_data['test_mode'] = True
         else:
-            # In production, send actual SMS here
-            # Example: send_sms(phone_number, f"Your verification code is: {otp_code}")
+            # In production, send actual SMS
+            sms_result = send_otp_sms(phone_number, otp_code)
+            if not sms_result.get('success'):
+                logger.error(f"Failed to send OTP SMS to {phone_number}: {sms_result.get('error')}")
+                # Don't fail the request, just log the error
+                # The OTP is still valid in the database
             logger.info(f"OTP sent to {phone_number}")
         
         return Response(response_data)
