@@ -2796,37 +2796,17 @@ def superuser_settings(request):
         messages.error(request, 'Access denied. Superuser privileges required.')
         return redirect('users:dashboard')
 
-    # Get system settings (mock data for now)
-    settings = [
-        {
-            'key': 'max_daily_transactions',
-            'value': '1000',
-            'type': 'integer',
-            'description': 'Maximum transactions per day',
-            'category': 'transactions',
-            'is_active': True,
-        },
-        {
-            'key': 'session_timeout',
-            'value': '3600',
-            'type': 'integer',
-            'description': 'Session timeout in seconds',
-            'category': 'security',
-            'is_active': True,
-        },
-        {
-            'key': 'maintenance_mode',
-            'value': 'false',
-            'type': 'boolean',
-            'description': 'Enable maintenance mode',
-            'category': 'system',
-            'is_active': True,
-        }
-    ]
+    # Get real system settings from database
+    from settings.models import SystemSettings
+    
+    settings = SystemSettings.objects.filter(is_active=True).order_by('category', 'name')
+    
+    # Get unique categories for filtering
+    categories = SystemSettings.objects.values_list('category', flat=True).distinct()
 
     context = {
         'settings': settings,
-        'categories': ['system', 'security', 'transactions', 'notifications']
+        'categories': list(categories) if categories else ['system', 'security', 'transactions', 'notifications']
     }
 
     return render(request, 'users/superuser_settings.html', context)
@@ -2944,41 +2924,96 @@ def superuser_audit(request):
 def superuser_monitoring(request):
     """Superuser system monitoring interface."""
     if request.user.role != 'superuser':
-        messages.error(request, 'Access denied. Superuser privileges required.')
+        messages.error(request, 'Access denied. Superuser privileges required')
         return redirect('users:dashboard')
 
-    # Mock monitoring data
-    monitoring_data = {
-        'cpu_usage': 45,
-        'memory_usage': 62,
-        'disk_usage': 78,
-        'network_traffic': 1250,  # KB/s
-        'active_connections': 89,
-        'response_time': 120,  # ms
-        'error_rate': 0.02,  # %
-        'uptime': '15 days, 8 hours',
-    }
+    # Real monitoring data using psutil
+    import psutil
+    from datetime import timedelta
+    
+    try:
+        # Get real system metrics
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        net_io = psutil.net_io_counters()
+        
+        # Calculate uptime
+        boot_time = psutil.boot_time()
+        uptime_seconds = timezone.now().timestamp() - boot_time
+        uptime_delta = timedelta(seconds=int(uptime_seconds))
+        uptime_str = f"{uptime_delta.days} days, {uptime_delta.seconds // 3600} hours"
+        
+        # Get active connections count
+        try:
+            connections = len(psutil.net_connections())
+        except:
+            connections = 0
+        
+        # Calculate network traffic in KB/s (approximate)
+        network_traffic = (net_io.bytes_sent + net_io.bytes_recv) / 1024 / uptime_seconds if uptime_seconds > 0 else 0
+        
+        monitoring_data = {
+            'cpu_usage': round(cpu_percent, 1),
+            'memory_usage': round(memory.percent, 1),
+            'disk_usage': round(disk.percent, 1),
+            'network_traffic': round(network_traffic, 2),
+            'active_connections': connections,
+            'response_time': 120,  # This would need middleware tracking
+            'error_rate': 0.02,  # This would need error tracking
+            'uptime': uptime_str,
+            'memory_available_gb': round(memory.available / (1024**3), 2),
+            'disk_free_gb': round(disk.free / (1024**3), 2),
+        }
+    except Exception as e:
+        logger.error(f"Error getting system metrics: {str(e)}")
+        # Fallback to safe defaults
+        monitoring_data = {
+            'cpu_usage': 0,
+            'memory_usage': 0,
+            'disk_usage': 0,
+            'network_traffic': 0,
+            'active_connections': 0,
+            'response_time': 0,
+            'error_rate': 0,
+            'uptime': 'Unknown',
+            'memory_available_gb': 0,
+            'disk_free_gb': 0,
+        }
 
-    # Recent alerts
+    # Recent alerts (keep for now, can be enhanced later)
     alerts = [
         {
-            'level': 'warning',
-            'message': 'High memory usage detected',
-            'timestamp': timezone.now() - timedelta(minutes=30),
-            'resolved': False
+            'level': 'warning' if monitoring_data['memory_usage'] > 80 else 'info',
+            'message': f"Memory usage at {monitoring_data['memory_usage']}%" if monitoring_data['memory_usage'] > 80 else 'System running normally',
+            'timestamp': timezone.now(),
+            'resolved': monitoring_data['memory_usage'] <= 80
         },
-        {
-            'level': 'info',
-            'message': 'Scheduled backup completed',
-            'timestamp': timezone.now() - timedelta(hours=2),
-            'resolved': True
-        }
     ]
+    
+    # Add CPU alert if high
+    if monitoring_data['cpu_usage'] > 80:
+        alerts.insert(0, {
+            'level': 'warning',
+            'message': f"High CPU usage detected: {monitoring_data['cpu_usage']}%",
+            'timestamp': timezone.now(),
+            'resolved': False
+        })
+    
+    # Add disk alert if high
+    if monitoring_data['disk_usage'] > 85:
+        alerts.insert(0, {
+            'level': 'critical',
+            'message': f"Disk usage critical: {monitoring_data['disk_usage']}%",
+            'timestamp': timezone.now(),
+            'resolved': False
+        })
 
     context = {
         'monitoring_data': monitoring_data,
         'alerts': alerts,
-        'time_range': request.GET.get('range', '1h')
+        'time_range': request.GET.get('range', '1h'),
+        'last_updated': timezone.now(),
     }
 
     return render(request, 'users/superuser_monitoring.html', context)
