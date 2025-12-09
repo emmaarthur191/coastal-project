@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -25,11 +25,12 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+# Create script to replace port at runtime
+RUN echo '#!/bin/sh' > /docker-entrypoint.d/10-replace-port.sh && \
+    echo 'sed -i "s/listen 80;/listen ${PORT:-80};/g" /etc/nginx/nginx.conf' >> /docker-entrypoint.d/10-replace-port.sh && \
+    chmod +x /docker-entrypoint.d/10-replace-port.sh
 
-# Expose port
+# Expose port (will be overridden by Render)
 EXPOSE 80
 
 # Start nginx
