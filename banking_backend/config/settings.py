@@ -259,18 +259,14 @@ CORS_ALLOW_METHODS = [
 CORS_PREFLIGHT_MAX_AGE = 86400  # 4 hours
 
 # CSRF settings for cross-origin requests
-CSRF_TRUSTED_ORIGINS = [
+# Dynamically add https:// scheme to all ALLOWED_HOSTS
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host] + [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    # Render injects these environment variables
-    f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}",
-    "https://coastal-frontend.onrender.com",  # Frontend URL for production
-    # Allow all Render domains
-    ".onrender.com",
 ]
 
 # Email settings (for password reset)
