@@ -2434,7 +2434,7 @@ def profile_view(request):
         if profile_form.is_valid():
             profile_form.save()
             messages.success(request, 'Profile updated successfully!')
-            return redirect('profile')
+            return redirect('web_profile')
     else:
         profile_form = UserProfileForm(instance=profile)
 
