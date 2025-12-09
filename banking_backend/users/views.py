@@ -456,7 +456,12 @@ class NotificationSettingsView(views.APIView):
     serializer_class = None  # No serializer needed for this view
 
     def patch(self, request):
-        profile = self.request.user.profile
+        # Get or create profile for the user
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        
+        if created:
+            logger.info(f"Created UserProfile for user {request.user.email}")
+        
         serializer = NotificationSettingsSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
