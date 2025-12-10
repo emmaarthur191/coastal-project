@@ -20,13 +20,13 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [lastInput, setLastInput] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  
+
   // Accessibility and refs
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
   const formRef = useRef(null);
   const errorSummaryRef = useRef(null);
-  const { login } = useAuth();
+  const { login, checkAuth, getDashboardRoute, user } = useAuth();
   const navigate = useNavigate();
 
   // Password validation rules
@@ -62,10 +62,10 @@ function LoginPage() {
         return { email: emailError };
       case 'password':
         const passwordErrors = validatePassword(value);
-        return { 
-          password: passwordErrors.length > 0 ? 
-            `Password must contain: ${passwordErrors.map(rule => rule.message).join(', ')}` : 
-            null 
+        return {
+          password: passwordErrors.length > 0 ?
+            `Password must contain: ${passwordErrors.map(rule => rule.message).join(', ')}` :
+            null
         };
       default:
         return {};
@@ -76,7 +76,7 @@ function LoginPage() {
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: newValue
@@ -94,7 +94,7 @@ function LoginPage() {
   // Form validation on submit
   const validateForm = useCallback(() => {
     const errors = {};
-    
+
     // Email validation
     const emailError = validateEmail(formData.email);
     if (emailError) errors.email = emailError;
@@ -143,8 +143,14 @@ function LoginPage() {
         }
 
         // Navigate after brief delay for UX
-        setTimeout(() => {
-          navigate('/dashboard');
+        // Use role-based redirect to ensure staff hit OTP verification
+        setTimeout(async () => {
+          // Refresh auth state to get the actual user role from backend
+          await checkAuth();
+
+          // Use getDashboardRoute which reads from actual user state
+          const targetRoute = getDashboardRoute ? getDashboardRoute() : '/dashboard';
+          navigate(targetRoute);
         }, 1000);
       } else {
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
@@ -184,16 +190,16 @@ function LoginPage() {
   // Enhanced password strength calculation
   const getPasswordStrength = useCallback((password) => {
     if (!password) return 0;
-    
+
     let strength = 0;
     passwordRules.forEach(rule => {
       if (rule.test(password)) strength += 20;
     });
-    
+
     // Length bonus
     if (password.length > 12) strength += 20;
     else if (password.length > 8) strength += 10;
-    
+
     return Math.min(100, strength);
   }, [passwordRules]);
 
@@ -210,8 +216,8 @@ function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
       {/* Skip to main content link for screen readers */}
-      <a 
-        href="#main-content" 
+      <a
+        href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-500 text-white px-4 py-2 rounded-md z-50"
       >
         Skip to main content
@@ -223,18 +229,18 @@ function LoginPage() {
         {/* Logo and branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-500 rounded-3xl mb-6 shadow-elevated">
-            <svg 
-              className="w-10 h-10 text-white" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-10 h-10 text-white"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           </div>
@@ -254,10 +260,10 @@ function LoginPage() {
       {/* Login form card */}
       <main id="main-content" className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-float rounded-2xl border border-neutral-200 sm:px-10 relative animate-scale-in">
-          
+
           {/* Error summary for screen readers */}
           {(formErrors.submit || Object.keys(formErrors).length > 1) && (
-            <div 
+            <div
               ref={errorSummaryRef}
               className="mb-6 p-4 bg-error-50 border border-error-200 rounded-xl"
               role="alert"
@@ -277,7 +283,7 @@ function LoginPage() {
 
           {/* Success message */}
           {successMessage && (
-            <div 
+            <div
               className="mb-6 p-4 bg-success-50 border border-success-200 rounded-xl animate-slide-down"
               role="alert"
               aria-live="polite"
@@ -293,11 +299,11 @@ function LoginPage() {
 
           {/* Login form */}
           <form onSubmit={handleSubmit} ref={formRef} noValidate className="space-y-6">
-            
+
             {/* Role selection */}
             <div>
-              <label 
-                htmlFor="role" 
+              <label
+                htmlFor="role"
                 className="block text-sm font-semibold text-neutral-700 mb-2"
               >
                 Access Role <span className="text-error-500" aria-label="required">*</span>
@@ -331,8 +337,8 @@ function LoginPage() {
 
             {/* Email input */}
             <div>
-              <label 
-                htmlFor="email" 
+              <label
+                htmlFor="email"
                 className="block text-sm font-semibold text-neutral-700 mb-2"
               >
                 Email Address <span className="text-error-500" aria-label="required">*</span>
@@ -354,11 +360,10 @@ function LoginPage() {
                   onFocus={() => clearFieldError('email')}
                   required
                   placeholder="Enter your email address"
-                  className={`w-full pl-12 pr-4 py-3.5 bg-white border rounded-xl text-neutral-900 placeholder-neutral-400 focus:bg-white focus:ring-4 transition-all duration-200 min-h-touch ${
-                    formErrors.email 
-                      ? 'border-error-500 focus:border-error-500 focus:ring-error-100' 
-                      : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-100'
-                  }`}
+                  className={`w-full pl-12 pr-4 py-3.5 bg-white border rounded-xl text-neutral-900 placeholder-neutral-400 focus:bg-white focus:ring-4 transition-all duration-200 min-h-touch ${formErrors.email
+                    ? 'border-error-500 focus:border-error-500 focus:ring-error-100'
+                    : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-100'
+                    }`}
                   aria-describedby={formErrors.email ? 'email-error' : undefined}
                   aria-invalid={!!formErrors.email}
                   aria-required="true"
@@ -376,8 +381,8 @@ function LoginPage() {
 
             {/* Password input */}
             <div>
-              <label 
-                htmlFor="password" 
+              <label
+                htmlFor="password"
                 className="block text-sm font-semibold text-neutral-700 mb-2"
               >
                 Password <span className="text-error-500" aria-label="required">*</span>
@@ -399,11 +404,10 @@ function LoginPage() {
                   onFocus={() => clearFieldError('password')}
                   required
                   placeholder="Enter your password"
-                  className={`w-full pl-12 pr-12 py-3.5 bg-white border rounded-xl text-neutral-900 placeholder-neutral-400 focus:bg-white focus:ring-4 transition-all duration-200 min-h-touch ${
-                    formErrors.password 
-                      ? 'border-error-500 focus:border-error-500 focus:ring-error-100' 
-                      : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-100'
-                  }`}
+                  className={`w-full pl-12 pr-12 py-3.5 bg-white border rounded-xl text-neutral-900 placeholder-neutral-400 focus:bg-white focus:ring-4 transition-all duration-200 min-h-touch ${formErrors.password
+                    ? 'border-error-500 focus:border-error-500 focus:ring-error-100'
+                    : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-100'
+                    }`}
                   aria-describedby={formErrors.password ? 'password-error' : 'password-help'}
                   aria-invalid={!!formErrors.password}
                   aria-required="true"
@@ -436,17 +440,16 @@ function LoginPage() {
                     <span>Password strength</span>
                     <span className={
                       passwordStrength < 40 ? 'text-error-600' :
-                      passwordStrength < 80 ? 'text-warning-600' : 'text-success-600'
+                        passwordStrength < 80 ? 'text-warning-600' : 'text-success-600'
                     }>
                       {passwordStrength < 40 ? 'Weak' : passwordStrength < 80 ? 'Medium' : 'Strong'}
                     </span>
                   </div>
                   <div className="w-full bg-neutral-200 rounded-full h-2" role="progressbar" aria-valuenow={passwordStrength} aria-valuemin="0" aria-valuemax="100" aria-label="Password strength">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        passwordStrength < 40 ? 'bg-error-500' :
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${passwordStrength < 40 ? 'bg-error-500' :
                         passwordStrength < 80 ? 'bg-warning-500' : 'bg-success-500'
-                      }`}
+                        }`}
                       style={{ width: `${passwordStrength}%` }}
                     ></div>
                   </div>
@@ -481,7 +484,7 @@ function LoginPage() {
                   Remember me
                 </label>
               </div>
-              <Link 
+              <Link
                 to="/forgot-password"
                 className="text-sm text-primary-600 hover:text-primary-500 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded"
               >
@@ -523,8 +526,8 @@ function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-neutral-600">
               Don't have an account?{' '}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="font-medium text-primary-600 hover:text-primary-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded"
               >
                 Create one here
