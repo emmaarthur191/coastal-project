@@ -142,16 +142,10 @@ function LoginPage() {
           localStorage.removeItem('rememberedEmail');
         }
 
-        // Navigate after brief delay for UX
-        // Use role-based redirect to ensure staff hit OTP verification
-        setTimeout(async () => {
-          // Refresh auth state to get the actual user role from backend
-          await checkAuth();
-
-          // Use getDashboardRoute which reads from actual user state
-          const targetRoute = getDashboardRoute ? getDashboardRoute() : '/dashboard';
-          navigate(targetRoute);
-        }, 1000);
+        // Navigate immediately and reload to ensure clean auth state
+        const targetRoute = getDashboardRoute ? getDashboardRoute() : '/dashboard';
+        navigate(targetRoute);
+        window.location.reload();
       } else {
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
         passwordInputRef.current?.focus();
