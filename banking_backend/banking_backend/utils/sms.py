@@ -87,9 +87,9 @@ def _send_via_sendexa(phone_number, message):
         # Normalize phone number (ensure it starts with country code)
         normalized_phone = _normalize_phone_number(phone_number)
         
-        # Sendexa API request
+        # Sendexa API request - Uses Basic Auth with Base64-encoded API Key:Secret
         headers = {
-            'Authorization': f'Bearer {api_token}',
+            'Authorization': f'Basic {api_token}',
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
