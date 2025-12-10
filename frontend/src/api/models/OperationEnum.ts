@@ -8,6 +8,7 @@
  * * `system_reset` - system_reset
  * * `audit_bypass` - audit_bypass
  * * `create_user` - create_user
+ * * `update_user` - update_user
  * * `modify_user_role` - modify_user_role
  * * `activate_user` - activate_user
  * * `deactivate_user` - deactivate_user
@@ -25,6 +26,7 @@ export enum OperationEnum {
     SYSTEM_RESET = 'system_reset',
     AUDIT_BYPASS = 'audit_bypass',
     CREATE_USER = 'create_user',
+    UPDATE_USER = 'update_user',
     MODIFY_USER_ROLE = 'modify_user_role',
     ACTIVATE_USER = 'activate_user',
     DEACTIVATE_USER = 'deactivate_user',

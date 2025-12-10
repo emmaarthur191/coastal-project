@@ -8,10 +8,12 @@ export type SuperuserOperationRequest = {
     operation: OperationEnum;
     reason: string;
     target?: string;
+    user_id?: string;
     email?: string;
     first_name?: string;
     last_name?: string;
     role?: SuperuserOperationRoleEnum;
+    is_active?: boolean;
     branch_name?: string;
     branch_location?: string;
     manager_id?: string;

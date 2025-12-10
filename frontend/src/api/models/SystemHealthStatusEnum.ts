@@ -8,7 +8,7 @@
  * * `critical` - Critical
  * * `unknown` - Unknown
  */
-export enum StatusB1eEnum {
+export enum SystemHealthStatusEnum {
     HEALTHY = 'healthy',
     WARNING = 'warning',
     CRITICAL = 'critical',
