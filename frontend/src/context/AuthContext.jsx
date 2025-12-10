@@ -73,11 +73,43 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Role checking functions - memoized to update when user changes
-   const isManager = React.useMemo(() => user?.role === 'manager', [user]);
-   const isCashier = React.useMemo(() => user?.role === 'cashier', [user]);
-   const isMobileBanker = React.useMemo(() => user?.role === 'mobile_banker', [user]);
-   const isOperationsManager = React.useMemo(() => user?.role === 'operations_manager', [user]);
-   const isMember = React.useMemo(() => user?.role === 'customer', [user]);
+  const isManager = React.useMemo(() => user?.role === 'manager', [user]);
+  const isCashier = React.useMemo(() => user?.role === 'cashier', [user]);
+  const isMobileBanker = React.useMemo(() => user?.role === 'mobile_banker', [user]);
+  const isOperationsManager = React.useMemo(() => user?.role === 'operations_manager', [user]);
+  const isMember = React.useMemo(() => user?.role === 'customer', [user]);
+  const isAdministrator = React.useMemo(() => user?.role === 'administrator', [user]);
+  const isSuperuser = React.useMemo(() => user?.role === 'superuser', [user]);
+
+  // Staff roles (non-customer roles)
+  const staffRoles = ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser'];
+  const isStaff = React.useMemo(() => staffRoles.includes(user?.role), [user]);
+
+  // Helper function to check if user has a specific role
+  const hasRole = React.useCallback((role) => user?.role === role, [user]);
+
+  // Helper function to check if user has any of the specified roles
+  const hasAnyRole = React.useCallback((roles) => {
+    if (!user?.role) return false;
+    // Superuser and administrator always have access
+    if (['superuser', 'administrator'].includes(user.role)) return true;
+    return roles.includes(user.role);
+  }, [user]);
+
+  // Get appropriate dashboard route for user's role
+  const getDashboardRoute = React.useCallback(() => {
+    if (!user) return '/login';
+    const routes = {
+      customer: '/member-dashboard',
+      cashier: '/cashier-dashboard',
+      mobile_banker: '/mobile-banker-dashboard',
+      manager: '/manager-dashboard',
+      operations_manager: '/operations-dashboard',
+      administrator: '/dashboard',
+      superuser: '/dashboard',
+    };
+    return routes[user.role] || '/dashboard';
+  }, [user]);
 
   const value = {
     user,
@@ -92,7 +124,13 @@ export const AuthProvider = ({ children }) => {
     isMobileBanker,
     isOperationsManager,
     isMember,
-    isStaff: user?.role === 'staff' || user?.role === 'cashier',
+    isAdministrator,
+    isSuperuser,
+    isStaff,
+    // Role helper functions
+    hasRole,
+    hasAnyRole,
+    getDashboardRoute,
   };
 
   return (
