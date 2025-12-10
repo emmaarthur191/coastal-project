@@ -887,7 +887,7 @@ class SendOTPView(views.APIView):
     class OTPRequestSerializer(serializers.Serializer):
         phone_number = serializers.CharField(max_length=20)
         verification_type = serializers.ChoiceField(
-            choices=['user_creation', 'phone_verification', 'transaction', 'password_reset'],
+            choices=['user_creation', 'phone_verification', 'transaction', 'password_reset', 'staff_onboarding', '2fa_setup'],
             default='user_creation'
         )
     
@@ -972,7 +972,7 @@ class VerifyOTPView(views.APIView):
         phone_number = serializers.CharField(max_length=20)
         otp_code = serializers.CharField(max_length=6)
         verification_type = serializers.ChoiceField(
-            choices=['user_creation', 'phone_verification', 'transaction', 'password_reset'],
+            choices=['user_creation', 'phone_verification', 'transaction', 'password_reset', 'staff_onboarding', '2fa_setup'],
             default='user_creation'
         )
     
