@@ -70,15 +70,15 @@ services:
         value: "User"
       - key: DJANGO_SUPERUSER_PHONE
         value: "+233557155186"
-      # SMS Service Configuration (Sendexa)
+      # SMS Service Configuration (Sendexa - Coastal_Autotech)
       - key: SMS_PROVIDER
         value: "sendexa"
       - key: SMS_API_URL
         value: "https://api.sendexa.co/v1/sms/send"
       - key: SMS_API_TOKEN
-        value: "c21zXzc2NzIwOTY0OjcxNTQ3YTRkMjM4N2ZlZjQ="
+        value: "c21zXzE0OWY5MWI2OjcwYTlkYzQxMzU3NTQzOTY="
       - key: SMS_SENDER_ID
-        value: "CoastalBank"
+        value: "Coastal_Autotech"
 
   # React Frontend Web Service
   - type: web
