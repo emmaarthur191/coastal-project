@@ -75,7 +75,7 @@ def _send_via_sendexa(phone_number, message):
         # Get configuration
         api_url = getattr(settings, 'SMS_API_URL', 'https://api.sendexa.co/v1/sms/send')
         api_token = getattr(settings, 'SMS_API_TOKEN', '')
-        sender_id = getattr(settings, 'SMS_SENDER_ID', 'CoastalBank')
+        sender_id = getattr(settings, 'SMS_SENDER_ID', 'Coastal')
         
         if not api_token:
             logger.error("SMS_API_TOKEN not configured for Sendexa")
@@ -165,7 +165,7 @@ def _send_via_arkesel(phone_number, message):
     try:
         api_url = getattr(settings, 'SMS_API_URL', 'https://sms.arkesel.com/api/v2/sms/send')
         api_token = getattr(settings, 'SMS_API_TOKEN', '')
-        sender_id = getattr(settings, 'SMS_SENDER_ID', 'CoastalBank')
+        sender_id = getattr(settings, 'SMS_SENDER_ID', 'Coastal')
         
         if not api_token:
             logger.error("SMS_API_TOKEN not configured for Arkesel")
