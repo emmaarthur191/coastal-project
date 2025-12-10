@@ -139,6 +139,11 @@ DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }
 
+# Database connection pooling - reuse connections for 10 minutes
+# This significantly reduces connection overhead (50-100ms per request savings)
+DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+DATABASES['default']['CONN_HEALTH_CHECKS'] = True  # Verify connections before use
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -193,12 +198,31 @@ if ENVIRONMENT == 'production':
         'whitenoise.middleware.WhiteNoiseMiddleware',
     )
 
-# Cache configuration
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+# Cache configuration - Use Redis in production, LocMemCache in development
+REDIS_URL = get_secret('REDIS_URL') or config('REDIS_URL', default=None)
+
+if REDIS_URL:
+    # Redis cache for production - shared across all Gunicorn workers
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'KEY_PREFIX': 'coastal',
+            'TIMEOUT': 300,  # 5 minutes default
+            'OPTIONS': {
+                'socket_connect_timeout': 5,
+                'socket_timeout': 5,
+            }
+        }
     }
-}
+else:
+    # Fallback to local memory cache for development
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

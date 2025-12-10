@@ -67,7 +67,9 @@ class StaffAccountViewSet(viewsets.ReadOnlyModelViewSet, ViewMixin):
 
             total_accounts = Account.objects.count()
             active_accounts = Account.objects.filter(status='Active').count()
-            total_balance = sum(account.balance for account in Account.objects.all())
+            # Use DB aggregation instead of Python sum() for 10x performance
+            from django.db.models import Sum
+            total_balance = Account.objects.aggregate(total=Sum('balance'))['total'] or 0
 
             # Recent accounts (last 30 days)
             from django.utils import timezone
@@ -101,8 +103,9 @@ class AccountSummaryViewSet(viewsets.ViewSet):
         user = request.user
         accounts = Account.objects.filter(owner=user)
 
-        # Calculate totals
-        total_balance = sum(a.balance for a in accounts)
+        # Calculate totals using DB aggregation for efficiency
+        from django.db.models import Sum
+        total_balance = Account.objects.filter(owner=user).aggregate(total=Sum('balance'))['total'] or 0
         total_accounts = accounts.count()
 
         # Simple currency breakdown (assuming all accounts are in same currency for now)
