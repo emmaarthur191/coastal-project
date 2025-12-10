@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 /**
- * ProtectedStaffRoute - Role-based route protection for staff members
+ * ProtectedStaffRoute - Simple role-based route protection for staff members
  * 
  * @param {React.ReactNode} children - The component to render if authorized
  * @param {string[]} allowedRoles - Array of roles that can access this route
@@ -47,7 +47,7 @@ const ProtectedStaffRoute = ({
         );
     }
 
-    // Redirect to login if remote auth failed despite token presence
+    // Redirect to login if not authenticated
     if (!isAuthenticated || !user) {
         return <Navigate to="/login" replace />;
     }
@@ -69,23 +69,7 @@ const ProtectedStaffRoute = ({
         return <Navigate to={redirectTo} replace />;
     }
 
-    // Check if staff needs OTP verification (first-time login verification)
-    const staffRoles = ['cashier', 'mobile_banker', 'manager', 'operations_manager'];
-    if (staffRoles.includes(user.role)) {
-        // Check if user has completed OTP verification
-        const isOtpVerified = user.otp_verified || localStorage.getItem(`otp_verified_${user.id}`);
-
-        if (!isOtpVerified) {
-            // Redirect to OTP verification page
-            return <Navigate to="/staff-otp-verification" replace />;
-        }
-    }
-
-    // Check if staff needs document verification (new staff without completed verification)
-    if (staffRoles.includes(user.role) && user.needs_verification) {
-        return <Navigate to="/staff-verification" replace />;
-    }
-
+    // Role is allowed, render children
     return children;
 };
 
