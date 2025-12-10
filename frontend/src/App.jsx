@@ -28,6 +28,7 @@ const FraudAlerts = lazy(() => import('./pages/FraudAlerts'));
 const FraudCases = lazy(() => import('./pages/FraudCases'));
 const FraudRules = lazy(() => import('./pages/FraudRules'));
 const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage'));
+const StaffOTPVerificationPage = lazy(() => import('./pages/StaffOTPVerificationPage'));
 
 // Import components
 import ProtectedMemberRoute from './components/ProtectedMemberRoute'
@@ -245,6 +246,13 @@ function AppContent() {
           <Route path="/staff-verification" element={
             <ProtectedRoute>
               <StaffVerificationPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="/staff-otp-verification" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoading />}>
+                <StaffOTPVerificationPage />
+              </Suspense>
             </ProtectedRoute>
           } />
         </Routes>
