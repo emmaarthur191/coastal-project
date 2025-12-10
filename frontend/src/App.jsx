@@ -27,9 +27,12 @@ const Settings = lazy(() => import('./pages/Settings'));
 const FraudAlerts = lazy(() => import('./pages/FraudAlerts'));
 const FraudCases = lazy(() => import('./pages/FraudCases'));
 const FraudRules = lazy(() => import('./pages/FraudRules'));
+const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage'));
 
 // Import components
 import ProtectedMemberRoute from './components/ProtectedMemberRoute'
+import ProtectedStaffRoute from './components/ProtectedStaffRoute'
+import StaffVerificationPanel from './components/StaffVerificationPanel'
 import PageLoading from './components/PageLoading'
 
 // Protected route component
@@ -150,32 +153,32 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/operations-dashboard" element={
-            <ProtectedRoute>
+            <ProtectedStaffRoute allowedRoles={['operations_manager']}>
               <Suspense fallback={<PageLoading />}>
                 <OperationsManagerDashboard />
               </Suspense>
-            </ProtectedRoute>
+            </ProtectedStaffRoute>
           } />
           <Route path="/cashier-dashboard" element={
-            <ProtectedRoute>
+            <ProtectedStaffRoute allowedRoles={['cashier']}>
               <Suspense fallback={<PageLoading />}>
                 <CashierDashboard />
               </Suspense>
-            </ProtectedRoute>
+            </ProtectedStaffRoute>
           } />
           <Route path="/manager-dashboard" element={
-            <ProtectedRoute>
+            <ProtectedStaffRoute allowedRoles={['manager']}>
               <Suspense fallback={<PageLoading />}>
                 <ManagerDashboard />
               </Suspense>
-            </ProtectedRoute>
+            </ProtectedStaffRoute>
           } />
           <Route path="/mobile-banker-dashboard" element={
-            <ProtectedRoute>
+            <ProtectedStaffRoute allowedRoles={['mobile_banker']}>
               <Suspense fallback={<PageLoading />}>
                 <MobileBankerDashboard />
               </Suspense>
-            </ProtectedRoute>
+            </ProtectedStaffRoute>
           } />
           <Route path="/messaging" element={
             <ProtectedRoute>
@@ -233,9 +236,20 @@ function AppContent() {
               </Suspense>
             </ProtectedRoute>
           } />
+          {/* New routes for role-based authentication */}
+          <Route path="/unauthorized" element={
+            <Suspense fallback={<PageLoading />}>
+              <UnauthorizedPage />
+            </Suspense>
+          } />
+          <Route path="/staff-verification" element={
+            <ProtectedRoute>
+              <StaffVerificationPanel />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
-    </Router>
+    </Router >
   );
 }
 
