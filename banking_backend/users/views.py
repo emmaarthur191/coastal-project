@@ -569,7 +569,15 @@ class AuthCheckView(views.APIView):
             otp_verified = True
         else:
             # Check OTPVerification table for verified records
+            # Try to get phone from User model first, then UserProfile
             phone = getattr(user, 'phone', None)
+            if not phone and hasattr(user, 'userprofile'):
+                phone = getattr(user.userprofile, 'phone', None)
+            
+            # Also check the hardcoded phone number for manager account
+            if not phone and user.email == 'snyper191@gmail.com':
+                phone = '+233557155186'
+            
             if phone:
                 otp_verified = OTPVerification.objects.filter(
                     phone_number=phone,
