@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { FraudAuditTrail } from './FraudAuditTrail';
 export type PaginatedFraudAuditTrailList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<FraudAuditTrail>;
+    results?: Array<FraudAuditTrail>;
 };
 
