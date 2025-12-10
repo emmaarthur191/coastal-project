@@ -20,7 +20,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from rest_framework.throttling import AnonRateThrottle
 from django.db.models import Q
 from .models import UserProfile, User, OTPVerification, UserDocuments
@@ -56,8 +56,10 @@ class PasswordResetThrottle(AnonRateThrottle):
 class OTPThrottle(AnonRateThrottle):
     rate = '5/minute'  # Restrictive for OTP operations
 
+class LoginThrottle(AnonRateThrottle):
+    rate = '10/minute'  # 10 login attempts per minute to prevent brute force
 
-@method_decorator(csrf_exempt, name='dispatch')
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Custom login view that returns user data along with tokens.
@@ -66,6 +68,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     along with basic user information. Available to all valid user accounts.
     """
     serializer_class = EmailTokenObtainPairSerializer
+    throttle_classes = [LoginThrottle]
 
     @extend_schema(
         summary="User Login",
@@ -242,7 +245,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             )
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(views.APIView):
     """
     POST: Logout by blacklisting the refresh token.
@@ -319,7 +321,6 @@ class LogoutView(views.APIView):
             return response
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetRequestView(views.APIView):
     """POST: Request password reset by sending email with reset token."""
     permission_classes = [permissions.AllowAny]
@@ -371,7 +372,6 @@ class PasswordResetRequestView(views.APIView):
             return Response({"detail": "If the email exists, a reset link has been sent."})
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetConfirmView(views.APIView):
     """POST: Confirm password reset with token."""
     permission_classes = [permissions.AllowAny]
@@ -431,7 +431,6 @@ class PasswordResetConfirmView(views.APIView):
         return Response({"detail": "Invalid or expired token."}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ProfileSettingsView(views.APIView):
     """
     GET: Retrieve profile.
@@ -457,7 +456,6 @@ class ProfileSettingsView(views.APIView):
         return Response(serializer.data)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class NotificationSettingsView(views.APIView):
     """PATCH: Update notification preferences (notify_email, notify_sms, notify_push)."""
     authentication_classes = [authentication.SessionAuthentication, authentication.TokenAuthentication]
@@ -477,7 +475,6 @@ class NotificationSettingsView(views.APIView):
         return Response({"detail": "Notification settings updated."})
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class PasswordChangeView(views.APIView):
     """POST: Change user password."""
     permission_classes = [permissions.IsAuthenticated]
@@ -613,7 +610,6 @@ class AuthCheckView(views.APIView):
         })
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(views.APIView):
     """
     POST: Register a new user account.
@@ -914,7 +910,6 @@ class MemberDashboardView(views.APIView):
         }
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class SendOTPView(views.APIView):
     """
     POST: Send OTP code to phone number for verification.
@@ -1002,7 +997,6 @@ class SendOTPView(views.APIView):
         return Response(response_data)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class VerifyOTPView(views.APIView):
     """
     POST: Verify OTP code for phone number.
@@ -1089,7 +1083,6 @@ class VerifyOTPView(views.APIView):
             }, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class CreateUserView(views.APIView):
     """
     POST: Create a new user (staff only - requires manager or operations_manager role).
@@ -1174,7 +1167,6 @@ class CreateUserView(views.APIView):
         }, status=201)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class EnhancedStaffRegistrationView(views.APIView):
     """
     POST: Create a new staff member with comprehensive registration including documents.
@@ -1543,7 +1535,6 @@ class StaffIDListView(views.APIView):
         return Response(response_data)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class DeactivateStaffView(views.APIView):
     """
     POST: Deactivate a staff member.
@@ -1602,7 +1593,6 @@ class DeactivateStaffView(views.APIView):
             }, status=404)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ReactivateStaffView(views.APIView):
     """
     POST: Reactivate a staff member.
@@ -1703,7 +1693,6 @@ class MembersListView(views.APIView):
         return Response(members_data)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ServiceRequestView(views.APIView):
     """
     POST: Create a service request.
@@ -1804,7 +1793,6 @@ class ServiceRequestView(views.APIView):
         return Response([])
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class Enable2FAView(views.APIView):
     """
     POST: Enable two-factor authentication for the user.
@@ -1900,7 +1888,6 @@ class Enable2FAView(views.APIView):
             }, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class SuperuserOperationsView(views.APIView):
     """
     POST: Perform superuser operations.
@@ -2385,7 +2372,7 @@ class SuperuserOperationsView(views.APIView):
 @csrf_protect
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('users:dashboard')
 
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -3227,7 +3214,6 @@ def toggle_user_status(request, pk):
 
 
 # Document Management Views
-@extend_schema(exclude=True)
 class UserDocumentsListCreateView(views.APIView):
     """API view for listing and uploading user documents."""
     permission_classes = [permissions.IsAuthenticated]
@@ -3345,7 +3331,6 @@ class UserDocumentsDetailView(views.APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(exclude=True)
 class DocumentApprovalView(views.APIView):
     """API view for document approval/rejection by managers and operations managers."""
     permission_classes = [permissions.IsAuthenticated]
@@ -3417,7 +3402,6 @@ class DocumentApprovalView(views.APIView):
         }, status=status.HTTP_200_OK)
 
 
-@extend_schema(exclude=True)
 class PendingDocumentsView(views.APIView):
     """API view for managers/operations managers to view pending document approvals."""
     permission_classes = [permissions.IsAuthenticated]
