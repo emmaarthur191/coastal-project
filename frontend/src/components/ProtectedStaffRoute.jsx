@@ -63,8 +63,19 @@ const ProtectedStaffRoute = ({
         return <Navigate to={redirectTo} replace />;
     }
 
-    // Check if staff needs verification (new staff without completed verification)
+    // Check if staff needs OTP verification (first-time login verification)
     const staffRoles = ['cashier', 'mobile_banker', 'manager', 'operations_manager'];
+    if (staffRoles.includes(user.role)) {
+        // Check if user has completed OTP verification
+        const isOtpVerified = user.otp_verified || localStorage.getItem(`otp_verified_${user.id}`);
+
+        if (!isOtpVerified) {
+            // Redirect to OTP verification page
+            return <Navigate to="/staff-otp-verification" replace />;
+        }
+    }
+
+    // Check if staff needs document verification (new staff without completed verification)
     if (staffRoles.includes(user.role) && user.needs_verification) {
         return <Navigate to="/staff-verification" replace />;
     }
