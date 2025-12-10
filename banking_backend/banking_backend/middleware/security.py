@@ -54,14 +54,15 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
             })
 
             # CSP for production - Secure with trusted CDNs
+            # Note: 'unsafe-inline' is needed for Django admin/dashboard templates that use onclick handlers
             self.security_headers.update({
                 'Content-Security-Policy': (
                     "default-src 'self'; "
-                    "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
+                    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
                     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
                     "font-src 'self' data: https://cdnjs.cloudflare.com; "
                     "img-src 'self' data: https:; "
-                    "connect-src 'self' https://coastal-backend.onrender.com https://coastal-frontend.onrender.com https://cdn.jsdelivr.net; "
+                    "connect-src 'self' https://coastal-backend-bmn3.onrender.com https://coastal-frontend.onrender.com https://cdn.jsdelivr.net; "
                     "frame-src 'none'; "
                     "object-src 'none'; "
                     "base-uri 'self'; "
