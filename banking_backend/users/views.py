@@ -592,7 +592,7 @@ class AuthCheckView(views.APIView):
             'role': user.role,
             'is_active': user.is_active,
             'is_staff': user.is_staff,
-            'phone': user.phone if hasattr(user, 'phone') else None,
+            'phone': phone,
             'otp_verified': otp_verified,
         }
         return Response({
