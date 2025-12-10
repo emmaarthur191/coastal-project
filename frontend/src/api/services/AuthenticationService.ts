@@ -66,7 +66,7 @@ export class AuthenticationService {
     }
     /**
      * Check Authentication Status
-     * Returns the authenticated user's information if logged in. Rate limiting applied to prevent abuse.
+     * Returns the authenticated user's information if logged in, or authenticated: false if not. Rate limiting applied to prevent abuse.
      * @returns any
      * @throws ApiError
      */
@@ -222,7 +222,7 @@ export class AuthenticationService {
     }
     /**
      * Check Authentication Status
-     * Returns the authenticated user's information if logged in. Rate limiting applied to prevent abuse.
+     * Returns the authenticated user's information if logged in, or authenticated: false if not. Rate limiting applied to prevent abuse.
      * @returns any
      * @throws ApiError
      */

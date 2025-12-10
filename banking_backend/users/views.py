@@ -191,13 +191,20 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                         'refresh_token',
                         str(refresh),
                         httponly=True,
-                        secure=True,  # Always use secure in production
-                        samesite='Strict',
+                        samesite='Lax' if settings.DEBUG else 'Strict',
+                        secure=not settings.DEBUG,
                         max_age=24 * 60 * 60  # 24 hours
                     )
 
+                    # Log the user into the django session
+                    login(request, user)
+
                     # Prevent session fixation attacks by regenerating session ID
-                    request.session.cycle_key()
+                    # login() already cycles the key, so we can rely on that.
+                    try:
+                        request.session.cycle_key()
+                    except Exception as e:
+                        logger.warning(f"Session cycle_key failed: {e}")
 
                     logger.info("Authentication tokens set successfully")
 
@@ -514,11 +521,14 @@ class PasswordChangeView(views.APIView):
         return Response({"detail": "Password updated successfully."})
 
 
+from .authentication import CookieJWTAuthentication
+
 class AuthCheckView(views.APIView):
     """
     GET: Check if the current user is authenticated and return user info.
     Returns authenticated: false for unauthenticated requests instead of 401.
     """
+    authentication_classes = [CookieJWTAuthentication, authentication.SessionAuthentication, authentication.TokenAuthentication]
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
@@ -564,6 +574,8 @@ class AuthCheckView(views.APIView):
         
         # Check if user has verified OTP
         otp_verified = False
+        phone = None
+
         if user.role in ['superuser', 'administrator']:
             # Superusers and administrators bypass OTP verification
             otp_verified = True

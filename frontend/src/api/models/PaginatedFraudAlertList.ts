@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { FraudAlert } from './FraudAlert';
 export type PaginatedFraudAlertList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<FraudAlert>;
+    results?: Array<FraudAlert>;
 };
 

@@ -2,11 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { StatusB1eEnum } from './StatusB1eEnum';
+import type { SystemHealthStatusEnum } from './SystemHealthStatusEnum';
 export type SystemHealthRequest = {
     component_name: string;
     component_type: string;
-    status?: StatusB1eEnum;
+    status?: SystemHealthStatusEnum;
     status_message?: string;
     next_check?: string | null;
     response_time?: string | null;

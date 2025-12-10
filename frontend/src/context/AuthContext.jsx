@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.checkAuth();
       if (data.authenticated) {
         setUser(data.user);
+        console.log('Auth check user data:', data.user); // DEBUG: show otp_verified
       } else {
         setUser(null);
       }

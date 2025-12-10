@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { PerformanceMetric } from './PerformanceMetric';
 export type PaginatedPerformanceMetricList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<PerformanceMetric>;
+    results?: Array<PerformanceMetric>;
 };
 
