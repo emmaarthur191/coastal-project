@@ -40,6 +40,12 @@ export default defineConfig({
     hmr: {
       clientPort: 3000,
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
   define: {
     'process.env': {}
