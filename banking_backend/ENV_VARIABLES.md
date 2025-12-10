@@ -44,12 +44,12 @@ DEFAULT_FROM_EMAIL=            # From address
 FRONTEND_URL=                  # Frontend application URL
 ```
 
-### SMS Service
+### SMS Service (Sendexa)
 ```bash
-SMS_PROVIDER=console           # 'console' for dev (logs only), 'api' for production
-SMS_API_URL=https://sms.arkesel.com/api/v2/sms/send  # SMS API endpoint
-SMS_API_TOKEN=                 # Base64-encoded API token (required for production)
-SMS_SENDER_ID=CoastalBank      # Sender ID for SMS messages
+SMS_PROVIDER=sendexa           # 'console' (dev logs), 'sendexa' (production), 'arkesel' (legacy)
+SMS_API_URL=https://api.sendexa.co/v1/sms/send  # Sendexa API endpoint
+SMS_API_TOKEN=                 # Your Sendexa API token (required for production)
+SMS_SENDER_ID=CoastalBank      # Registered sender ID
 ```
 
 ### Security
