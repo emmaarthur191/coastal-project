@@ -517,12 +517,13 @@ class PasswordChangeView(views.APIView):
 class AuthCheckView(views.APIView):
     """
     GET: Check if the current user is authenticated and return user info.
+    Returns authenticated: false for unauthenticated requests instead of 401.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     @extend_schema(
         summary="Check Authentication Status",
-        description="Returns the authenticated user's information if logged in. Rate limiting applied to prevent abuse.",
+        description="Returns the authenticated user's information if logged in, or authenticated: false if not. Rate limiting applied to prevent abuse.",
         responses={
             200: {
                 'type': 'object',
@@ -542,12 +543,6 @@ class AuthCheckView(views.APIView):
                     }
                 }
             },
-            401: {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'example': 'Authentication credentials were not provided.'}
-                }
-            },
             429: {
                 'type': 'object',
                 'properties': {
@@ -558,6 +553,13 @@ class AuthCheckView(views.APIView):
         tags=['Authentication']
     )
     def get(self, request):
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return Response({
+                'authenticated': False,
+                'user': None
+            })
+        
         user = request.user
         user_data = {
             'id': str(user.id),
@@ -567,6 +569,7 @@ class AuthCheckView(views.APIView):
             'role': user.role,
             'is_active': user.is_active,
             'is_staff': user.is_staff,
+            'phone': user.phone if hasattr(user, 'phone') else None,
         }
         return Response({
             'authenticated': True,
