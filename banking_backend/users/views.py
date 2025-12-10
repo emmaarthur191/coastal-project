@@ -561,6 +561,21 @@ class AuthCheckView(views.APIView):
             })
         
         user = request.user
+        
+        # Check if user has verified OTP
+        otp_verified = False
+        if user.role in ['superuser', 'administrator']:
+            # Superusers and administrators bypass OTP verification
+            otp_verified = True
+        else:
+            # Check OTPVerification table for verified records
+            phone = getattr(user, 'phone', None)
+            if phone:
+                otp_verified = OTPVerification.objects.filter(
+                    phone_number=phone,
+                    is_verified=True
+                ).exists()
+        
         user_data = {
             'id': str(user.id),
             'email': user.email,
@@ -570,6 +585,7 @@ class AuthCheckView(views.APIView):
             'is_active': user.is_active,
             'is_staff': user.is_staff,
             'phone': user.phone if hasattr(user, 'phone') else None,
+            'otp_verified': otp_verified,
         }
         return Response({
             'authenticated': True,
