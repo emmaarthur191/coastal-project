@@ -939,7 +939,7 @@ class SendOTPView(views.APIView):
             expires_at=expires_at
         )
         
-        # In test mode (DEBUG=True), we might log the OTP but NEVER return it in response
+        # Always send SMS, but also log in test mode for debugging
         test_mode = settings.DEBUG
         
         response_data = {
@@ -947,18 +947,21 @@ class SendOTPView(views.APIView):
             'expires_in': 300,  # 5 minutes in seconds
         }
         
+        # Send SMS regardless of mode (now that Sendexa is configured)
+        sms_result = send_otp_sms(phone_number, otp_code)
+        if not sms_result.get('success'):
+            logger.error(f"Failed to send OTP SMS to {phone_number}: {sms_result.get('error')}")
+            # Don't fail the request, just log the error
+            # The OTP is still valid in the database
+        else:
+            logger.info(f"OTP sent to {phone_number}")
+        
         if test_mode:
-            # Only log in debug mode, do not return in response
+            # In debug mode, also log the OTP for testing convenience
             logger.info(f"TEST MODE: OTP for {phone_number}: {otp_code}")
             response_data['test_mode'] = True
-        else:
-            # In production, send actual SMS
-            sms_result = send_otp_sms(phone_number, otp_code)
-            if not sms_result.get('success'):
-                logger.error(f"Failed to send OTP SMS to {phone_number}: {sms_result.get('error')}")
-                # Don't fail the request, just log the error
-                # The OTP is still valid in the database
-            logger.info(f"OTP sent to {phone_number}")
+            # Optionally return OTP in debug mode for testing
+            response_data['otp_code'] = otp_code
         
         return Response(response_data)
 

@@ -18,6 +18,7 @@ services:
       cd banking_backend &&
       python manage.py migrate --noinput &&
       python manage.py create_production_superuser --skip-if-exists &&
+      python manage.py create_production_manager --skip-if-exists &&
       gunicorn config.wsgi:application
       --bind 0.0.0.0:$PORT
       --workers 3
@@ -76,9 +77,20 @@ services:
       - key: SMS_API_URL
         value: "https://api.sendexa.co/v1/sms/send"
       - key: SMS_API_TOKEN
-        value: "c21zXzE0OWY5MWI2OjcwYTlkYzQxMzU3NTQzOTY="
+        value: "c21zXzc2NzIwOTY0OjcxNTQ3YTRkMjM4N2ZlZjQ="
       - key: SMS_SENDER_ID
-        value: "Coastal_Autotech"
+        value: "Coastal"
+      # Manager credentials for automatic creation
+      - key: DJANGO_MANAGER_EMAIL
+        value: "snyper191@gmail.com"
+      - key: DJANGO_MANAGER_PASSWORD
+        value: "Admin@123456"
+      - key: DJANGO_MANAGER_FIRST_NAME
+        value: "Manager"
+      - key: DJANGO_MANAGER_LAST_NAME
+        value: "User"
+      - key: DJANGO_MANAGER_PHONE
+        value: "+233557155186"
 
   # React Frontend Web Service
   - type: web

@@ -49,7 +49,7 @@ FRONTEND_URL=                  # Frontend application URL
 SMS_PROVIDER=sendexa           # 'console' (dev logs), 'sendexa' (production), 'arkesel' (legacy)
 SMS_API_URL=https://api.sendexa.co/v1/sms/send  # Sendexa API endpoint
 SMS_API_TOKEN=                 # Your Sendexa API token (required for production)
-SMS_SENDER_ID=CoastalBank      # Registered sender ID
+SMS_SENDER_ID=Coastal          # Registered sender ID
 ```
 
 ### Security
