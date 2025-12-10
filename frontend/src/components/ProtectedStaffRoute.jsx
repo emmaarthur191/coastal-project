@@ -25,7 +25,13 @@ const ProtectedStaffRoute = ({
 }) => {
     const { isAuthenticated, user, loading } = useAuth();
 
-    // Show loading state while checking authentication
+    // Fast client-side check: if no token, redirect immediately
+    const hasToken = !!localStorage.getItem('accessToken');
+    if (!hasToken) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Show loading state while checking remote authentication
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-gray-50">
@@ -41,7 +47,7 @@ const ProtectedStaffRoute = ({
         );
     }
 
-    // Redirect to login if not authenticated
+    // Redirect to login if remote auth failed despite token presence
     if (!isAuthenticated || !user) {
         return <Navigate to="/login" replace />;
     }

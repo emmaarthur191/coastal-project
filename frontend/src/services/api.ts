@@ -498,12 +498,12 @@ function sanitizeErrorMessage(message) {
   sensitivePatterns.forEach(pattern => {
     sanitized = sanitized.replace(pattern, '[REDACTED]');
   });
-  
+
   // If message contains suspicious content, use generic message
   if (/[<>{}[\]\\]/.test(sanitized)) {
     sanitized = 'An error occurred. Please try again or contact support if the problem persists.';
   }
-  
+
   return sanitized;
 }
 
@@ -607,6 +607,15 @@ export const authService = {
 
       const data = await response.json();
       console.log('[DEBUG] Login successful, tokens set in httpOnly cookies');
+
+      // Store tokens in localStorage as requested for frontend compatibility
+      if (data.access) {
+        localStorage.setItem('accessToken', data.access);
+      }
+      if (data.refresh) {
+        localStorage.setItem('refreshToken', data.refresh);
+      }
+
       return data;
     } catch (error) {
       console.log('[DEBUG] Login threw exception:', error);
@@ -1727,22 +1736,22 @@ export const apiService = {
           transactionsArray = data.results;
           console.log('Using paginated results:', transactionsArray.length, 'transactions');
         } else if (data.transactions) {
-            console.log('data.transactions exists:', data.transactions);
-            console.log('typeof data.transactions:', typeof data.transactions);
-            console.log('Array.isArray(data.transactions):', Array.isArray(data.transactions));
-            if (Array.isArray(data.transactions)) {
-                // Custom transactions key
-                transactionsArray = data.transactions;
-                console.log('Using transactions array:', transactionsArray.length, 'transactions');
-            } else if (data.transactions.results && Array.isArray(data.transactions.results)) {
-                transactionsArray = data.transactions.results;
-                console.log('Using transactions.results array:', transactionsArray.length, 'transactions');
-            } else if (data.transactions.data && Array.isArray(data.transactions.data)) {
-                transactionsArray = data.transactions.data;
-                console.log('Using transactions.data array:', transactionsArray.length, 'transactions');
-            } else {
-                console.warn('transactions property exists but no array found inside it. Keys:', Object.keys(data.transactions));
-            }
+          console.log('data.transactions exists:', data.transactions);
+          console.log('typeof data.transactions:', typeof data.transactions);
+          console.log('Array.isArray(data.transactions):', Array.isArray(data.transactions));
+          if (Array.isArray(data.transactions)) {
+            // Custom transactions key
+            transactionsArray = data.transactions;
+            console.log('Using transactions array:', transactionsArray.length, 'transactions');
+          } else if (data.transactions.results && Array.isArray(data.transactions.results)) {
+            transactionsArray = data.transactions.results;
+            console.log('Using transactions.results array:', transactionsArray.length, 'transactions');
+          } else if (data.transactions.data && Array.isArray(data.transactions.data)) {
+            transactionsArray = data.transactions.data;
+            console.log('Using transactions.data array:', transactionsArray.length, 'transactions');
+          } else {
+            console.warn('transactions property exists but no array found inside it. Keys:', Object.keys(data.transactions));
+          }
         } else if (Array.isArray(data.data)) {
           // Common data key
           transactionsArray = data.data;
