@@ -29,14 +29,8 @@ function LoginPage() {
   const { login, checkAuth, getDashboardRoute, user } = useAuth();
   const navigate = useNavigate();
 
-  // Password validation rules
-  const passwordRules = [
-    { test: (password) => password.length >= 8, message: 'At least 8 characters long' },
-    { test: (password) => /[A-Z]/.test(password), message: 'One uppercase letter' },
-    { test: (password) => /[a-z]/.test(password), message: 'One lowercase letter' },
-    { test: (password) => /\d/.test(password), message: 'One number' },
-    { test: (password) => /[!@#$%^&*(),.?":{}|<>]/.test(password), message: 'One special character' },
-  ];
+  // Password validation disabled - we only check if password exists now
+  // Complex password rules are handled by the backend during registration
 
   // Email validation
   const validateEmail = useCallback((email) => {
@@ -47,12 +41,11 @@ function LoginPage() {
     return null;
   }, []);
 
-  // Password validation
+  // Password validation - simplified (just require password exists)
   const validatePassword = useCallback((password) => {
-    if (!password) return 'Password is required';
-    const failingRules = passwordRules.filter(rule => !rule.test(password));
-    return failingRules;
-  }, [passwordRules]);
+    if (!password) return [{ message: 'Password is required' }];
+    return []; // No complex rules - just need a password
+  }, []);
 
   // Real-time validation
   const validateField = useCallback((name, value) => {
