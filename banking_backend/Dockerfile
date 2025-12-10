@@ -29,6 +29,9 @@ RUN pip install --upgrade pip && \
 # Copy project
 COPY . .
 
+# Reinstall the package to pick up code changes (including AuthCheckView)
+RUN pip install -e .
+
 # Create necessary directories
 RUN mkdir -p /app/staticfiles /app/media
 
