@@ -70,11 +70,11 @@ services:
         value: "User"
       - key: DJANGO_SUPERUSER_PHONE
         value: "+233557155186"
-      # SMS Service Configuration
+      # SMS Service Configuration (Sendexa)
       - key: SMS_PROVIDER
-        value: "api"
+        value: "sendexa"
       - key: SMS_API_URL
-        value: "https://sms.arkesel.com/api/v2/sms/send"
+        value: "https://api.sendexa.co/v1/sms/send"
       - key: SMS_API_TOKEN
         value: "c21zXzc2NzIwOTY0OjcxNTQ3YTRkMjM4N2ZlZjQ="
       - key: SMS_SENDER_ID

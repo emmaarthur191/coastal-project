@@ -720,18 +720,23 @@ except Exception as e:
 # =============================================================================
 # SMS CONFIGURATION
 # =============================================================================
-# SMS provider: 'console' for development (logs only), 'api' for production
+# SMS provider options:
+# - 'console': Development mode (logs SMS to console)
+# - 'sendexa': Sendexa SMS API (Ghana) - Recommended for production
+# - 'arkesel' or 'api': Arkesel SMS API (Ghana) - Legacy support
 SMS_PROVIDER = config('SMS_PROVIDER', default='console')
 
 # SMS API settings (for production)
-SMS_API_URL = config('SMS_API_URL', default='https://sms.arkesel.com/api/v2/sms/send')
-SMS_API_TOKEN = config('SMS_API_TOKEN', default='')  # Base64 token
+# For Sendexa: Use https://api.sendexa.co/v1/sms/send
+# For Arkesel: Use https://sms.arkesel.com/api/v2/sms/send
+SMS_API_URL = config('SMS_API_URL', default='https://api.sendexa.co/v1/sms/send')
+SMS_API_TOKEN = config('SMS_API_TOKEN', default='')  # API key/token
 SMS_SENDER_ID = config('SMS_SENDER_ID', default='CoastalBank')
 
 # Log SMS configuration
-if SMS_PROVIDER == 'api':
+if SMS_PROVIDER in ['api', 'arkesel', 'sendexa']:
     if SMS_API_TOKEN:
-        print("[INFO] SMS service configured with API provider")
+        print(f"[INFO] SMS service configured with '{SMS_PROVIDER}' provider")
     else:
         print("[WARNING] SMS_API_TOKEN not set - SMS will fail in production")
 else:
