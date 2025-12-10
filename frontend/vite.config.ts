@@ -7,8 +7,11 @@ export default defineConfig({
   publicDir: 'public',
   build: {
     rollupOptions: {
-      output: {
-        manualChunks: {
+        output: {
+            entryFileNames: 'assets/main.js',
+            chunkFileNames: 'assets/[name]-[hash].js',
+            assetFileNames: 'assets/[name]-[hash].[ext]',
+            manualChunks: {
           // Core React libraries
           'vendor-react': ['react', 'react-dom'],
           // Routing
