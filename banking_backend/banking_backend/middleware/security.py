@@ -39,11 +39,8 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
             # Prevent XSS
             'X-XSS-Protection': '1; mode=block',
 
-            # Permissions policy for banking app
+            # Permissions policy for banking app (Feature-Policy is deprecated)
             'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
-
-            # Feature policy (legacy support)
-            'Feature-Policy': 'geolocation \'none\', microphone \'none\', camera \'none\', payment \'none\'',
         }
 
         # Environment-specific headers
@@ -59,8 +56,8 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
                 'Content-Security-Policy': (
                     "default-src 'self'; "
                     "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
-                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-                    "font-src 'self' data: https://cdnjs.cloudflare.com; "
+                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+                    "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
                     "img-src 'self' data: https:; "
                     "connect-src 'self' https://coastal-backend-bmn3.onrender.com https://coastal-frontend.onrender.com https://cdn.jsdelivr.net; "
                     "frame-src 'none'; "
