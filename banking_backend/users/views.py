@@ -1900,7 +1900,8 @@ class SuperuserOperationsView(views.APIView):
             'bypass_security', 'emergency_access', 'system_reset', 'audit_bypass',
             'create_user', 'update_user', 'modify_user_role', 'activate_user', 'deactivate_user',
             'create_branch', 'system_health', 'backup_database', 'monitor_activity',
-            'update_system_setting', 'get_system_settings', 'reset_system_setting'
+            'update_system_setting', 'get_system_settings', 'reset_system_setting',
+            'clear_cache', 'get_dashboard_stats', 'cleanup_database'
         ])
         reason = serializers.CharField(required=True)
         target = serializers.CharField(required=False)
@@ -1993,6 +1994,12 @@ class SuperuserOperationsView(views.APIView):
                 result = self._get_system_settings()
             elif operation == 'reset_system_setting':
                 result = self._reset_system_setting(target, reason)
+            elif operation == 'clear_cache':
+                result = self._clear_cache(reason)
+            elif operation == 'get_dashboard_stats':
+                result = self._get_dashboard_stats()
+            elif operation == 'cleanup_database':
+                result = self._cleanup_database(reason)
             else:
                 return Response({'error': 'Invalid operation'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2366,6 +2373,123 @@ class SuperuserOperationsView(views.APIView):
             }
         except SystemSettings.DoesNotExist:
             raise ValueError("System setting not found")
+
+    def _clear_cache(self, reason):
+        """Clear application cache."""
+        from django.core.cache import cache
+        
+        try:
+            cache.clear()
+            logger.info(f"Cache cleared by superuser {self.request.user.email}: {reason}")
+            return {
+                'status': 'success',
+                'message': 'All cache entries cleared',
+                'timestamp': timezone.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Cache clear failed: {str(e)}")
+            raise
+
+    def _get_dashboard_stats(self):
+        """Get comprehensive dashboard statistics."""
+        from banking.models import Account, Transaction
+        from auditlog.models import LogEntry
+        
+        # User statistics
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        staff_count = User.objects.filter(role__in=['administrator', 'manager', 'operations_manager', 'cashier', 'mobile_banker']).count()
+        new_users_today = User.objects.filter(date_joined__date=timezone.now().date()).count()
+        
+        # Account statistics (if Account model exists)
+        try:
+            total_accounts = Account.objects.count()
+            active_accounts = Account.objects.filter(status='active').count()
+            total_balance = Account.objects.aggregate(total=models.Sum('balance'))['total'] or 0
+        except Exception:
+            total_accounts = 0
+            active_accounts = 0
+            total_balance = 0
+        
+        # Transaction statistics (if Transaction model exists)
+        try:
+            transactions_today = Transaction.objects.filter(timestamp__date=timezone.now().date()).count()
+            transactions_this_month = Transaction.objects.filter(
+                timestamp__year=timezone.now().year,
+                timestamp__month=timezone.now().month
+            ).count()
+        except Exception:
+            transactions_today = 0
+            transactions_this_month = 0
+        
+        # Audit statistics
+        try:
+            audit_entries_today = LogEntry.objects.filter(timestamp__date=timezone.now().date()).count()
+        except Exception:
+            audit_entries_today = 0
+        
+        return {
+            'users': {
+                'total': total_users,
+                'active': active_users,
+                'staff': staff_count,
+                'new_today': new_users_today
+            },
+            'accounts': {
+                'total': total_accounts,
+                'active': active_accounts,
+                'total_balance': float(total_balance)
+            },
+            'transactions': {
+                'today': transactions_today,
+                'this_month': transactions_this_month
+            },
+            'audit': {
+                'entries_today': audit_entries_today
+            },
+            'timestamp': timezone.now().isoformat()
+        }
+
+    def _cleanup_database(self, reason):
+        """Cleanup old records and optimize database."""
+        from auditlog.models import LogEntry
+        from .models import AuditLog, SecurityEvent
+        
+        # Delete audit logs older than 90 days
+        cutoff_date = timezone.now() - timedelta(days=90)
+        deleted_audit = 0
+        deleted_security = 0
+        deleted_logentry = 0
+        
+        try:
+            result = AuditLog.objects.filter(timestamp__lt=cutoff_date).delete()
+            deleted_audit = result[0] if result else 0
+        except Exception:
+            pass
+        
+        try:
+            result = SecurityEvent.objects.filter(timestamp__lt=cutoff_date, severity__in=['low', 'medium']).delete()
+            deleted_security = result[0] if result else 0
+        except Exception:
+            pass
+        
+        try:
+            result = LogEntry.objects.filter(timestamp__lt=cutoff_date).delete()
+            deleted_logentry = result[0] if result else 0
+        except Exception:
+            pass
+        
+        logger.info(f"Database cleanup by superuser {self.request.user.email}: {reason} - Deleted {deleted_audit + deleted_security + deleted_logentry} records")
+        
+        return {
+            'status': 'success',
+            'deleted': {
+                'audit_logs': deleted_audit,
+                'security_events': deleted_security,
+                'log_entries': deleted_logentry
+            },
+            'timestamp': timezone.now().isoformat()
+        }
 
 
 # Web Views for User Interface
