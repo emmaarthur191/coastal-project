@@ -174,21 +174,22 @@ function LoginPage() {
     }
   }, []);
 
-  // Enhanced password strength calculation
+  // Simplified password strength calculation (for login, not registration)
   const getPasswordStrength = useCallback((password) => {
     if (!password) return 0;
 
     let strength = 0;
-    passwordRules.forEach(rule => {
-      if (rule.test(password)) strength += 20;
-    });
 
-    // Length bonus
-    if (password.length > 12) strength += 20;
-    else if (password.length > 8) strength += 10;
+    // Basic checks for visual feedback
+    if (password.length >= 8) strength += 25;
+    if (password.length > 12) strength += 15;
+    if (/[A-Z]/.test(password)) strength += 20;
+    if (/[a-z]/.test(password)) strength += 15;
+    if (/[0-9]/.test(password)) strength += 15;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 10;
 
     return Math.min(100, strength);
-  }, [passwordRules]);
+  }, []);
 
   const passwordStrength = getPasswordStrength(formData.password);
 
@@ -327,8 +328,8 @@ function LoginPage() {
                   onChange={handleInputChange}
                   onFocus={() => clearFieldError('email')}
                   className={`block w-full pl-10 pr-3 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 text-sm transition-colors ${formErrors.email
-                      ? 'border-error-300 focus:border-error-500 focus:ring-error-200 bg-error-50 text-error-900'
-                      : 'bg-white border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900'
+                    ? 'border-error-300 focus:border-error-500 focus:ring-error-200 bg-error-50 text-error-900'
+                    : 'bg-white border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900'
                     }`}
                   placeholder="name@example.com"
                 />
@@ -357,8 +358,8 @@ function LoginPage() {
                   onChange={handleInputChange}
                   onFocus={() => clearFieldError('password')}
                   className={`block w-full pl-10 pr-10 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 text-sm transition-colors ${formErrors.password
-                      ? 'border-error-300 focus:border-error-500 focus:ring-error-200 bg-error-50 text-error-900'
-                      : 'bg-white border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900'
+                    ? 'border-error-300 focus:border-error-500 focus:ring-error-200 bg-error-50 text-error-900'
+                    : 'bg-white border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900'
                     }`}
                   placeholder="••••••••"
                 />
@@ -383,7 +384,7 @@ function LoginPage() {
                   <div className="w-full bg-secondary-200 rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${passwordStrength < 40 ? 'bg-error-500' :
-                          passwordStrength < 80 ? 'bg-warning-500' : 'bg-success-500'
+                        passwordStrength < 80 ? 'bg-warning-500' : 'bg-success-500'
                         }`}
                       style={{ width: `${passwordStrength}%` }}
                     />
