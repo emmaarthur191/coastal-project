@@ -1,3 +1,26 @@
+import { Account } from '../api/models/Account';
+import { Transaction } from '../api/models/Transaction';
+import { ServiceRequest } from '../api/models/ServiceRequest';
+
+export interface ApiResponse<T = any> {
+  data: T;
+  success?: boolean;
+  error?: string;
+  [key: string]: any;
+}
+
+export interface MemberDashboardData {
+  account_balance: number;
+  recent_transactions: any[];
+  [key: string]: any;
+}
+
+export interface AccountSummary {
+  total_balance: number;
+  accounts: any[];
+  [key: string]: any;
+}
+
 // Use environment variable for API URL
 const getApiBaseUrl = () => {
   // Check for VITE_API_BASE_URL (used in docker-compose)
@@ -518,20 +541,20 @@ const MemberDashboardData = {
   membership_status: {}
 };
 
-const AccountSummary = {
+const MockAccountSummary = {
   total_savings: 0,
   total_loans: 0,
   available_balance: 0,
   monthly_contributions: 0
 };
 
-const Account = {
+const MockAccount = {
   id: '',
   name: '',
   balance: 0
 };
 
-const Transaction = {
+const MockTransaction = {
   id: '',
   date: '',
   description: '',
@@ -1651,8 +1674,8 @@ export const apiService = {
       return {
         account_balance: 15000.50,
         recent_transactions: [
-          { date: '2024-01-15', description: 'Loan Payment', amount: -500.00 },
-          { date: '2024-01-10', description: 'Deposit', amount: 2000.00 },
+          { date: '2024-01-15', description: 'Loan Payment', amount: '-500.00' },
+          { date: '2024-01-10', description: 'Deposit', amount: '2000.00' },
         ],
         loan_balance: 5000.00,
         savings_balance: 10000.50,
@@ -1694,6 +1717,8 @@ export const apiService = {
         total_loans: 15000.00,
         available_balance: 10000.75,
         monthly_contributions: 500.00,
+        total_balance: 40000.75,
+        accounts: [],
       };
     }
   },

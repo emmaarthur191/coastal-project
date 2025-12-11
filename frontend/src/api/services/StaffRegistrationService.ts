@@ -29,9 +29,9 @@ export class StaffRegistrationService {
             account_number: string;
             branch_code: string;
             routing_number: string;
-            passport_picture: ;
-            application_letter: ;
-            appointment_letter: ;
+            passport_picture: Blob | File;
+            application_letter: Blob | File;
+            appointment_letter: Blob | File;
         },
     ): CancelablePromise<{
         message?: string;
@@ -74,9 +74,9 @@ export class StaffRegistrationService {
             account_number: string;
             branch_code: string;
             routing_number: string;
-            passport_picture: ;
-            application_letter: ;
-            appointment_letter: ;
+            passport_picture: Blob | File;
+            application_letter: Blob | File;
+            appointment_letter: Blob | File;
         },
     ): CancelablePromise<{
         message?: string;
