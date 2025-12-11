@@ -1,116 +1,20 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { apiService, authService } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
-
-// --- PLAYFUL UI THEME CONSTANTS ---
-const THEME = {
-  colors: {
-    bg: '#F0F4F8',
-    primary: '#6C5CE7', // Purple
-    success: '#00B894', // Green
-    danger: '#FF7675', // Salmon Red
-    warning: '#FDCB6E', // Mustard
-    info: '#74B9FF', // Sky Blue
-    white: '#FFFFFF',
-    text: '#2D3436',
-    muted: '#636E72',
-    border: '#DFE6E9',
-  },
-  shadows: {
-    card: '0 10px 20px rgba(0,0,0,0.08), 0 6px 6px rgba(0,0,0,0.1)',
-    button: '0 4px 0px rgba(0,0,0,0.15)', // "Pressed" 3D effect
-    buttonActive: '0 2px 0px rgba(0,0,0,0.15)',
-  },
-  radius: {
-    small: '12px',
-    medium: '20px',
-    large: '35px',
-    round: '50px'
-  }
-};
-
-// --- STYLED SUB-COMPONENTS ---
-
-const PlayfulCard = ({ children, color = THEME.colors.white, style = {} }) => (
-  <div style={{
-    background: color,
-    borderRadius: THEME.radius.medium,
-    boxShadow: THEME.shadows.card,
-    padding: '24px',
-    border: '3px solid white',
-    ...style
-  }}>
-    {children}
-  </div>
-);
-
-const PlayfulButton = ({ children, onClick, variant = 'primary', style, disabled = false }) => {
-  const bg = variant === 'danger' ? THEME.colors.danger :
-            variant === 'success' ? THEME.colors.success :
-            THEME.colors.primary;
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        background: disabled ? '#ccc' : bg,
-        color: 'white',
-        border: 'none',
-        padding: '12px 24px',
-        borderRadius: THEME.radius.round,
-        fontSize: '16px',
-        fontWeight: 'bold',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        boxShadow: THEME.shadows.button,
-        transition: 'transform 0.1s, box-shadow 0.1s',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        ...style
-      }}
-      onMouseDown={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(4px)';
-          e.currentTarget.style.boxShadow = THEME.shadows.buttonActive;
-        }
-      }}
-      onMouseUp={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(0px)';
-          e.currentTarget.style.boxShadow = THEME.shadows.button;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(0px)';
-          e.currentTarget.style.boxShadow = THEME.shadows.button;
-        }
-      }}
-    >
-      {children}
-    </button>
-  );
-};
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 
 function MemberDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // --- ACCESSIBILITY STATE ---
-  const mainContentRef = useRef(null);
-  const sidebarRef = useRef(null);
-  const menuRefs = useRef({});
-
   // --- STATE MANAGEMENT ---
   const [activeView, setActiveView] = useState('balance');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [announcements, setAnnouncements] = useState('');
-
-  const [menuItems, setMenuItems] = useState([]);
 
   // Tab-specific state
   const [accountBalance, setAccountBalance] = useState(null);
@@ -135,15 +39,6 @@ function MemberDashboard() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpExpiresIn, setOtpExpiresIn] = useState(0);
 
-  // Define menuItems early – example static array
-  const defaultMenuItems = [
-    { id: 'balance', name: 'Account Balance', icon: '💰', color: THEME.colors.primary, available: true },
-    { id: 'accounts', name: 'Account Types', icon: '🏦', color: THEME.colors.secondary, available: true },
-    { id: 'services', name: 'Request Services', icon: '📋', color: THEME.colors.success, available: true },
-    { id: 'password', name: 'Change Password', icon: '🔒', color: THEME.colors.warning, available: true },
-    { id: 'twofa', name: 'Activate 2FA', icon: '🔐', color: THEME.colors.danger, available: true }
-  ];
-
   // Backend availability checks
   const [backendStatus, setBackendStatus] = useState({
     balance: true,
@@ -152,6 +47,14 @@ function MemberDashboard() {
     password: true,
     twofa: true
   });
+
+  const menuItems = [
+    { id: 'balance', name: 'Account Balance', icon: '💰', available: backendStatus.balance },
+    { id: 'accounts', name: 'Account Types', icon: '🏦', available: backendStatus.accounts },
+    { id: 'services', name: 'Request Services', icon: '📋', available: backendStatus.services },
+    { id: 'password', name: 'Change Password', icon: '🔒', available: true },
+    { id: 'twofa', name: 'Activate 2FA', icon: '🔐', available: true }
+  ];
 
   // --- EFFECTS ---
   useEffect(() => {
@@ -164,77 +67,11 @@ function MemberDashboard() {
     if (activeView === 'services') fetchServiceRequests();
   }, [activeView]);
 
-  // --- ACCESSIBILITY EFFECTS ---
-  useEffect(() => {
-    // Announce page changes to screen readers
-    const currentTab = menuItems.find(item => item.id === activeView);
-    if (currentTab) {
-      setAnnouncements(`Navigated to ${currentTab.name} tab`);
-    }
-  }, [activeView]);
-
-  useEffect(() => {
-    // If menuItems is async (e.g., from API), load here
-    const loadMenu = () => {
-      // Since backendStatus is set, update menuItems
-      setMenuItems(defaultMenuItems.map(item => ({ ...item, available: backendStatus[item.id] })));
-    };
-
-    loadMenu();
-  }, [backendStatus]);  // Run when backendStatus changes
-
-  // Keyboard navigation for sidebar menu
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only handle keyboard navigation when sidebar is focused
-      if (!sidebarRef.current?.contains(document.activeElement)) return;
-
-      const availableItems = menuItems.filter(item => item.available);
-      const currentIndex = availableItems.findIndex(item => item.id === activeView);
-
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        const nextIndex = (currentIndex + 1) % availableItems.length;
-        setActiveView(availableItems[nextIndex].id);
-        menuRefs.current[availableItems[nextIndex].id]?.focus();
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        const prevIndex = currentIndex === 0 ? availableItems.length - 1 : currentIndex - 1;
-        setActiveView(availableItems[prevIndex].id);
-        menuRefs.current[availableItems[prevIndex].id]?.focus();
-      } else if (event.key === 'Home') {
-        event.preventDefault();
-        setActiveView(availableItems[0].id);
-        menuRefs.current[availableItems[0].id]?.focus();
-      } else if (event.key === 'End') {
-        event.preventDefault();
-        const lastIndex = availableItems.length - 1;
-        setActiveView(availableItems[lastIndex].id);
-        menuRefs.current[availableItems[lastIndex].id]?.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activeView, menuItems]);
-
-  // Focus management
-  const handleTabChange = (tabId) => {
-    setActiveView(tabId);
-    // Focus main content area for screen readers
-    setTimeout(() => {
-      mainContentRef.current?.focus();
-    }, 100);
-  };
-
   // --- DATA FETCHING FUNCTIONS ---
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // Check backend availability for each service
       await checkBackendAvailability();
-
-      // Fetch initial data
       await Promise.allSettled([
         fetchAccountBalance(),
         fetchAccounts(),
@@ -253,17 +90,15 @@ function MemberDashboard() {
       balance: apiService.getMemberDashboardData(),
       accounts: apiService.getAccounts(),
       services: apiService.getServiceRequests ? apiService.getServiceRequests() : Promise.resolve([]),
-      password: Promise.resolve(true), // Assume available
-      twofa: Promise.resolve(true) // Assume available
+      password: Promise.resolve(true),
+      twofa: Promise.resolve(true)
     };
 
     const results = await Promise.allSettled(Object.values(checks));
     const status = {};
-
     Object.keys(checks).forEach((key, index) => {
       status[key] = results[index].status === 'fulfilled';
     });
-
     setBackendStatus(status);
   };
 
@@ -274,7 +109,7 @@ function MemberDashboard() {
       setAccountBalance(data);
       setTransactions(data.recent_transactions || []);
     } catch (error) {
-      console.error('Error fetching account balance:', error);
+      console.error('Error fetching balance:', error);
       setBackendStatus(prev => ({ ...prev, balance: false }));
     }
   };
@@ -307,39 +142,33 @@ function MemberDashboard() {
     navigate('/login');
   };
 
-  const handleChangePassword = async () => {
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
     if (!backendStatus.password) {
-      alert('Password change service is currently unavailable');
+      alert('Password change service unavailable');
       return;
     }
-
     if (passwordForm.new_password !== passwordForm.confirm_password) {
       alert('New passwords do not match');
       return;
     }
-
     try {
       const result = await apiService.changePassword(passwordForm);
       if (result.success) {
         alert('Password changed successfully!');
         setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
       } else {
-        alert('Failed to change password: ' + result.error);
+        alert('Failed: ' + result.error);
       }
     } catch (error) {
-      alert('Failed to change password: ' + error.message);
+      alert('Error: ' + error.message);
     }
   };
 
-  const handleServiceRequest = async () => {
-    if (!backendStatus.services) {
-      alert('Service request system is currently unavailable');
-      return;
-    }
-
+  const handleServiceRequest = async (e) => {
+    e.preventDefault();
+    if (!backendStatus.services) return;
     try {
-      // This would need to be implemented in apiService
-      // const response = await apiService.createServiceRequest(serviceRequestForm);
       const response = await fetch('/api/users/service-requests/', {
         method: 'POST',
         headers: {
@@ -348,41 +177,31 @@ function MemberDashboard() {
         },
         body: JSON.stringify(serviceRequestForm)
       });
-
       const data = await response.json();
-
       if (response.ok) {
-        alert('Service request submitted successfully!');
+        alert('Request submitted!');
         setServiceRequestForm({ request_type: 'statement', description: '', delivery_method: 'email' });
         setServiceRequestError('');
         fetchServiceRequests();
       } else {
         if (data.requires_2fa) {
-          setServiceRequestError('Two-factor authentication is required for SMS delivery. Please enable 2FA first.');
-          // Optionally, navigate to 2FA tab
+          setServiceRequestError('2FA required. Please enable 2FA.');
           setActiveView('twofa');
         } else {
-          setServiceRequestError(data.error || 'Failed to submit service request');
+          setServiceRequestError(data.error || 'Submission failed');
         }
       }
     } catch (error) {
-      setServiceRequestError('Failed to submit service request: ' + error.message);
+      setServiceRequestError('Error: ' + error.message);
     }
   };
 
   const handleSendOTP = async () => {
-    if (!backendStatus.twofa) {
-      alert('Two-factor authentication service is currently unavailable');
-      return;
-    }
-
     try {
       const result = await authService.sendOTP({ phone_number: user.phone, verification_type: '2fa_setup' });
       if (result.success) {
         setOtpSent(true);
         setOtpExpiresIn(300);
-        alert('OTP sent to your phone number.');
-
         const timer = setInterval(() => {
           setOtpExpiresIn(prev => {
             if (prev <= 1) {
@@ -397,832 +216,288 @@ function MemberDashboard() {
         alert('Failed to send OTP: ' + result.error);
       }
     } catch (error) {
-      alert('Failed to send OTP: ' + error.message);
+      alert('Error: ' + error.message);
     }
   };
 
   const handleVerifyOTP = async () => {
-    if (!otpCode) {
-      alert('Please enter the OTP code');
-      return;
-    }
-
     try {
       const result = await authService.verifyOTP({ phone_number: user.phone, otp_code: otpCode, verification_type: '2fa_setup' });
       if (result.success) {
         setTwoFactorStatus({ enabled: true });
         setOtpCode('');
         setOtpSent(false);
-        alert('Two-factor authentication enabled successfully!');
+        alert('2FA enabled successfully!');
       } else {
-        alert('Failed to verify OTP: ' + result.error);
+        alert('Failed: ' + result.error);
       }
     } catch (error) {
-      alert('Failed to verify OTP: ' + error.message);
+      alert('Error: ' + error.message);
     }
   };
 
-  // --- LOADING VIEW ---
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: THEME.colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <PlayfulCard>
-          <div style={{ fontSize: '60px', animation: 'bounce 1s infinite' }}>🐘</div>
-          <h2 style={{ fontFamily: "'Nunito', sans-serif" }}>Member Dashboard Loading...</h2>
-        </PlayfulCard>
-        <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
+      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
       </div>
     );
   }
-// --- MENU ITEMS CONFIG ---
 
-// menuItems is now defined as state above
-
-// --- RENDER ---
   return (
-    <div className="dashboard-container" style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-          /* Custom Scrollbar */
-          ::-webkit-scrollbar { width: 10px; }
-          ::-webkit-scrollbar-track { background: #fff; }
-          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; }
-
-          /* Skip link styles */
-          .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 6px;
-            background: ${THEME.colors.primary};
-            color: white;
-            padding: 8px;
-            text-decoration: none;
-            border-radius: 4px;
-            z-index: 1000;
-            font-weight: bold;
-          }
-          .skip-link:focus {
-            top: 6px;
-          }
-
-          /* Focus visible styles for better keyboard navigation */
-          .focus-visible:focus-visible {
-            outline: 3px solid ${THEME.colors.primary};
-            outline-offset: 2px;
-          }
-
-          /* Screen reader only text */
-          .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-          }
-
-          /* Responsive design */
-          @media (max-width: 768px) {
-            .dashboard-container {
-              flex-direction: column !important;
-            }
-
-            .sidebar {
-              width: 100% !important;
-              height: auto !important;
-              border-right: none !important;
-              border-bottom: 3px solid #000 !important;
-            }
-
-            .main-content {
-              padding: 20px !important;
-            }
-
-            .header-section {
-              flex-direction: column !important;
-              align-items: flex-start !important;
-              gap: 16px !important;
-            }
-
-            .tab-navigation {
-              width: 100% !important;
-              justify-content: flex-start !important;
-            }
-
-            .stats-grid {
-              grid-template-columns: 1fr !important;
-            }
-
-            .charts-grid {
-              grid-template-columns: 1fr !important;
-            }
-
-            .form-grid {
-              grid-template-columns: 1fr !important;
-            }
-
-            .account-grid {
-              grid-template-columns: 1fr !important;
-            }
-          }
-
-          @media (max-width: 480px) {
-            .sidebar {
-              padding: 15px !important;
-            }
-
-            .main-content {
-              padding: 15px !important;
-            }
-
-            .playful-card {
-              padding: 16px !important;
-              margin-bottom: 16px !important;
-            }
-
-            .playful-button {
-              padding: 10px 16px !important;
-              font-size: 14px !important;
-            }
-          }
-        `}
-      </style>
-
-      {/* Skip Link for Accessibility */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
-      {/* Screen Reader Announcements */}
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        style={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}
-      >
-        {announcements}
-      </div>
-
-      {/* --- SIDEBAR (STICKER SHEET) --- */}
-      <nav
-        ref={sidebarRef}
-        role="navigation"
-        aria-label="Main navigation"
-        className="sidebar"
-        style={{
-          width: '280px',
-          background: '#fff',
-          borderRight: '3px solid #000',
-          padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto'
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div
-            role="img"
-            aria-label="Member avatar"
-            style={{
-              fontSize: '40px',
-              background: THEME.colors.secondary,
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              margin: '0 auto 10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '3px solid #000'
-            }}
-          >
-            👤
-          </div>
-          <h1 style={{ margin: 0, fontWeight: '900', color: THEME.colors.text }}>Member Hub</h1>
-          <p style={{ margin: 0, fontSize: '14px', color: '#888' }}>{user?.name || 'Member'}</p>
+    <DashboardLayout
+      title="Member Hub"
+      user={user}
+      menuItems={menuItems}
+      activeView={activeView}
+      onNavigate={setActiveView}
+      onLogout={handleLogout}
+    >
+      {error && (
+        <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+          <span className="mr-2">⚠️</span> {error}
         </div>
+      )}
 
-        <div role="tablist" aria-label="Dashboard sections" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              ref={(el) => menuRefs.current[item.id] = el}
-              onClick={() => item.available && handleTabChange(item.id)}
-              role="tab"
-              aria-selected={activeView === item.id}
-              aria-controls={`tabpanel-${item.id}`}
-              aria-disabled={!item.available}
-              tabIndex={item.available ? 0 : -1}
-              className="focus-visible"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 16px',
-                border: activeView === item.id ? `3px solid ${item.color}` : '3px solid transparent',
-                background: activeView === item.id ? `${item.color}20` : 'transparent',
-                borderRadius: '16px',
-                cursor: item.available ? 'pointer' : 'not-allowed',
-                textAlign: 'left',
-                fontSize: '16px',
-                fontWeight: '800',
-                color: item.available
-                  ? (activeView === item.id ? item.color : '#888')
-                  : '#ccc',
-                transition: 'all 0.2s ease',
-                opacity: item.available ? 1 : 0.5
-              }}
-            >
-              <span role="img" aria-hidden="true" style={{ fontSize: '24px' }}>{item.icon}</span>
-              <span>{item.name}</span>
-              {!item.available && (
-                <span
-                  role="img"
-                  aria-label="Service unavailable"
-                  style={{ fontSize: '12px', marginLeft: '4px' }}
-                >
-                  ⚠️
+      {/* --- BALANCE VIEW --- */}
+      {activeView === 'balance' && (
+        <div className="space-y-6">
+          {!backendStatus.balance ? (
+            <Card className="bg-error-50 border-error-200">
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h3 className="text-lg font-bold text-error-800">Service Unavailable</h3>
+                <p className="text-error-600">Account balance service is currently down.</p>
+              </div>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-gradient-to-br from-primary-600 to-primary-800 text-white border-none">
+                  <h3 className="text-primary-100 font-medium mb-2">Total Balance</h3>
+                  <div className="text-4xl font-bold mb-4">
+                    {formatCurrencyGHS(accountBalance?.account_balance || 0)}
+                  </div>
+                  <div className="text-sm text-primary-200 flex items-center">
+                    <span className="w-2 h-2 bg-success-400 rounded-full mr-2"></span>
+                    Available
+                  </div>
+                </Card>
+                <Card>
+                  <h3 className="text-secondary-500 font-medium mb-2">Account Status</h3>
+                  <div className="flex items-center mt-2">
+                    <span className="px-3 py-1 bg-success-50 text-success-700 rounded-full text-sm font-bold border border-success-200">
+                      Active
+                    </span>
+                  </div>
+                </Card>
+              </div>
+
+              <Card>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-secondary-900">Recent Transactions</h3>
+                </div>
+                <div className="space-y-4">
+                  {transactions.slice(0, 5).map((transaction, index) => (
+                    <div key={index} className="flex justify-between items-center p-4 bg-secondary-50 rounded-lg border border-secondary-100 hover:border-primary-200 transition-colors">
+                      <div className="flex items-center">
+                        <div className={`p-2 rounded-full mr-4 ${transaction.amount > 0 ? 'bg-success-100 text-success-600' : 'bg-error-100 text-error-600'}`}>
+                          {transaction.amount > 0 ? '↓' : '↑'}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-secondary-900">{transaction.description}</p>
+                          <p className="text-xs text-secondary-500">{new Date(transaction.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <span className={`font-bold ${transaction.amount > 0 ? 'text-success-600' : 'text-secondary-900'}`}>
+                        {formatCurrencyGHS(transaction.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  {transactions.length === 0 && (
+                    <p className="text-center text-secondary-500 py-4">No recent transactions found.</p>
+                  )}
+                </div>
+              </Card>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* --- ACCOUNTS VIEW --- */}
+      {activeView === 'accounts' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {accounts.map((account, index) => (
+            <Card key={index} className="hover:border-primary-300 transition-all">
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 bg-primary-50 rounded-lg text-primary-600 text-xl">🏦</div>
+                <span className="text-xs font-mono bg-secondary-100 text-secondary-600 px-2 py-1 rounded">
+                  ****{account.account_number?.slice(-4) || '****'}
                 </span>
-              )}
-            </button>
+              </div>
+              <h4 className="text-lg font-bold text-secondary-900 mb-1">{account.type} Account</h4>
+              <p className="text-2xl font-bold text-primary-600">{formatCurrencyGHS(account.balance || 0)}</p>
+            </Card>
           ))}
         </div>
+      )}
 
-        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <PlayfulButton variant="danger" onClick={handleLogout} style={{ width: '100%' }}>
-            Log Out 👋
-          </PlayfulButton>
-        </div>
-      </nav>
-
-      {/* --- MAIN CONTENT --- */}
-      <main
-        id="main-content"
-        ref={mainContentRef}
-        tabIndex="-1"
-        role="main"
-        aria-labelledby="main-heading"
-        className="main-content"
-        style={{ flex: 1, padding: '30px', overflowY: 'auto' }}
-      >
-
-        {/* Header Ribbon */}
-        <header className="header-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h2
-            id="main-heading"
-            style={{ fontSize: '32px', fontWeight: '900', color: THEME.colors.text, margin: 0 }}
-          >
-            <span aria-hidden="true">{menuItems.find(i => i.id === activeView)?.icon}</span>
-            {menuItems.find(i => i.id === activeView)?.name}
-          </h2>
-          <time
-            aria-label={`Current date: ${new Date().toLocaleDateString()}`}
-            style={{ background: '#FFF', padding: '8px 16px', borderRadius: '20px', border: '2px solid #000', fontWeight: 'bold' }}
-          >
-            📅 {new Date().toLocaleDateString()}
-          </time>
-        </header>
-
-        {/* Error Banner */}
-        {error && (
-          <div style={{
-            background: THEME.colors.danger,
-            color: 'white',
-            padding: '16px 24px',
-            borderRadius: THEME.radius.card,
-            marginBottom: '24px',
-            border: '3px solid #000',
-            boxShadow: THEME.shadows.card
-          }}>
-            ⚠️ {error}
+      {/* --- SERVICES VIEW --- */}
+      {activeView === 'services' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-6">
+            <Card title="New Request">
+              <h3 className="text-lg font-bold text-secondary-900 mb-4">New Service Request</h3>
+              <form onSubmit={handleServiceRequest} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-1">Request Type</label>
+                  <select
+                    value={serviceRequestForm.request_type}
+                    onChange={e => setServiceRequestForm({ ...serviceRequestForm, request_type: e.target.value })}
+                    className="w-full rounded-lg border-secondary-300 focus:border-primary-500 focus:ring-primary-500 p-2 border"
+                  >
+                    <option value="statement">Account Statement</option>
+                    <option value="checkbook">Cheque Book</option>
+                    <option value="card_replacement">Card Replacement</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-1">Method</label>
+                  <select
+                    value={serviceRequestForm.delivery_method}
+                    onChange={e => setServiceRequestForm({ ...serviceRequestForm, delivery_method: e.target.value })}
+                    className="w-full rounded-lg border-secondary-300 focus:border-primary-500 focus:ring-primary-500 p-2 border"
+                  >
+                    <option value="email">Email</option>
+                    <option value="sms">SMS</option>
+                    <option value="pickup">Branch Pickup</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-1">Details</label>
+                  <textarea
+                    value={serviceRequestForm.description}
+                    onChange={e => setServiceRequestForm({ ...serviceRequestForm, description: e.target.value })}
+                    className="w-full rounded-lg border-secondary-300 focus:border-primary-500 focus:ring-primary-500 p-2 border"
+                    rows="3"
+                    placeholder="Additional instructions..."
+                  />
+                </div>
+                {serviceRequestError && <p className="text-sm text-error-600">{serviceRequestError}</p>}
+                <Button type="submit" variant="primary" className="w-full">Submit Request</Button>
+              </form>
+            </Card>
           </div>
-        )}
 
-        {/* Dynamic Content Wrapper */}
-        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-
-          {/* Account Balance Tab */}
-          {activeView === 'balance' && (
-            <section
-              id="tabpanel-balance"
-              role="tabpanel"
-              aria-labelledby={`tab-${activeView}`}
-              aria-hidden={activeView !== 'balance'}
-            >
-              {!backendStatus.balance ? (
-                <PlayfulCard color="#FFEBEE">
-                  <div style={{ textAlign: 'center', padding: '48px' }}>
-                    <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
-                    <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
-                    <p style={{ fontSize: '16px', color: '#666' }}>Account balance service is currently down. Please try again later.</p>
-                  </div>
-                </PlayfulCard>
-              ) : (
-                <>
-                  <PlayfulCard color="#E8F5E9">
-                    <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Current Balance</h3>
-                    <div style={{ fontSize: '48px', fontWeight: '900', color: THEME.colors.success, marginBottom: '10px' }}>
-                      {formatCurrencyGHS(accountBalance?.account_balance || 0)}
-                    </div>
-                    <p style={{ color: '#666', marginBottom: '20px' }}>Available Balance</p>
-                  </PlayfulCard>
-
-                  <PlayfulCard color="#FFF3E0">
-                    <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Recent Transactions</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {transactions.slice(0, 5).map((transaction, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '12px',
-                          background: '#f9f9f9',
-                          borderRadius: '12px',
-                          border: '2px solid #000'
-                        }}>
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>{transaction.description}</div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              {new Date(transaction.date).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <div style={{
-                            fontWeight: 'bold',
-                            color: transaction.amount > 0 ? THEME.colors.success : THEME.colors.danger
-                          }}>
-                            {formatCurrencyGHS(transaction.amount)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </PlayfulCard>
-                </>
-              )}
-            </section>
-          )}
-
-          {/* Account Types Tab */}
-          {activeView === 'accounts' && (
-            <section
-              id="tabpanel-accounts"
-              role="tabpanel"
-              aria-labelledby={`tab-${activeView}`}
-              aria-hidden={activeView !== 'accounts'}
-            >
-              {!backendStatus.accounts ? (
-                <PlayfulCard color="#FFEBEE">
-                  <div style={{ textAlign: 'center', padding: '48px' }}>
-                    <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
-                    <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
-                    <p style={{ fontSize: '16px', color: '#666' }}>Account information service is currently down. Please try again later.</p>
-                  </div>
-                </PlayfulCard>
-              ) : (
-                <div className="account-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                  {accounts.map((account, index) => (
-                    <PlayfulCard key={index} color={index % 2 === 0 ? '#E3F2FD' : '#F3E5F5'}>
-                      <h4 style={{ marginBottom: '16px', fontSize: '20px', fontWeight: '900' }}>
-                        {account.type} Account
-                      </h4>
-                      <div style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '12px', color: '#666', textTransform: 'uppercase' }}>Account Number</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                          ****{account.account_number?.slice(-4) || '****'}
-                        </div>
-                      </div>
-                      <div style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '12px', color: '#666', textTransform: 'uppercase' }}>Balance</div>
-                        <div style={{ fontSize: '24px', fontWeight: '900', color: THEME.colors.primary }}>
-                          {formatCurrencyGHS(account.balance || 0)}
-                        </div>
-                      </div>
-                      <div style={{
-                        display: 'inline-block',
-                        padding: '4px 12px',
-                        background: account.status === 'active' ? THEME.colors.success : THEME.colors.warning,
-                        color: 'white',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase'
-                      }}>
-                        {account.status}
-                      </div>
-                    </PlayfulCard>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Request Services Tab */}
-          {activeView === 'services' && (
-            <section
-              id="tabpanel-services"
-              role="tabpanel"
-              aria-labelledby={`tab-${activeView}`}
-              aria-hidden={activeView !== 'services'}
-            >
-              <PlayfulCard color="#E1F5FE">
-              {!backendStatus.services ? (
-                <div style={{ textAlign: 'center', padding: '48px' }}>
-                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
-                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
-                  <p style={{ fontSize: '16px', color: '#666' }}>Service request system is currently down. Please try again later.</p>
-                </div>
-              ) : (
-                <>
-                  <h3 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '900' }}>Request Services</h3>
-
-                  <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    <div>
-                      <h4 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>New Service Request</h4>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                            Request Type
-                          </label>
-                          <select
-                            value={serviceRequestForm.request_type}
-                            onChange={(e) => setServiceRequestForm(prev => ({ ...prev, request_type: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              border: '2px solid #000',
-                              borderRadius: '12px',
-                              fontSize: '16px'
-                            }}
-                          >
-                            <option value="statement">Account Statement</option>
-                            <option value="checkbook">Checkbook Request</option>
-                            <option value="loan-info">Loan Information</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                            Delivery Method
-                          </label>
-                          <select
-                            value={serviceRequestForm.delivery_method}
-                            onChange={(e) => setServiceRequestForm(prev => ({ ...prev, delivery_method: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              border: '2px solid #000',
-                              borderRadius: '12px',
-                              fontSize: '16px'
-                            }}
-                          >
-                            <option value="email">Email</option>
-                            <option value="sms">SMS</option>
-                            <option value="mail">Physical Mail</option>
-                          </select>
-                          {serviceRequestForm.delivery_method === 'sms' && !twoFactorStatus.enabled && (
-                            <div style={{
-                              marginTop: '8px',
-                              padding: '8px 12px',
-                              background: '#FFF3CD',
-                              border: '2px solid #856404',
-                              borderRadius: '8px',
-                              fontSize: '14px',
-                              color: '#856404'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>🔐</span>
-                                <span>2FA required for SMS delivery</span>
-                                <PlayfulButton
-                                  onClick={() => setActiveView('twofa')}
-                                  style={{
-                                    fontSize: '12px',
-                                    padding: '4px 8px',
-                                    background: THEME.colors.warning
-                                  }}
-                                >
-                                  Enable 2FA
-                                </PlayfulButton>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                            Description (Optional)
-                          </label>
-                          <textarea
-                            value={serviceRequestForm.description}
-                            onChange={(e) => setServiceRequestForm(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Additional details..."
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              border: '2px solid #000',
-                              borderRadius: '12px',
-                              fontSize: '16px',
-                              minHeight: '80px',
-                              resize: 'vertical'
-                            }}
-                          />
-                        </div>
-
-                        {serviceRequestError && (
-                          <div style={{
-                            marginTop: '16px',
-                            padding: '12px',
-                            background: THEME.colors.danger,
-                            color: 'white',
-                            borderRadius: '8px',
-                            border: '2px solid #000',
-                            fontSize: '14px'
-                          }}>
-                            ⚠️ {serviceRequestError}
-                          </div>
-                        )}
-
-                        <PlayfulButton onClick={handleServiceRequest} style={{ width: '100%', marginTop: '16px' }}>
-                          Submit Request 📋
-                        </PlayfulButton>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>Recent Requests</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {serviceRequests.length === 0 ? (
-                          <div style={{
-                            padding: '24px',
-                            textAlign: 'center',
-                            background: '#f9f9f9',
-                            borderRadius: '12px',
-                            border: '2px solid #000'
-                          }}>
-                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
-                            <p style={{ color: '#666' }}>No service requests yet</p>
-                          </div>
-                        ) : (
-                          serviceRequests.map((request, index) => (
-                            <div key={index} style={{
-                              padding: '12px',
-                              background: '#f9f9f9',
-                              borderRadius: '12px',
-                              border: '2px solid #000'
-                            }}>
-                              <div style={{ fontWeight: 'bold' }}>{request.request_type}</div>
-                              <div style={{ fontSize: '12px', color: '#666' }}>{request.status}</div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </PlayfulCard>
-            </section>
-          )}
-
-          {/* Change Password Tab */}
-          {activeView === 'password' && (
-            <section
-              id="tabpanel-password"
-              role="tabpanel"
-              aria-labelledby={`tab-${activeView}`}
-              aria-hidden={activeView !== 'password'}
-            >
-              <PlayfulCard color="#FFF3E0">
-              {!backendStatus.password ? (
-                <div style={{ textAlign: 'center', padding: '48px' }}>
-                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
-                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
-                  <p style={{ fontSize: '16px', color: '#666' }}>Password change service is currently down. Please try again later.</p>
-                </div>
-              ) : (
-                <>
-                  <h3 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '900' }}>Change Password</h3>
-
-                  <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                          Current Password
-                        </label>
-                        <input
-                          type="password"
-                          value={passwordForm.current_password}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, current_password: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #000',
-                            borderRadius: '12px',
-                            fontSize: '16px'
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="new-password"
-                          style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}
-                        >
-                          New Password
-                        </label>
-                        <input
-                          id="new-password"
-                          type="password"
-                          value={passwordForm.new_password}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, new_password: e.target.value }))}
-                          aria-describedby="new-password-help"
-                          aria-required="true"
-                          autoComplete="new-password"
-                          className="focus-visible"
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #000',
-                            borderRadius: '12px',
-                            fontSize: '16px'
-                          }}
-                        />
-                        <div id="new-password-help" className="sr-only">
-                          Enter a strong password with at least 8 characters
-                        </div>
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="confirm-password"
-                          style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}
-                        >
-                          Confirm New Password
-                        </label>
-                        <input
-                          id="confirm-password"
-                          type="password"
-                          value={passwordForm.confirm_password}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm_password: e.target.value }))}
-                          aria-describedby="confirm-password-help"
-                          aria-required="true"
-                          autoComplete="new-password"
-                          className="focus-visible"
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #000',
-                            borderRadius: '12px',
-                            fontSize: '16px'
-                          }}
-                        />
-                        <div id="confirm-password-help" className="sr-only">
-                          Re-enter your new password to confirm
-                        </div>
-                      </div>
-
-                      <PlayfulButton onClick={handleChangePassword} style={{ width: '100%', marginTop: '16px' }}>
-                        Change Password 🔒
-                      </PlayfulButton>
-                    </div>
-                  </div>
-                </>
-              )}
-            </PlayfulCard>
-            </section>
-          )}
-
-          {/* Activate 2FA Tab */}
-          {activeView === 'twofa' && (
-            <section
-              id="tabpanel-twofa"
-              role="tabpanel"
-              aria-labelledby={`tab-${activeView}`}
-              aria-hidden={activeView !== 'twofa'}
-            >
-              <PlayfulCard color="#FCE4EC">
-              {!backendStatus.twofa ? (
-                <div style={{ textAlign: 'center', padding: '48px' }}>
-                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>⚠️</div>
-                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Service Unavailable</h3>
-                  <p style={{ fontSize: '16px', color: '#666' }}>Two-factor authentication service is currently down. Please try again later.</p>
-                </div>
-              ) : twoFactorStatus.enabled ? (
-                <div style={{ textAlign: 'center', padding: '48px' }}>
-                  <div style={{ fontSize: '60px', marginBottom: '16px' }}>✅</div>
-                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>2FA is Enabled</h3>
-                  <p style={{ fontSize: '16px', color: '#666' }}>
-                    Your account is protected with two-factor authentication.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <h3 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '900' }}>Activate Two-Factor Authentication</h3>
-
-                  <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔐</div>
-                      <p style={{ fontSize: '16px', color: '#666' }}>
-                        Add an extra layer of security to your account by enabling two-factor authentication.
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <h4 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>
-                          Choose your 2FA method:
-                        </h4>
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                          <div style={{
-                            padding: '12px 24px',
-                            background: '#e8f5e8',
-                            border: '2px solid #000',
-                            borderRadius: '12px',
-                            fontWeight: 'bold'
-                          }}>
-                            📱 SMS
-                          </div>
-                          <div style={{
-                            padding: '12px 24px',
-                            background: '#e3f2fd',
-                            border: '2px solid #000',
-                            borderRadius: '12px',
-                            fontWeight: 'bold'
-                          }}>
-                            📧 Email
-                          </div>
-                          <div style={{
-                            padding: '12px 24px',
-                            background: '#f3e5f5',
-                            border: '2px solid #000',
-                            borderRadius: '12px',
-                            fontWeight: 'bold'
-                          }}>
-                            📱 Authenticator App
-                          </div>
-                        </div>
-                      </div>
-
-                      {!otpSent ? (
-                        <PlayfulButton onClick={handleSendOTP} style={{ width: '100%' }}>
-                          Send Verification Code 📱
-                        </PlayfulButton>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          <div>
-                            <label
-                              htmlFor="otp-code"
-                              style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}
-                            >
-                              Enter 6-digit code
-                            </label>
-                            <input
-                              id="otp-code"
-                              type="text"
-                              value={otpCode}
-                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                              placeholder="000000"
-                              aria-describedby="otp-help"
-                              aria-required="true"
-                              inputMode="numeric"
-                              pattern="[0-9]{6}"
-                              maxLength={6}
-                              autoComplete="one-time-code"
-                              className="focus-visible"
-                              style={{
-                                width: '100%',
-                                padding: '12px',
-                                border: '2px solid #000',
-                                borderRadius: '12px',
-                                fontSize: '18px',
-                                textAlign: 'center',
-                                letterSpacing: '4px'
-                              }}
-                            />
-                            <div id="otp-help" className="sr-only">
-                              Enter the 6-digit verification code sent to your phone
-                            </div>
-                          </div>
-
-                          <div style={{ textAlign: 'center', color: '#666' }}>
-                            Code expires in: {Math.floor(otpExpiresIn / 60)}:{(otpExpiresIn % 60).toString().padStart(2, '0')}
-                          </div>
-
-                          <PlayfulButton onClick={handleVerifyOTP} style={{ width: '100%' }}>
-                            Verify & Enable 2FA ✅
-                          </PlayfulButton>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </PlayfulCard>
-            </section>
-          )}
-
+          <div className="lg:col-span-2">
+            <Card>
+              <h3 className="text-lg font-bold text-secondary-900 mb-4">Request History</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-secondary-200">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-secondary-500 uppercase">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-secondary-500 uppercase">Type</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-secondary-500 uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-secondary-200">
+                    {serviceRequests.map((req, idx) => (
+                      <tr key={idx}>
+                        <td className="px-4 py-3 text-sm text-secondary-900">{new Date(req.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-sm text-secondary-900 capitalize">{req.request_type.replace('_', ' ')}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${req.status === 'completed' ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'
+                            }`}>
+                            {req.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {serviceRequests.length === 0 && (
+                      <tr><td colSpan="3" className="px-4 py-8 text-center text-secondary-500">No requests found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
         </div>
-      </main>
-    </div>
+      )}
+
+      {/* --- PASSWORD VIEW --- */}
+      {activeView === 'password' && (
+        <div className="max-w-md mx-auto">
+          <Card>
+            <h3 className="text-lg font-bold text-secondary-900 mb-6">Change Password</h3>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.current_password}
+                  onChange={e => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                  className="w-full rounded-lg border-secondary-300 border p-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.new_password}
+                  onChange={e => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                  className="w-full rounded-lg border-secondary-300 border p-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirm_password}
+                  onChange={e => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                  className="w-full rounded-lg border-secondary-300 border p-2"
+                  required
+                />
+              </div>
+              <Button type="submit" variant="primary" className="w-full mt-4">Update Password</Button>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* --- 2FA VIEW --- */}
+      {activeView === 'twofa' && (
+        <div className="max-w-md mx-auto">
+          <Card>
+            <h3 className="text-lg font-bold text-secondary-900 mb-6">Two-Factor Authentication</h3>
+            <p className="text-sm text-secondary-600 mb-6">Secure your account by enabling SMS-based 2FA. We'll send a code to your registered phone.</p>
+
+            {!otpSent ? (
+              <Button onClick={handleSendOTP} className="w-full">Send Verification Code</Button>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-primary-50 p-4 rounded-lg text-center">
+                  <p className="text-sm text-primary-700 mb-2">Code sent to your phone</p>
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={otpCode}
+                    onChange={e => setOtpCode(e.target.value)}
+                    className="text-center text-2xl tracking-widest w-full border-b-2 border-primary-300 focus:border-primary-600 outline-none bg-transparent py-2"
+                    maxLength={6}
+                  />
+                  <p className="text-xs text-secondary-500 mt-2">Expires in {otpExpiresIn}s</p>
+                </div>
+                <Button onClick={handleVerifyOTP} variant="success" className="w-full">Verify & Enable</Button>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+    </DashboardLayout>
   );
 }
 

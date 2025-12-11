@@ -701,7 +701,11 @@ try:
     from sentry_sdk.integrations.django import DjangoIntegration
 
     sentry_dsn = get_secret('SENTRY_DSN') or config('SENTRY_DSN', default=None)
-    sentry_enabled = config('SENTRY_ENABLED', default=True, cast=bool)
+    # Use False as default to prevent startup errors when env var is not set correctly
+    try:
+        sentry_enabled = config('SENTRY_ENABLED', default=False, cast=bool)
+    except Exception:
+        sentry_enabled = False
 
     if sentry_enabled and sentry_dsn:
         # Validate DSN
