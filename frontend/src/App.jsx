@@ -36,10 +36,24 @@ import ProtectedStaffRoute from './components/ProtectedStaffRoute'
 import StaffVerificationPanel from './components/StaffVerificationPanel'
 import PageLoading from './components/PageLoading'
 
-// Protected route component
+// Protected route component - MUST wait for auth loading before checking
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const { isAuthenticated, loading } = useAuth();
+
+  // CRITICAL: Wait for auth check to complete before redirecting
+  if (loading) {
+    console.log('[DEBUG] ProtectedRoute: Still loading auth state...');
+    return <PageLoading />;
+  }
+
+  console.log('[DEBUG] ProtectedRoute: loading=', loading, 'isAuthenticated=', isAuthenticated);
+
+  if (!isAuthenticated) {
+    console.log('[DEBUG] ProtectedRoute: Not authenticated, redirecting to /login');
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 }
 
 function AppContent() {

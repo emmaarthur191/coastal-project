@@ -1,54 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PageLoading from './PageLoading';
 
+/**
+ * ProtectedMemberRoute - Protects routes that require customer/member access
+ */
 const ProtectedMemberRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const { user, loading, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    const checkMemberAccess = () => {
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      // Check if we're in test mode - allow all authenticated users
-      const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
-
-      if (isTestMode) {
-        console.log('Test mode enabled - allowing member dashboard access for all authenticated users');
-        setUser(userData);
-        setLoading(false);
-        return;
-      }
-
-      if (userData.role !== 'customer') {
-        // Redirect based on role
-        if (userData.role === 'staff' || userData.role === 'cashier') {
-          navigate('/staff-dashboard');
-        } else {
-          navigate('/unauthorized');
-        }
-        return;
-      }
-
-      setUser(userData);
-      setLoading(false);
-    };
-
-    checkMemberAccess();
-  }, [navigate]);
-
+  // CRITICAL: Wait for auth loading to complete before making decisions
   if (loading) {
-    return <div>Checking member access...</div>;
+    console.log('[DEBUG] ProtectedMemberRoute: Still loading auth state...');
+    return <PageLoading />;
   }
 
-  return user?.role === 'customer' ? children : null;
+  // Not authenticated - redirect to login
+  if (!isAuthenticated || !user) {
+    console.log('[DEBUG] ProtectedMemberRoute: Not authenticated, redirecting to /login');
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check if we're in test mode - allow all authenticated users
+  const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
+  if (isTestMode) {
+    console.log('[DEBUG] Test mode enabled - allowing member dashboard access for all authenticated users');
+    return children;
+  }
+
+  // Only allow customers to access member routes
+  if (user.role !== 'customer') {
+    console.log('[DEBUG] ProtectedMemberRoute: User role is', user.role, 'redirecting...');
+
+    // Redirect based on role
+    const roleRoutes = {
+      cashier: '/cashier-dashboard',
+      mobile_banker: '/mobile-banker-dashboard',
+      manager: '/manager-dashboard',
+      operations_manager: '/operations-dashboard',
+      administrator: '/dashboard',
+      superuser: '/dashboard',
+    };
+
+    const redirectRoute = roleRoutes[user.role] || '/unauthorized';
+    return <Navigate to={redirectRoute} replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedMemberRoute;
