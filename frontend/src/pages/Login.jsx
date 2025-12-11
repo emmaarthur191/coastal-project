@@ -135,13 +135,25 @@ function LoginPage() {
           localStorage.removeItem('rememberedEmail');
         }
 
-        // Refresh auth state and get dashboard route
-        await checkAuth();
+        // Calculate route directly from login response user data (not async state)
+        const userRole = result.user?.role;
+        console.log('[DEBUG] User role from login response:', userRole);
 
-        // Navigate to appropriate dashboard
-        const targetRoute = getDashboardRoute ? getDashboardRoute() : '/dashboard';
-        console.log('[DEBUG] Navigating to:', targetRoute);
-        navigate(targetRoute, { replace: true });
+        const roleRoutes = {
+          customer: '/member-dashboard',
+          cashier: '/cashier-dashboard',
+          mobile_banker: '/mobile-banker-dashboard',
+          manager: '/manager-dashboard',
+          operations_manager: '/operations-dashboard',
+          administrator: '/dashboard',
+          superuser: '/dashboard',
+        };
+
+        const targetRoute = roleRoutes[userRole] || '/dashboard';
+        console.log('[DEBUG] Calculated target route:', targetRoute);
+
+        // Navigate using window.location for clean state reset
+        window.location.href = targetRoute;
       } else {
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
         passwordInputRef.current?.focus();
