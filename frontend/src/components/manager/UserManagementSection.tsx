@@ -34,6 +34,6 @@ const UserManagementSection: React.FC<UserManagementSectionProps> = (props) => {
     </div>
   );
 };
-};
+
 
 export default UserManagementSection;
