@@ -66,9 +66,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, role) => {
     try {
       const data = await authService.login(email, password);
+      console.log('[DEBUG] Login response data:', data);
+      console.log('[DEBUG] Login response user:', data.user);
       setUser(data.user);
-      return { success: true };
+      // Return user data with success so caller can use it immediately
+      return { success: true, user: data.user };
     } catch (error) {
+      console.error('[DEBUG] Login error:', error);
       return { success: false, error: error.message };
     }
   };
