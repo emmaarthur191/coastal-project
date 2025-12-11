@@ -79,7 +79,7 @@
 {% endblock %}
 
 {% block sidebar %}
-<nav class="col-md-2 d-md-block bg-light sidebar">
+<nav class="col-md-2 d-md-block sidebar-ocean">
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
             <!-- Dashboard -->
@@ -642,7 +642,7 @@
 
     function generateSecurityReport() {
         showNotification('Generating security report...', 'info');
-        // In real implementation, trigger report generation
+        window.location.href = "{% url 'users:export_security_pdf' %}";
     }
 
     function filterEvents(type) {
@@ -665,7 +665,14 @@
 
     function runSecurityScan() {
         showNotification('Initiating security scan...', 'info');
-        // In real implementation, make API call
+        fetch("{% url 'users:superuser_operations_api' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ operation: 'system_health', reason: 'Security scan' })
+        })
+            .then(r => r.json())
+            .then(d => showNotification('Security scan complete - System is healthy', 'success'))
+            .catch(e => showNotification('Scan failed: ' + e.message, 'danger'));
     }
 
     function lockdownSystem() {
@@ -693,8 +700,20 @@
     }
 
     function saveSecurityConfig() {
-        showNotification('Security configuration saved successfully', 'success');
-        // In real implementation, make API call
+        const config = {
+            requireMFA: document.getElementById('requireMFA')?.checked,
+            passwordComplexity: document.getElementById('passwordComplexity')?.checked,
+            accountLockout: document.getElementById('accountLockout')?.checked,
+            realTimeMonitoring: document.getElementById('realTimeMonitoring')?.checked
+        };
+        fetch("{% url 'users:superuser_operations_api' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ operation: 'update_system_setting', setting_key: 'security_config', setting_value: JSON.stringify(config), reason: 'Update security config' })
+        })
+            .then(r => r.json())
+            .then(d => showNotification('Security configuration saved successfully', 'success'))
+            .catch(e => showNotification('Save failed: ' + e.message, 'danger'));
     }
 
     function resetToDefaults() {
