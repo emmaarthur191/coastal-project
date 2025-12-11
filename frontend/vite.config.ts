@@ -6,12 +6,15 @@ export default defineConfig({
   base: '/',
   publicDir: 'public',
   build: {
+    target: 'es2020',  // Modern browser target
+    cssTarget: 'chrome80',
     rollupOptions: {
-        output: {
-            entryFileNames: 'assets/main.js',
-            chunkFileNames: 'assets/[name]-[hash].js',
-            assetFileNames: 'assets/[name]-[hash].[ext]',
-            manualChunks: {
+      output: {
+        // Use hashed file names to prevent caching issues
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        manualChunks: {
           // Core React libraries
           'vendor-react': ['react', 'react-dom'],
           // Routing
@@ -32,11 +35,11 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 500,
+    sourcemap: false,  // Disable sourcemaps in production for smaller bundles
   },
   server: {
     host: '0.0.0.0',
     port: 3000,
-    strictPort: true,
     watch: {
       usePolling: true,
     },
