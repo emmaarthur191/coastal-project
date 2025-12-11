@@ -21,6 +21,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2G
+    security_opt:
+      - apparmor:docker-postgres
 
   # Redis Cache
   redis:
@@ -30,6 +37,18 @@ services:
       - redis_data:/data
     networks:
       - backend_network  # Isolated backend network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - apparmor:docker-redis
 
   # Django Backend (NO NGINX)
   backend:
@@ -63,6 +82,18 @@ services:
     networks:
       - backend_network  # Backend services isolated
       - proxy_network    # Connection to nginx only
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+    security_opt:
+      - apparmor:docker-django
 
   # React Frontend (Build only, NO NGINX)
   frontend:
@@ -76,6 +107,18 @@ services:
       - frontend_build:/app/build  # Store build output
     networks:
       - proxy_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { if (res.statusCode !== 200) process.exit(1); else process.exit(0); })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    security_opt:
+      - apparmor:docker-node
 
   # Single Nginx Reverse Proxy (Security Gateway)
   nginx:
@@ -97,6 +140,18 @@ services:
     networks:
       - proxy_network
       - backend_network  # Access to backend services
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    security_opt:
+      - apparmor:docker-nginx
 
 # Volumes (same as before)
 volumes:

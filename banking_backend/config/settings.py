@@ -42,6 +42,7 @@ import os
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "testserver",  # For Django test client
     # Render injects these two environment variables
     os.getenv("RENDER_EXTERNAL_HOSTNAME", ""),   # e.g. coastal-backend-bmn3.onrender.com
     os.getenv("RENDER_INSTANCE_ID", ""),         # fallback if needed

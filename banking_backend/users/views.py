@@ -562,13 +562,16 @@ class AuthCheckView(views.APIView):
     )
     def get(self, request):
         # Check if user is authenticated
+        logger.info(f"AuthCheckView called - user authenticated: {request.user.is_authenticated}")
         if not request.user.is_authenticated:
+            logger.warning("AuthCheckView: User not authenticated")
             return Response({
                 'authenticated': False,
                 'user': None
             })
-        
+
         user = request.user
+        logger.info(f"AuthCheckView: User {user.email} ({user.role}) is authenticated")
         
         # Check if user has verified OTP
         otp_verified = False
