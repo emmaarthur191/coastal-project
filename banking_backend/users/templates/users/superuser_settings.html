@@ -5,25 +5,42 @@
 
 {% block extra_head %}
 <style>
+    /* Deep Ocean Settings Styles */
     .setting-card {
-        transition: transform 0.2s;
+        transition: all 0.3s ease;
+        border-radius: 1rem;
+        overflow: hidden;
     }
+
     .setting-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
     }
+
     .setting-value {
-        font-family: 'Courier New', monospace;
-        background: #f8f9fa;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        border: 1px solid #dee2e6;
+        font-family: 'Monaco', 'Consolas', monospace;
+        background: rgba(0, 102, 204, 0.05);
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0, 102, 204, 0.1);
+        color: #0369a1;
+        font-size: 0.875rem;
+    }
+
+    .btn-group .btn-outline-primary {
+        border-color: rgba(0, 102, 204, 0.3);
+        color: #0369a1;
+    }
+
+    .btn-group .btn-check:checked+.btn-outline-primary {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        border-color: transparent;
     }
 </style>
 {% endblock %}
 
 {% block sidebar %}
-<nav class="col-md-2 d-md-block bg-light sidebar">
+<nav class="col-md-2 d-md-block sidebar-ocean">
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
             <li class="nav-item">
@@ -107,20 +124,23 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">{{ setting.key }}</h6>
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" onclick="editSetting('{{ setting.key }}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </a></li>
+                                <i class="fas fa-edit"></i> Edit
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="resetSetting('{{ setting.key }}')">
-                            <i class="fas fa-undo"></i> Reset to Default
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
+                                <i class="fas fa-undo"></i> Reset to Default
+                            </a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="deleteSetting('{{ setting.key }}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </a></li>
+                                <i class="fas fa-trash"></i> Delete
+                            </a></li>
                     </ul>
                 </div>
             </div>
@@ -140,9 +160,9 @@
                 <div class="mb-2">
                     <small class="text-muted">Status:</small>
                     {% if setting.is_active %}
-                        <span class="badge bg-success">Active</span>
+                    <span class="badge bg-success">Active</span>
                     {% else %}
-                        <span class="badge bg-danger">Inactive</span>
+                    <span class="badge bg-danger">Inactive</span>
                     {% endif %}
                 </div>
                 {% if setting.description %}
@@ -155,9 +175,9 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">Last modified: Never</small>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="active-{{ setting.key }}"
-                               {% if setting.is_active %}checked{% endif %}
-                               onchange="toggleSetting('{{ setting.key }}', this.checked)">
+                        <input class="form-check-input" type="checkbox" id="active-{{ setting.key }}" {% if
+                            setting.is_active %}checked{% endif %}
+                            onchange="toggleSetting('{{ setting.key }}', this.checked)">
                         <label class="form-check-label" for="active-{{ setting.key }}"></label>
                     </div>
                 </div>
@@ -270,116 +290,116 @@
 
 {% block extra_scripts %}
 <script>
-function filterByCategory(category) {
-    const items = document.querySelectorAll('.setting-item');
+    function filterByCategory(category) {
+        const items = document.querySelectorAll('.setting-item');
 
-    items.forEach(item => {
-        if (category === 'all' || item.dataset.category === category) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
+        items.forEach(item => {
+            if (category === 'all' || item.dataset.category === category) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // Add event listeners to category buttons
+    document.querySelectorAll('input[name="category"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            filterByCategory(this.id);
+        });
+    });
+
+    function addSetting() {
+        document.getElementById('settingModalTitle').textContent = 'Add System Setting';
+        document.getElementById('settingKey').value = '';
+        document.getElementById('settingValue').value = '';
+        document.getElementById('settingType').value = 'string';
+        document.getElementById('settingCategory').value = 'system';
+        document.getElementById('settingDescription').value = '';
+        document.getElementById('settingActive').checked = true;
+
+        const modal = new bootstrap.Modal(document.getElementById('settingModal'));
+        modal.show();
+    }
+
+    function editSetting(key) {
+        // Find the setting data (in a real implementation, this would come from the server)
+        const settingCard = document.querySelector(`[data-key="${key}"]`);
+        if (!settingCard) return;
+
+        document.getElementById('settingModalTitle').textContent = 'Edit System Setting';
+        // Populate form with existing data
+        // This would be implemented with actual data fetching
+
+        const modal = new bootstrap.Modal(document.getElementById('settingModal'));
+        modal.show();
+    }
+
+    function resetSetting(key) {
+        if (confirm(`Are you sure you want to reset "${key}" to its default value?`)) {
+            showNotification(`Setting "${key}" reset to default value`, 'success');
         }
-    });
-}
-
-// Add event listeners to category buttons
-document.querySelectorAll('input[name="category"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        filterByCategory(this.id);
-    });
-});
-
-function addSetting() {
-    document.getElementById('settingModalTitle').textContent = 'Add System Setting';
-    document.getElementById('settingKey').value = '';
-    document.getElementById('settingValue').value = '';
-    document.getElementById('settingType').value = 'string';
-    document.getElementById('settingCategory').value = 'system';
-    document.getElementById('settingDescription').value = '';
-    document.getElementById('settingActive').checked = true;
-
-    const modal = new bootstrap.Modal(document.getElementById('settingModal'));
-    modal.show();
-}
-
-function editSetting(key) {
-    // Find the setting data (in a real implementation, this would come from the server)
-    const settingCard = document.querySelector(`[data-key="${key}"]`);
-    if (!settingCard) return;
-
-    document.getElementById('settingModalTitle').textContent = 'Edit System Setting';
-    // Populate form with existing data
-    // This would be implemented with actual data fetching
-
-    const modal = new bootstrap.Modal(document.getElementById('settingModal'));
-    modal.show();
-}
-
-function resetSetting(key) {
-    if (confirm(`Are you sure you want to reset "${key}" to its default value?`)) {
-        showNotification(`Setting "${key}" reset to default value`, 'success');
-    }
-}
-
-function deleteSetting(key) {
-    if (confirm(`Are you sure you want to permanently delete the setting "${key}"?`)) {
-        showNotification(`Setting "${key}" deleted successfully`, 'success');
-    }
-}
-
-function toggleSetting(key, active) {
-    const status = active ? 'activated' : 'deactivated';
-    showNotification(`Setting "${key}" ${status}`, 'info');
-}
-
-function saveSetting() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('settingModal'));
-    modal.hide();
-    showNotification('Setting saved successfully', 'success');
-}
-
-function exportSettings() {
-    showNotification('Settings export initiated. Download will start shortly.', 'info');
-}
-
-function importSettings() {
-    const modal = new bootstrap.Modal(document.getElementById('importModal'));
-    modal.show();
-}
-
-function processImport() {
-    const fileInput = document.getElementById('importFile');
-    const overwrite = document.getElementById('overwriteExisting').checked;
-
-    if (!fileInput.files[0]) {
-        showNotification('Please select a file to import', 'warning');
-        return;
     }
 
-    const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
-    modal.hide();
-    showNotification('Settings imported successfully', 'success');
-}
+    function deleteSetting(key) {
+        if (confirm(`Are you sure you want to permanently delete the setting "${key}"?`)) {
+            showNotification(`Setting "${key}" deleted successfully`, 'success');
+        }
+    }
 
-function showNotification(message, type) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
+    function toggleSetting(key, active) {
+        const status = active ? 'activated' : 'deactivated';
+        showNotification(`Setting "${key}" ${status}`, 'info');
+    }
+
+    function saveSetting() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('settingModal'));
+        modal.hide();
+        showNotification('Setting saved successfully', 'success');
+    }
+
+    function exportSettings() {
+        showNotification('Settings export initiated. Download will start shortly.', 'info');
+    }
+
+    function importSettings() {
+        const modal = new bootstrap.Modal(document.getElementById('importModal'));
+        modal.show();
+    }
+
+    function processImport() {
+        const fileInput = document.getElementById('importFile');
+        const overwrite = document.getElementById('overwriteExisting').checked;
+
+        if (!fileInput.files[0]) {
+            showNotification('Please select a file to import', 'warning');
+            return;
+        }
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+        modal.hide();
+        showNotification('Settings imported successfully', 'success');
+    }
+
+    function showNotification(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
 
-    const container = document.querySelector('.container-fluid .row .col-md-9');
-    container.insertBefore(alertDiv, container.firstChild);
+        const container = document.querySelector('.container-fluid .row .col-md-9');
+        container.insertBefore(alertDiv, container.firstChild);
 
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 5000);
-}
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    filterByCategory('all');
-});
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        filterByCategory('all');
+    });
 </script>
 {% endblock %}
