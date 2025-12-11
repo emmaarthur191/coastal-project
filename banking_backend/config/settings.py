@@ -88,6 +88,10 @@ INSTALLED_APPS = [
     'messaging',
 ]
 
+# Django Auditlog Configuration
+# Required for django-auditlog 3.x+
+AUDITLOG_LOGENTRY_MODEL = 'auditlog.LogEntry'
+
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'corsheaders.middleware.CorsMiddleware',
