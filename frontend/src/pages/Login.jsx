@@ -135,10 +135,13 @@ function LoginPage() {
           localStorage.removeItem('rememberedEmail');
         }
 
-        // Navigate immediately and reload to ensure clean auth state
+        // Refresh auth state and get dashboard route
+        await checkAuth();
+
+        // Navigate to appropriate dashboard
         const targetRoute = getDashboardRoute ? getDashboardRoute() : '/dashboard';
-        navigate(targetRoute);
-        window.location.reload();
+        console.log('[DEBUG] Navigating to:', targetRoute);
+        navigate(targetRoute, { replace: true });
       } else {
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
         passwordInputRef.current?.focus();
