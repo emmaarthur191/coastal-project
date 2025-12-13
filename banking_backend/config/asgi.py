@@ -4,28 +4,27 @@ ASGI config for banking_backend project.
 It exposes the ASGI callable as a module-level variable named ``application``.
 
 For more information on this file, see
-https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
+https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 """
 
 import os
-import django
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-django.setup()
 
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from banking_backend.middleware.websocket_auth import WebSocketJWTAuthMiddleware
-from operations.routing import websocket_urlpatterns as operations_websocket_urlpatterns
-from messaging.routing import websocket_urlpatterns as messaging_websocket_urlpatterns
+# Initialize Django ASGI application early to ensure the AppRegistry
+# is populated before importing code that may import ORM models.
+django_asgi_app = get_asgi_application()
 
-websocket_urlpatterns = operations_websocket_urlpatterns + messaging_websocket_urlpatterns
+# Import routing and middleware after Django setup
+from .routing import websocket_urlpatterns
+from core.middleware import JWTAuthMiddleware
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    "websocket": WebSocketJWTAuthMiddleware(
-        URLRouter(
-            websocket_urlpatterns
-        )
+    "http": django_asgi_app,
+    "websocket": JWTAuthMiddleware(
+        URLRouter(websocket_urlpatterns)
     ),
 })

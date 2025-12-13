@@ -9,10 +9,15 @@ import { Button } from '../components/ui/Button';
 // Import Sub-components
 import OverviewTab from '../components/OverviewTab';
 import ServiceChargesTab from '../components/ServiceChargesTab';
-import ReportsTab from '../components/ReportsTab';
+import ReportsTab from '../components/cashier/ReportsTab';
 import LoanApprovalsSection from '../components/LoanApprovalsSection';
 import ClientRegistrationTab from '../components/ClientRegistrationTab';
 import AccountsTab from '../components/AccountsTab';
+
+import StaffIdsSection from '../components/manager/StaffIdsSection';
+import MobileBankerManagementSection from '../components/manager/MobileBankerManagementSection.tsx';
+import ProductsServicesManagement from '../components/manager/ProductsServicesManagement';
+import SecuritySection from '../components/manager/SecuritySection';
 
 // --- Types ---
 interface WorkflowStatus {
@@ -22,7 +27,7 @@ interface WorkflowStatus {
   service_charges: { completed: number; pending: number };
 }
 
-type ActiveView = 'overview' | 'accounts' | 'client-registration' | 'loan-approvals' | 'branches' | 'reports' | 'alerts' | 'charges' | 'messaging' | 'staff-ids';
+type ActiveView = 'overview' | 'accounts' | 'client-registration' | 'loan-approvals' | 'staff-ids' | 'mobile-banker-management' | 'branches' | 'reports' | 'alerts' | 'charges' | 'messaging' | 'products-services' | 'security';
 
 function OperationsManagerDashboard() {
   const { user, logout } = useAuth();
@@ -98,6 +103,20 @@ function OperationsManagerDashboard() {
     fetchData();
   }, []);
 
+  // Fetch staff IDs when view is active or filters change
+  const fetchStaffIds = useCallback(async () => {
+    const result = await authService.getStaffIds(staffIdFilters);
+    if (result.success) {
+      setStaffIds(result.data?.results || result.data || []);
+    }
+  }, [staffIdFilters]);
+
+  useEffect(() => {
+    if (activeView === 'staff-ids') {
+      fetchStaffIds();
+    }
+  }, [activeView, fetchStaffIds]);
+
   // --- MENU ---
   const menuItems = [
     { id: 'overview', name: 'Overview', icon: '📊' },
@@ -105,11 +124,14 @@ function OperationsManagerDashboard() {
     { id: 'client-registration', name: 'Client Registration', icon: '👤' },
     { id: 'loan-approvals', name: 'Loan Approvals', icon: '✅' },
     { id: 'staff-ids', name: 'Staff IDs', icon: '🆔' },
+    { id: 'mobile-banker-management', name: 'Mobile Bankers', icon: '🛵' },
     { id: 'branches', name: 'Branches', icon: '🏢' },
     { id: 'reports', name: 'Reports', icon: '📋' },
     { id: 'alerts', name: 'Alerts', icon: '🚨' },
     { id: 'charges', name: 'Charges', icon: '🏷️' },
-    { id: 'messaging', name: 'Messaging', icon: '💬' }
+    { id: 'products-services', name: 'Products & Services', icon: '🎁' },
+    { id: 'messaging', name: 'Messaging', icon: '💬' },
+    { id: 'security', name: 'Security', icon: '🛡️' }
   ];
 
   if (loading && !dashboardData.metrics) {
@@ -141,11 +163,18 @@ function OperationsManagerDashboard() {
       case 'loan-approvals': return <Card><LoanApprovalsSection /></Card>;
       case 'staff-ids':
         return (
+          <StaffIdsSection
+            staffIds={staffIds}
+            staffIdFilters={staffIdFilters}
+            setStaffIdFilters={setStaffIdFilters}
+            fetchStaffIds={fetchStaffIds}
+            fetchStaffIds={fetchStaffIds}
+          />
+        );
+      case 'mobile-banker-management':
+        return (
           <Card>
-            <div className="p-4 text-center">
-              <h2 className="text-2xl font-bold mb-4 text-secondary-900">🆔 Staff IDs Management</h2>
-              <p className="text-secondary-600">Staff IDs panel for operations manager - implementation pending</p>
-            </div>
+            <MobileBankerManagementSection />
           </Card>
         );
       case 'branches':
@@ -158,12 +187,7 @@ function OperationsManagerDashboard() {
       case 'reports':
         return (
           <Card>
-            <ReportsTab
-              handleGenerateReport={handleGenerateReport}
-              authService={authService}
-              reportData={reportData}
-              setReportData={setReportData}
-            />
+            <ReportsTab />
           </Card>
         );
       case 'alerts':
@@ -174,8 +198,8 @@ function OperationsManagerDashboard() {
               <div className="space-y-4">
                 {systemAlerts.map((alert: any, index: number) => (
                   <div key={alert.id || index} className={`p-4 rounded-lg border-l-4 ${alert.type === 'warning' ? 'bg-warning-50 border-l-warning-500' :
-                      alert.type === 'error' ? 'bg-error-50 border-l-error-500' :
-                        alert.type === 'info' ? 'bg-primary-50 border-l-primary-500' : 'bg-success-50 border-l-success-500'
+                    alert.type === 'error' ? 'bg-error-50 border-l-error-500' :
+                      alert.type === 'info' ? 'bg-primary-50 border-l-primary-500' : 'bg-success-50 border-l-success-500'
                     }`}>
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">
@@ -230,6 +254,15 @@ function OperationsManagerDashboard() {
             </Button>
           </Card>
         );
+
+      case 'products-services':
+        return (
+          <Card>
+            <ProductsServicesManagement />
+          </Card>
+        );
+      case 'security':
+        return <SecuritySection />;
       default: return null;
     }
   };

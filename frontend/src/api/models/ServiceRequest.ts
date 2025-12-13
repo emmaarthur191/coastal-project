@@ -1,42 +1,16 @@
-/* generated using openapi-typescript-codegen -- do not edit */
-/* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
-import type { PriorityC93Enum } from './PriorityC93Enum';
-import type { RequestType1e1Enum } from './RequestType1e1Enum';
-import type { Status6fbEnum } from './Status6fbEnum';
 /**
- * Base serializer for service requests.
+ * ServiceRequest model - matches backend ServiceRequest model
  */
-export type ServiceRequest = {
-    readonly id: string;
-    /**
-     * Member requesting the service
-     */
-    member: string;
-    readonly member_name: string;
-    /**
-     * Staff member who created the request
-     */
-    requested_by: string;
-    readonly requested_by_name: string;
-    request_type: RequestType1e1Enum;
-    status?: Status6fbEnum;
-    priority?: PriorityC93Enum;
-    /**
-     * Additional notes or comments
-     */
-    notes?: string;
-    readonly created_at: string;
-    readonly updated_at: string;
-    readonly approved_by: string | null;
-    readonly approved_by_name: string | null;
-    readonly approved_at: string | null;
-    readonly fulfilled_by: string | null;
-    readonly fulfilled_by_name: string | null;
-    readonly fulfilled_at: string | null;
-    fee_amount?: string;
-    fee_paid?: boolean;
-    readonly fee_paid_at: string | null;
-};
-
+export interface ServiceRequest {
+    id?: number;
+    user?: number;
+    request_type: 'statement' | 'checkbook' | 'card_replacement' | 'account_closure' | 'address_change' | 'other';
+    description?: string;
+    delivery_method?: 'email' | 'sms' | 'pickup' | 'mail';
+    status?: 'pending' | 'processing' | 'completed' | 'rejected' | 'cancelled';
+    admin_notes?: string;
+    processed_by?: number;
+    processed_at?: string;
+    created_at?: string;
+    updated_at?: string;
+}

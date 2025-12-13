@@ -2,12 +2,22 @@ import React from 'react';
 import { formatCurrencyGHS } from '../utils/formatters';
 
 function OverviewSection({ dashboardData }) {
-  const branchMetrics = dashboardData?.branch_metrics || [
-    { label: 'Total Deposits', value: formatCurrencyGHS(0), change: '0%', icon: '', trend: 'up' },
-    { label: 'Loan Portfolio', value: formatCurrencyGHS(0), change: '0%', icon: '', trend: 'up' },
-    { label: 'New Accounts', value: '0', change: '0%', icon: '', trend: 'up' },
-    { label: 'Customer Satisfaction', value: '0%', change: '0%', icon: '⭐', trend: 'up' }
-  ];
+  const branchMetrics = dashboardData?.branch_metrics || [];
+
+  // Show empty state if no data
+  if (branchMetrics.length === 0) {
+    return (
+      <div style={{
+        background: '#f8fafc',
+        padding: '40px',
+        borderRadius: '16px',
+        textAlign: 'center',
+        border: '1px solid #e2e8f0'
+      }}>
+        <p style={{ color: '#64748b', fontSize: '14px' }}>No branch metrics available</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -26,14 +36,14 @@ function OverviewSection({ dashboardData }) {
             border: '1px solid #e2e8f0',
             transition: 'all 0.3s ease'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-          }}>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+            }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{
                 width: '48px',

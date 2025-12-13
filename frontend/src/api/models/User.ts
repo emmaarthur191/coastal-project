@@ -2,10 +2,16 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { RoleEnum } from './RoleEnum';
 export type User = {
-    readonly id: string;
+    readonly id: number;
+    /**
+     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     */
+    username: string;
+    email: string;
     first_name?: string;
     last_name?: string;
-    email: string;
+    role?: RoleEnum;
 };
 

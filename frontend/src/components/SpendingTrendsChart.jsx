@@ -3,17 +3,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { formatCurrencyGHS } from '../utils/formatters';
 
 const SpendingTrendsChart = ({ data }) => {
-  // Sample data if none provided
-  const sampleData = [
-    { month: 'Jan', spending: 2450, income: 3200 },
-    { month: 'Feb', spending: 2100, income: 3200 },
-    { month: 'Mar', spending: 2800, income: 3200 },
-    { month: 'Apr', spending: 1950, income: 3200 },
-    { month: 'May', spending: 3200, income: 3200 },
-    { month: 'Jun', spending: 2650, income: 3200 },
-  ];
+  // Show empty state if no data provided
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center bg-neutral-50 rounded-lg border border-neutral-200">
+        <p className="text-neutral-500 text-sm">No spending data available</p>
+      </div>
+    );
+  }
 
-  const chartData = data || sampleData;
+  const chartData = data;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {

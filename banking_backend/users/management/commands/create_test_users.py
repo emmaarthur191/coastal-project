@@ -1,35 +1,87 @@
+"""
+Django management command to create test users for development.
+"""
 from django.core.management.base import BaseCommand
-from test_fixtures import create_all_test_users, TEST_USERS, TEST_PASSWORD
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 class Command(BaseCommand):
-    help = 'Create test users for debugging'
+    help = 'Creates test users for each role'
 
     def handle(self, *args, **options):
-        self.stdout.write('Creating test users...')
-        try:
-            users = create_all_test_users()
-            self.stdout.write(
-                self.style.SUCCESS('✅ Test users created successfully!')
+        test_users = [
+            {
+                'email': 'customer.test@coastalbanking.com',
+                'password': 'SecureTestPass123!',
+                'first_name': 'John',
+                'last_name': 'Customer',
+                'username': 'john.customer',
+                'role': 'customer',
+            },
+            {
+                'email': 'cashier.test@coastalbanking.com',
+                'password': 'SecureTestPass123!',
+                'first_name': 'Sarah',
+                'last_name': 'Cashier',
+                'username': 'sarah.cashier',
+                'role': 'cashier',
+            },
+            {
+                'email': 'mobile.test@coastalbanking.com',
+                'password': 'SecureTestPass123!',
+                'first_name': 'Michael',
+                'last_name': 'Mobile',
+                'username': 'michael.mobile',
+                'role': 'mobile_banker',
+            },
+            {
+                'email': 'manager.test@coastalbanking.com',
+                'password': 'SecureTestPass123!',
+                'first_name': 'David',
+                'last_name': 'Manager',
+                'username': 'david.manager',
+                'role': 'manager',
+            },
+            {
+                'email': 'opsmgr.test@coastalbanking.com',
+                'password': 'SecureTestPass123!',
+                'first_name': 'Emily',
+                'last_name': 'Operations',
+                'username': 'emily.operations',
+                'role': 'operations_manager',
+            },
+            {
+                'email': 'admin.test@coastalbanking.com',
+                'password': 'SecureTestPass123!',
+                'first_name': 'Admin',
+                'last_name': 'User',
+                'username': 'admin.user',
+                'role': 'admin',
+                'is_staff': True,
+                'is_superuser': True,
+            },
+        ]
+
+        for user_data in test_users:
+            email = user_data['email']
+            password = user_data.pop('password')
+            
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults=user_data
             )
+            
+            if created:
+                user.set_password(password)
+                user.save()
+                self.stdout.write(
+                    self.style.SUCCESS(f'Created user: {email} ({user_data["role"]})')
+                )
+            else:
+                self.stdout.write(
+                    self.style.WARNING(f'User already exists: {email}')
+                )
 
-            self.stdout.write('\nTest User Credentials:')
-            self.stdout.write('=' * 50)
-
-            for role, user_data in TEST_USERS.items():
-                if role in ['customer', 'cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator']:
-                    self.stdout.write(f'{role.upper()}:')
-                    self.stdout.write(f'  Email: {user_data["email"]}')
-                    self.stdout.write(f'  Password: {TEST_PASSWORD}')
-                    self.stdout.write(f'  Name: {user_data["first_name"]} {user_data["last_name"]}')
-                    self.stdout.write('')
-
-            self.stdout.write('You can now test login with these credentials.')
-            self.stdout.write('Template login: http://127.0.0.1:8000/login/')
-            self.stdout.write('API login: Through the React frontend')
-
-        except Exception as e:
-            self.stdout.write(
-                self.style.ERROR(f'❌ Error creating test users: {e}')
-            )
-            import traceback
-            traceback.print_exc()
+        self.stdout.write(self.style.SUCCESS('\nTest users setup complete!'))

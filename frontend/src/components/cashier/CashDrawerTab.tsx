@@ -38,12 +38,16 @@ const CashDrawerTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('banking/cash-drawers/');
-      setCashDrawers(response.data || []);
-      const openDrawer = response.data?.find((drawer: CashDrawer) => drawer.status === 'open');
+      // Handle both paginated response {results: []} and direct array response
+      const data = response.data?.results || response.data || [];
+      const drawersArray = Array.isArray(data) ? data : [];
+      setCashDrawers(drawersArray);
+      const openDrawer = drawersArray.find((drawer: CashDrawer) => drawer.status === 'open');
       if (openDrawer) setCurrentDrawer(openDrawer);
-      else if (response.data?.length > 0) setCurrentDrawer(response.data[0]);
+      else if (drawersArray.length > 0) setCurrentDrawer(drawersArray[0]);
     } catch (error) {
       console.error('Error fetching cash drawers:', error);
+      setCashDrawers([]);
       setMessage({ type: 'error', text: 'Failed to load cash drawers' });
     } finally {
       setLoading(false);

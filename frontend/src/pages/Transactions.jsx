@@ -162,23 +162,22 @@ function Transactions() {
 
     const matchesStatus = filters.status === 'all' || transaction.status === filters.status;
     const matchesSearch = transaction.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          transaction.amount.toString().includes(filters.search);
+      transaction.amount.toString().includes(filters.search);
     return matchesType && matchesStatus && matchesSearch;
   });
 
   const transactionTypes = [
-    { id: 'all', name: 'All Types', icon: '' },
-    { id: 'deposit', name: 'Deposits', icon: '' },
-    { id: 'deposit_shares', name: 'Shares Deposit', icon: '' },
-    { id: 'deposit_member_savings', name: 'Member Savings Deposit', icon: '' },
-    { id: 'deposit_daily_savings', name: 'Daily Savings Deposit', icon: '' },
-    { id: 'deposit_youth_savings', name: 'Youth Savings Deposit', icon: '' },
-    { id: 'withdrawal', name: 'Withdrawals', icon: '' },
-    { id: 'withdrawal_member_savings', name: 'Member Savings Withdrawal', icon: '' },
-    { id: 'withdrawal_daily_savings', name: 'Daily Savings Withdrawal', icon: '' },
-    { id: 'withdrawal_youth_savings', name: 'Youth Savings Withdrawal', icon: '' },
-    { id: 'transfer', name: 'Transfers', icon: '↗' },
-    { id: 'payment', name: 'Payments', icon: '' }
+    { id: 'all', name: 'All Types', icon: '📊' },
+    { id: 'deposit', name: 'Deposits', icon: '💵' },
+    { id: 'deposit_daily_susu', name: 'Daily Susu Deposit', icon: '📅' },
+    { id: 'deposit_shares', name: 'Shares Deposit', icon: '📈' },
+    { id: 'deposit_monthly_contribution', name: 'Monthly Contribution Deposit', icon: '📆' },
+    { id: 'withdrawal', name: 'Withdrawals', icon: '🏧' },
+    { id: 'withdrawal_daily_susu', name: 'Daily Susu Withdrawal', icon: '📅' },
+    { id: 'withdrawal_shares', name: 'Shares Withdrawal', icon: '📈' },
+    { id: 'withdrawal_monthly_contribution', name: 'Monthly Contribution Withdrawal', icon: '📆' },
+    { id: 'transfer', name: 'Transfers', icon: '↔️' },
+    { id: 'payment', name: 'Payments', icon: '💳' }
   ];
 
   const statusTypes = [
@@ -221,7 +220,7 @@ function Transactions() {
 
   if (loading) {
     return (
-      <div style={{ 
+      <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         padding: '40px 20px',
@@ -237,9 +236,9 @@ function Transactions() {
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           border: '1px solid #e2e8f0'
         }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
+          <div style={{
+            width: '40px',
+            height: '40px',
             border: '3px solid #f3f4f6',
             borderTop: '3px solid #3b82f6',
             borderRadius: '50%',
@@ -363,16 +362,16 @@ function Transactions() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
-            <h1 style={{ 
-              margin: '0 0 8px 0', 
+            <h1 style={{
+              margin: '0 0 8px 0',
               color: '#1e293b',
               fontSize: '28px',
               fontWeight: '700'
             }}>
               Transaction History
             </h1>
-            <p style={{ 
-              margin: 0, 
+            <p style={{
+              margin: 0,
               color: '#64748b',
               fontSize: '16px'
             }}>
@@ -397,14 +396,14 @@ function Transactions() {
                   fontSize: '14px',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#3b82f6';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }}>
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#3b82f6';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.color = '#374151';
+                  }}>
                   <span>{option.icon}</span>
                   {option.format}
                 </button>
@@ -423,15 +422,15 @@ function Transactions() {
               gap: '8px',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}>
-               Print Statement
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}>
+              Print Statement
             </button>
           </div>
         </div>
@@ -779,7 +778,7 @@ function Transactions() {
                     }}>
                       {sanitizeUserInput(transaction.description)}
                     </div>
-                    <div style={{ 
+                    <div style={{
                       color: '#64748b',
                       fontSize: '12px'
                     }}>
@@ -789,14 +788,14 @@ function Transactions() {
                 </div>
 
                 <div>
-                  <div style={{ 
+                  <div style={{
                     color: '#1e293b',
                     fontWeight: '500',
                     fontSize: '14px'
                   }}>
                     {transaction.date}
                   </div>
-                  <div style={{ 
+                  <div style={{
                     color: '#64748b',
                     fontSize: '12px'
                   }}>
@@ -845,7 +844,7 @@ function Transactions() {
                   </span>
                 </div>
 
-                <div style={{ 
+                <div style={{
                   textAlign: 'right',
                   color: transaction.amount >= 0 ? '#059669' : '#dc2626',
                   fontWeight: '700',
@@ -856,14 +855,14 @@ function Transactions() {
               </div>
             ))
           ) : (
-            <div style={{ 
-              padding: '60px 40px', 
+            <div style={{
+              padding: '60px 40px',
               textAlign: 'center',
               color: '#64748b'
             }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
-              <h3 style={{ 
-                margin: '0 0 8px 0', 
+              <h3 style={{
+                margin: '0 0 8px 0',
                 color: '#1e293b',
                 fontSize: '20px',
                 fontWeight: '600'
@@ -893,7 +892,7 @@ function Transactions() {
           zIndex: 1000,
           padding: '20px'
         }}
-        onClick={() => setSelectedTransaction(null)}>
+          onClick={() => setSelectedTransaction(null)}>
           <div style={{
             background: 'white',
             borderRadius: '16px',
@@ -904,17 +903,17 @@ function Transactions() {
             overflowY: 'auto',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
-          onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <h3 style={{ 
-                margin: 0, 
+              <h3 style={{
+                margin: 0,
                 color: '#1e293b',
                 fontSize: '24px',
                 fontWeight: '700'
               }}>
                 Transaction Details
               </h3>
-              <button 
+              <button
                 onClick={() => setSelectedTransaction(null)}
                 style={{
                   background: 'none',
@@ -925,14 +924,14 @@ function Transactions() {
                   padding: '4px'
                 }}
               >
-                
+
               </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Amount */}
               <div style={{ textAlign: 'center', padding: '20px', background: '#f8fafc', borderRadius: '12px' }}>
-                <div style={{ 
+                <div style={{
                   color: selectedTransaction.amount >= 0 ? '#059669' : '#dc2626',
                   fontSize: '32px',
                   fontWeight: '700',
@@ -1007,26 +1006,26 @@ function Transactions() {
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#3b82f6';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }}
-                onClick={async () => {
-                  try {
-                    const receiptData = await apiService.generateReceipt(selectedTransaction.id);
-                    // For now, just show the receipt data in console
-                    // In a real implementation, this would generate a PDF or printable format
-                    console.log('Receipt data:', receiptData);
-                    alert('Receipt generated successfully! Check console for details.');
-                  } catch (error) {
-                    console.error('Failed to generate receipt:', error);
-                    alert('Failed to generate receipt. Please try again.');
-                  }
-                }}>
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#3b82f6';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.color = '#374151';
+                  }}
+                  onClick={async () => {
+                    try {
+                      const receiptData = await apiService.generateReceipt(selectedTransaction.id);
+                      // For now, just show the receipt data in console
+                      // In a real implementation, this would generate a PDF or printable format
+                      console.log('Receipt data:', receiptData);
+                      alert('Receipt generated successfully! Check console for details.');
+                    } catch (error) {
+                      console.error('Failed to generate receipt:', error);
+                      alert('Failed to generate receipt. Please try again.');
+                    }
+                  }}>
                   Download Receipt
                 </button>
                 <button style={{
@@ -1040,14 +1039,14 @@ function Transactions() {
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#ef4444';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }}>
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#ef4444';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.color = '#374151';
+                  }}>
                   Report Issue
                 </button>
               </div>
@@ -1071,18 +1070,17 @@ function Transactions() {
 // Helper functions
 function getTransactionIcon(type, subtype) {
   const icons = {
-    deposit: '',
-    withdrawal: '',
-    transfer: '↗',
-    payment: '',
-    shares: '',
-    member_savings: '',
-    daily_savings: '',
-    youth_savings: '',
-    withdrawal_member_savings: '',
-    withdrawal_daily_savings: '',
-    withdrawal_youth_savings: '',
-    default: ''
+    deposit: '💵',
+    withdrawal: '🏧',
+    transfer: '↔️',
+    payment: '💳',
+    daily_susu: '📅',
+    shares: '📈',
+    monthly_contribution: '📆',
+    withdrawal_daily_susu: '📅',
+    withdrawal_shares: '📈',
+    withdrawal_monthly_contribution: '📆',
+    default: '💰'
   };
   return icons[subtype] || icons[type] || icons.default;
 }
@@ -1093,13 +1091,12 @@ function getTransactionColor(type, subtype) {
     withdrawal: { background: '#fee2e2', color: '#dc2626' },
     transfer: { background: '#dbeafe', color: '#1e40af' },
     payment: { background: '#fef3c7', color: '#92400e' },
-    shares: { background: '#fef3c7', color: '#92400e' },
-    member_savings: { background: '#dbeafe', color: '#1e40af' },
-    daily_savings: { background: '#d1fae5', color: '#065f46' },
-    youth_savings: { background: '#fce7f3', color: '#be185d' },
-    withdrawal_member_savings: { background: '#fee2e2', color: '#dc2626' },
-    withdrawal_daily_savings: { background: '#fed7d7', color: '#c53030' },
-    withdrawal_youth_savings: { background: '#feb2b2', color: '#b91c1c' },
+    daily_susu: { background: '#d1fae5', color: '#065f46' },
+    shares: { background: '#dbeafe', color: '#1e40af' },
+    monthly_contribution: { background: '#fef3c7', color: '#92400e' },
+    withdrawal_daily_susu: { background: '#fee2e2', color: '#dc2626' },
+    withdrawal_shares: { background: '#fed7d7', color: '#c53030' },
+    withdrawal_monthly_contribution: { background: '#feb2b2', color: '#b91c1c' },
     default: { background: '#f3f4f6', color: '#374151' }
   };
   return colors[subtype] || colors[type] || colors.default;

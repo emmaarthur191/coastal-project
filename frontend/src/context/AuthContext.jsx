@@ -83,11 +83,11 @@ export const AuthProvider = ({ children }) => {
   const isMobileBanker = React.useMemo(() => user?.role === 'mobile_banker', [user]);
   const isOperationsManager = React.useMemo(() => user?.role === 'operations_manager', [user]);
   const isMember = React.useMemo(() => user?.role === 'customer', [user]);
-  const isAdministrator = React.useMemo(() => user?.role === 'administrator', [user]);
-  const isSuperuser = React.useMemo(() => user?.role === 'superuser', [user]);
+  const isAdministrator = React.useMemo(() => user?.role === 'admin' || user?.role === 'administrator', [user]);
+  const isSuperuser = React.useMemo(() => user?.role === 'superuser' || user?.is_superuser === true, [user]);
 
   // Staff roles (non-customer roles)
-  const staffRoles = ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'administrator', 'superuser'];
+  const staffRoles = ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'admin', 'administrator', 'superuser'];
   const isStaff = React.useMemo(() => staffRoles.includes(user?.role), [user]);
 
   // Helper function to check if user has a specific role
@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
   const hasAnyRole = React.useCallback((roles) => {
     if (!user?.role) return false;
     // Superuser and administrator always have access
-    if (['superuser', 'administrator'].includes(user.role)) return true;
+    if (['superuser', 'admin', 'administrator'].includes(user.role)) return true;
     return roles.includes(user.role);
   }, [user]);
 
@@ -110,6 +110,7 @@ export const AuthProvider = ({ children }) => {
       mobile_banker: '/mobile-banker-dashboard',
       manager: '/manager-dashboard',
       operations_manager: '/operations-dashboard',
+      admin: '/dashboard',
       administrator: '/dashboard',
       superuser: '/dashboard',
     };

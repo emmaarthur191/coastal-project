@@ -48,10 +48,13 @@ const RefundsTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('banking/refunds/');
-      setRefunds(response.data || []);
+      // Handle both paginated responses and direct arrays
+      const data = response.data?.results || response.data || [];
+      setRefunds(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching refunds:', error);
       setMessage({ type: 'error', text: 'Failed to load refunds' });
+      setRefunds([]);
     } finally {
       setLoading(false);
     }

@@ -1,32 +1,23 @@
-# Dockerfile for React Frontend
-FROM node:20-alpine as build
+# Use Node.js 18 Alpine image
+FROM node:18-alpine
 
-# Set working directory
+# Set work directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --only=production
 
-# Copy project files
+# Copy source code
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Production stage with Nginx
-FROM nginx:alpine
-
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Serve the application
+CMD ["npx", "serve", "-s", "dist", "-l", "3000"]

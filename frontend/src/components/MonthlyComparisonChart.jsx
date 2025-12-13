@@ -3,17 +3,16 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { formatCurrencyGHS } from '../utils/formatters';
 
 const MonthlyComparisonChart = ({ data }) => {
-  // Sample data if none provided
-  const sampleData = [
-    { month: 'Jan', income: 3200, expenses: 2450, savings: 750 },
-    { month: 'Feb', income: 3200, expenses: 2100, savings: 1100 },
-    { month: 'Mar', income: 3200, expenses: 2800, savings: 400 },
-    { month: 'Apr', income: 3200, expenses: 1950, savings: 1250 },
-    { month: 'May', income: 3200, expenses: 3200, savings: 0 },
-    { month: 'Jun', income: 3200, expenses: 2650, savings: 550 },
-  ];
+  // Show empty state if no data provided
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center bg-neutral-50 rounded-lg border border-neutral-200">
+        <p className="text-neutral-500 text-sm">No monthly comparison data available</p>
+      </div>
+    );
+  }
 
-  const chartData = data || sampleData;
+  const chartData = data;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {

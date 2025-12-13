@@ -10,6 +10,8 @@ interface Report {
   generated_at: string;
   data: any;
   status: string;
+  format?: string;
+  report_url?: string | null;
 }
 
 const ReportsTab: React.FC = () => {
@@ -17,6 +19,7 @@ const ReportsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedFormat, setSelectedFormat] = useState('pdf');
   const [reportTemplates, setReportTemplates] = useState([]);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -29,9 +32,12 @@ const ReportsTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('reports/reports/');
-      setReports(response.data || []);
+      // Handle both paginated response {results: []} and direct array response
+      const data = response.data?.results || response.data || [];
+      setReports(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching reports:', error);
+      setReports([]);
       setMessage({ type: 'error', text: 'Failed to load reports' });
     } finally {
       setLoading(false);
@@ -40,11 +46,66 @@ const ReportsTab: React.FC = () => {
 
   const fetchReportTemplates = async () => {
     try {
+      console.log('[REPORTS] Fetching templates...');
       const response = await api.get('reports/templates/');
-      setReportTemplates(response.data || []);
+      console.log('[REPORTS] Templates response:', response);
+      // Handle both paginated response {results: []} and direct array response
+      const data = response.data?.results || response.data || [];
+      console.log('[REPORTS] Extracted template data:', data);
+      setReportTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching report templates:', error);
+      console.error('[REPORTS] Error fetching report templates:', error);
+      setReportTemplates([]);
     }
+  };
+
+  const handleDownload = (report: Report) => {
+    if (!report.report_url) {
+      setMessage({ type: 'error', text: 'Download URL not available for this report' });
+      return;
+    }
+
+    console.log(`Downloading report: ${report.title} from ${report.report_url}`);
+
+    // Construct full API URL
+    const apiBaseUrl = import.meta.env.VITE_DEV_API_URL || 'http://localhost:8000/api/';
+    // Strip leading /api/ from report_url if present (for backward compatibility)
+    let cleanUrl = report.report_url;
+    if (cleanUrl.startsWith('/api/')) cleanUrl = cleanUrl.substring(4);
+    const downloadUrl = cleanUrl.startsWith('http')
+      ? cleanUrl
+      : `${apiBaseUrl.replace(/\/$/, '')}${cleanUrl}`;
+
+    // Get auth token for authenticated download
+    const token = localStorage.getItem('accessToken');
+
+    // Use fetch to download with authentication
+    fetch(downloadUrl, {
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : ''
+      }
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Download failed');
+        return response.blob();
+      })
+      .then(blob => {
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${report.title}.${report.format || 'csv'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        setMessage({ type: 'success', text: `Downloaded ${report.title}` });
+      })
+      .catch(error => {
+        console.error('Download error:', error);
+        setMessage({ type: 'error', text: 'Failed to download report' });
+      });
   };
 
   const generateReport = async () => {
@@ -55,8 +116,11 @@ const ReportsTab: React.FC = () => {
 
     try {
       setGenerating(true);
-      await api.post('reports/generate/', { template_id: selectedTemplate });
-      setMessage({ type: 'success', text: 'Report generation started' });
+      await api.post('reports/generate/', {
+        template_id: selectedTemplate,
+        format: selectedFormat
+      });
+      setMessage({ type: 'success', text: `Report generation started (${selectedFormat.toUpperCase()})` });
       setSelectedTemplate('');
       fetchReports();
     } catch (error) {
@@ -118,12 +182,30 @@ const ReportsTab: React.FC = () => {
               ))}
             </select>
           </div>
+          <div style={{ width: '150px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Format</label>
+            <select
+              value={selectedFormat}
+              onChange={(e) => setSelectedFormat(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '2px solid #DFE6E9',
+                fontSize: '16px'
+              }}
+            >
+              <option value="pdf">PDF Document</option>
+              <option value="csv">CSV Spreadsheet</option>
+              <option value="docs">Word Document</option>
+            </select>
+          </div>
           <PlayfulButton
             onClick={generateReport}
             disabled={generating || !selectedTemplate}
             variant="success"
           >
-            {generating ? 'Generating...' : 'Generate Report 📊'}
+            {generating ? 'Generating...' : 'Generate 📊'}
           </PlayfulButton>
         </div>
       </div>
@@ -191,8 +273,15 @@ const ReportsTab: React.FC = () => {
                 )}
 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <PlayfulButton onClick={() => {/* Download logic */}} variant="primary" style={{ fontSize: '14px', padding: '8px 16px' }}>
-                    Download 📥
+                  {/* Format selector removed from here, it belongs in generation section */}
+
+                  <PlayfulButton
+                    onClick={() => handleDownload(report)}
+                    variant="primary"
+                    style={{ fontSize: '14px', padding: '8px 16px' }}
+                    disabled={!report.report_url || report.status !== 'completed'}
+                  >
+                    Download {report.format ? report.format.toUpperCase() : 'PDF'} 📥
                   </PlayfulButton>
                 </div>
               </div>

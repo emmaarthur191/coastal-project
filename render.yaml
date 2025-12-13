@@ -1,128 +1,98 @@
-services:
-  # Redis Cache (now as keyvalue)
-  - type: keyvalue
-    name: coastal-redis
-    plan: starter
-    ipAllowList: []  # Allow all Render services (internal access)
+# Render Blueprint for Coastal Banking Application
+# Deploy both backend and frontend services
 
-  # Django Backend Web Service
+services:
+  # =============================================================================
+  # Backend - Django API
+  # =============================================================================
   - type: web
     name: coastal-backend
     runtime: python
+    region: oregon
     plan: starter
-    buildCommand: >
-      cd banking_backend &&
-      pip install --no-cache-dir -r requirements.txt &&
+    buildCommand: |
+      pip install -r requirements.txt
       python manage.py collectstatic --noinput
-    startCommand: >
-      cd banking_backend &&
-      python manage.py migrate --noinput &&
-      python manage.py create_production_superuser --skip-if-exists &&
-      python manage.py create_production_manager --skip-if-exists &&
-      gunicorn config.wsgi:application
-      --bind 0.0.0.0:$PORT
-      --workers 3
-      --threads 2
-      --log-level info
+      python manage.py migrate --noinput
+      python manage.py create_initial_users
+    startCommand: daphne -b 0.0.0.0 -p $PORT config.asgi:application
     envVars:
-      - key: DEBUG
-        value: "False"
+      # Required - Generate a secure key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
       - key: SECRET_KEY
         generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set manually to your frontend URL
       - key: DATABASE_URL
         fromDatabase:
           name: coastal-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: coastal-redis
-          property: connectionString
-      - key: ALLOWED_HOSTS
-        value: ".onrender.com,coastal-backend.onrender.com,coastal-frontend.onrender.com"
-      - key: CORS_ALLOWED_ORIGINS
-        value: "https://coastal-frontend.onrender.com"
-      - key: CORS_ALLOW_CREDENTIALS
-        value: "True"
-      - key: FRAUD_AUDIT_ENCRYPTION_KEY
-        generateValue: true
-      - key: SECURE_SSL_REDIRECT
-        value: "False"
-      - key: ENVIRONMENT
-        value: production
-      - key: ENCRYPTION_KEY
-        generateValue: true
-      - key: ENCRYPTION_SALT
-        generateValue: true
-      - key: SECURE_PROXY_SSL_HEADER
-        value: "HTTP_X_FORWARDED_PROTO, https"
-      - key: USE_X_FORWARDED_HOST
-        value: "True"
-      - key: SECURE_CROSS_ORIGIN_OPENER_POLICY
-        value: "same-origin-allow-popups"
-      # Superuser credentials for automatic creation
-      - key: DJANGO_SUPERUSER_EMAIL
+      # Initial User Configuration
+      - key: ADMIN_EMAIL
+        value: "admin@coastal.com"
+      - key: ADMIN_PASSWORD
         sync: false
-      - key: DJANGO_SUPERUSER_PASSWORD
+      - key: MANAGER_EMAIL
+        value: "manager@coastal.com"
+      - key: MANAGER_PASSWORD
         sync: false
-      - key: DJANGO_SUPERUSER_FIRST_NAME
-        value: "Admin"
-      - key: DJANGO_SUPERUSER_LAST_NAME
-        value: "User"
-      - key: DJANGO_SUPERUSER_PHONE
-        value: "+233557155186"
-      # SMS Service Configuration (Sendexa - Coastal_Autotech)
-      - key: SMS_PROVIDER
-        value: "sendexa"
-      - key: SMS_API_URL
-        value: "https://api.sendexa.co/v1/sms/send"
-      - key: SMS_API_TOKEN
-        value: "c21zXzc2NzIwOTY0OjcxNTQ3YTRkMjM4N2ZlZjQ="
-      - key: SMS_SENDER_ID
-        value: "Coastal"
-      # Manager credentials for automatic creation
-      - key: DJANGO_MANAGER_EMAIL
-        value: "snyper191@gmail.com"
-      - key: DJANGO_MANAGER_PASSWORD
-        value: "Admin@123456"
-      - key: DJANGO_MANAGER_FIRST_NAME
-        value: "Manager"
-      - key: DJANGO_MANAGER_LAST_NAME
-        value: "User"
-      - key: DJANGO_MANAGER_PHONE
-        value: "+233557155186"
+      # Sendexa SMS Configuration
+      - key: SENDEXA_API_URL
+        sync: false
+      - key: SENDEXA_AUTH_TOKEN
+        sync: false
+      - key: SENDEXA_SENDER_ID
+        value: "CoastalBank"
+      # Optional: Sentry for error tracking
+      - key: SENTRY_DSN
+        sync: false
+      - key: APP_VERSION
+        value: "1.0.0"
+    healthCheckPath: /api/performance/system-health/
+    autoDeploy: true
 
-  # React Frontend Web Service
+  # =============================================================================
+  # Frontend - Vite/React Static Site
+  # =============================================================================
   - type: web
     name: coastal-frontend
-    runtime: node
-    plan: starter
-    buildCommand: >
-      cd frontend &&
-      npm ci &&
-      npm run build
-    startCommand: >
-      cd frontend &&
-      npx serve -s dist -l $PORT
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: "https://coastal-backend-bmn3.onrender.com/api"
-      - key: NODE_ENV
-        value: production
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     headers:
-      - path: /assets/*.js
-        name: Content-Type
-        value: application/javascript
-      - path: /assets/*.css
-        name: Content-Type
-        value: text/css
-      - path: /assets/*.wasm
-        name: Content-Type
-        value: application/wasm
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_PROD_API_URL
+        sync: false  # Set to https://coastal-backend.onrender.com/api/
+      - key: VITE_PROD_WS_URL
+        sync: false  # Set to wss://coastal-backend.onrender.com/ws/
+      - key: VITE_SENTRY_DSN
+        sync: false
+      - key: VITE_SENTRY_ENABLED
+        value: "true"
+    autoDeploy: true
 
+# =============================================================================
+# Database
+# =============================================================================
 databases:
-  # PostgreSQL Database
   - name: coastal-db
-    databaseName: coastal_db  # Optional: custom DB name inside Postgres
-    plan: basic-256mb  # Modern free tier (256MB RAM); upgrade as needed
-    # region: oregon  # Optional: specify region (default: auto)
+    plan: starter
+    databaseName: coastal_banking
+    user: coastal_user
+    region: oregon

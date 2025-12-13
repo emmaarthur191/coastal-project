@@ -3,23 +3,16 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { LoanStatusEnum } from './LoanStatusEnum';
-/**
- * Serializer for Loan model.
- */
 export type Loan = {
-    readonly id: string;
-    account: string;
-    readonly account_number: string;
-    readonly borrower_name: string;
-    principal_amount: string;
+    readonly id: number;
+    readonly user: number;
+    amount: string;
     interest_rate: string;
     term_months: number;
-    outstanding_balance: string;
+    readonly outstanding_balance: string;
     status?: LoanStatusEnum;
-    disbursement_date: string;
-    maturity_date: string;
-    total_paid?: string;
-    readonly application_date: string;
-    readonly purpose: string;
+    readonly approved_at: string | null;
+    readonly created_at: string;
+    readonly updated_at: string;
 };
 

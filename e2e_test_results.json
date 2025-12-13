@@ -1,0 +1,139 @@
+{
+  "total_tests": 9,
+  "passed": 0,
+  "failed": 9,
+  "success_rate": 0.0,
+  "results": {
+    "User Registration": false,
+    "User Login": false,
+    "Get User Profile": false,
+    "Account Management": false,
+    "Transaction Workflow": false,
+    "Loan Workflow": false,
+    "Fraud Alerts": false,
+    "Messaging": false,
+    "System Health": false
+  },
+  "detailed_logs": [
+    {
+      "timestamp": "2025-12-11 18:35:30",
+      "status": "INFO",
+      "message": "Starting E2E Integration Tests"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:30",
+      "status": "INFO",
+      "message": "Testing user registration..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "User registration failed: 400 - {\"username\":[\"This field is required.\"],\"password_confirm\":[\"This field is required.\"]}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing user login..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "User login failed: 400 - {\"username\":[\"This field is required.\"]}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing get user profile..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "Get user profile failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing account creation..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "Account creation failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing transaction creation..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "Transaction creation failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing loan application..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "WARN",
+      "message": "Loan application failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing get loans..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "Get loans failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing get fraud alerts..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "Get fraud alerts failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing get messages..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "WARN",
+      "message": "Get messages failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing send message..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "Send message failed: 401 - {\"detail\":\"Authentication credentials were not provided.\"}"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "INFO",
+      "message": "Testing system health check..."
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "FAIL",
+      "message": "System health check failed: 404 - <!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n  <title>Page not found at /api/performance/system-health/</title>\n  <meta name=\"robots\" content=\"NONE,NOARCHIVE\">\n  <style>\n    html * { padding:0; margin:0; }\n    body * { padding:10px 20px; }\n    body * * { padding:0; }\n    body { font-family: sans-serif; background:#eee; color:#000; }\n    body > :where(header, main, footer) { border-bottom:1px solid #ddd; }\n    h1 { font-weight:normal; margin-bottom:.4em; }\n    h1 small { font-size:60%; color:#666; font-weight:normal; }\n    table { border:none; border-collapse: collapse; width:100%; }\n    td, th { vertical-align:top; padding:2px 3px; }\n    th { width:12em; text-align:right; color:#666; padding-right:.5em; }\n    #info { background:#f6f6f6; }\n    #info ol { margin: 0.5em 4em; }\n    #info ol li { font-family: monospace; }\n    #summary { background: #ffc; }\n    #explanation { background:#eee; border-bottom: 0px none; }\n    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }\n  </style>\n</head>\n<body>\n  <header id=\"summary\">\n    <h1>Page not found <small>(404)</small></h1>\n    \n    <table class=\"meta\">\n      <tr>\n        <th scope=\"row\">Request Method:</th>\n        <td>GET</td>\n      </tr>\n      <tr>\n        <th scope=\"row\">Request URL:</th>\n        <td>http://localhost:8000/api/performance/system-health/</td>\n      </tr>\n      \n    </table>\n  </header>\n\n  <main id=\"info\">\n    \n      <p>\n      Using the URLconf defined in <code>config.urls</code>,\n      Django tried these URL patterns, in this order:\n      </p>\n      <ol>\n        \n          <li>\n            \n              <code>\n                admin/\n                \n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^accounts/$\n                [name='account-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^accounts\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='account-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^accounts/(?P&lt;pk&gt;[^/.]+)/$\n                [name='account-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^accounts/(?P&lt;pk&gt;[^/.]+)\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='account-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^transactions/$\n                [name='transaction-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^transactions\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='transaction-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^transactions/(?P&lt;pk&gt;[^/.]+)/$\n                [name='transaction-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^transactions/(?P&lt;pk&gt;[^/.]+)\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='transaction-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^loans/$\n                [name='loan-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^loans\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='loan-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^loans/(?P&lt;pk&gt;[^/.]+)/$\n                [name='loan-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^loans/(?P&lt;pk&gt;[^/.]+)\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='loan-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^loans/(?P&lt;pk&gt;[^/.]+)/approve/$\n                [name='loan-approve']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^loans/(?P&lt;pk&gt;[^/.]+)/approve\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='loan-approve']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^fraud-alerts/$\n                [name='fraudalert-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^fraud-alerts\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='fraudalert-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^fraud-alerts/(?P&lt;pk&gt;[^/.]+)/$\n                [name='fraudalert-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^fraud-alerts/(?P&lt;pk&gt;[^/.]+)\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='fraudalert-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^messages/$\n                [name='bankingmessage-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^messages\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='bankingmessage-list']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^messages/(?P&lt;pk&gt;[^/.]+)/$\n                [name='bankingmessage-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^messages/(?P&lt;pk&gt;[^/.]+)\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='bankingmessage-detail']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^messages/(?P&lt;pk&gt;[^/.]+)/mark_read/$\n                [name='bankingmessage-mark-read']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                ^messages/(?P&lt;pk&gt;[^/.]+)/mark_read\\.(?P&lt;format&gt;[a-z0-9]+)/?$\n                [name='bankingmessage-mark-read']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                \n                [name='api-root']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/\n                \n              </code>\n            \n              <code>\n                \n                \n              </code>\n            \n              <code>\n                &lt;drf_format_suffix:format&gt;\n                [name='api-root']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/users/\n                \n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/schema/\n                [name='schema']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/schema/swagger-ui/\n                [name='swagger-ui']\n              </code>\n            \n          </li>\n        \n          <li>\n            \n              <code>\n                api/schema/redoc/\n                [name='redoc']\n              </code>\n            \n          </li>\n        \n      </ol>\n      <p>\n        \n          The current path, <code>api/performance/system-health/</code>,\n        \n        didn\u2019t match any of these.\n      </p>\n    \n  </main>\n\n  <footer id=\"explanation\">\n    <p>\n      You\u2019re seeing this error because you have <code>DEBUG = True</code> in\n      your Django settings file. Change that to <code>False</code>, and Django\n      will display a standard 404 page.\n    </p>\n  </footer>\n</body>\n</html>\n"
+    },
+    {
+      "timestamp": "2025-12-11 18:35:32",
+      "status": "SUMMARY",
+      "message": "E2E Tests completed: 0 passed, 9 failed"
+    }
+  ]
+}

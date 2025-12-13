@@ -256,13 +256,6 @@ Thumbs.db
 # Docker
 .dockerignore
 
-# Banking backend specific
-banking_backend/.env
-banking_backend/server.log
-banking_backend/logs/
-banking_backend/staticfiles/
-banking_backend/media/
-
 # Frontend specific
 frontend/.env
 frontend/build/

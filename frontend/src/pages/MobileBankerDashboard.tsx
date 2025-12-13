@@ -4,13 +4,17 @@ import { formatCurrencyGHS } from '../utils/formatters';
 import { api } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
 import { THEME } from '../components/mobile/MobileTheme';
-import MobileSidebar from '../components/mobile/MobileSidebar';
+import DashboardLayout from '../components/layout/DashboardLayout.tsx'; // Unified Layout
 import MobileMetrics from '../components/mobile/MobileMetrics';
 import ClientsTab from '../components/mobile/ClientsTab';
 import VisitsTab from '../components/mobile/VisitsTab';
 import MessagingTab from '../components/mobile/MessagingTab';
 import FieldToolbox from '../components/mobile/FieldToolbox';
 import ClientRegistrationTab from '../components/ClientRegistrationTab';
+import {
+  DepositModal, WithdrawalModal, PaymentModal, LoanModal, VisitModal, MessageModal, KycModal
+} from '../components/mobile/MobileModals';
+import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 
 function MobileBankerDashboard() {
   const { user, logout } = useAuth();
@@ -23,7 +27,16 @@ function MobileBankerDashboard() {
     navigate('/login');
   };
 
-  // --- STATE (Original Logic) ---
+  // --- MENU ITEMS CONFIG (For Sidebar) ---
+  const menuItems = React.useMemo(() => [
+    { id: 'client-registration', name: 'Registration', icon: '👤' },
+    { id: 'clients', name: 'My Clients', icon: '👥' },
+    { id: 'visits', name: 'Visits', icon: '🛵' },
+    { id: 'messaging', name: 'Messaging', icon: '💬' },
+    { id: 'my_payslips', name: 'My Payslips', icon: '💰' },
+  ], []);
+
+  // --- STATE ---
   const [activeTab, setActiveTab] = useState('client-registration');
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -33,11 +46,11 @@ function MobileBankerDashboard() {
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
 
-  // Form states (kept intact but collapsed for brevity)
+  // Form states
   const [loanForm, setLoanForm] = useState({ applicant_name: '', date_of_birth: '', applicant_id_type: 'ghana_card', applicant_id_number: '', digital_address: '', town: '', city: '', next_of_kin_1_name: '', next_of_kin_1_relationship: '', next_of_kin_1_phone: '', next_of_kin_1_address: '', next_of_kin_2_name: '', next_of_kin_2_relationship: '', next_of_kin_2_phone: '', next_of_kin_2_address: '', guarantor_1_name: '', guarantor_1_id_type: 'ghana_card', guarantor_1_id_number: '', guarantor_1_phone: '', guarantor_1_address: '', guarantor_2_name: '', guarantor_2_id_type: 'ghana_card', guarantor_2_id_number: '', guarantor_2_phone: '', guarantor_2_address: '', loan_amount: '', loan_purpose: '', repayment_period_months: '', monthly_income: '', employment_status: '' });
   const [paymentForm, setPaymentForm] = useState({ member_id: '', amount: '', payment_type: 'cash' });
-  const [depositForm, setDepositForm] = useState({ member_id: '', amount: '', deposit_type: 'member_savings', account_number: '' });
-  const [withdrawalForm, setWithdrawalForm] = useState({ member_id: '', amount: '', withdrawal_type: 'withdrawal_member_savings', account_number: '' });
+  const [depositForm, setDepositForm] = useState({ member_id: '', amount: '', deposit_type: 'daily_susu', account_number: '' });
+  const [withdrawalForm, setWithdrawalForm] = useState({ member_id: '', amount: '', withdrawal_type: 'withdrawal_daily_susu', account_number: '' });
   const [messageForm, setMessageForm] = useState({ recipient: '', subject: '', content: '', priority: 'normal' });
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -48,8 +61,25 @@ function MobileBankerDashboard() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleForm, setScheduleForm] = useState({ client_name: '', location: '', scheduled_date: '', scheduled_time: '', purpose: '', assigned_to: '' });
 
-  // --- EFFECTS (Original Logic) ---
-  useEffect(() => { fetchMessages(); fetchVisits(); fetchMetrics(); }, []);
+  // Assigned clients state (replaces mock data)
+  const [assignedClients, setAssignedClients] = useState<any[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+
+  // --- EFFECTS ---
+  useEffect(() => { fetchMessages(); fetchVisits(); fetchMetrics(); fetchAssignedClients(); }, []);
+
+  const fetchAssignedClients = async () => {
+    setLoadingClients(true);
+    try {
+      const response = await api.get('operations/assignments/my_clients/');
+      setAssignedClients(response.data || []);
+    } catch (error) {
+      console.error('Error fetching assigned clients:', error);
+      setAssignedClients([]);
+    } finally {
+      setLoadingClients(false);
+    }
+  };
 
   const fetchMessages = async () => {
     setLoadingMessages(true);
@@ -72,8 +102,8 @@ function MobileBankerDashboard() {
     finally { setLoadingMetrics(false); }
   };
 
-  // --- HANDLERS (Original Logic) ---
-  const handleQuickAction = (action) => {
+  // --- HANDLERS ---
+  const handleQuickAction = (action: any) => {
     switch (action) {
       case 'loan': setShowLoanModal(true); break;
       case 'payment': setShowPaymentModal(true); break;
@@ -85,116 +115,173 @@ function MobileBankerDashboard() {
     }
   };
 
-  // ... (Keeping all submit handlers exactly as provided in original code)
-  const handleLoanSubmit = async (e) => { e.preventDefault(); alert('Loan application submitted!'); setShowLoanModal(false); };
-  const handlePaymentSubmit = async (e) => { e.preventDefault(); alert('Payment collected!'); setShowPaymentModal(false); };
-  const handleDepositSubmit = async (e) => { e.preventDefault(); try { const r = await api.post('operations/process_deposit/', depositForm); alert(`Deposit Success! Ref: ${r.data.reference}`); setShowDepositModal(false); } catch(e) { alert('Error'); } };
-  const handleWithdrawalSubmit = async (e) => { e.preventDefault(); try { const r = await api.post('operations/process_withdrawal/', withdrawalForm); alert(`Withdrawal Success! Ref: ${r.data.reference}`); setShowWithdrawalModal(false); } catch(e) { alert('Error'); } };
-  const handleMessageSubmit = async (e) => { e.preventDefault(); try { await api.post('operations/messages/', messageForm); alert('Sent!'); setShowMessageModal(false); fetchMessages(); } catch(e) { alert('Error'); } };
-  const handleScheduleSubmit = async (e) => { e.preventDefault(); try { const r = await api.post('operations/schedule_visit/', scheduleForm); setScheduledVisits([...scheduledVisits, r.data]); alert('Scheduled!'); setShowScheduleModal(false); } catch(e) { alert('Error'); } };
+  const handleLoanSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!loanForm.applicant_name || !loanForm.loan_amount || !loanForm.loan_purpose) {
+      alert('Please fill in all required fields (Name, Amount, Purpose)');
+      return;
+    }
+    alert('Loan application submitted!');
+    setShowLoanModal(false);
+  };
+  const handlePaymentSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!paymentForm.member_id || !paymentForm.amount) {
+      alert('Please enter Member ID and Amount');
+      return;
+    }
+    alert('Payment collected!');
+    setShowPaymentModal(false);
+  };
+  const handleDepositSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!depositForm.amount || parseFloat(depositForm.amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    if (!depositForm.account_number && !depositForm.member_id) {
+      alert('Please enter an account number or member ID');
+      return;
+    }
+    try {
+      const r = await api.post('operations/process_deposit/', depositForm);
+      alert(`Deposit Success! Ref: ${r.data.reference}`);
+      setShowDepositModal(false);
+    } catch (e: any) {
+      alert(e.message || 'Error processing deposit');
+    }
+  };
+  const handleWithdrawalSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!withdrawalForm.amount || parseFloat(withdrawalForm.amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    if (!withdrawalForm.account_number && !withdrawalForm.member_id) {
+      alert('Please enter an account number or member ID');
+      return;
+    }
+    try {
+      const r: any = await api.post('operations/process_withdrawal/', withdrawalForm);
+      alert(`Withdrawal Success! Ref: ${r.data.reference}`);
+      setShowWithdrawalModal(false);
+    } catch (e: any) {
+      alert(e.message || 'Error processing withdrawal');
+    }
+  };
+  const handleMessageSubmit = async (e: any) => { e.preventDefault(); try { await api.post('operations/messages/', messageForm); alert('Sent!'); setShowMessageModal(false); fetchMessages(); } catch (e) { alert('Error'); } };
+  const handleScheduleSubmit = async (e: any) => { e.preventDefault(); try { const r = await api.post('operations/schedule_visit/', scheduleForm); setScheduledVisits([...scheduledVisits, r.data] as any); alert('Scheduled!'); setShowScheduleModal(false); } catch (e) { alert('Error'); } };
 
-  // --- DATA MOCKS ---
-  const assignedClients = [
-    { id: 1, name: 'Kwame Asare', location: 'East Legon', status: 'Due Payment', amountDue: formatCurrencyGHS(1500), nextVisit: 'Today 2:00 PM', priority: 'high' },
-    { id: 2, name: 'Abena Mensah', location: 'Madina', status: 'Loan Application', amountDue: null, nextVisit: 'Tomorrow 10:00 AM', priority: 'medium' },
-    { id: 3, name: 'Kofi Appiah', location: 'Tema', status: 'Account Opening', amountDue: null, nextVisit: 'Today 4:30 PM', priority: 'medium' },
-    { id: 4, name: 'Ama Osei', location: 'Dansoman', status: 'Overdue Payment', amountDue: formatCurrencyGHS(2500), nextVisit: 'ASAP', priority: 'high' }
-  ];
-
+  // Quick action buttons config
   const quickActionButtons = [
     { action: 'deposit', label: 'Deposit', icon: '📥', color: THEME.colors.success },
     { action: 'withdrawal', label: 'Withdraw', icon: '📤', color: THEME.colors.danger },
-    { action: 'loan', label: 'New Loan', icon: '🤝', color: THEME.colors.secondary },
+    { action: 'loan', label: 'New Loan', icon: '🤝', color: THEME.colors.info }, // Use blue for Loan on new theme? Or Keep colors as is? FieldToolbox uses colors.
     { action: 'payment', label: 'Collect', icon: '💵', color: THEME.colors.primary },
     { action: 'kyc', label: 'KYC Doc', icon: '📸', color: THEME.colors.warning }
   ];
 
-  // --- RENDER ---
   return (
-    <div style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-          /* Custom Scrollbar */
-          ::-webkit-scrollbar { width: 10px; }
-          ::-webkit-scrollbar-track { background: transparent; }
-          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; border: 2px solid #fff; }
-        `}
-      </style>
+    <DashboardLayout
+      title="Mobile Operations"
+      user={user}
+      menuItems={menuItems}
+      activeView={activeTab}
+      onNavigate={setActiveTab}
+      onLogout={handleLogout}
+    >
+      {/* Mobile Header Ribbon removed - handled by DashboardLayout */}
 
-      <MobileSidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        handleLogout={handleLogout}
-      />
+      <MobileMetrics metrics={metrics} loadingMetrics={loadingMetrics} />
 
-      {/* --- MAIN CONTENT --- */}
-      <main style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+      {/* Main Grid: Content + Toolbox */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
-        {/* Header Ribbon */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div>
-            <h1 style={{ margin: 0, fontWeight: '900', fontSize: '28px', color: THEME.colors.text }}>Mobile Ops 🚁</h1>
-            <p style={{ margin: 0, color: '#636e72', fontWeight: 'bold' }}>Hello, {(user as any)?.name}!</p>
-          </div>
-          <div style={{ background: THEME.colors.primary, color: 'white', padding: '5px 15px', borderRadius: '20px', border: '2px solid black', fontWeight: 'bold' }}>
-            FIELD AGENT
-          </div>
-        </div>
-
-        <MobileMetrics metrics={metrics} loadingMetrics={loadingMetrics} />
-
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-
-          {/* LEFT COLUMN: Dynamic Tab Content */}
-          <div>
-            {activeTab === 'client-registration' && (
-              <div style={{ background: THEME.colors.white, borderRadius: '12px', padding: '20px', border: '2px solid #000' }}>
-                <ClientRegistrationTab />
-              </div>
-            )}
-
-            {activeTab === 'clients' && (
-              <ClientsTab assignedClients={assignedClients} />
-            )}
-
+        {/* LEFT COLUMN: Dynamic Tab Content (Spans 2 cols on Large) */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl shadow-sm border border-secondary-200 p-6">
+            {activeTab === 'client-registration' && <ClientRegistrationTab />}
+            {activeTab === 'clients' && <ClientsTab assignedClients={assignedClients} />}
             {activeTab === 'visits' && (
               <VisitsTab
                 scheduledVisits={scheduledVisits}
                 onAddStop={() => setShowScheduleModal(true)}
               />
             )}
-
             {activeTab === 'messaging' && (
               <MessagingTab onOpenComms={() => {
-                if (!hasMessagingAccess) {
-                  alert('Access denied. Messaging is only for authorized staff.');
-                  return;
-                }
-                alert('Opening secure messaging system...');
+                if (!hasMessagingAccess) { alert('Access blocked.'); return; }
                 navigate('/messaging');
               }} />
             )}
+            {activeTab === 'my_payslips' && <StaffPayslipViewer />}
           </div>
-
-          {/* RIGHT COLUMN: Field Toolbox */}
-          <div>
-            <FieldToolbox
-              quickActionButtons={quickActionButtons}
-              onQuickAction={handleQuickAction}
-            />
-
-            {/* Educational Diagram for Field Agents */}
-            <div style={{ marginTop: '20px' }}>
-
-               <p style={{ fontSize: '12px', color: '#666', textAlign: 'center', marginTop: '5px' }}>
-                 Remember: Verify ID before onboarding!
-               </p>
-            </div>
-          </div>
-
         </div>
-      </main>
-    </div>
+
+        {/* RIGHT COLUMN: Field Toolbox */}
+        <div>
+          <FieldToolbox
+            quickActionButtons={quickActionButtons}
+            onQuickAction={handleQuickAction}
+          />
+
+          <div className="mt-6 text-center">
+            <p className="text-xs text-secondary-500 font-medium bg-secondary-50 py-2 rounded-lg border border-secondary-200">
+              ⚠️ Verify ID before onboarding!
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* --- MODALS --- */}
+      <DepositModal
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        formData={depositForm}
+        setFormData={setDepositForm}
+        onSubmit={handleDepositSubmit}
+      />
+      <WithdrawalModal
+        isOpen={showWithdrawalModal}
+        onClose={() => setShowWithdrawalModal(false)}
+        formData={withdrawalForm}
+        setFormData={setWithdrawalForm}
+        onSubmit={handleWithdrawalSubmit}
+      />
+      <LoanModal
+        isOpen={showLoanModal}
+        onClose={() => setShowLoanModal(false)}
+        formData={loanForm}
+        setFormData={setLoanForm}
+        onSubmit={handleLoanSubmit}
+      />
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        formData={paymentForm}
+        setFormData={setPaymentForm}
+        onSubmit={handlePaymentSubmit}
+      />
+      <VisitModal
+        isOpen={showVisitModal || showScheduleModal}
+        onClose={() => { setShowVisitModal(false); setShowScheduleModal(false); }}
+        formData={scheduleForm}
+        setFormData={setScheduleForm}
+        onSubmit={handleScheduleSubmit}
+      />
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        formData={messageForm}
+        setFormData={setMessageForm}
+        onSubmit={handleMessageSubmit}
+      />
+      <KycModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+      />
+    </DashboardLayout>
   );
 }
 

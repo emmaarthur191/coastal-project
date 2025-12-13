@@ -49,9 +49,12 @@ const ServiceRequestsTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('services/requests/');
-      setServiceRequests(response.data || []);
+      // Handle both paginated response {results: []} and direct array response
+      const data = response.data?.results || response.data || [];
+      setServiceRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching service requests:', error);
+      setServiceRequests([]);
       setMessage({ type: 'error', text: 'Failed to load service requests' });
     } finally {
       setLoading(false);
@@ -241,7 +244,7 @@ const ServiceRequestsTab: React.FC = () => {
                       Created: {new Date(request.created_at).toLocaleDateString()}
                     </span>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <PlayfulButton onClick={() => {/* Update status */}} variant="primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                      <PlayfulButton onClick={() => {/* Update status */ }} variant="primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
                         Update
                       </PlayfulButton>
                     </div>

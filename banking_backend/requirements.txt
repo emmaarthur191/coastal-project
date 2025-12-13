@@ -1,60 +1,32 @@
-# =============================================================================
-# Coastal Banking Backend - Python Dependencies
-# =============================================================================
-# Core Django and REST Framework
-Django>=4.2,<5.0
-djangorestframework>=3.15.0
-django-cors-headers>=4.4.0
-djangorestframework-simplejwt>=5.5.0
-
-# Real-time Communication (WebSockets)
-channels>=4.1.0
-channels-redis>=4.2.0
-daphne>=4.1.0
-Twisted[http2,tls]>=24.0.0
-
-# Database
-psycopg2-binary>=2.9.0
-dj-database-url>=2.2.0
-
-# Security & Cryptography
-cryptography>=44.0.0
-bleach>=6.2.0
-
-# Configuration
-python-decouple>=3.8
-python-dateutil>=2.8.2
-
-# Audit & Logging
-django-auditlog>=3.0.0
-structlog>=23.2.0
-django-structlog>=8.1.0
-concurrent-log-handler>=0.9.25
-
-# Monitoring & Health
-django-prometheus>=2.3.0
-django-health-check>=3.18.0
-psutil>=6.0.0
-sentry-sdk>=2.19.0
-
-# API Documentation
-drf-spectacular>=0.27.0
-drf-spectacular[sidecar]>=0.27.0
-
-# Image Processing
-Pillow>=11.0.0
-
-# Production Server
-gunicorn>=23.0.0
-whitenoise>=6.6.0
-
-# Redis (for caching and fraud detection)
-redis>=5.0.0
-
-# Type Stubs (Development)
-django-stubs>=5.1.0
-djangorestframework-stubs>=3.15.0
-channels-stubs>=0.1.0
-
-# Utils
-setuptools>=65.0.0
+Django==5.1
+djangorestframework
+django-cors-headers
+drf-spectacular
+djangorestframework-simplejwt
+psycopg2-binary
+redis
+pytest
+pytest-django
+pytest-cov
+factory-boy
+django-environ
+django-prometheus
+django-filter
+channels
+channels-redis
+daphne
+celery
+flower
+cryptography
+urllib3
+# Monitoring & Observability
+sentry-sdk[django]
+# Load Testing
+locust
+# Security Testing
+requests
+# Media & Reporting
+Pillow
+reportlab
+# Static Files
+whitenoise
