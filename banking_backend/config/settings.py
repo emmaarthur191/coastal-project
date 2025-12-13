@@ -278,13 +278,18 @@ else:
         },
     }
 
-# Celery Configuration
-CELERY_BROKER_URL = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
+# Celery Configuration (optional - only if Redis is available)
+if env('REDIS_URL', default=None):
+    CELERY_BROKER_URL = env('REDIS_URL')
+    CELERY_RESULT_BACKEND = env('REDIS_URL')
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = TIME_ZONE
+    CELERY_ENABLED = True
+else:
+    # Celery disabled - tasks will run synchronously if called
+    CELERY_ENABLED = False
 
 # Flower (Celery monitoring) Configuration
 FLOWER_PORT = env.int('FLOWER_PORT', default=5555)
@@ -434,3 +439,14 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+# Add production CSRF trusted origins from environment
+# In Render, set CSRF_TRUSTED_ORIGINS to your frontend URL (e.g., https://coastal-web.onrender.com)
+if env.list('CSRF_TRUSTED_ORIGINS', default=[]):
+    CSRF_TRUSTED_ORIGINS += env.list('CSRF_TRUSTED_ORIGINS')
+
+# Also add CORS origins as CSRF trusted origins (they should match for API)
+if env.list('CORS_ALLOWED_ORIGINS', default=[]):
+    for origin in env.list('CORS_ALLOWED_ORIGINS'):
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)

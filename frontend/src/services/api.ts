@@ -23,38 +23,58 @@ export interface AccountSummary {
 
 // Use environment variable for API URL
 const getApiBaseUrl = () => {
-  // Check for VITE_API_BASE_URL (used in docker-compose)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    // If it already ends with /api or /api/, don't add it again
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (baseUrl.endsWith('/api') || baseUrl.endsWith('/api/')) {
-      return baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-    }
-    return baseUrl + '/api/';
+  // Debug logging to help diagnose connection issues
+  const isProd = import.meta.env.PROD;
+  const devUrl = import.meta.env.VITE_DEV_API_URL;
+  const prodUrl = import.meta.env.VITE_PROD_API_URL;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const legacyUrl = import.meta.env.VITE_API_URL;
+
+  // Safe logging that won't expose sensitive info if we had any
+  console.log('[Config] Environment Detection:', {
+    isProd,
+    hasDevUrl: !!devUrl,
+    hasProdUrl: !!prodUrl,
+    hasBaseUrl: !!baseUrl,
+    hostname: window.location.hostname
+  });
+
+  // Priority 1: Check VITE_PROD_API_URL (Explicit Production)
+  if (prodUrl) {
+    console.log('[Config] Using VITE_PROD_API_URL');
+    return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
   }
-  // Fallback to VITE_API_URL for Railway
-  if (import.meta.env.VITE_API_URL) {
-    const baseUrl = import.meta.env.VITE_API_URL;
-    if (baseUrl.endsWith('/api') || baseUrl.endsWith('/api/')) {
-      return baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-    }
-    return baseUrl + '/api/';
+
+  // Priority 2: Check VITE_API_BASE_URL (Docker/General)
+  if (baseUrl) {
+    console.log('[Config] Using VITE_API_BASE_URL');
+    return baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
   }
-  // In production, use HTTPS with environment variable or fallback
-  if (import.meta.env.PROD) {
-    if (import.meta.env.VITE_PROD_API_URL) {
-      return import.meta.env.VITE_PROD_API_URL.endsWith('/')
-        ? import.meta.env.VITE_PROD_API_URL
-        : import.meta.env.VITE_PROD_API_URL + '/';
-    }
-    throw new Error('VITE_PROD_API_URL environment variable is required in production');
+
+  // Priority 3: Check VITE_API_URL (Legacy/Railway)
+  if (legacyUrl) {
+    console.log('[Config] Using VITE_API_URL');
+    return legacyUrl.endsWith('/') ? legacyUrl : legacyUrl + '/';
   }
-  // In development, use proxy with environment variable or fallback
-  if (import.meta.env.VITE_DEV_API_URL) {
-    return import.meta.env.VITE_DEV_API_URL.endsWith('/')
-      ? import.meta.env.VITE_DEV_API_URL
-      : import.meta.env.VITE_DEV_API_URL + '/';
+
+  // Priority 4: Production Mode Safety Check
+  // If we are in production mode OR running on a non-localhost domain
+  // WE MUST NOT FALLBACK TO LOCALHOST
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  if (isProd || !isLocalhost) {
+    console.error('[Config] CRITICAL: No API URL found in production environment!');
+    // If we have a VITE_PROD_API_URL that was empty string, it would be caught here
+    throw new Error('Configuration Error: VITE_PROD_API_URL is missing. Please check Render environment variables.');
   }
+
+  // Priority 5: Development Fallback
+  if (devUrl) {
+    console.log('[Config] Using VITE_DEV_API_URL');
+    return devUrl.endsWith('/') ? devUrl : devUrl + '/';
+  }
+
+  console.log('[Config] Using default localhost fallback');
   return '/api/';
 };
 
@@ -62,6 +82,7 @@ const getApiBaseUrl = () => {
 // Local development uses HTTP, production should use a reverse proxy with HTTPS
 
 const API_BASE_URL = getApiBaseUrl();
+console.log('[Config] Final API_BASE_URL:', API_BASE_URL);
 
 // Extend Window interface for Sentry
 declare global {
@@ -301,7 +322,7 @@ const isRetryableError = (error: any) => {
 // Enhanced API call function with retry logic and interceptors
 async function apiCall(method: string, url: string, data: any = null, config: RequestInit = {}, retryCount = 0): Promise<{ data: any }> {
   const startTime = Date.now();
-  const requestConfig = { method, url, data, ...config };
+  const requestConfig = { method, url, data, ...config } as RequestConfig;
 
   logger.debug(`API call: ${method} ${url} (attempt ${retryCount + 1})`, { data: data, config });
 
@@ -825,22 +846,7 @@ export const authService = {
     }
   },
 
-  async calculateInterest(): Promise<{ success; data?: any; error?: string }> {
-    try {
-      // Provide default parameters to avoid 400 Bad Request
-      const defaultParams = {
-        account_type: 'loan',
-        principal: 10000,
-        rate: 0.05, // 5%
-        time_period: 12, // 12 months
-        compounding_frequency: 'monthly'
-      };
-      const response = await api.post('operations/calculate-interest/', defaultParams);
-      return { success: true, data: response.data };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  },
+
 
   async getCommissionSummary(): Promise<{ success; data?: any; error?: string }> {
     try {
@@ -1275,15 +1281,7 @@ export const authService = {
     }
   },
 
-  async getMobileBankerMetrics(): Promise<{ success; data?: any; error?: string }> {
-    try {
-      const response = await api.get('operations/mobile-banker-metrics/');
-      return { success: true, data: response.data || [] };
-    } catch (error: any) {
-      console.error('Error fetching mobile banker metrics:', error);
-      return { success: false, error: error.message, data: [] };
-    }
-  },
+
 
   async processDeposit(data: any): Promise<{ success; data?: any; error?: string }> {
     try {

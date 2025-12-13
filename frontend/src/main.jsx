@@ -16,7 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 )
 
 // Register service worker for caching chunks
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if (false && 'serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
