@@ -30,3 +30,5 @@ Pillow
 reportlab
 # Static Files
 whitenoise
+gunicorn
+uvicorn[standard]
