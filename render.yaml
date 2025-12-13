@@ -55,11 +55,11 @@ services:
     healthCheckPath: /api/performance/system-health/
     autoDeploy: true
 
-  # =============================================================================
-  # Frontend - Vite/React Static Site
-  # =============================================================================
-  - type: static_site
-    name: coastal-frontend
+# =============================================================================
+# Frontend - Vite/React Static Site (separate key for static sites)
+# =============================================================================
+staticSites:
+  - name: coastal-frontend
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
