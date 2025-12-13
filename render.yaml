@@ -9,7 +9,8 @@ services:
     name: coastal-backend
     runtime: python
     region: oregon
-    plan: starter
+    plan: free
+    rootDir: banking_backend
     buildCommand: |
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
@@ -57,9 +58,9 @@ services:
   # =============================================================================
   # Frontend - Vite/React Static Site
   # =============================================================================
-  - type: web
+  - type: static_site
     name: coastal-frontend
-    runtime: static
+    rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     headers:
@@ -92,7 +93,7 @@ services:
 # =============================================================================
 databases:
   - name: coastal-db
-    plan: starter
+    plan: free
     databaseName: coastal_banking
     user: coastal_user
     region: oregon
