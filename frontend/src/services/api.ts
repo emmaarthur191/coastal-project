@@ -64,8 +64,20 @@ const getApiBaseUrl = () => {
 
   if (isProd || !isLocalhost) {
     console.error('[Config] CRITICAL: No API URL found in production environment!');
-    // If we have a VITE_PROD_API_URL that was empty string, it would be caught here
-    throw new Error('Configuration Error: VITE_PROD_API_URL is missing. Please check Render environment variables.');
+
+    // Attempt to infer backend URL from hostname
+    const hostname = window.location.hostname;
+    if (hostname.includes('.onrender.com')) {
+      // Infer backend from '-web' -> '-backend' naming convention
+      const backendHostname = hostname.replace('-web', '-backend');
+      const inferredUrl = `https://${backendHostname}/api/`;
+      console.warn('[Config] No VITE_PROD_API_URL set, inferring:', inferredUrl);
+      return inferredUrl;
+    }
+
+    // Can't infer, return relative path (will likely fail but app won't crash)
+    console.warn('[Config] Cannot infer API URL, using /api/ fallback');
+    return '/api/';
   }
 
   // Priority 5: Development Fallback
