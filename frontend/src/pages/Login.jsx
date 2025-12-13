@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import logo from '../assets/logo.png';
 
 /**
  * Production-ready, accessible login component with modern best practices
@@ -230,7 +231,7 @@ function LoginPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Coastal Banking Logo" className="h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-md border border-white/20" />
+            <img src={logo} alt="Coastal Banking Logo" className="h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-md border border-white/20" />
             <span className="text-white text-xl font-bold tracking-tight">Coastal Banking</span>
           </div>
         </div>
@@ -264,7 +265,7 @@ function LoginPage() {
 
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="lg:hidden mb-10 text-center">
-            <img src="/logo.png" alt="Coastal Banking Logo" className="h-24 mx-auto mb-6 object-contain" />
+            <img src={logo} alt="Coastal Banking Logo" className="h-24 mx-auto mb-6 object-contain" />
             <h2 className="text-3xl font-bold text-secondary-900">Sign In</h2>
           </div>
 

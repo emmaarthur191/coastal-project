@@ -391,6 +391,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     # Production frontend on Render
     "https://coastal-web.onrender.com",
+    "http://localhost:5173",  # For local Vite dev
 ]
 
 # Add Env-Defined Origins for Production (override/extend)
@@ -442,6 +443,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     # Production frontend on Render
     "https://coastal-web.onrender.com",
+    "http://localhost:5173",
 ]
 
 # Add production CSRF trusted origins from environment
