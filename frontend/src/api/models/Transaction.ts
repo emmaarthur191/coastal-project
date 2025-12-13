@@ -2,24 +2,17 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { Category996Enum } from './Category996Enum';
-import type { StatusC7fEnum } from './StatusC7fEnum';
-import type { TypeEnum } from './TypeEnum';
+import type { TransactionStatusEnum } from './TransactionStatusEnum';
+import type { TransactionTypeEnum } from './TransactionTypeEnum';
 export type Transaction = {
-    readonly id: string;
-    account: string;
-    readonly account_number: string;
-    type: TypeEnum;
+    readonly id: number;
+    from_account?: number | null;
+    to_account?: number | null;
     amount: string;
-    readonly timestamp: string;
-    cashier?: string | null;
-    readonly cashier_email: string;
-    related_account?: string | null;
-    readonly related_account_number: string;
+    transaction_type: TransactionTypeEnum;
     description?: string;
-    category?: Category996Enum;
-    tags?: any;
-    status?: StatusC7fEnum;
-    readonly reference_number: string;
+    status?: TransactionStatusEnum;
+    readonly timestamp: string;
+    readonly processed_at: string | null;
 };
 

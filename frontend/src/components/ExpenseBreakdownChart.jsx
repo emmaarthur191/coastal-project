@@ -3,17 +3,16 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { formatCurrencyGHS } from '../utils/formatters';
 
 const ExpenseBreakdownChart = ({ data }) => {
-  // Sample data if none provided
-  const sampleData = [
-    { name: 'Housing', value: 1200, color: '#0066CC' },
-    { name: 'Food', value: 450, color: '#10b981' },
-    { name: 'Transportation', value: 320, color: '#f59e0b' },
-    { name: 'Entertainment', value: 180, color: '#ef4444' },
-    { name: 'Utilities', value: 150, color: '#8b5cf6' },
-    { name: 'Other', value: 200, color: '#6b7280' },
-  ];
+  // Show empty state if no data provided
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center bg-neutral-50 rounded-lg border border-neutral-200">
+        <p className="text-neutral-500 text-sm">No expense breakdown data available</p>
+      </div>
+    );
+  }
 
-  const chartData = data || sampleData;
+  const chartData = data;
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {

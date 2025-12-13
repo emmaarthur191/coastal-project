@@ -37,11 +37,10 @@ const TransactionForm = ({ type, amount, setAmount, memberId, setMemberId, membe
           value={accountType}
           onChange={(e) => setAccountType(e.target.value)}
           style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', background: 'white' }}
-          required
         >
-          <option value="Savings">Savings</option>
-          <option value="Shares">Shares</option>
-          <option value="Checking">Checking</option>
+          <option value="daily_susu">Daily Susu</option>
+          <option value="shares">Shares</option>
+          <option value="monthly_contribution">Monthly Contribution</option>
         </select>
       </div>
 

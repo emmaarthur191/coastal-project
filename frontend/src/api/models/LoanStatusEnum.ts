@@ -3,14 +3,18 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+ * * `pending` - Pending
+ * * `approved` - Approved
  * * `active` - Active
  * * `paid_off` - Paid Off
  * * `defaulted` - Defaulted
- * * `written_off` - Written Off
+ * * `rejected` - Rejected
  */
 export enum LoanStatusEnum {
+    PENDING = 'pending',
+    APPROVED = 'approved',
     ACTIVE = 'active',
     PAID_OFF = 'paid_off',
     DEFAULTED = 'defaulted',
-    WRITTEN_OFF = 'written_off',
+    REJECTED = 'rejected',
 }

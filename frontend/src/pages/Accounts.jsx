@@ -28,21 +28,20 @@ function Accounts() {
   const filteredAccounts = accounts.filter(account => {
     const matchesTab = activeTab === 'all' || account.type === activeTab;
     const matchesSearch = account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         account.account_number.includes(searchTerm);
+      account.account_number.includes(searchTerm);
     return matchesTab && matchesSearch;
   });
 
   const accountTypes = [
-    { id: 'all', name: 'All Accounts', icon: '', count: accounts.length },
-    { id: 'savings', name: 'Savings', icon: '', count: accounts.filter(a => a.type === 'savings').length },
-    { id: 'checking', name: 'Checking', icon: '', count: accounts.filter(a => a.type === 'checking').length },
-    { id: 'loan', name: 'Loan Accounts', icon: '', count: accounts.filter(a => a.type === 'loan').length },
-    { id: 'share', name: 'Shares', icon: '', count: accounts.filter(a => a.type === 'share').length }
+    { id: 'all', name: 'All Accounts', icon: '📊', count: accounts.length },
+    { id: 'daily_susu', name: 'Daily Susu', icon: '📅', count: accounts.filter(a => a.type === 'daily_susu').length },
+    { id: 'shares', name: 'Shares', icon: '📈', count: accounts.filter(a => a.type === 'shares').length },
+    { id: 'monthly_contribution', name: 'Monthly Contribution', icon: '📆', count: accounts.filter(a => a.type === 'monthly_contribution').length }
   ];
 
   if (loading) {
     return (
-      <div style={{ 
+      <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         padding: '40px 20px',
@@ -58,9 +57,9 @@ function Accounts() {
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           border: '1px solid #e2e8f0'
         }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
+          <div style={{
+            width: '40px',
+            height: '40px',
             border: '3px solid #f3f4f6',
             borderTop: '3px solid #3b82f6',
             borderRadius: '50%',
@@ -74,7 +73,7 @@ function Accounts() {
   }
 
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       padding: '20px'
@@ -90,16 +89,16 @@ function Accounts() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
-            <h1 style={{ 
-              margin: '0 0 8px 0', 
+            <h1 style={{
+              margin: '0 0 8px 0',
               color: '#1e293b',
               fontSize: '28px',
               fontWeight: '700'
             }}>
               Account Management
             </h1>
-            <p style={{ 
-              margin: 0, 
+            <p style={{
+              margin: 0,
               color: '#64748b',
               fontSize: '16px'
             }}>
@@ -120,15 +119,15 @@ function Accounts() {
               gap: '8px',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#3b82f6';
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#f8fafc';
-              e.currentTarget.style.color = '#374151';
-            }}>
-               View Statements
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#3b82f6';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f8fafc';
+                e.currentTarget.style.color = '#374151';
+              }}>
+              View Statements
             </button>
             <button style={{
               padding: '12px 20px',
@@ -143,15 +142,15 @@ function Accounts() {
               gap: '8px',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}>
-               Add Account
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}>
+              Add Account
             </button>
           </div>
         </div>
@@ -180,7 +179,7 @@ function Accounts() {
             color: '#6b7280',
             fontSize: '16px'
           }}>
-            
+
           </span>
         </div>
       </div>
@@ -230,9 +229,9 @@ function Accounts() {
               <span style={{ fontSize: '18px' }}>{type.icon}</span>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '14px' }}>{type.name}</div>
-                <div style={{ 
-                  fontSize: '12px', 
-                  opacity: activeTab === type.id ? 0.9 : 0.6 
+                <div style={{
+                  fontSize: '12px',
+                  opacity: activeTab === type.id ? 0.9 : 0.6
                 }}>
                   {type.count} accounts
                 </div>
@@ -243,10 +242,10 @@ function Accounts() {
       </div>
 
       {/* Accounts Grid */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
-        gap: '20px' 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+        gap: '20px'
       }}>
         {filteredAccounts.map((account) => (
           <div key={account.id} style={{
@@ -258,28 +257,28 @@ function Accounts() {
             transition: 'all 0.3s ease',
             cursor: 'pointer'
           }}
-          onClick={() => setExpandedAccount(expandedAccount === account.id ? null : account.id)}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-          }}>
+            onClick={() => setExpandedAccount(expandedAccount === account.id ? null : account.id)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+            }}>
             {/* Account Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <h3 style={{ 
-                  margin: '0 0 8px 0', 
+                <h3 style={{
+                  margin: '0 0 8px 0',
                   color: '#1e293b',
                   fontSize: '18px',
                   fontWeight: '600'
                 }}>
                   {account.name}
                 </h3>
-                <p style={{ 
-                  margin: 0, 
+                <p style={{
+                  margin: 0,
                   color: '#64748b',
                   fontSize: '14px',
                   fontFamily: 'monospace'
@@ -302,7 +301,7 @@ function Accounts() {
 
             {/* Balance */}
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ 
+              <div style={{
                 color: '#1e293b',
                 fontSize: '24px',
                 fontWeight: '700',
@@ -310,7 +309,7 @@ function Accounts() {
               }}>
                 {formatCurrencyGHS(account.balance)}
               </div>
-              <div style={{ 
+              <div style={{
                 color: '#64748b',
                 fontSize: '14px'
               }}>
@@ -331,14 +330,14 @@ function Accounts() {
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#3b82f6';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#f8fafc';
-                e.currentTarget.style.color = '#374151';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#3b82f6';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f8fafc';
+                  e.currentTarget.style.color = '#374151';
+                }}>
                 Transfer
               </button>
               <button style={{
@@ -352,14 +351,14 @@ function Accounts() {
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#10b981';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#f8fafc';
-                e.currentTarget.style.color = '#374151';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#10b981';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f8fafc';
+                  e.currentTarget.style.color = '#374151';
+                }}>
                 Statement
               </button>
               <button style={{
@@ -373,14 +372,14 @@ function Accounts() {
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#8b5cf6';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#f8fafc';
-                e.currentTarget.style.color = '#374151';
-              }}>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#8b5cf6';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f8fafc';
+                  e.currentTarget.style.color = '#374151';
+                }}>
                 Details
               </button>
             </div>
@@ -429,16 +428,16 @@ function Accounts() {
           border: '1px solid #e2e8f0'
         }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
-          <h3 style={{ 
-            margin: '0 0 8px 0', 
+          <h3 style={{
+            margin: '0 0 8px 0',
             color: '#1e293b',
             fontSize: '20px',
             fontWeight: '600'
           }}>
             No accounts found
           </h3>
-          <p style={{ 
-            margin: '0 0 24px 0', 
+          <p style={{
+            margin: '0 0 24px 0',
             color: '#64748b',
             fontSize: '16px'
           }}>
@@ -473,10 +472,9 @@ function Accounts() {
 // Helper function for account type colors
 function getAccountTypeColor(type) {
   const colors = {
-    savings: { background: '#d1fae5', color: '#065f46' },
-    checking: { background: '#dbeafe', color: '#1e40af' },
-    loan: { background: '#fef3c7', color: '#92400e' },
-    share: { background: '#e0e7ff', color: '#3730a3' },
+    daily_susu: { background: '#d1fae5', color: '#065f46' },
+    shares: { background: '#dbeafe', color: '#1e40af' },
+    monthly_contribution: { background: '#fef3c7', color: '#92400e' },
     default: { background: '#f3f4f6', color: '#374151' }
   };
   return colors[type] || colors.default;

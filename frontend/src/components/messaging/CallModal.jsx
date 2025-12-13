@@ -28,8 +28,8 @@ const CallModal = ({
         <div className="mb-4">
           <h4 className="font-medium mb-2">Participants:</h4>
           <div className="space-y-2 max-h-40 overflow-y-auto">
-            {selectedThread?.participants?.filter(p => p.id !== user.id).map(participant => (
-              <label key={participant.id} className="flex items-center space-x-2">
+            {(selectedThread?.participant_list || []).filter(p => p.id !== user.id).map((participant, index) => (
+              <label key={participant.id || index} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={selectedCallParticipants.some(p => p.id === participant.id)}
@@ -42,7 +42,7 @@ const CallModal = ({
                   }}
                 />
                 <UserAvatar user={participant} size={24} />
-                <span>{participant.first_name} {participant.last_name}</span>
+                <span>{participant.first_name || participant.name} {participant.last_name || ''}</span>
               </label>
             ))}
           </div>

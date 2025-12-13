@@ -4,20 +4,20 @@ import { formatCurrencyGHS } from '../../utils/formatters';
 
 interface MobileMetricsProps {
   metrics: {
-    scheduled_visits: number;
-    completed_today: number;
-    collections_due: number;
-    new_applications: number;
+    scheduled_visits?: number;
+    completed_today?: number;
+    collections_due?: number;
+    new_applications?: number;
   };
   loadingMetrics: boolean;
 }
 
 const MobileMetrics: React.FC<MobileMetricsProps> = ({ metrics, loadingMetrics }) => {
   const fieldMetrics = [
-    { label: 'Visits', value: loadingMetrics ? '...' : metrics.scheduled_visits.toString(), icon: '🛵', color: THEME.colors.primary },
-    { label: 'Done', value: loadingMetrics ? '...' : metrics.completed_today.toString(), icon: '✅', color: THEME.colors.success },
-    { label: 'Collect', value: loadingMetrics ? '...' : formatCurrencyGHS(metrics.collections_due), icon: '💰', color: THEME.colors.warning },
-    { label: 'New Apps', value: loadingMetrics ? '...' : metrics.new_applications.toString(), icon: '📝', color: THEME.colors.secondary }
+    { label: 'Visits', value: loadingMetrics ? '...' : (metrics?.scheduled_visits || 0).toString(), icon: '🛵', color: THEME.colors.primary },
+    { label: 'Done', value: loadingMetrics ? '...' : (metrics?.completed_today || 0).toString(), icon: '✅', color: THEME.colors.success },
+    { label: 'Collect', value: loadingMetrics ? '...' : formatCurrencyGHS(metrics?.collections_due || 0), icon: '💰', color: THEME.colors.warning },
+    { label: 'New Apps', value: loadingMetrics ? '...' : (metrics?.new_applications || 0).toString(), icon: '📝', color: THEME.colors.info }
   ];
 
   return (

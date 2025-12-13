@@ -247,43 +247,58 @@ function BankingOperations() {
   };
 
   const fetchFraudAlerts = async () => {
-    // Placeholder for fraud alerts - would integrate with backend
-    const mockAlerts = [
-      {
-        id: '1',
-        transaction_id: 'TXN-001',
-        risk_score: 85,
-        reason: 'Unusual transaction pattern',
-        status: 'pending',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: '2',
-        transaction_id: 'TXN-002',
-        risk_score: 72,
-        reason: 'High amount transfer',
-        status: 'investigating',
-        created_at: new Date().toISOString()
-      }
-    ];
-    setFraudAlerts(mockAlerts);
+    // Fetch real fraud alerts from backend
+    const result = await authService.getFraudAlerts();
+    if (result.success && result.data) {
+      setFraudAlerts(result.data);
+    } else {
+      // If API fails, set empty array instead of mock data
+      setFraudAlerts([]);
+    }
   };
 
   const processReportsData = (loans: any[], transactions: any[], performance: any[]) => {
-    // Process data for charts - create sample data for demonstration
-    const monthlyData = [
-      { month: 'Jan', loans: 45, transactions: 1200, revenue: 25000 },
-      { month: 'Feb', loans: 52, transactions: 1350, revenue: 28000 },
-      { month: 'Mar', loans: 48, transactions: 1180, revenue: 26500 },
-      { month: 'Apr', loans: 61, transactions: 1420, revenue: 31000 },
-      { month: 'May', loans: 55, transactions: 1380, revenue: 29500 },
-      { month: 'Jun', loans: 67, transactions: 1520, revenue: 33000 }
-    ];
+    // Process real data for charts from API response
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+
+    // Aggregate real data by month (last 6 months)
+    const monthlyData = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      const monthLoans = loans?.filter((l: any) => {
+        const loanMonth = new Date(l.created_at).getMonth();
+        return loanMonth === monthIndex;
+      }).length || 0;
+
+      const monthTransactions = transactions?.filter((t: any) => {
+        const txMonth = new Date(t.timestamp || t.created_at).getMonth();
+        return txMonth === monthIndex;
+      }).length || 0;
+
+      const monthRevenue = transactions?.filter((t: any) => {
+        const txMonth = new Date(t.timestamp || t.created_at).getMonth();
+        return txMonth === monthIndex && t.transaction_type === 'deposit';
+      }).reduce((sum: number, t: any) => sum + parseFloat(t.amount || 0), 0) || 0;
+
+      monthlyData.push({
+        month: months[monthIndex],
+        loans: monthLoans,
+        transactions: monthTransactions,
+        revenue: Math.round(monthRevenue)
+      });
+    }
+
+    // Calculate real category distribution
+    const totalLoans = loans?.length || 0;
+    const totalTransactions = transactions?.length || 0;
+    const totalServices = performance?.length || 0;
+    const total = totalLoans + totalTransactions + totalServices || 1;
 
     const categoryData = [
-      { name: 'Loans', value: 35, color: THEME.colors.primary },
-      { name: 'Transactions', value: 45, color: THEME.colors.success },
-      { name: 'Services', value: 20, color: THEME.colors.secondary }
+      { name: 'Loans', value: Math.round((totalLoans / total) * 100), color: THEME.colors.primary },
+      { name: 'Transactions', value: Math.round((totalTransactions / total) * 100), color: THEME.colors.success },
+      { name: 'Services', value: Math.round((totalServices / total) * 100), color: THEME.colors.secondary }
     ];
 
     return { monthlyData, categoryData };
@@ -412,26 +427,26 @@ function BankingOperations() {
                   type="number"
                   placeholder="Loan Amount"
                   value={newLoan.amount}
-                  onChange={(e) => setNewLoan({...newLoan, amount: e.target.value})}
+                  onChange={(e) => setNewLoan({ ...newLoan, amount: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 />
                 <input
                   type="text"
                   placeholder="Purpose"
                   value={newLoan.purpose}
-                  onChange={(e) => setNewLoan({...newLoan, purpose: e.target.value})}
+                  onChange={(e) => setNewLoan({ ...newLoan, purpose: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 />
                 <input
                   type="number"
                   placeholder="Term (months)"
                   value={newLoan.term_months}
-                  onChange={(e) => setNewLoan({...newLoan, term_months: e.target.value})}
+                  onChange={(e) => setNewLoan({ ...newLoan, term_months: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 />
                 <select
                   value={newLoan.account}
-                  onChange={(e) => setNewLoan({...newLoan, account: e.target.value})}
+                  onChange={(e) => setNewLoan({ ...newLoan, account: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 >
                   <option value="">Select Account</option>
@@ -463,7 +478,7 @@ function BankingOperations() {
                       <span style={{
                         padding: '4px 8px',
                         background: loan.status === 'approved' ? THEME.colors.success :
-                                   loan.status === 'pending' ? THEME.colors.warning : THEME.colors.danger,
+                          loan.status === 'pending' ? THEME.colors.warning : THEME.colors.danger,
                         color: 'white',
                         borderRadius: '12px',
                         fontSize: '12px',
@@ -492,12 +507,12 @@ function BankingOperations() {
                   type="text"
                   placeholder="Complaint Title"
                   value={newComplaint.title}
-                  onChange={(e) => setNewComplaint({...newComplaint, title: e.target.value})}
+                  onChange={(e) => setNewComplaint({ ...newComplaint, title: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 />
                 <select
                   value={newComplaint.complaint_type}
-                  onChange={(e) => setNewComplaint({...newComplaint, complaint_type: e.target.value})}
+                  onChange={(e) => setNewComplaint({ ...newComplaint, complaint_type: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 >
                   <option value="service">Service</option>
@@ -507,7 +522,7 @@ function BankingOperations() {
                 </select>
                 <select
                   value={newComplaint.priority}
-                  onChange={(e) => setNewComplaint({...newComplaint, priority: e.target.value})}
+                  onChange={(e) => setNewComplaint({ ...newComplaint, priority: e.target.value })}
                   style={{ padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
                 >
                   <option value="low">Low</option>
@@ -519,7 +534,7 @@ function BankingOperations() {
               <textarea
                 placeholder="Describe your complaint in detail"
                 value={newComplaint.description}
-                onChange={(e) => setNewComplaint({...newComplaint, description: e.target.value})}
+                onChange={(e) => setNewComplaint({ ...newComplaint, description: e.target.value })}
                 style={{ width: '100%', padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px', minHeight: '100px', marginTop: '16px' }}
               />
               <PlayfulButton onClick={handleCreateComplaint} style={{ marginTop: '16px' }}>
@@ -551,7 +566,7 @@ function BankingOperations() {
                       <span style={{
                         padding: '4px 8px',
                         background: complaint.status === 'resolved' ? THEME.colors.success :
-                                   complaint.status === 'in_progress' ? THEME.colors.warning : THEME.colors.danger,
+                          complaint.status === 'in_progress' ? THEME.colors.warning : THEME.colors.danger,
                         color: 'white',
                         borderRadius: '12px',
                         fontSize: '12px',
@@ -562,8 +577,8 @@ function BankingOperations() {
                       <span style={{
                         padding: '2px 6px',
                         background: complaint.priority === 'urgent' ? THEME.colors.danger :
-                                   complaint.priority === 'high' ? '#ff6b35' :
-                                   complaint.priority === 'medium' ? THEME.colors.warning : THEME.colors.secondary,
+                          complaint.priority === 'high' ? '#ff6b35' :
+                            complaint.priority === 'medium' ? THEME.colors.warning : THEME.colors.secondary,
                         color: 'white',
                         borderRadius: '8px',
                         fontSize: '10px',
@@ -714,7 +729,7 @@ function BankingOperations() {
                     </PlayfulButton>
                     <PlayfulButton
                       variant="danger"
-                      onClick={() => {/* Handle reject */}}
+                      onClick={() => {/* Handle reject */ }}
                       style={{ fontSize: '12px', padding: '6px 12px' }}
                     >
                       Reject ❌
@@ -847,7 +862,7 @@ function BankingOperations() {
               <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
                 <select
                   value={reportFilters.dateRange}
-                  onChange={(e) => setReportFilters({...reportFilters, dateRange: e.target.value})}
+                  onChange={(e) => setReportFilters({ ...reportFilters, dateRange: e.target.value })}
                   style={{ padding: '8px 12px', border: '2px solid #000', borderRadius: '8px' }}
                 >
                   <option value="7d">Last 7 days</option>
@@ -857,7 +872,7 @@ function BankingOperations() {
                 </select>
                 <select
                   value={reportFilters.category}
-                  onChange={(e) => setReportFilters({...reportFilters, category: e.target.value})}
+                  onChange={(e) => setReportFilters({ ...reportFilters, category: e.target.value })}
                   style={{ padding: '8px 12px', border: '2px solid #000', borderRadius: '8px' }}
                 >
                   <option value="all">All Categories</option>
@@ -1018,7 +1033,7 @@ function BankingOperations() {
                           <span style={{
                             padding: '4px 8px',
                             background: alert.risk_score > 70 ? THEME.colors.danger :
-                                       alert.risk_score > 50 ? THEME.colors.warning : THEME.colors.secondary,
+                              alert.risk_score > 50 ? THEME.colors.warning : THEME.colors.secondary,
                             color: 'white',
                             borderRadius: '12px',
                             fontSize: '12px',
@@ -1029,7 +1044,7 @@ function BankingOperations() {
                           <span style={{
                             padding: '4px 8px',
                             background: alert.status === 'resolved' ? THEME.colors.success :
-                                       alert.status === 'investigating' ? THEME.colors.warning : THEME.colors.danger,
+                              alert.status === 'investigating' ? THEME.colors.warning : THEME.colors.danger,
                             color: 'white',
                             borderRadius: '12px',
                             fontSize: '12px',
