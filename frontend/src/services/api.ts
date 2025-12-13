@@ -58,24 +58,26 @@ const getApiBaseUrl = () => {
   return '/api/';
 };
 
-// Ensure HTTPS is used in production builds
-const enforceHttpsInProduction = () => {
-  if (import.meta.env.PROD && window.location.protocol !== 'https:') {
-    window.location.href = window.location.href.replace('http:', 'https:');
-  }
-};
-
-// Call this function when the module loads
-enforceHttpsInProduction();
+// HTTPS enforcement removed - let the deployment environment handle this
+// Local development uses HTTP, production should use a reverse proxy with HTTPS
 
 const API_BASE_URL = getApiBaseUrl();
+
+// Extend Window interface for Sentry
+declare global {
+  interface Window {
+    Sentry?: {
+      captureException: (error: Error, options?: any) => void;
+    };
+  }
+}
 
 // Request configuration type
 interface RequestConfig {
   method: string;
   url: string;
   data?: any;
-  headers?: Record<string, string>;
+  headers?: HeadersInit | Record<string, string>;
   [key: string]: any;
 }
 
@@ -84,6 +86,7 @@ interface ApiError extends Error {
   status?: number;
   data?: any;
 }
+
 
 // Logging utility for API debugging
 const logger = {
@@ -303,16 +306,26 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
       processedConfig = await interceptor(processedConfig);
     }
 
-    // Tokens are now handled via httpOnly cookies automatically by the browser
-    // No need to manually add Authorization headers
+    // Get access token from localStorage for JWT authentication
+    const accessToken = localStorage.getItem('accessToken');
 
-    const headers = {
-      'Content-Type': 'application/json',
+    // Build headers object - ensure processedConfig.headers is treated as Record
+    const configHeaders = (processedConfig.headers || {}) as Record<string, string>;
+
+    const headers: Record<string, string> = {
+      // Default to JSON only if not FormData
+      ...(data instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       // Include CSRF token for state-changing operations
       ...((method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') && { 'X-CSRFToken': getCsrfToken() }),
-      ...processedConfig.headers,
+      // Include JWT Authorization header if token exists
+      ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+      ...configHeaders,
     };
-    const body = (data && method !== 'GET') ? JSON.stringify(data) : undefined;
+
+    // Don't stringify FormData
+    const body = (data && method !== 'GET')
+      ? (data instanceof FormData ? data : JSON.stringify(data))
+      : undefined;
 
     // Create AbortController for timeout handling
     const controller = new AbortController();
@@ -323,6 +336,7 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
         method,
         headers,
         body,
+        credentials: 'include', // Ensure cookies are sent
         signal: controller.signal,
         ...processedConfig,
       });
@@ -341,6 +355,15 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
           const contentType = processedResponse.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             errorData = await processedResponse.json();
+          } else if (contentType && contentType.includes('text/html')) {
+            // HTML response typically means wrong backend URL or server error page
+            const textPreview = await processedResponse.text();
+            const preview = textPreview.substring(0, 200);
+            console.error('[API] Received HTML instead of JSON - check backend URL:', preview);
+            errorData = {
+              detail: 'Unexpected HTML response - check backend URL or server configuration',
+              html_preview: preview
+            };
           } else {
             // Handle non-JSON error responses gracefully
             const textResponse = await processedResponse.text();
@@ -375,7 +398,7 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
 
         // Handle specific status codes
         if (processedResponse.status === 403) {
-          throw new Error('Access denied. Members only.');
+          throw new Error('Access denied - insufficient permissions. Please contact an administrator.');
         }
         if (processedResponse.status === 401) {
           // Token might be expired, try to refresh
@@ -438,7 +461,7 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
       // Handle AbortError (timeout)
       if (fetchError && typeof fetchError === 'object' && 'name' in fetchError && fetchError.name === 'AbortError') {
         logger.warn(`API call timeout: ${method} ${url} (${duration}ms)`);
-        const timeoutError = new Error('Request timeout');
+        const timeoutError = new Error('Request timeout') as ApiError;
         timeoutError.status = 0;
         timeoutError.data = { error: 'Request timeout' };
 
@@ -479,7 +502,7 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
       : 'Network error';
 
     logger.error(`API call network error: ${method} ${url} (${duration}ms)`, error);
-    const networkError = new Error(errorMessage);
+    const networkError = new Error(errorMessage) as ApiError;
     networkError.status = 500;
     networkError.data = { error: 'Network error' };
     throw networkError;
@@ -579,7 +602,7 @@ export const authService = {
       console.log('[DEBUG] Login response status:', response.status);
 
       if (!response.ok) {
-        let errorData = {};
+        let errorData: { detail?: string; error?: string;[key: string]: any } = {};
         try {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
@@ -672,8 +695,19 @@ export const authService = {
 
   async checkAuth() {
     try {
+      const accessToken = localStorage.getItem('accessToken');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Include JWT token if available
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}users/auth/check/`, {
-        credentials: 'include', // Include cookies for authentication
+        headers,
+        credentials: 'include', // Also include cookies for CSRF
       });
 
       if (response.ok) {
@@ -711,17 +745,24 @@ export const authService = {
     }
   },
 
-  // Helper function to get current access token (deprecated - tokens are in httpOnly cookies)
+  // Helper function to get current access token
   getAccessToken() {
-    logger.warn('getAccessToken is deprecated. Tokens are now managed by backend httpOnly cookies.');
-    return null;
+    return localStorage.getItem('accessToken');
   },
 
   // Helper function to check if user is authenticated
   async isAuthenticated(): Promise<boolean> {
     try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        return false;
+      }
+
       const response = await fetch(`${API_BASE_URL}users/auth/check/`, {
-        credentials: 'include', // Include cookies
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -1143,9 +1184,7 @@ export const authService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await api.post('banking/messages/upload_media/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await api.post('banking/messages/upload_media/', formData);
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -1204,7 +1243,7 @@ export const authService = {
 
   async restoreBackup(backupId: string): Promise<{ success; data?: any; error?: string }> {
     try {
-      const response = await api.post(`banking/backups/${backupId}/restore/`);
+      const response = await api.post(`banking/backups/${backupId}/restore/`, {});
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -1215,6 +1254,15 @@ export const authService = {
   async calculateCommission(data: any): Promise<{ success; data?: any; error?: string }> {
     try {
       const response = await api.post('operations/calculate-commission/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async calculateInterest(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/calculate-interest/', data);
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -1350,9 +1398,63 @@ export const authService = {
     }
   },
 
+
+  async getMembers(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/members/');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
   async createVisitSchedule(data: any): Promise<{ success; data?: any; error?: string }> {
     try {
       const response = await api.post('operations/visit_schedules/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getClientAssignments(filters: any = {}): Promise<{ success; data?: any; error?: string }> {
+    try {
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      if (filters.mobile_banker) queryParams.append('mobile_banker', filters.mobile_banker);
+      if (filters.status) queryParams.append('status', filters.status);
+
+      const response = await api.get(`operations/assignments/?${queryParams.toString()}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async assignClient(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/assignments/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateAssignment(id: number | string, data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.patch(`operations/assignments/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getMobileBankerMetrics(mobileBankerId?: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const url = mobileBankerId
+        ? `operations/mobile-banker-metrics/?mobile_banker_id=${mobileBankerId}`
+        : 'operations/mobile-banker-metrics/';
+      const response = await api.get(url);
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -1637,13 +1739,47 @@ export const authService = {
 
   async getAccounts(): Promise<{ success; data?: any; error?: string }> {
     try {
-      const response = await api.get('banking/accounts/');
+      const response = await api.get('accounts/');
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
   },
 
+};
+
+// Cache invalidation utilities
+export const cacheUtils = {
+  // Invalidate specific query patterns
+  invalidateQueries: (queryClient: any, patterns: string[]) => {
+    patterns.forEach(pattern => {
+      queryClient.invalidateQueries({ queryKey: [pattern] });
+    });
+  },
+
+  // Invalidate user-related queries
+  invalidateUserData: (queryClient: any) => {
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  },
+
+  // Invalidate banking data
+  invalidateBankingData: (queryClient: any) => {
+    queryClient.invalidateQueries({ queryKey: ['banking'] });
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+  },
+
+  // Invalidate fraud data
+  invalidateFraudData: (queryClient: any) => {
+    queryClient.invalidateQueries({ queryKey: ['fraud'] });
+  },
+
+  // Selective invalidation based on operation type
+  invalidateByOperation: (queryClient: any, operation: string, resource: string) => {
+    const key = `${operation}_${resource}`;
+    queryClient.invalidateQueries({ queryKey: [key] });
+  }
 };
 
 // Banking API service
@@ -1725,8 +1861,18 @@ export const apiService = {
 
   async getAccounts(): Promise<Account[]> {
     try {
-      const response = await api.get('banking/accounts/');
-      return response.data;
+      const response = await api.get('accounts/');
+      const data = response.data;
+      // Handle paginated response (results array) or direct array
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data && Array.isArray(data.results)) {
+        return data.results;
+      }
+      // Return empty array if unexpected format
+      console.warn('Unexpected accounts response format:', data);
+      return [];
     } catch (error) {
       console.error('Error fetching accounts:', error);
       return [];
@@ -1833,7 +1979,17 @@ export const apiService = {
   async getServiceRequests(): Promise<any[]> {
     try {
       const response = await api.get('services/requests/');
-      return response.data || [];
+      const data = response.data;
+      // Handle paginated response (results array) or direct array
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data && Array.isArray(data.results)) {
+        return data.results;
+      }
+      // Return empty array if unexpected format
+      console.warn('Unexpected service requests response format:', data);
+      return [];
     } catch (error) {
       console.error('Error fetching service requests:', error);
       return [];
@@ -1857,9 +2013,8 @@ export const apiService = {
   // Client Registration API Methods
   async submitClientRegistration(formData: FormData): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const response = await api.post('banking/client-registrations/submit_registration/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Don't set Content-Type header - browser will set it with proper boundary for FormData
+      const response = await api.post('banking/client-registrations/submit_registration/', formData);
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.message };

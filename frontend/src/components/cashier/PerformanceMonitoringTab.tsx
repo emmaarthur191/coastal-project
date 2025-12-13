@@ -58,7 +58,29 @@ const PerformanceMonitoringTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('performance/dashboard-data/');
-      setPerformanceData(response.data);
+      // Ensure we have valid data structure with defaults
+      const data = response.data || {};
+      setPerformanceData({
+        performance_summary: data.performance_summary || {
+          total_metrics: 0,
+          metric_types: {},
+          time_range: '',
+          average_response_time: 0,
+          error_rate: 0,
+          throughput: 0
+        },
+        system_health: data.system_health || {
+          total_components: 0,
+          healthy_components: 0,
+          warning_components: 0,
+          critical_components: 0,
+          overall_status: 'unknown',
+          last_updated: ''
+        },
+        transaction_volume: data.transaction_volume || [],
+        active_alerts: data.active_alerts || [],
+        recent_recommendations: data.recent_recommendations || []
+      });
     } catch (error: any) {
       console.error('Error fetching performance data:', error);
       if (error.response?.status === 401) {

@@ -1,4 +1,17 @@
 {
+  "name": "coastal-banking-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd banking_backend && python manage.py runserver localhost:8000",
+    "frontend": "cd frontend && npm run dev",
+    "frontend:fast": "cd frontend && npx vite",
+    "sync": "cd frontend && npm run api:sync"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
   "dependencies": {
     "amplitude-js": "^8.21.9"
   }

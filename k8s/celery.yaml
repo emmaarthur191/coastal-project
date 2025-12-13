@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: banking-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      containers:
+      - name: celery-worker
+        image: banking-backend:latest  # Same image as backend
+        command: ["celery", "-A", "banking_backend", "worker", "-l", "info"]
+        envFrom:
+        - configMapRef:
+            name: banking-config
+        - secretRef:
+            name: banking-secret
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-flower
+  namespace: banking-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-flower
+  template:
+    metadata:
+      labels:
+        app: celery-flower
+    spec:
+      containers:
+      - name: celery-flower
+        image: banking-backend:latest
+        command: ["celery", "-A", "banking_backend", "flower"]
+        envFrom:
+        - configMapRef:
+            name: banking-config
+        - secretRef:
+            name: banking-secret
+        ports:
+        - containerPort: 5555
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower-service
+  namespace: banking-app
+spec:
+  selector:
+    app: celery-flower
+  ports:
+  - port: 5555
+    targetPort: 5555
+  type: ClusterIP

@@ -1,43 +1,50 @@
-// --- PLAYFUL UI THEME CONSTANTS ---
+// --- UNIFIED UI THEME CONSTANTS (MATCHING OPS DASHBOARD) ---
 export const THEME = {
   colors: {
-    bg: '#F0F4F8',
-    primary: '#6C5CE7', // Purple
-    success: '#00B894', // Green
-    danger: '#FF7675', // Salmon Red
-    warning: '#FDCB6E', // Mustard
-    info: '#74B9FF', // Sky Blue
+    bg: '#F8FAFC', // Slate 50
+    primary: '#0066CC', // Brand Blue
+    success: '#10b981', // Emerald 500
+    danger: '#ef4444', // Red 500
+    warning: '#f59e0b', // Amber 500
+    info: '#3b82f6', // Blue 500
     white: '#FFFFFF',
-    text: '#2D3436',
-    muted: '#636E72',
-    border: '#DFE6E9',
+    text: '#0f172a', // Slate 900
+    muted: '#94a3b8', // Slate 400
+    border: '#e2e8f0', // Slate 200
   },
   shadows: {
-    card: '0 10px 20px rgba(0,0,0,0.08), 0 6px 6px rgba(0,0,0,0.1)',
-    button: '0 4px 0px rgba(0,0,0,0.15)', // "Pressed" 3D effect
-    buttonActive: '0 2px 0px rgba(0,0,0,0.15)',
+    card: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    button: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    buttonActive: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
   },
   radius: {
-    small: '12px',
-    medium: '20px',
-    large: '35px',
-    round: '50px'
+    small: '0.375rem',
+    medium: '0.75rem',
+    large: '1rem',
+    round: '9999px'
   }
 };
 
-// --- STYLED COMPONENTS ---
+// --- STYLED COMPONENTS (ADAPTED) ---
 export const PlayfulCard = ({ children, color = THEME.colors.white, style, className }: {
   children: React.ReactNode;
   color?: string;
   style?: React.CSSProperties;
   className?: string;
 }) => (
+  // We largely ignore the 'color' prop for background if it's the "playful" one, to ensure consistency
+  // However, for mobile toolkit buttons they might rely on color. 'FieldToolbox' uses it.
+  // We'll trust the caller unless it's the specific "Playful" colors, but let's just apply the card style
+  // and maybe keep the background if it's explicitly passed, but add transparency?
+  // Actually, 'FieldToolbox' passes explicit colors like 'colors.success', which we updated.
+  // So we can respect the color prop.
   <div className={className} style={{
-    background: color,
+    background: color === THEME.colors.white ? 'rgba(255, 255, 255, 0.9)' : color,
     borderRadius: THEME.radius.medium,
     boxShadow: THEME.shadows.card,
     padding: '20px',
-    border: '3px solid white',
+    border: `1px solid ${THEME.colors.border}`,
+    backdropFilter: 'blur(8px)',
     transition: 'transform 0.2s',
     ...style
   }}>
@@ -62,9 +69,9 @@ export const PlayfulButton = ({
       background: color,
       color: 'white',
       border: 'none',
-      borderRadius: THEME.radius.round,
+      borderRadius: THEME.radius.medium, // More consistent radius
       padding: '12px 20px',
-      fontWeight: 'bold',
+      fontWeight: '600',
       fontSize: '14px',
       cursor: 'pointer',
       boxShadow: THEME.shadows.button,
@@ -76,7 +83,7 @@ export const PlayfulButton = ({
       ...style
     }}
     onMouseDown={e => {
-      e.currentTarget.style.transform = 'translateY(4px)';
+      e.currentTarget.style.transform = 'translateY(1px)';
       e.currentTarget.style.boxShadow = THEME.shadows.buttonActive;
     }}
     onMouseUp={e => {

@@ -85,10 +85,13 @@ const ComplaintsTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('banking/complaints/');
-      setComplaints(response.data || []);
+      // Handle both paginated responses and direct arrays
+      const data = response.data?.results || response.data || [];
+      setComplaints(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching complaints:', error);
       setMessage({ type: 'error', text: 'Failed to load complaints' });
+      setComplaints([]);
     } finally {
       setLoading(false);
     }
@@ -281,7 +284,7 @@ const ComplaintsTab: React.FC = () => {
                   label="Account ID *"
                   type="text"
                   value={formData.account_id}
-                  onChange={(e) => setFormData({...formData, account_id: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, account_id: e.target.value })}
                   placeholder="Enter account UUID"
                   required
                 />
@@ -292,7 +295,7 @@ const ComplaintsTab: React.FC = () => {
                   </label>
                   <select
                     value={formData.complaint_type}
-                    onChange={(e) => setFormData({...formData, complaint_type: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, complaint_type: e.target.value })}
                     required
                     style={{
                       width: '100%',
@@ -317,7 +320,7 @@ const ComplaintsTab: React.FC = () => {
                   </label>
                   <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                     style={{
                       width: '100%',
                       padding: '16px',
@@ -338,7 +341,7 @@ const ComplaintsTab: React.FC = () => {
                   label="Related Transaction ID (optional)"
                   type="text"
                   value={formData.related_transaction_id}
-                  onChange={(e) => setFormData({...formData, related_transaction_id: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, related_transaction_id: e.target.value })}
                   placeholder="Enter transaction UUID if applicable"
                 />
               </div>
@@ -347,7 +350,7 @@ const ComplaintsTab: React.FC = () => {
                 label="Subject *"
                 type="text"
                 value={formData.subject}
-                onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 placeholder="Brief description of the complaint"
                 required
               />
@@ -358,7 +361,7 @@ const ComplaintsTab: React.FC = () => {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Detailed description of the complaint..."
                   rows={4}
                   required
@@ -380,7 +383,7 @@ const ComplaintsTab: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={formData.follow_up_required}
-                    onChange={(e) => setFormData({...formData, follow_up_required: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, follow_up_required: e.target.checked })}
                   />
                   Follow-up required
                 </label>
@@ -390,7 +393,7 @@ const ComplaintsTab: React.FC = () => {
                     label="Follow-up Date"
                     type="date"
                     value={formData.follow_up_date}
-                    onChange={(e) => setFormData({...formData, follow_up_date: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, follow_up_date: e.target.value })}
                   />
                 )}
               </div>

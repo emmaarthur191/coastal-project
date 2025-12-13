@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ProductsServicesManagement from '../components/manager/ProductsServicesManagement';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { authService } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
 import { THEME } from '../components/manager/ManagerTheme';
-import ManagerSidebar from '../components/manager/ManagerSidebar';
-import DashboardHeader from '../components/manager/DashboardHeader';
+import DashboardLayout from '../components/layout/DashboardLayout.tsx'; // Unified Layout
 import OverviewSection from '../components/manager/OverviewSection';
 import MessagingSection from '../components/manager/MessagingSection';
 import UserManagementSection from '../components/manager/UserManagementSection';
@@ -19,25 +19,40 @@ import InterestSection from '../components/manager/InterestSection';
 import CommissionSection from '../components/manager/CommissionSection';
 import StatementsSection from '../components/manager/StatementsSection';
 import ExpensesSection from '../components/manager/ExpensesSection';
-import DashboardDropdown from '../components/manager/DashboardDropdown';
 import AccountsTab from '../components/AccountsTab';
+import SecuritySection from '../components/manager/SecuritySection';
+import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 
 function ManagerDashboard() {
   console.log('ManagerDashboard: Component is rendering!');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Add visible debug message
-  if (typeof document !== 'undefined') {
-    const debugDiv = document.createElement('div');
-    debugDiv.style.cssText = 'position: fixed; top: 0; left: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 16px;';
-    debugDiv.textContent = 'MANAGER DASHBOARD IS RENDERING - User: ' + (user?.email || 'none') + ', Role: ' + (user?.role || 'none');
-    document.body.appendChild(debugDiv);
-  }
-
   const hasMessagingAccess = ['manager', 'operations_manager', 'cashier', 'mobile_banker'].includes(user?.role);
 
-  // --- STATE MANAGEMENT (Original Logic) ---
+  // --- MENU ITEMS CONFIG ---
+  // Updated colors to match Unified Theme vaguely, but icons/IDs remain
+  const menuItems = React.useMemo(() => [
+    { id: 'overview', name: 'Overview', icon: '📊' },
+    { id: 'accounts', name: 'Accounts', icon: '🏦' },
+    { id: 'messaging', name: 'Messaging', icon: '💬' },
+    { id: 'products-services', name: 'Products & Services', icon: '🎁' },
+    { id: 'users', name: 'Staff Users', icon: '👥' },
+    { id: 'staff-ids', name: 'Staff IDs', icon: '🆔' },
+    { id: 'transactions', name: 'All Transacs', icon: '💸' },
+    { id: 'loans', name: 'Loan Apps', icon: '📝' },
+    { id: 'charges', name: 'Charges', icon: '🏷️' },
+    { id: 'payslip', name: 'Payslips', icon: '🧧' },
+    { id: 'my_payslips', name: 'My Payslips', icon: '💰' },
+    { id: 'cashflow', name: 'Cash Flow', icon: '🌊' },
+    { id: 'interest', name: 'Interest', icon: '📈' },
+    { id: 'commission', name: 'Commission', icon: '🤝' },
+    { id: 'statements', name: 'Statements', icon: '📜' },
+    { id: 'expenses', name: 'Expenses', icon: '📉' },
+    { id: 'security', name: 'Security', icon: '🛡️' }
+  ], []);
+
+  // --- STATE MANAGEMENT ---
   const [activeView, setActiveView] = useState('overview');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,9 +67,9 @@ function ManagerDashboard() {
     name: '', description: '', charge_type: 'percentage', rate: '', applicable_to: []
   });
   const [serviceChargeCalculation, setServiceChargeCalculation] = useState(null);
-  const [interestCalculation, setInterestCalculation] = useState(null);
-  const [commissionCalculation, setCommissionCalculation] = useState(null);
-  const [showDropdown, setShowDropdown] = useState(false);
+  // unused: const [interestCalculation, setInterestCalculation] = useState(null);
+  // unused: const [commissionCalculation, setCommissionCalculation] = useState(null);
+  // unused: const [showDropdown, setShowDropdown] = useState(false);
   const [staffMembers, setStaffMembers] = useState([]);
   const [otpCode, setOtpCode] = useState('');
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -67,7 +82,7 @@ function ManagerDashboard() {
   const [staffIds, setStaffIds] = useState([]);
   const [staffIdFilters, setStaffIdFilters] = useState({});
 
-  // --- EFFECTS (Original Logic) ---
+  // --- EFFECTS ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -106,12 +121,12 @@ function ManagerDashboard() {
     if (activeView === 'interest') fetchInterest();
     if (activeView === 'commission') fetchCommission();
     if (activeView === 'charges') fetchServiceCharges();
-    if (activeView === 'users') fetchStaffMembers();
+    if (activeView === 'users' || activeView === 'payslip') fetchStaffMembers();
     if (activeView === 'staff-ids') fetchStaffIds();
     if (activeView === 'expenses') fetchExpenses();
   }, [activeView, staffIdFilters]);
 
-  // --- HANDLERS (Original Logic) ---
+  // --- HANDLERS ---
   const handleLogout = async () => { await logout(); navigate('/login'); };
 
   const handleSendOTP = async () => {
@@ -134,7 +149,7 @@ function ManagerDashboard() {
     else { alert('Failed to verify OTP: ' + response.error); }
   };
 
-  const handleCreateUser = async (e) => {
+  const handleCreateUser = async (e: any) => {
     e.preventDefault();
     if (!phoneVerified) { alert('Please verify your phone number with OTP before creating the user.'); return; }
     const response = await authService.createUser(formData);
@@ -144,7 +159,7 @@ function ManagerDashboard() {
     } else { alert('Failed to create user: ' + response.error); }
   };
 
-  const handleApproveLoan = async (loanId) => {
+  const handleApproveLoan = async (loanId: any) => {
     const response = await authService.approveLoan(loanId);
     if (response.success) { alert('Loan approved successfully!'); fetchLoans(); }
     else { alert('Failed to approve loan: ' + response.error); }
@@ -165,168 +180,91 @@ function ManagerDashboard() {
   // --- LOADING VIEW ---
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: THEME.colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{
-          background: '#FFFFFF',
-          borderRadius: THEME.radius.card,
-          border: '3px solid #000000',
-          boxShadow: THEME.shadows.card,
-          padding: '48px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '60px', animation: 'bounce 1s infinite' }}>🐘</div>
-          <h2 style={{ fontFamily: "'Nunito', sans-serif" }}>Boss Mode Loading...</h2>
-        </div>
-        <style>{`@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`}</style>
+      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
-  // --- MENU ITEMS CONFIG ---
-  const menuItems = [
-    { id: 'overview', name: 'Overview', icon: '📊', color: THEME.colors.primary },
-    { id: 'accounts', name: 'Accounts', icon: '🏦', color: THEME.colors.success },
-    { id: 'messaging', name: 'Messaging', icon: '💬', color: THEME.colors.secondary },
-    { id: 'users', name: 'Staff Users', icon: '👥', color: THEME.colors.warning },
-    { id: 'staff-ids', name: 'Staff IDs', icon: '🆔', color: THEME.colors.info },
-    { id: 'transactions', name: 'All Transacs', icon: '💸', color: THEME.colors.success },
-    { id: 'loans', name: 'Loan Apps', icon: '📝', color: THEME.colors.danger },
-    { id: 'charges', name: 'Charges', icon: '🏷️', color: THEME.colors.primary },
-    { id: 'payslip', name: 'Payslips', icon: '🧧', color: THEME.colors.secondary },
-    { id: 'cashflow', name: 'Cash Flow', icon: '🌊', color: THEME.colors.success },
-    { id: 'interest', name: 'Interest', icon: '📈', color: THEME.colors.warning },
-    { id: 'commission', name: 'Commission', icon: '🤝', color: THEME.colors.danger },
-    { id: 'statements', name: 'Statements', icon: '📜', color: THEME.colors.primary },
-    { id: 'expenses', name: 'Expenses', icon: '📉', color: THEME.colors.secondary }
-  ];
+  // --- RENDER CONTENT ---
+  const renderContent = () => {
+    switch (activeView) {
+      case 'overview': return <OverviewSection dashboardData={dashboardData} />;
+      case 'accounts': return <AccountsTab />;
+      case 'messaging': return (
+        <MessagingSection onOpenMessaging={() => {
+          if (!hasMessagingAccess) { alert('Access denied.'); return; }
+          navigate('/messaging');
+        }} />
+      );
+      case 'products-services': return <ProductsServicesManagement />;
+      case 'users': return (
+        <UserManagementSection
+          formData={formData} setFormData={setFormData}
+          otpCode={otpCode} setOtpCode={setOtpCode}
+          phoneVerified={phoneVerified} setPhoneVerified={setPhoneVerified}
+          otpSent={otpSent} setOtpSent={setOtpSent}
+          otpExpiresIn={otpExpiresIn} setOtpExpiresIn={setOtpExpiresIn}
+          handleSendOTP={handleSendOTP} handleVerifyOTP={handleVerifyOTP}
+          handleCreateUser={handleCreateUser}
+          staffMembers={staffMembers} fetchStaffMembers={fetchStaffMembers}
+        />
+      );
+      case 'staff-ids': return (
+        <StaffIdsSection
+          staffIds={staffIds} staffIdFilters={staffIdFilters}
+          setStaffIdFilters={setStaffIdFilters} fetchStaffIds={fetchStaffIds}
+        />
+      );
+      case 'transactions': return <TransactionsSection />;
+      case 'loans': return <LoansSection loans={loans} handleApproveLoan={handleApproveLoan} />;
+      case 'charges': return (
+        <ServiceChargesSection
+          newCharge={newCharge} setNewCharge={setNewCharge}
+          serviceChargeCalculation={serviceChargeCalculation}
+          setServiceChargeCalculation={setServiceChargeCalculation}
+          serviceCharges={serviceCharges} fetchServiceCharges={fetchServiceCharges}
+        />
+      );
+      case 'payslip': return (
+        <PayslipSection
+          formData={formData} setFormData={setFormData}
+          handleGeneratePayslip={handleGeneratePayslip}
+          staffMembers={staffMembers}
+        />
+      );
+      case 'my_payslips': return <StaffPayslipViewer />;
+      case 'cashflow': return cashFlow ? <CashFlowSection cashFlow={cashFlow} /> : null;
+      case 'interest': return interestData ? <InterestSection interestData={interestData} /> : null;
+      case 'commission': return commissionData ? <CommissionSection commissionData={commissionData} /> : null;
+      case 'statements': return (
+        <StatementsSection
+          formData={formData} setFormData={setFormData}
+          handleGenerateStatement={handleGenerateStatement}
+        />
+      );
+      case 'expenses': return (
+        <ExpensesSection
+          newExpense={newExpense} setNewExpense={setNewExpense}
+          expenses={expenses} fetchExpenses={fetchExpenses}
+        />
+      );
+      case 'security': return <SecuritySection />;
+      default: return null;
+    }
+  };
 
-  console.log('ManagerDashboard: menuItems created:', menuItems);
-
-  // --- RENDER ---
   return (
-    <div style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-          /* Custom Scrollbar */
-          ::-webkit-scrollbar { width: 10px; }
-          ::-webkit-scrollbar-track { background: #fff; }
-          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; }
-        `}
-      </style>
-
-      <ManagerSidebar
-        activeView={activeView}
-        setActiveView={setActiveView}
-        handleLogout={handleLogout}
-        user={user}
-        menuItems={menuItems}
-      />
-
-      {/* --- MAIN CONTENT --- */}
-      <main style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
-
-        <DashboardHeader activeView={activeView} menuItems={menuItems} />
-
-        {/* Dynamic Content Wrapper */}
-        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-
-          {activeView === 'overview' && (
-            <OverviewSection dashboardData={dashboardData} />
-          )}
-
-          {activeView === 'accounts' && (
-            <>
-              {console.log('ManagerDashboard: Rendering AccountsTab for activeView:', activeView)}
-              <AccountsTab />
-            </>
-          )}
-
-          {activeView === 'messaging' && (
-            <MessagingSection onOpenMessaging={() => {
-              if (!hasMessagingAccess) {
-                alert('Access denied. Messaging is only for authorized staff.');
-                return;
-              }
-              alert('Opening secure messaging system...');
-              navigate('/messaging');
-            }} />
-          )}
-
-          {activeView === 'users' && (
-            <UserManagementSection
-              formData={formData} setFormData={setFormData}
-              otpCode={otpCode} setOtpCode={setOtpCode}
-              phoneVerified={phoneVerified} setPhoneVerified={setPhoneVerified}
-              otpSent={otpSent} setOtpSent={setOtpSent}
-              otpExpiresIn={otpExpiresIn} setOtpExpiresIn={setOtpExpiresIn}
-              handleSendOTP={handleSendOTP} handleVerifyOTP={handleVerifyOTP}
-              handleCreateUser={handleCreateUser}
-              staffMembers={staffMembers} fetchStaffMembers={fetchStaffMembers}
-            />
-          )}
-
-          {activeView === 'staff-ids' && (
-            <StaffIdsSection
-              staffIds={staffIds}
-              staffIdFilters={staffIdFilters}
-              setStaffIdFilters={setStaffIdFilters}
-              fetchStaffIds={fetchStaffIds}
-            />
-          )}
-
-          {activeView === 'transactions' && (
-            <TransactionsSection />
-          )}
-
-          {activeView === 'loans' && (
-            <LoansSection loans={loans} handleApproveLoan={handleApproveLoan} />
-          )}
-
-          {activeView === 'charges' && (
-            <ServiceChargesSection
-              newCharge={newCharge} setNewCharge={setNewCharge}
-              serviceChargeCalculation={serviceChargeCalculation}
-              setServiceChargeCalculation={setServiceChargeCalculation}
-              serviceCharges={serviceCharges} fetchServiceCharges={fetchServiceCharges}
-            />
-          )}
-
-          {activeView === 'payslip' && (
-            <PayslipSection
-              formData={formData} setFormData={setFormData}
-              handleGeneratePayslip={handleGeneratePayslip}
-            />
-          )}
-
-          {activeView === 'cashflow' && cashFlow && (
-            <CashFlowSection cashFlow={cashFlow} />
-          )}
-
-          {activeView === 'interest' && interestData && (
-            <InterestSection interestData={interestData} />
-          )}
-
-          {activeView === 'commission' && commissionData && (
-            <CommissionSection commissionData={commissionData} />
-          )}
-
-          {activeView === 'statements' && (
-            <StatementsSection
-              formData={formData} setFormData={setFormData}
-              handleGenerateStatement={handleGenerateStatement}
-            />
-          )}
-
-          {activeView === 'expenses' && (
-            <ExpensesSection
-              newExpense={newExpense} setNewExpense={setNewExpense}
-              expenses={expenses} fetchExpenses={fetchExpenses}
-            />
-          )}
-
-        </div>
-      </main>
-    </div>
+    <DashboardLayout
+      title="Manager Portal"
+      user={user}
+      menuItems={menuItems}
+      activeView={activeView}
+      onNavigate={setActiveView}
+      onLogout={handleLogout}
+    >
+      {renderContent()}
+    </DashboardLayout>
   );
 }
 

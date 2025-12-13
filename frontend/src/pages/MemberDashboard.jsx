@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import RequestServicesTab from '../components/member/RequestServicesTab';
 
 function MemberDashboard() {
   const { user, logout } = useAuth();
@@ -344,85 +345,7 @@ function MemberDashboard() {
 
       {/* --- SERVICES VIEW --- */}
       {activeView === 'services' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-6">
-            <Card title="New Request">
-              <h3 className="text-lg font-bold text-secondary-900 mb-4">New Service Request</h3>
-              <form onSubmit={handleServiceRequest} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">Request Type</label>
-                  <select
-                    value={serviceRequestForm.request_type}
-                    onChange={e => setServiceRequestForm({ ...serviceRequestForm, request_type: e.target.value })}
-                    className="w-full rounded-lg border-secondary-300 focus:border-primary-500 focus:ring-primary-500 p-2 border"
-                  >
-                    <option value="statement">Account Statement</option>
-                    <option value="checkbook">Cheque Book</option>
-                    <option value="card_replacement">Card Replacement</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">Method</label>
-                  <select
-                    value={serviceRequestForm.delivery_method}
-                    onChange={e => setServiceRequestForm({ ...serviceRequestForm, delivery_method: e.target.value })}
-                    className="w-full rounded-lg border-secondary-300 focus:border-primary-500 focus:ring-primary-500 p-2 border"
-                  >
-                    <option value="email">Email</option>
-                    <option value="sms">SMS</option>
-                    <option value="pickup">Branch Pickup</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">Details</label>
-                  <textarea
-                    value={serviceRequestForm.description}
-                    onChange={e => setServiceRequestForm({ ...serviceRequestForm, description: e.target.value })}
-                    className="w-full rounded-lg border-secondary-300 focus:border-primary-500 focus:ring-primary-500 p-2 border"
-                    rows="3"
-                    placeholder="Additional instructions..."
-                  />
-                </div>
-                {serviceRequestError && <p className="text-sm text-error-600">{serviceRequestError}</p>}
-                <Button type="submit" variant="primary" className="w-full">Submit Request</Button>
-              </form>
-            </Card>
-          </div>
-
-          <div className="lg:col-span-2">
-            <Card>
-              <h3 className="text-lg font-bold text-secondary-900 mb-4">Request History</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-secondary-200">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-secondary-500 uppercase">Date</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-secondary-500 uppercase">Type</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-secondary-500 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-secondary-200">
-                    {serviceRequests.map((req, idx) => (
-                      <tr key={idx}>
-                        <td className="px-4 py-3 text-sm text-secondary-900">{new Date(req.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-sm text-secondary-900 capitalize">{req.request_type.replace('_', ' ')}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${req.status === 'completed' ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'
-                            }`}>
-                            {req.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {serviceRequests.length === 0 && (
-                      <tr><td colSpan="3" className="px-4 py-8 text-center text-secondary-500">No requests found.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
-        </div>
+        <RequestServicesTab />
       )}
 
       {/* --- PASSWORD VIEW --- */}

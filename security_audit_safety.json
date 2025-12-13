@@ -1,0 +1,2752 @@
+
+
++===========================================================================================================================================================================================+
+
+
+DEPRECATED: this command (`check`) has been DEPRECATED, and will be unsupported beyond 01 June 2024.
+
+
+We highly encourage switching to the new `scan` command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.
+
+
++===========================================================================================================================================================================================+
+
+
+{
+    "report_meta": {
+        "scan_target": "environment",
+        "scanned": [
+            "e:\\coastal\\coastal_cu_env\\Lib\\site-packages"
+        ],
+        "scanned_full_path": [
+            "e:\\coastal\\coastal_cu_env\\Lib\\site-packages"
+        ],
+        "target_languages": [
+            "python"
+        ],
+        "policy_file": null,
+        "policy_file_source": "local",
+        "audit_and_monitor": false,
+        "api_key": false,
+        "account": "",
+        "local_database_path": null,
+        "safety_version": "3.7.0",
+        "timestamp": "2025-12-11 18:28:33",
+        "packages_found": 96,
+        "vulnerabilities_found": 16,
+        "vulnerabilities_ignored": 0,
+        "remediations_recommended": 0,
+        "telemetry": {
+            "safety_options": {
+                "output": {
+                    "--output": 1
+                }
+            },
+            "safety_version": "3.7.0",
+            "safety_source": "cli",
+            "os_type": "Windows",
+            "os_release": "11",
+            "os_description": "Windows-11-10.0.26200-SP0",
+            "python_version": "3.12.6",
+            "safety_command": "check"
+        },
+        "git": {
+            "branch": "main",
+            "tag": "",
+            "commit": "deedd089e66191f26ce681ebd8f42c29da633fc8",
+            "dirty": "True",
+            "origin": "https://github.com/emmaarthur191/coastal-project.git"
+        },
+        "project": null,
+        "json_version": "1.1",
+        "remediations_attempted": 0,
+        "remediations_completed": 0,
+        "remediation_mode": "NON_INTERACTIVE"
+    },
+    "scanned_packages": {
+        "amqp": {
+            "name": "amqp",
+            "version": "5.3.1",
+            "requirements": [
+                {
+                    "raw": "amqp==5.3.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "amqp",
+                    "specifier": "==5.3.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\amqp-5.3.1.dist-info"
+                }
+            ]
+        },
+        "annotated-types": {
+            "name": "annotated-types",
+            "version": "0.7.0",
+            "requirements": [
+                {
+                    "raw": "annotated-types==0.7.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "annotated-types",
+                    "specifier": "==0.7.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\annotated_types-0.7.0.dist-info"
+                }
+            ]
+        },
+        "anyio": {
+            "name": "anyio",
+            "version": "4.12.0",
+            "requirements": [
+                {
+                    "raw": "anyio==4.12.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "anyio",
+                    "specifier": "==4.12.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\anyio-4.12.0.dist-info"
+                }
+            ]
+        },
+        "asgiref": {
+            "name": "asgiref",
+            "version": "3.11.0",
+            "requirements": [
+                {
+                    "raw": "asgiref==3.11.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "asgiref",
+                    "specifier": "==3.11.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\asgiref-3.11.0.dist-info"
+                }
+            ]
+        },
+        "attrs": {
+            "name": "attrs",
+            "version": "25.4.0",
+            "requirements": [
+                {
+                    "raw": "attrs==25.4.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "attrs",
+                    "specifier": "==25.4.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\attrs-25.4.0.dist-info"
+                }
+            ]
+        },
+        "Authlib": {
+            "name": "Authlib",
+            "version": "1.6.5",
+            "requirements": [
+                {
+                    "raw": "Authlib==1.6.5",
+                    "extras": [],
+                    "marker": null,
+                    "name": "Authlib",
+                    "specifier": "==1.6.5",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\authlib-1.6.5.dist-info"
+                }
+            ]
+        },
+        "bandit": {
+            "name": "bandit",
+            "version": "1.9.2",
+            "requirements": [
+                {
+                    "raw": "bandit==1.9.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "bandit",
+                    "specifier": "==1.9.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\bandit-1.9.2.dist-info"
+                }
+            ]
+        },
+        "billiard": {
+            "name": "billiard",
+            "version": "4.2.4",
+            "requirements": [
+                {
+                    "raw": "billiard==4.2.4",
+                    "extras": [],
+                    "marker": null,
+                    "name": "billiard",
+                    "specifier": "==4.2.4",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\billiard-4.2.4.dist-info"
+                }
+            ]
+        },
+        "celery": {
+            "name": "celery",
+            "version": "5.6.0",
+            "requirements": [
+                {
+                    "raw": "celery==5.6.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "celery",
+                    "specifier": "==5.6.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\celery-5.6.0.dist-info"
+                }
+            ]
+        },
+        "certifi": {
+            "name": "certifi",
+            "version": "2025.11.12",
+            "requirements": [
+                {
+                    "raw": "certifi==2025.11.12",
+                    "extras": [],
+                    "marker": null,
+                    "name": "certifi",
+                    "specifier": "==2025.11.12",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\certifi-2025.11.12.dist-info"
+                }
+            ]
+        },
+        "cffi": {
+            "name": "cffi",
+            "version": "2.0.0",
+            "requirements": [
+                {
+                    "raw": "cffi==2.0.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "cffi",
+                    "specifier": "==2.0.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\cffi-2.0.0.dist-info"
+                }
+            ]
+        },
+        "channels": {
+            "name": "channels",
+            "version": "4.3.2",
+            "requirements": [
+                {
+                    "raw": "channels==4.3.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "channels",
+                    "specifier": "==4.3.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\channels-4.3.2.dist-info"
+                }
+            ]
+        },
+        "channels_redis": {
+            "name": "channels_redis",
+            "version": "4.3.0",
+            "requirements": [
+                {
+                    "raw": "channels_redis==4.3.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "channels_redis",
+                    "specifier": "==4.3.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\channels_redis-4.3.0.dist-info"
+                }
+            ]
+        },
+        "charset-normalizer": {
+            "name": "charset-normalizer",
+            "version": "3.4.4",
+            "requirements": [
+                {
+                    "raw": "charset-normalizer==3.4.4",
+                    "extras": [],
+                    "marker": null,
+                    "name": "charset-normalizer",
+                    "specifier": "==3.4.4",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\charset_normalizer-3.4.4.dist-info"
+                }
+            ]
+        },
+        "click": {
+            "name": "click",
+            "version": "8.3.1",
+            "requirements": [
+                {
+                    "raw": "click==8.3.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "click",
+                    "specifier": "==8.3.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\click-8.3.1.dist-info"
+                }
+            ]
+        },
+        "click-didyoumean": {
+            "name": "click-didyoumean",
+            "version": "0.3.1",
+            "requirements": [
+                {
+                    "raw": "click-didyoumean==0.3.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "click-didyoumean",
+                    "specifier": "==0.3.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\click_didyoumean-0.3.1.dist-info"
+                }
+            ]
+        },
+        "click-plugins": {
+            "name": "click-plugins",
+            "version": "1.1.1.2",
+            "requirements": [
+                {
+                    "raw": "click-plugins==1.1.1.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "click-plugins",
+                    "specifier": "==1.1.1.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\click_plugins-1.1.1.2.dist-info"
+                }
+            ]
+        },
+        "click-repl": {
+            "name": "click-repl",
+            "version": "0.3.0",
+            "requirements": [
+                {
+                    "raw": "click-repl==0.3.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "click-repl",
+                    "specifier": "==0.3.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\click_repl-0.3.0.dist-info"
+                }
+            ]
+        },
+        "colorama": {
+            "name": "colorama",
+            "version": "0.4.6",
+            "requirements": [
+                {
+                    "raw": "colorama==0.4.6",
+                    "extras": [],
+                    "marker": null,
+                    "name": "colorama",
+                    "specifier": "==0.4.6",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\colorama-0.4.6.dist-info"
+                }
+            ]
+        },
+        "coverage": {
+            "name": "coverage",
+            "version": "7.13.0",
+            "requirements": [
+                {
+                    "raw": "coverage==7.13.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "coverage",
+                    "specifier": "==7.13.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\coverage-7.13.0.dist-info"
+                }
+            ]
+        },
+        "cryptography": {
+            "name": "cryptography",
+            "version": "46.0.3",
+            "requirements": [
+                {
+                    "raw": "cryptography==46.0.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "cryptography",
+                    "specifier": "==46.0.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\cryptography-46.0.3.dist-info"
+                }
+            ]
+        },
+        "Django": {
+            "name": "Django",
+            "version": "5.1",
+            "requirements": [
+                {
+                    "raw": "Django==5.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "Django",
+                    "specifier": "==5.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+                }
+            ]
+        },
+        "djangorestframework": {
+            "name": "djangorestframework",
+            "version": "3.16.1",
+            "requirements": [
+                {
+                    "raw": "djangorestframework==3.16.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "djangorestframework",
+                    "specifier": "==3.16.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\djangorestframework-3.16.1.dist-info"
+                }
+            ]
+        },
+        "djangorestframework_simplejwt": {
+            "name": "djangorestframework_simplejwt",
+            "version": "5.5.1",
+            "requirements": [
+                {
+                    "raw": "djangorestframework_simplejwt==5.5.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "djangorestframework_simplejwt",
+                    "specifier": "==5.5.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\djangorestframework_simplejwt-5.5.1.dist-info"
+                }
+            ]
+        },
+        "django-environ": {
+            "name": "django-environ",
+            "version": "0.12.0",
+            "requirements": [
+                {
+                    "raw": "django-environ==0.12.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "django-environ",
+                    "specifier": "==0.12.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\django_environ-0.12.0.dist-info"
+                }
+            ]
+        },
+        "django-filter": {
+            "name": "django-filter",
+            "version": "25.1",
+            "requirements": [
+                {
+                    "raw": "django-filter==25.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "django-filter",
+                    "specifier": "==25.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\django_filter-25.1.dist-info"
+                }
+            ]
+        },
+        "django-prometheus": {
+            "name": "django-prometheus",
+            "version": "2.4.1",
+            "requirements": [
+                {
+                    "raw": "django-prometheus==2.4.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "django-prometheus",
+                    "specifier": "==2.4.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\django_prometheus-2.4.1.dist-info"
+                }
+            ]
+        },
+        "dparse": {
+            "name": "dparse",
+            "version": "0.6.4",
+            "requirements": [
+                {
+                    "raw": "dparse==0.6.4",
+                    "extras": [],
+                    "marker": null,
+                    "name": "dparse",
+                    "specifier": "==0.6.4",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\dparse-0.6.4.dist-info"
+                }
+            ]
+        },
+        "drf-spectacular": {
+            "name": "drf-spectacular",
+            "version": "0.29.0",
+            "requirements": [
+                {
+                    "raw": "drf-spectacular==0.29.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "drf-spectacular",
+                    "specifier": "==0.29.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\drf_spectacular-0.29.0.dist-info"
+                }
+            ]
+        },
+        "exceptiongroup": {
+            "name": "exceptiongroup",
+            "version": "1.3.1",
+            "requirements": [
+                {
+                    "raw": "exceptiongroup==1.3.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "exceptiongroup",
+                    "specifier": "==1.3.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\exceptiongroup-1.3.1.dist-info"
+                }
+            ]
+        },
+        "factory_boy": {
+            "name": "factory_boy",
+            "version": "3.3.3",
+            "requirements": [
+                {
+                    "raw": "factory_boy==3.3.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "factory_boy",
+                    "specifier": "==3.3.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\factory_boy-3.3.3.dist-info"
+                }
+            ]
+        },
+        "Faker": {
+            "name": "Faker",
+            "version": "38.2.0",
+            "requirements": [
+                {
+                    "raw": "Faker==38.2.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "Faker",
+                    "specifier": "==38.2.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\faker-38.2.0.dist-info"
+                }
+            ]
+        },
+        "filelock": {
+            "name": "filelock",
+            "version": "3.20.0",
+            "requirements": [
+                {
+                    "raw": "filelock==3.20.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "filelock",
+                    "specifier": "==3.20.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\filelock-3.20.0.dist-info"
+                }
+            ]
+        },
+        "flower": {
+            "name": "flower",
+            "version": "2.0.1",
+            "requirements": [
+                {
+                    "raw": "flower==2.0.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "flower",
+                    "specifier": "==2.0.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\flower-2.0.1.dist-info"
+                }
+            ]
+        },
+        "h11": {
+            "name": "h11",
+            "version": "0.16.0",
+            "requirements": [
+                {
+                    "raw": "h11==0.16.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "h11",
+                    "specifier": "==0.16.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\h11-0.16.0.dist-info"
+                }
+            ]
+        },
+        "httpcore": {
+            "name": "httpcore",
+            "version": "1.0.9",
+            "requirements": [
+                {
+                    "raw": "httpcore==1.0.9",
+                    "extras": [],
+                    "marker": null,
+                    "name": "httpcore",
+                    "specifier": "==1.0.9",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\httpcore-1.0.9.dist-info"
+                }
+            ]
+        },
+        "httpx": {
+            "name": "httpx",
+            "version": "0.28.1",
+            "requirements": [
+                {
+                    "raw": "httpx==0.28.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "httpx",
+                    "specifier": "==0.28.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\httpx-0.28.1.dist-info"
+                }
+            ]
+        },
+        "humanize": {
+            "name": "humanize",
+            "version": "4.14.0",
+            "requirements": [
+                {
+                    "raw": "humanize==4.14.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "humanize",
+                    "specifier": "==4.14.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\humanize-4.14.0.dist-info"
+                }
+            ]
+        },
+        "idna": {
+            "name": "idna",
+            "version": "3.11",
+            "requirements": [
+                {
+                    "raw": "idna==3.11",
+                    "extras": [],
+                    "marker": null,
+                    "name": "idna",
+                    "specifier": "==3.11",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\idna-3.11.dist-info"
+                }
+            ]
+        },
+        "inflection": {
+            "name": "inflection",
+            "version": "0.5.1",
+            "requirements": [
+                {
+                    "raw": "inflection==0.5.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "inflection",
+                    "specifier": "==0.5.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\inflection-0.5.1.dist-info"
+                }
+            ]
+        },
+        "iniconfig": {
+            "name": "iniconfig",
+            "version": "2.3.0",
+            "requirements": [
+                {
+                    "raw": "iniconfig==2.3.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "iniconfig",
+                    "specifier": "==2.3.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\iniconfig-2.3.0.dist-info"
+                }
+            ]
+        },
+        "Jinja2": {
+            "name": "Jinja2",
+            "version": "3.1.6",
+            "requirements": [
+                {
+                    "raw": "Jinja2==3.1.6",
+                    "extras": [],
+                    "marker": null,
+                    "name": "Jinja2",
+                    "specifier": "==3.1.6",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\jinja2-3.1.6.dist-info"
+                }
+            ]
+        },
+        "joblib": {
+            "name": "joblib",
+            "version": "1.5.2",
+            "requirements": [
+                {
+                    "raw": "joblib==1.5.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "joblib",
+                    "specifier": "==1.5.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\joblib-1.5.2.dist-info"
+                }
+            ]
+        },
+        "jsonschema": {
+            "name": "jsonschema",
+            "version": "4.25.1",
+            "requirements": [
+                {
+                    "raw": "jsonschema==4.25.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "jsonschema",
+                    "specifier": "==4.25.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\jsonschema-4.25.1.dist-info"
+                }
+            ]
+        },
+        "jsonschema-specifications": {
+            "name": "jsonschema-specifications",
+            "version": "2025.9.1",
+            "requirements": [
+                {
+                    "raw": "jsonschema-specifications==2025.9.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "jsonschema-specifications",
+                    "specifier": "==2025.9.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\jsonschema_specifications-2025.9.1.dist-info"
+                }
+            ]
+        },
+        "kombu": {
+            "name": "kombu",
+            "version": "5.6.1",
+            "requirements": [
+                {
+                    "raw": "kombu==5.6.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "kombu",
+                    "specifier": "==5.6.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\kombu-5.6.1.dist-info"
+                }
+            ]
+        },
+        "markdown-it-py": {
+            "name": "markdown-it-py",
+            "version": "4.0.0",
+            "requirements": [
+                {
+                    "raw": "markdown-it-py==4.0.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "markdown-it-py",
+                    "specifier": "==4.0.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\markdown_it_py-4.0.0.dist-info"
+                }
+            ]
+        },
+        "MarkupSafe": {
+            "name": "MarkupSafe",
+            "version": "3.0.3",
+            "requirements": [
+                {
+                    "raw": "MarkupSafe==3.0.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "MarkupSafe",
+                    "specifier": "==3.0.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\markupsafe-3.0.3.dist-info"
+                }
+            ]
+        },
+        "marshmallow": {
+            "name": "marshmallow",
+            "version": "4.1.1",
+            "requirements": [
+                {
+                    "raw": "marshmallow==4.1.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "marshmallow",
+                    "specifier": "==4.1.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\marshmallow-4.1.1.dist-info"
+                }
+            ]
+        },
+        "mdurl": {
+            "name": "mdurl",
+            "version": "0.1.2",
+            "requirements": [
+                {
+                    "raw": "mdurl==0.1.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "mdurl",
+                    "specifier": "==0.1.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\mdurl-0.1.2.dist-info"
+                }
+            ]
+        },
+        "msgpack": {
+            "name": "msgpack",
+            "version": "1.1.2",
+            "requirements": [
+                {
+                    "raw": "msgpack==1.1.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "msgpack",
+                    "specifier": "==1.1.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\msgpack-1.1.2.dist-info"
+                }
+            ]
+        },
+        "nltk": {
+            "name": "nltk",
+            "version": "3.9.2",
+            "requirements": [
+                {
+                    "raw": "nltk==3.9.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "nltk",
+                    "specifier": "==3.9.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\nltk-3.9.2.dist-info"
+                }
+            ]
+        },
+        "packaging": {
+            "name": "packaging",
+            "version": "25.0",
+            "requirements": [
+                {
+                    "raw": "packaging==25.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "packaging",
+                    "specifier": "==25.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\packaging-25.0.dist-info"
+                }
+            ]
+        },
+        "pip": {
+            "name": "pip",
+            "version": "24.2",
+            "requirements": [
+                {
+                    "raw": "pip==24.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pip",
+                    "specifier": "==24.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pip-24.2.dist-info"
+                }
+            ]
+        },
+        "pluggy": {
+            "name": "pluggy",
+            "version": "1.6.0",
+            "requirements": [
+                {
+                    "raw": "pluggy==1.6.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pluggy",
+                    "specifier": "==1.6.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pluggy-1.6.0.dist-info"
+                }
+            ]
+        },
+        "prometheus_client": {
+            "name": "prometheus_client",
+            "version": "0.23.1",
+            "requirements": [
+                {
+                    "raw": "prometheus_client==0.23.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "prometheus_client",
+                    "specifier": "==0.23.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\prometheus_client-0.23.1.dist-info"
+                }
+            ]
+        },
+        "prompt_toolkit": {
+            "name": "prompt_toolkit",
+            "version": "3.0.52",
+            "requirements": [
+                {
+                    "raw": "prompt_toolkit==3.0.52",
+                    "extras": [],
+                    "marker": null,
+                    "name": "prompt_toolkit",
+                    "specifier": "==3.0.52",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\prompt_toolkit-3.0.52.dist-info"
+                }
+            ]
+        },
+        "psycopg2-binary": {
+            "name": "psycopg2-binary",
+            "version": "2.9.11",
+            "requirements": [
+                {
+                    "raw": "psycopg2-binary==2.9.11",
+                    "extras": [],
+                    "marker": null,
+                    "name": "psycopg2-binary",
+                    "specifier": "==2.9.11",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\psycopg2_binary-2.9.11.dist-info"
+                }
+            ]
+        },
+        "pycparser": {
+            "name": "pycparser",
+            "version": "2.23",
+            "requirements": [
+                {
+                    "raw": "pycparser==2.23",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pycparser",
+                    "specifier": "==2.23",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pycparser-2.23.dist-info"
+                }
+            ]
+        },
+        "pydantic": {
+            "name": "pydantic",
+            "version": "2.12.5",
+            "requirements": [
+                {
+                    "raw": "pydantic==2.12.5",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pydantic",
+                    "specifier": "==2.12.5",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pydantic-2.12.5.dist-info"
+                }
+            ]
+        },
+        "pydantic_core": {
+            "name": "pydantic_core",
+            "version": "2.41.5",
+            "requirements": [
+                {
+                    "raw": "pydantic_core==2.41.5",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pydantic_core",
+                    "specifier": "==2.41.5",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pydantic_core-2.41.5.dist-info"
+                }
+            ]
+        },
+        "Pygments": {
+            "name": "Pygments",
+            "version": "2.19.2",
+            "requirements": [
+                {
+                    "raw": "Pygments==2.19.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "Pygments",
+                    "specifier": "==2.19.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pygments-2.19.2.dist-info"
+                }
+            ]
+        },
+        "PyJWT": {
+            "name": "PyJWT",
+            "version": "2.10.1",
+            "requirements": [
+                {
+                    "raw": "PyJWT==2.10.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "PyJWT",
+                    "specifier": "==2.10.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\PyJWT-2.10.1.dist-info"
+                }
+            ]
+        },
+        "pytest": {
+            "name": "pytest",
+            "version": "9.0.2",
+            "requirements": [
+                {
+                    "raw": "pytest==9.0.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pytest",
+                    "specifier": "==9.0.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pytest-9.0.2.dist-info"
+                }
+            ]
+        },
+        "pytest-cov": {
+            "name": "pytest-cov",
+            "version": "7.0.0",
+            "requirements": [
+                {
+                    "raw": "pytest-cov==7.0.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pytest-cov",
+                    "specifier": "==7.0.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pytest_cov-7.0.0.dist-info"
+                }
+            ]
+        },
+        "pytest-django": {
+            "name": "pytest-django",
+            "version": "4.11.1",
+            "requirements": [
+                {
+                    "raw": "pytest-django==4.11.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pytest-django",
+                    "specifier": "==4.11.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pytest_django-4.11.1.dist-info"
+                }
+            ]
+        },
+        "python-dateutil": {
+            "name": "python-dateutil",
+            "version": "2.9.0.post0",
+            "requirements": [
+                {
+                    "raw": "python-dateutil==2.9.0.post0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "python-dateutil",
+                    "specifier": "==2.9.0.post0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\python_dateutil-2.9.0.post0.dist-info"
+                }
+            ]
+        },
+        "pytz": {
+            "name": "pytz",
+            "version": "2025.2",
+            "requirements": [
+                {
+                    "raw": "pytz==2025.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pytz",
+                    "specifier": "==2025.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pytz-2025.2.dist-info"
+                }
+            ]
+        },
+        "PyYAML": {
+            "name": "PyYAML",
+            "version": "6.0.3",
+            "requirements": [
+                {
+                    "raw": "PyYAML==6.0.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "PyYAML",
+                    "specifier": "==6.0.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pyyaml-6.0.3.dist-info"
+                }
+            ]
+        },
+        "redis": {
+            "name": "redis",
+            "version": "7.1.0",
+            "requirements": [
+                {
+                    "raw": "redis==7.1.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "redis",
+                    "specifier": "==7.1.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\redis-7.1.0.dist-info"
+                }
+            ]
+        },
+        "referencing": {
+            "name": "referencing",
+            "version": "0.37.0",
+            "requirements": [
+                {
+                    "raw": "referencing==0.37.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "referencing",
+                    "specifier": "==0.37.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\referencing-0.37.0.dist-info"
+                }
+            ]
+        },
+        "regex": {
+            "name": "regex",
+            "version": "2025.11.3",
+            "requirements": [
+                {
+                    "raw": "regex==2025.11.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "regex",
+                    "specifier": "==2025.11.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\regex-2025.11.3.dist-info"
+                }
+            ]
+        },
+        "requests": {
+            "name": "requests",
+            "version": "2.32.5",
+            "requirements": [
+                {
+                    "raw": "requests==2.32.5",
+                    "extras": [],
+                    "marker": null,
+                    "name": "requests",
+                    "specifier": "==2.32.5",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\requests-2.32.5.dist-info"
+                }
+            ]
+        },
+        "rich": {
+            "name": "rich",
+            "version": "14.2.0",
+            "requirements": [
+                {
+                    "raw": "rich==14.2.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "rich",
+                    "specifier": "==14.2.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\rich-14.2.0.dist-info"
+                }
+            ]
+        },
+        "rpds-py": {
+            "name": "rpds-py",
+            "version": "0.30.0",
+            "requirements": [
+                {
+                    "raw": "rpds-py==0.30.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "rpds-py",
+                    "specifier": "==0.30.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\rpds_py-0.30.0.dist-info"
+                }
+            ]
+        },
+        "ruamel.yaml": {
+            "name": "ruamel.yaml",
+            "version": "0.18.16",
+            "requirements": [
+                {
+                    "raw": "ruamel.yaml==0.18.16",
+                    "extras": [],
+                    "marker": null,
+                    "name": "ruamel.yaml",
+                    "specifier": "==0.18.16",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\ruamel.yaml-0.18.16.dist-info"
+                }
+            ]
+        },
+        "ruamel.yaml.clib": {
+            "name": "ruamel.yaml.clib",
+            "version": "0.2.15",
+            "requirements": [
+                {
+                    "raw": "ruamel.yaml.clib==0.2.15",
+                    "extras": [],
+                    "marker": null,
+                    "name": "ruamel.yaml.clib",
+                    "specifier": "==0.2.15",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\ruamel_yaml_clib-0.2.15.dist-info"
+                }
+            ]
+        },
+        "safety": {
+            "name": "safety",
+            "version": "3.7.0",
+            "requirements": [
+                {
+                    "raw": "safety==3.7.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "safety",
+                    "specifier": "==3.7.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\safety-3.7.0.dist-info"
+                }
+            ]
+        },
+        "safety-schemas": {
+            "name": "safety-schemas",
+            "version": "0.0.16",
+            "requirements": [
+                {
+                    "raw": "safety-schemas==0.0.16",
+                    "extras": [],
+                    "marker": null,
+                    "name": "safety-schemas",
+                    "specifier": "==0.0.16",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\safety_schemas-0.0.16.dist-info"
+                }
+            ]
+        },
+        "shellingham": {
+            "name": "shellingham",
+            "version": "1.5.4",
+            "requirements": [
+                {
+                    "raw": "shellingham==1.5.4",
+                    "extras": [],
+                    "marker": null,
+                    "name": "shellingham",
+                    "specifier": "==1.5.4",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\shellingham-1.5.4.dist-info"
+                }
+            ]
+        },
+        "six": {
+            "name": "six",
+            "version": "1.17.0",
+            "requirements": [
+                {
+                    "raw": "six==1.17.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "six",
+                    "specifier": "==1.17.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\six-1.17.0.dist-info"
+                }
+            ]
+        },
+        "sqlparse": {
+            "name": "sqlparse",
+            "version": "0.5.4",
+            "requirements": [
+                {
+                    "raw": "sqlparse==0.5.4",
+                    "extras": [],
+                    "marker": null,
+                    "name": "sqlparse",
+                    "specifier": "==0.5.4",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\sqlparse-0.5.4.dist-info"
+                }
+            ]
+        },
+        "stevedore": {
+            "name": "stevedore",
+            "version": "5.6.0",
+            "requirements": [
+                {
+                    "raw": "stevedore==5.6.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "stevedore",
+                    "specifier": "==5.6.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\stevedore-5.6.0.dist-info"
+                }
+            ]
+        },
+        "tenacity": {
+            "name": "tenacity",
+            "version": "9.1.2",
+            "requirements": [
+                {
+                    "raw": "tenacity==9.1.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "tenacity",
+                    "specifier": "==9.1.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\tenacity-9.1.2.dist-info"
+                }
+            ]
+        },
+        "tomlkit": {
+            "name": "tomlkit",
+            "version": "0.13.3",
+            "requirements": [
+                {
+                    "raw": "tomlkit==0.13.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "tomlkit",
+                    "specifier": "==0.13.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\tomlkit-0.13.3.dist-info"
+                }
+            ]
+        },
+        "tornado": {
+            "name": "tornado",
+            "version": "6.5.3",
+            "requirements": [
+                {
+                    "raw": "tornado==6.5.3",
+                    "extras": [],
+                    "marker": null,
+                    "name": "tornado",
+                    "specifier": "==6.5.3",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\tornado-6.5.3.dist-info"
+                }
+            ]
+        },
+        "tqdm": {
+            "name": "tqdm",
+            "version": "4.67.1",
+            "requirements": [
+                {
+                    "raw": "tqdm==4.67.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "tqdm",
+                    "specifier": "==4.67.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\tqdm-4.67.1.dist-info"
+                }
+            ]
+        },
+        "typer": {
+            "name": "typer",
+            "version": "0.20.0",
+            "requirements": [
+                {
+                    "raw": "typer==0.20.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "typer",
+                    "specifier": "==0.20.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\typer-0.20.0.dist-info"
+                }
+            ]
+        },
+        "typing_extensions": {
+            "name": "typing_extensions",
+            "version": "4.15.0",
+            "requirements": [
+                {
+                    "raw": "typing_extensions==4.15.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "typing_extensions",
+                    "specifier": "==4.15.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\typing_extensions-4.15.0.dist-info"
+                }
+            ]
+        },
+        "typing-inspection": {
+            "name": "typing-inspection",
+            "version": "0.4.2",
+            "requirements": [
+                {
+                    "raw": "typing-inspection==0.4.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "typing-inspection",
+                    "specifier": "==0.4.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\typing_inspection-0.4.2.dist-info"
+                }
+            ]
+        },
+        "tzdata": {
+            "name": "tzdata",
+            "version": "2025.2",
+            "requirements": [
+                {
+                    "raw": "tzdata==2025.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "tzdata",
+                    "specifier": "==2025.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\tzdata-2025.2.dist-info"
+                }
+            ]
+        },
+        "tzlocal": {
+            "name": "tzlocal",
+            "version": "5.3.1",
+            "requirements": [
+                {
+                    "raw": "tzlocal==5.3.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "tzlocal",
+                    "specifier": "==5.3.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\tzlocal-5.3.1.dist-info"
+                }
+            ]
+        },
+        "uritemplate": {
+            "name": "uritemplate",
+            "version": "4.2.0",
+            "requirements": [
+                {
+                    "raw": "uritemplate==4.2.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "uritemplate",
+                    "specifier": "==4.2.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\uritemplate-4.2.0.dist-info"
+                }
+            ]
+        },
+        "urllib3": {
+            "name": "urllib3",
+            "version": "2.6.2",
+            "requirements": [
+                {
+                    "raw": "urllib3==2.6.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "urllib3",
+                    "specifier": "==2.6.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\urllib3-2.6.2.dist-info"
+                }
+            ]
+        },
+        "vine": {
+            "name": "vine",
+            "version": "5.1.0",
+            "requirements": [
+                {
+                    "raw": "vine==5.1.0",
+                    "extras": [],
+                    "marker": null,
+                    "name": "vine",
+                    "specifier": "==5.1.0",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\vine-5.1.0.dist-info"
+                }
+            ]
+        },
+        "wcwidth": {
+            "name": "wcwidth",
+            "version": "0.2.14",
+            "requirements": [
+                {
+                    "raw": "wcwidth==0.2.14",
+                    "extras": [],
+                    "marker": null,
+                    "name": "wcwidth",
+                    "specifier": "==0.2.14",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\wcwidth-0.2.14.dist-info"
+                }
+            ]
+        }
+    },
+    "affected_packages": {
+        "pip": {
+            "name": "pip",
+            "version": "24.2",
+            "requirements": [
+                {
+                    "raw": "pip==24.2",
+                    "extras": [],
+                    "marker": null,
+                    "name": "pip",
+                    "specifier": "==24.2",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pip-24.2.dist-info"
+                }
+            ],
+            "found": null,
+            "insecure_versions": [
+                "0.2",
+                "0.2.1",
+                "0.3",
+                "0.3.1",
+                "0.4",
+                "0.5",
+                "0.5.1",
+                "0.6",
+                "0.6.1",
+                "0.6.2",
+                "0.6.3",
+                "0.7",
+                "0.7.1",
+                "0.7.2",
+                "0.8",
+                "0.8.1",
+                "0.8.2",
+                "0.8.3",
+                "1.0",
+                "10.0.0",
+                "10.0.0b1",
+                "10.0.0b2",
+                "10.0.1",
+                "1.0.1",
+                "1.0.2",
+                "1.1",
+                "1.2",
+                "1.2.1",
+                "1.3",
+                "1.3.1",
+                "1.4",
+                "1.4.1",
+                "1.5",
+                "1.5.1",
+                "1.5.2",
+                "1.5.3",
+                "1.5.4",
+                "1.5.5",
+                "1.5.6",
+                "18.0",
+                "18.1",
+                "19.0",
+                "19.0.1",
+                "19.0.2",
+                "19.0.3",
+                "19.1",
+                "19.1.1",
+                "19.2",
+                "19.2.1",
+                "19.2.2",
+                "19.2.3",
+                "19.3",
+                "19.3.1",
+                "20.0",
+                "20.0.1",
+                "20.0.2",
+                "20.1",
+                "20.1.1",
+                "20.1b1",
+                "20.2",
+                "20.2.1",
+                "20.2.2",
+                "20.2.3",
+                "20.2.4",
+                "20.2b1",
+                "20.3",
+                "20.3.1",
+                "20.3.2",
+                "20.3.3",
+                "20.3.4",
+                "20.3b1",
+                "21.0",
+                "21.0.1",
+                "21.1",
+                "21.1.1",
+                "21.1.2",
+                "21.1.3",
+                "21.2",
+                "21.2.1",
+                "21.2.2",
+                "21.2.3",
+                "21.2.4",
+                "21.3",
+                "21.3.1",
+                "22.0",
+                "22.0.1",
+                "22.0.2",
+                "22.0.3",
+                "22.0.4",
+                "22.1",
+                "22.1.1",
+                "22.1.2",
+                "22.1b1",
+                "22.2",
+                "22.2.1",
+                "22.2.2",
+                "22.3",
+                "22.3.1",
+                "23.0",
+                "23.0.1",
+                "23.1",
+                "23.1.1",
+                "23.1.2",
+                "23.2",
+                "23.2.1",
+                "23.3",
+                "23.3.1",
+                "23.3.2",
+                "24.0",
+                "24.1",
+                "24.1.1",
+                "24.1.2",
+                "24.1b1",
+                "24.1b2",
+                "24.2",
+                "24.3",
+                "24.3.1",
+                "25.0",
+                "25.0.1",
+                "25.1",
+                "25.1.1",
+                "6.0",
+                "6.0.1",
+                "6.0.2",
+                "6.0.3",
+                "6.0.4",
+                "6.0.5",
+                "6.0.6",
+                "6.0.7",
+                "6.0.8",
+                "6.1.0",
+                "6.1.1",
+                "7.0.0",
+                "7.0.1",
+                "7.0.2",
+                "7.0.3",
+                "7.1.0",
+                "7.1.1",
+                "7.1.2",
+                "8.0.0",
+                "8.0.1",
+                "8.0.2",
+                "8.0.3",
+                "8.1.0",
+                "8.1.1",
+                "8.1.2",
+                "9.0.0",
+                "9.0.1",
+                "9.0.2",
+                "9.0.3"
+            ],
+            "secure_versions": [
+                "25.3",
+                "25.2"
+            ],
+            "latest_version_without_known_vulnerabilities": "25.3",
+            "latest_version": "25.3",
+            "more_info_url": "https://data.safetycli.com/p/pypi/pip/97c/"
+        },
+        "Django": {
+            "name": "Django",
+            "version": "5.1",
+            "requirements": [
+                {
+                    "raw": "Django==5.1",
+                    "extras": [],
+                    "marker": null,
+                    "name": "Django",
+                    "specifier": "==5.1",
+                    "url": null,
+                    "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+                }
+            ],
+            "found": null,
+            "insecure_versions": [
+                "1.0.1",
+                "1.0.2",
+                "1.0.3",
+                "1.0.4",
+                "1.1",
+                "1.10",
+                "1.10.1",
+                "1.10.2",
+                "1.10.3",
+                "1.10.4",
+                "1.10.5",
+                "1.10.6",
+                "1.10.7",
+                "1.10.8",
+                "1.10a1",
+                "1.10b1",
+                "1.10rc1",
+                "1.11",
+                "1.1.1",
+                "1.11.1",
+                "1.11.10",
+                "1.11.11",
+                "1.11.12",
+                "1.11.13",
+                "1.11.14",
+                "1.11.15",
+                "1.11.16",
+                "1.11.17",
+                "1.11.18",
+                "1.11.2",
+                "1.11.20",
+                "1.11.21",
+                "1.11.22",
+                "1.11.23",
+                "1.11.24",
+                "1.11.25",
+                "1.11.26",
+                "1.11.27",
+                "1.11.28",
+                "1.11.29",
+                "1.11.3",
+                "1.11.4",
+                "1.11.5",
+                "1.11.6",
+                "1.11.7",
+                "1.11.8",
+                "1.11.9",
+                "1.11a1",
+                "1.11b1",
+                "1.11rc1",
+                "1.1.2",
+                "1.1.3",
+                "1.1.4",
+                "1.2",
+                "1.2.1",
+                "1.2.2",
+                "1.2.3",
+                "1.2.4",
+                "1.2.5",
+                "1.2.6",
+                "1.2.7",
+                "1.3",
+                "1.3.1",
+                "1.3.2",
+                "1.3.3",
+                "1.3.4",
+                "1.3.5",
+                "1.3.6",
+                "1.3.7",
+                "1.4",
+                "1.4.1",
+                "1.4.10",
+                "1.4.11",
+                "1.4.12",
+                "1.4.13",
+                "1.4.14",
+                "1.4.15",
+                "1.4.16",
+                "1.4.17",
+                "1.4.18",
+                "1.4.19",
+                "1.4.2",
+                "1.4.20",
+                "1.4.21",
+                "1.4.22",
+                "1.4.3",
+                "1.4.4",
+                "1.4.5",
+                "1.4.6",
+                "1.4.7",
+                "1.4.8",
+                "1.4.9",
+                "1.5",
+                "1.5.1",
+                "1.5.10",
+                "1.5.11",
+                "1.5.12",
+                "1.5.2",
+                "1.5.3",
+                "1.5.4",
+                "1.5.5",
+                "1.5.6",
+                "1.5.7",
+                "1.5.8",
+                "1.5.9",
+                "1.6",
+                "1.6.1",
+                "1.6.10",
+                "1.6.11",
+                "1.6.2",
+                "1.6.3",
+                "1.6.4",
+                "1.6.5",
+                "1.6.6",
+                "1.6.7",
+                "1.6.8",
+                "1.6.9",
+                "1.7",
+                "1.7.1",
+                "1.7.10",
+                "1.7.11",
+                "1.7.2",
+                "1.7.3",
+                "1.7.4",
+                "1.7.5",
+                "1.7.6",
+                "1.7.7",
+                "1.7.8",
+                "1.7.9",
+                "1.8",
+                "1.8.1",
+                "1.8.10",
+                "1.8.11",
+                "1.8.12",
+                "1.8.13",
+                "1.8.14",
+                "1.8.15",
+                "1.8.16",
+                "1.8.17",
+                "1.8.18",
+                "1.8.19",
+                "1.8.2",
+                "1.8.3",
+                "1.8.4",
+                "1.8.5",
+                "1.8.6",
+                "1.8.7",
+                "1.8.8",
+                "1.8.9",
+                "1.8a1",
+                "1.8b1",
+                "1.8b2",
+                "1.8rc1",
+                "1.9",
+                "1.9.1",
+                "1.9.10",
+                "1.9.11",
+                "1.9.12",
+                "1.9.13",
+                "1.9.2",
+                "1.9.3",
+                "1.9.4",
+                "1.9.5",
+                "1.9.6",
+                "1.9.7",
+                "1.9.8",
+                "1.9.9",
+                "1.9a1",
+                "1.9b1",
+                "1.9rc1",
+                "1.9rc2",
+                "2.0",
+                "2.0.1",
+                "2.0.10",
+                "2.0.12",
+                "2.0.13",
+                "2.0.2",
+                "2.0.3",
+                "2.0.4",
+                "2.0.5",
+                "2.0.6",
+                "2.0.7",
+                "2.0.8",
+                "2.0.9",
+                "2.0a1",
+                "2.0b1",
+                "2.0rc1",
+                "2.1",
+                "2.1.1",
+                "2.1.10",
+                "2.1.11",
+                "2.1.12",
+                "2.1.13",
+                "2.1.14",
+                "2.1.15",
+                "2.1.2",
+                "2.1.3",
+                "2.1.4",
+                "2.1.5",
+                "2.1.7",
+                "2.1.8",
+                "2.1.9",
+                "2.1a1",
+                "2.1b1",
+                "2.1rc1",
+                "2.2",
+                "2.2.1",
+                "2.2.10",
+                "2.2.11",
+                "2.2.12",
+                "2.2.13",
+                "2.2.14",
+                "2.2.15",
+                "2.2.16",
+                "2.2.17",
+                "2.2.18",
+                "2.2.19",
+                "2.2.2",
+                "2.2.20",
+                "2.2.21",
+                "2.2.22",
+                "2.2.23",
+                "2.2.24",
+                "2.2.25",
+                "2.2.26",
+                "2.2.27",
+                "2.2.28",
+                "2.2.3",
+                "2.2.4",
+                "2.2.5",
+                "2.2.6",
+                "2.2.7",
+                "2.2.8",
+                "2.2.9",
+                "2.2a1",
+                "2.2b1",
+                "2.2rc1",
+                "3.0",
+                "3.0.1",
+                "3.0.10",
+                "3.0.11",
+                "3.0.12",
+                "3.0.13",
+                "3.0.14",
+                "3.0.2",
+                "3.0.3",
+                "3.0.4",
+                "3.0.5",
+                "3.0.6",
+                "3.0.7",
+                "3.0.8",
+                "3.0.9",
+                "3.0a1",
+                "3.0b1",
+                "3.0rc1",
+                "3.1",
+                "3.1.1",
+                "3.1.10",
+                "3.1.11",
+                "3.1.12",
+                "3.1.13",
+                "3.1.14",
+                "3.1.2",
+                "3.1.3",
+                "3.1.4",
+                "3.1.5",
+                "3.1.6",
+                "3.1.7",
+                "3.1.8",
+                "3.1.9",
+                "3.1a1",
+                "3.1b1",
+                "3.1rc1",
+                "3.2",
+                "3.2.1",
+                "3.2.10",
+                "3.2.11",
+                "3.2.12",
+                "3.2.13",
+                "3.2.14",
+                "3.2.15",
+                "3.2.16",
+                "3.2.17",
+                "3.2.18",
+                "3.2.19",
+                "3.2.2",
+                "3.2.20",
+                "3.2.21",
+                "3.2.22",
+                "3.2.23",
+                "3.2.24",
+                "3.2.25",
+                "3.2.3",
+                "3.2.4",
+                "3.2.5",
+                "3.2.6",
+                "3.2.7",
+                "3.2.8",
+                "3.2.9",
+                "3.2a1",
+                "3.2b1",
+                "3.2rc1",
+                "4.0",
+                "4.0.1",
+                "4.0.10",
+                "4.0.2",
+                "4.0.3",
+                "4.0.4",
+                "4.0.5",
+                "4.0.6",
+                "4.0.7",
+                "4.0.8",
+                "4.0.9",
+                "4.0a1",
+                "4.0b1",
+                "4.0rc1",
+                "4.1",
+                "4.1.1",
+                "4.1.10",
+                "4.1.11",
+                "4.1.12",
+                "4.1.13",
+                "4.1.2",
+                "4.1.3",
+                "4.1.4",
+                "4.1.5",
+                "4.1.6",
+                "4.1.7",
+                "4.1.8",
+                "4.1.9",
+                "4.1a1",
+                "4.1b1",
+                "4.1rc1",
+                "4.2",
+                "4.2.1",
+                "4.2.10",
+                "4.2.11",
+                "4.2.12",
+                "4.2.13",
+                "4.2.14",
+                "4.2.15",
+                "4.2.16",
+                "4.2.17",
+                "4.2.18",
+                "4.2.19",
+                "4.2.2",
+                "4.2.20",
+                "4.2.21",
+                "4.2.22",
+                "4.2.23",
+                "4.2.24",
+                "4.2.25",
+                "4.2.26",
+                "4.2.3",
+                "4.2.4",
+                "4.2.5",
+                "4.2.6",
+                "4.2.7",
+                "4.2.8",
+                "4.2.9",
+                "4.2a1",
+                "4.2b1",
+                "4.2rc1",
+                "5.0",
+                "5.0.1",
+                "5.0.10",
+                "5.0.11",
+                "5.0.12",
+                "5.0.13",
+                "5.0.14",
+                "5.0.2",
+                "5.0.3",
+                "5.0.4",
+                "5.0.5",
+                "5.0.6",
+                "5.0.7",
+                "5.0.8",
+                "5.0.9",
+                "5.0a1",
+                "5.0b1",
+                "5.0rc1",
+                "5.1",
+                "5.1.1",
+                "5.1.10",
+                "5.1.11",
+                "5.1.12",
+                "5.1.13",
+                "5.1.14",
+                "5.1.2",
+                "5.1.3",
+                "5.1.4",
+                "5.1.5",
+                "5.1.6",
+                "5.1.7",
+                "5.1.8",
+                "5.1.9",
+                "5.1a1",
+                "5.1b1",
+                "5.1rc1",
+                "5.2",
+                "5.2.1",
+                "5.2.2",
+                "5.2.3",
+                "5.2.4",
+                "5.2.5",
+                "5.2.6",
+                "5.2.7",
+                "5.2.8",
+                "5.2a1",
+                "5.2b1",
+                "5.2rc1"
+            ],
+            "secure_versions": [
+                "6.0",
+                "6.0rc1",
+                "6.0b1",
+                "6.0a1",
+                "5.2.9",
+                "5.1.15",
+                "4.2.27"
+            ],
+            "latest_version_without_known_vulnerabilities": "6.0",
+            "latest_version": "6.0",
+            "more_info_url": "https://data.safetycli.com/p/pypi/django/97c/"
+        }
+    },
+    "announcements": [],
+    "vulnerabilities": [
+        {
+            "vulnerability_id": "75180",
+            "package_name": "pip",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<25.0"
+            ],
+            "all_vulnerable_specs": [
+                "<25.0"
+            ],
+            "analyzed_version": "24.2",
+            "analyzed_requirement": {
+                "raw": "pip==24.2",
+                "extras": [],
+                "marker": null,
+                "name": "pip",
+                "specifier": "==24.2",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pip-24.2.dist-info"
+            },
+            "advisory": "Pip solves a security vulnerability that previously allowed maliciously crafted wheel files to execute unauthorized code during installation.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": null,
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/75180/97c"
+        },
+        {
+            "vulnerability_id": "79883",
+            "package_name": "pip",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<25.2"
+            ],
+            "all_vulnerable_specs": [
+                "<25.2"
+            ],
+            "analyzed_version": "24.2",
+            "analyzed_requirement": {
+                "raw": "pip==24.2",
+                "extras": [],
+                "marker": null,
+                "name": "pip",
+                "specifier": "==24.2",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pip-24.2.dist-info"
+            },
+            "advisory": "Affected versions of the pip package are vulnerable to Arbitrary File Overwrite due to improper validation of symbolic link targets in the fallback tar extraction code. In src/pip/_internal/utils/unpacking.py, the _untar_without_filter routine used when the Python tarfile module lacks PEP 706 (no tarfile.data_filter) extracted symlink members with tar._extract_member without verifying that link destinations resolve under the extraction root, a check later added via the is_symlink_target_in_tar helper.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-8869",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/79883/97c"
+        },
+        {
+            "vulnerability_id": "74396",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.4"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.17",
+                ">=5.0a1,<5.0.10",
+                ">=5.1a1,<5.1.4"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Django affected versions are vulnerable to a potential SQL injection in the HasKey(lhs, rhs) lookup on Oracle databases. The vulnerability arises when untrusted data is directly used as the lhs value in the django.db.models.fields.json.HasKey lookup. However, applications using the jsonfield.has_key lookup with the __ syntax remain unaffected by this issue.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2024-53908",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/74396/97c"
+        },
+        {
+            "vulnerability_id": "74395",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.4"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.17",
+                ">=5.0a1,<5.0.10",
+                ">=5.1a1,<5.1.4"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Affected versions of Django are vulnerable to a potential denial-of-service (DoS) attack in the `django.utils.html.strip_tags()` method. The vulnerability occurs when the `strip_tags()` method or the `striptags` template filter processes inputs containing large sequences of nested, incomplete HTML entities.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2024-53907",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/74395/97c"
+        },
+        {
+            "vulnerability_id": "73023",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.1"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.16",
+                ">=5.0a1,<5.0.9",
+                ">=5.1a1,<5.1.1"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "A potential denial-of-service vulnerability has been identified in Django's urlize() and urlizetrunc() functions in django.utils.html. This vulnerability can be triggered by inputting huge strings containing a specific sequence of characters.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2024-45230",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/73023/97c"
+        },
+        {
+            "vulnerability_id": "73028",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.1"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.16",
+                ">=5.0a1,<5.0.9",
+                ">=5.1a1,<5.1.1"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "A security vulnerability has been discovered in certain versions of Django, affecting the password reset functionality. The PasswordResetForm class in django.contrib.auth.forms inadvertently allowed attackers to enumerate user email addresses by exploiting unhandled exceptions during the email sending process. This could be done by issuing password reset requests and observing the responses. Django has implemented a fix where these exceptions are now caught and logged using the django.contrib.auth logger, preventing potential information leakage through error responses.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2024-45231",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/73028/97c"
+        },
+        {
+            "vulnerability_id": "76476",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.8"
+            ],
+            "all_vulnerable_specs": [
+                ">=5.0a1,<5.0.14",
+                ">=5.1a1,<5.1.8"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "An issue was discovered in Django 5.1 before 5.1.8 and 5.0 before 5.0.14. The NFKC normalization is slow on Windows. As a consequence, django.contrib.auth.views.LoginView, django.contrib.auth.views.LogoutView, and django.views.i18n.set_language are subject to a potential denial-of-service attack via certain inputs with a very large number of Unicode characters.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-27556",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/76476/97c"
+        },
+        {
+            "vulnerability_id": "79173",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.0a1,<5.1.12"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.24",
+                ">=5.0a1,<5.1.12",
+                ">=5.2a1,<5.2.6"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Affected versions of the Django package are vulnerable to SQL Injection due to insufficient input sanitization in FilteredRelation column aliases. The FilteredRelation class fails to properly validate or escape column alias names when they are provided through dictionary expansion as keyword arguments to QuerySet.annotate() or QuerySet.alias() methods, allowing malicious SQL code to be injected directly into the generated database queries.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-57833",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/79173/97c"
+        },
+        {
+            "vulnerability_id": "80044",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.13"
+            ],
+            "all_vulnerable_specs": [
+                ">=4.2a1,<4.2.25",
+                ">=5.1a1,<5.1.13",
+                ">=5.2a1,<5.2.7"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Affected versions of the Django package are vulnerable to Path Traversal due to improper validation of archive member paths during extraction. The django.utils.archive.extract() function\u2014used by the startapp --template and startproject --template commands\u2014checked path prefixes instead of using canonicalised paths, allowing archive entries whose names share a prefix with the destination to resolve outside the intended directory.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-59682",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/80044/97c"
+        },
+        {
+            "vulnerability_id": "80041",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.13"
+            ],
+            "all_vulnerable_specs": [
+                ">=4.2a1,<4.2.25",
+                ">=5.1a1,<5.1.13",
+                ">=5.2a1,<5.2.7"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Affected versions of the Django package are vulnerable to SQL Injection due to insufficient neutralization of user-controlled column alias names provided via dictionary expansion. The QuerySet.annotate(), QuerySet.alias(), QuerySet.aggregate(), and QuerySet.extra() methods accept **kwargs whose keys are used as column aliases, and on MySQL and MariaDB, those identifiers are not safely quoted, permitting crafted input to be incorporated into the generated SQL.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-59681",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/80041/97c"
+        },
+        {
+            "vulnerability_id": "77119",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1.0a1,<5.1.9"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.21",
+                ">=5.2a1,<5.2.1",
+                ">=5.1.0a1,<5.1.9"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "An issue was discovered in Django 4.2 before 4.2.21, 5.1 before 5.1.9, and 5.2 before 5.2.1. The django.utils.html.strip_tags() function is vulnerable to a potential denial-of-service (slow performance) when processing inputs containing large sequences of incomplete HTML tags. The template filter striptags is also vulnerable, because it is built on top of strip_tags().",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-32873",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/77119/97c"
+        },
+        {
+            "vulnerability_id": "75744",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,< 5.1.7"
+            ],
+            "all_vulnerable_specs": [
+                ">=4.2a1,< 4.2.20",
+                ">=5.0a1,< 5.0.13",
+                ">=5.1a1,< 5.1.7"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Affected versions of Django are vulnerable to a potential denial-of-service in django.utils.text.wrap(). The django.utils.text.wrap() and wordwrap template filter were subject to a potential denial-of-service attack when used with very long strings.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-26699",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/75744/97c"
+        },
+        {
+            "vulnerability_id": "74985",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.5"
+            ],
+            "all_vulnerable_specs": [
+                ">=5.1a1,<5.1.5",
+                ">=5.0a1,<5.0.11",
+                ">=4.2a1,<4.2.18"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "Affected versions of Django are vulnerable to a potential denial-of-service attack due to improper IPv6 validation. The lack of upper limit enforcement for input strings in clean_ipv6_address, is_valid_ipv6_address, and the django.forms.GenericIPAddressField form field allowed attackers to exploit overly long inputs, causing resource exhaustion. The vulnerability is addressed by defining a max_length of 39 characters for affected form fields. The django.db.models.GenericIPAddressField model field was not impacted. Users should upgrade promptly.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2024-56374",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/74985/97c"
+        },
+        {
+            "vulnerability_id": "81270",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.14"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.26",
+                ">=5.1a1,<5.1.14",
+                ">=5.2a1,<5.2.8"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "CVE-2025-64459: Affected versions of the Django package are vulnerable to SQL Injection due to improper input validation, allowing the internal _connector keyword argument to be accepted from untrusted dictionaries via expansion. The .filter(), .exclude(), and .get() methods on QuerySet, as well as the Q class, resolve **kwargs and will treat a supplied _connector value as the logical connector without constraining it to the expected set (AND/OR), permitting attacker-controlled tokens to influence SQL predicate construction.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-64459",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/81270/97c"
+        },
+        {
+            "vulnerability_id": "81269",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.1a1,<5.1.14"
+            ],
+            "all_vulnerable_specs": [
+                "<4.2.26",
+                ">=5.1a1,<5.1.14",
+                ">=5.2a1,<5.2.8"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "CVE-2025-64458: Affected versions of the Django package are vulnerable to Denial of Service (DoS) due to slow Unicode NFKC normalization on Windows being applied to untrusted inputs. The django.contrib.auth.views.LoginView and django.contrib.auth.views.LogoutView, and django.views.i18n.set_language normalize user-controlled strings using Python\u2019s NFKC algorithm, which is unusually slow on Windows for huge Unicode sequences and can be triggered to consume excessive CPU.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-64458",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/81269/97c"
+        },
+        {
+            "vulnerability_id": "77686",
+            "package_name": "django",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=5.0a1,<5.1.10"
+            ],
+            "all_vulnerable_specs": [
+                ">=5.2a1,<5.2.2",
+                ">=5.0a1,<5.1.10",
+                "<4.2.22"
+            ],
+            "analyzed_version": "5.1",
+            "analyzed_requirement": {
+                "raw": "Django==5.1",
+                "extras": [],
+                "marker": null,
+                "name": "Django",
+                "specifier": "==5.1",
+                "url": null,
+                "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+            },
+            "advisory": "An issue was discovered in Django 5.2 before 5.2.3, 5.1 before 5.1.11, and 4.2 before 4.2.23. Internal HTTP response logging does not escape request.path, which allows remote attackers to potentially manipulate log output via crafted URLs. This may lead to log injection or forgery when logs are viewed in terminals or processed by external systems.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2025-48432",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://data.safetycli.com/v/77686/97c"
+        }
+    ],
+    "ignored_vulnerabilities": [],
+    "remediations": {
+        "pip": {
+            "requirements": {
+                "==24.2": {
+                    "vulnerabilities_found": 2,
+                    "version": "24.2",
+                    "requirement": {
+                        "raw": "pip==24.2",
+                        "extras": [],
+                        "marker": null,
+                        "name": "pip",
+                        "specifier": "==24.2",
+                        "url": null,
+                        "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\pip-24.2.dist-info"
+                    },
+                    "more_info_url": "https://data.safetycli.com/p/pypi/pip/97c/"
+                }
+            },
+            "current_version": null,
+            "vulnerabilities_found": null,
+            "recommended_version": null,
+            "other_recommended_versions": [],
+            "more_info_url": null
+        },
+        "django": {
+            "requirements": {
+                "==5.1": {
+                    "vulnerabilities_found": 14,
+                    "version": "5.1",
+                    "requirement": {
+                        "raw": "Django==5.1",
+                        "extras": [],
+                        "marker": null,
+                        "name": "Django",
+                        "specifier": "==5.1",
+                        "url": null,
+                        "found": "e:\\coastal\\coastal_cu_env\\Lib\\site-packages\\Django-5.1.dist-info"
+                    },
+                    "more_info_url": "https://data.safetycli.com/p/pypi/django/97c/"
+                }
+            },
+            "current_version": null,
+            "vulnerabilities_found": null,
+            "recommended_version": null,
+            "other_recommended_versions": [],
+            "more_info_url": null
+        }
+    },
+    "remediations_results": {
+        "vulnerabilities_fixed": [],
+        "remediations_applied": {},
+        "remediations_skipped": {}
+    }
+}
+
+
++===========================================================================================================================================================================================+
+
+
+DEPRECATED: this command (`check`) has been DEPRECATED, and will be unsupported beyond 01 June 2024.
+
+
+We highly encourage switching to the new `scan` command which is easier to use, more powerful, and can be set up to mimic the deprecated command if required.
+
+
++===========================================================================================================================================================================================+
+
+

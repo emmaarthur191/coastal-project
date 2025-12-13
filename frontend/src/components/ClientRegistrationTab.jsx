@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { apiService } from '../services/api';
+import CameraCapture from './shared/CameraCapture.tsx';
 
 /**
  * Client Registration Tab Component for Dashboards
@@ -31,6 +32,9 @@ function ClientRegistrationTab() {
 
     // Files
     passportPicture: null,
+
+    // Photo (Base64)
+    photo: null,
 
     // OTP
     otpCode: '',
@@ -64,7 +68,7 @@ function ClientRegistrationTab() {
         const today = new Date();
         const age = today.getFullYear() - birthDate.getFullYear() -
           (today.getMonth() < birthDate.getMonth() ||
-           (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()));
+            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()));
         if (age < 18) return 'You must be at least 18 years old';
         if (age > 120) return 'Please enter a valid date of birth';
         return null;
@@ -372,15 +376,13 @@ function ClientRegistrationTab() {
       <div className="flex items-center justify-center mb-6">
         {[1, 2, 3].map((step) => (
           <div key={step} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              currentStep >= step ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
               {step}
             </div>
             {step < 3 && (
-              <div className={`w-12 h-1 mx-2 ${
-                currentStep > step ? 'bg-blue-500' : 'bg-gray-200'
-              }`} />
+              <div className={`w-12 h-1 mx-2 ${currentStep > step ? 'bg-blue-500' : 'bg-gray-200'
+                }`} />
             )}
           </div>
         ))}
@@ -410,6 +412,14 @@ function ClientRegistrationTab() {
               </ul>
             </div>
           )}
+
+          {/* Photo Capture Section */}
+          <CameraCapture
+            photo={formData.photo}
+            onPhotoCapture={(photoData) => setFormData(prev => ({ ...prev, photo: photoData }))}
+            label="📷 Customer Passport Photo"
+            description="Capture or upload a passport-style photo of the customer for identification."
+          />
 
           {/* Personal Information */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -666,36 +676,7 @@ function ClientRegistrationTab() {
             ))}
           </div>
 
-          {/* Document Upload */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Document Upload</h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Passport Picture <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="file"
-                name="passportPicture"
-                accept="image/jpeg,image/jpg,image/png"
-                onChange={handleInputChange}
-                onFocus={() => clearFieldError('passportPicture')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                required
-              />
-              {filePreviews.passportPicture && (
-                <div className="mt-2">
-                  <img
-                    src={filePreviews.passportPicture}
-                    alt="Passport preview"
-                    className="w-32 h-32 object-cover border border-gray-300 rounded-lg"
-                  />
-                </div>
-              )}
-              <p className="text-sm text-gray-500 mt-1">
-                JPG or PNG, max 5MB
-              </p>
-            </div>
-          </div>
+          {/* Note: Photo capture moved to CameraCapture component at top of form */}
 
           {/* Submit Button */}
           <button
