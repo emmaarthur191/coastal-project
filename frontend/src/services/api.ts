@@ -88,21 +88,27 @@ interface ApiError extends Error {
 }
 
 
-// Logging utility for API debugging
+// Logging utility for API debugging - PRODUCTION SAFE (no output in production)
+const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
+
 const logger = {
   info: (message: string, data?: any) => {
-    if (import.meta.env.DEV) {
+    if (isDev) {
       console.log(`[API] ${message}`, data || '');
     }
   },
   warn: (message: string, data?: any) => {
-    console.warn(`[API Warning] ${message}`, data || '');
+    if (isDev) {
+      console.warn(`[API Warning] ${message}`, data || '');
+    }
   },
   error: (message: string, error?: any) => {
-    console.error(`[API Error] ${message}`, error || '');
+    if (isDev) {
+      console.error(`[API Error] ${message}`, error || '');
+    }
   },
   debug: (message: string, data?: any) => {
-    if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API === 'true') {
+    if (isDev && import.meta.env.VITE_DEBUG_API === 'true') {
       console.debug(`[API Debug] ${message}`, data || '');
     }
   }
