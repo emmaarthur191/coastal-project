@@ -383,15 +383,17 @@ if not DEBUG:
 
 
 # =============================================================================
-# CORS Configuration (Local Development Only)
+# CORS Configuration
 # =============================================================================
-# Only allow requests from the frontend running on localhost:3000
+# Allow requests from localhost (development) and production frontend
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    # Production frontend on Render
+    "https://coastal-web.onrender.com",
 ]
 
-# Add Env-Defined Origins for Production
+# Add Env-Defined Origins for Production (override/extend)
 if env.list('CORS_ALLOWED_ORIGINS', default=[]):
     CORS_ALLOWED_ORIGINS += env.list('CORS_ALLOWED_ORIGINS')
 
@@ -438,6 +440,8 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    # Production frontend on Render
+    "https://coastal-web.onrender.com",
 ]
 
 # Add production CSRF trusted origins from environment
