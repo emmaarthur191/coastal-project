@@ -1,6 +1,7 @@
 import React, { useState, ReactNode } from 'react';
 import { Dialog } from '@headlessui/react';
 import { useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo.png';
 
 /* Icons (using generic Material Icons or text fallback if Lucide not installed, 
    assuming project uses emojis based on previous code. Replacing emojis with cleaner text/icons later) */
@@ -50,7 +51,7 @@ export default function DashboardLayout({
             <aside className="hidden lg:flex flex-col w-64 glass-sidebar fixed h-full z-10 transition-all duration-300">
                 <div className="p-6 border-b border-white/10 flex items-center justify-center">
                     <div className="h-10 w-10 flex items-center justify-center">
-                        <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+                        <img src={logo} alt="Logo" className="h-full w-full object-contain" />
                     </div>
                     <span className="ml-3 text-xl font-bold tracking-tight text-white drop-shadow-md">Coastal</span>
                 </div>
@@ -102,7 +103,7 @@ export default function DashboardLayout({
                 <header className="lg:hidden glass-header p-4 flex items-center justify-between sticky top-0 z-20">
                     <div className="flex items-center">
                         <div className="h-8 w-8 mr-3 flex items-center justify-center">
-                            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+                            <img src={logo} alt="Logo" className="h-full w-full object-contain" />
                         </div>
                         <span className="font-bold text-secondary-900">{title}</span>
                     </div>
@@ -144,7 +145,7 @@ export default function DashboardLayout({
                         <div className="flex items-center justify-between px-4">
                             <div className="flex items-center">
                                 <div className="h-8 w-8 rounded-lg flex items-center justify-center mr-2">
-                                    <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+                                    <img src={logo} alt="Logo" className="h-full w-full object-contain" />
                                 </div>
                                 <span className="ml-2 font-bold text-lg text-secondary-900">Coastal</span>
                             </div>
