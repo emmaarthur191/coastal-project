@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCheck, MessageCircle, Smile } from 'lucide-react';
+import { CheckCheck, MessageCircle, Smile, Reply, MoreVertical, Trash2 } from 'lucide-react';
+import UserAvatar from './UserAvatar';
 
 const MessageItem = ({
   message,
@@ -14,6 +15,7 @@ const MessageItem = ({
   const decryptedContent = decryptedMessages.get(message.id) || 'Decrypting...';
   const reactions = messageReactions.get(message.id) || [];
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const handleAddReaction = async (emoji) => {
     try {
@@ -80,104 +82,135 @@ const MessageItem = ({
   };
 
   return (
-    <div id={`message-${message.id}`} className={`flex ${isFromCurrentUser ? 'justify-end' : 'justify-start'} mb-4 group`}>
-      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative ${
-        isFromCurrentUser
-          ? 'bg-blue-500 text-white'
-          : 'bg-gray-200 text-gray-900'
-      }`}>
-        {/* Reply indicator */}
-        {message.reply_to_message && (
-          <div className={`mb-2 p-2 rounded text-xs ${
-            isFromCurrentUser ? 'bg-blue-600' : 'bg-gray-300'
-          }`}>
-            <div className="font-medium">{message.reply_to_message.sender_name}</div>
-            <div className="truncate">{message.reply_to_message.content || '[Encrypted]'}</div>
-          </div>
-        )}
+    <div
+      id={`message-${message.id}`}
+      className={`flex ${isFromCurrentUser ? 'justify-end' : 'justify-start'} mb-6 group relative`}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      {/* Avatar for received messages */}
+      {!isFromCurrentUser && (
+        <div className="mr-3 flex-shrink-0 self-end mb-1">
+          <UserAvatar user={message.sender} size={32} />
+        </div>
+      )}
 
-        {/* Forwarded indicator */}
-        {message.forwarded_from_message && (
-          <div className={`mb-1 text-xs opacity-70 ${
-            isFromCurrentUser ? 'text-blue-200' : 'text-gray-600'
-          }`}>
-            Forwarded from {message.forwarded_from_message.sender_name}
-          </div>
-        )}
+      <div className={`relative max-w-[85%] lg:max-w-[70%] xl:max-w-[60%] flex flex-col ${isFromCurrentUser ? 'items-end' : 'items-start'}`}>
 
+        {/* Helper Name for Group Chats (only if not from current user) */}
         {!isFromCurrentUser && (
-          <div className="flex items-center mb-1">
-            <UserAvatar user={message.sender} size={20} />
-            <span className="ml-2 text-xs font-medium">{message.sender_name}</span>
-          </div>
-        )}
-        <p className="text-sm">{decryptedContent}</p>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-xs opacity-70">
-            {new Date(message.timestamp).toLocaleTimeString()}
+          <span className="ml-1 mb-1 text-xs text-gray-500 font-medium">
+            {message.sender_name}
           </span>
-          {isFromCurrentUser && (
-            <CheckCheck className="w-4 h-4 opacity-70" />
+        )}
+
+        {/* Message Bubble */}
+        <div
+          className={`px-5 py-3 rounded-2xl shadow-sm relative text-sm leading-relaxed ${isFromCurrentUser
+              ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-none'
+              : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-bl-none'
+            }`}
+        >
+          {/* Reply context */}
+          {message.reply_to_message && (
+            <div className={`mb-2 pl-3 border-l-2 py-1 text-xs rounded-r bg-black/5 dark:bg-white/5 ${isFromCurrentUser ? 'border-white/50 text-white/90' : 'border-blue-500 text-gray-600 dark:text-gray-300'
+              }`}>
+              <div className="font-bold opacity-75">{message.reply_to_message.sender_name}</div>
+              <div className="truncate opacity-75">{message.reply_to_message.content || '[Encrypted]'}</div>
+            </div>
+          )}
+
+          {/* Forwarded context */}
+          {message.forwarded_from_message && (
+            <div className={`mb-1 text-xs italic flex items-center gap-1 ${isFromCurrentUser ? 'text-blue-100' : 'text-gray-500'
+              }`}>
+              <Reply className="w-3 h-3 rotate-180" />
+              Forwarded
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="whitespace-pre-wrap break-words">
+            {decryptedContent}
+          </div>
+
+          {/* Time & Read Status */}
+          <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isFromCurrentUser ? 'text-blue-100' : 'text-gray-400'
+            }`}>
+            <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {isFromCurrentUser && (
+              <CheckCheck className={`w-3 h-3 ${message.is_read ? 'text-blue-200' : 'opacity-60'}`} />
+            )}
+          </div>
+
+          {/* Reactions (displayed on the bubble edge) */}
+          {reactions.length > 0 && (
+            <div className={`absolute -bottom-3 ${isFromCurrentUser ? 'right-0' : 'left-0'} flex gap-1`}>
+              {reactions.map((reaction, index) => {
+                const hasUserReacted = reaction.users.some(u => u.id === user.id);
+                return (
+                  <button
+                    key={index}
+                    onClick={() => hasUserReacted ? handleRemoveReaction(reaction.emoji) : handleAddReaction(reaction.emoji)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] shadow-sm border ${hasUserReacted
+                        ? 'bg-blue-50 border-blue-200 text-blue-600'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                  >
+                    <span>{reaction.emoji}</span>
+                    <span className="font-semibold">{reaction.count}</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* Reactions */}
-        {reactions.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {reactions.map((reaction, index) => {
-              const hasUserReacted = reaction.users.some(u => u.id === user.id);
-              return (
-                <button
-                  key={index}
-                  onClick={() => hasUserReacted ? handleRemoveReaction(reaction.emoji) : handleAddReaction(reaction.emoji)}
-                  className={`text-xs rounded px-2 py-1 transition-colors ${
-                    hasUserReacted
-                      ? (isFromCurrentUser ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800')
-                      : (isFromCurrentUser ? 'bg-blue-600 bg-opacity-50 text-blue-200' : 'bg-white text-gray-700')
-                  }`}
-                  title={`${reaction.users.map(u => u.name).join(', ')} reacted with ${reaction.emoji}`}
-                >
-                  {reaction.emoji} {reaction.count}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Action Menu (Reply, React, etc.) - Floating beside bubble */}
+        <div className={`absolute top-0 py-1 ${isFromCurrentUser
+            ? '-left-24 pr-2'
+            : '-right-24 pl-2'
+          } opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1`}>
 
-        {/* Message actions (visible on hover) */}
-        <div className={`absolute ${isFromCurrentUser ? '-left-12' : '-right-12'} top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1`}>
           <button
             onClick={() => setShowReactionPicker(!showReactionPicker)}
-            className="p-1 rounded bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-blue-500 transition-colors shadow-sm"
             title="Add reaction"
           >
-            <Smile className="w-3 h-3" />
+            <Smile className="w-4 h-4" />
           </button>
+
           <button
             onClick={handleReply}
-            className="p-1 rounded bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-blue-500 transition-colors shadow-sm"
             title="Reply"
           >
-            <MessageCircle className="w-3 h-3" />
+            <Reply className="w-4 h-4" />
           </button>
-        </div>
 
-        {/* Reaction picker */}
-        {showReactionPicker && (
-          <div className={`absolute ${isFromCurrentUser ? '-left-32' : '-right-32'} bottom-0 mb-2 p-2 bg-white border rounded shadow-lg z-10`}>
-            <div className="flex gap-1">
+          {isFromCurrentUser && (
+            <button
+              className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm"
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Reaction Picker Popover */}
+          {showReactionPicker && (
+            <div className={`absolute bottom-full mb-2 ${isFromCurrentUser ? 'right-0' : 'left-0'} p-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in duration-200 z-50 flex gap-1`}>
               {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
                 <button
                   key={emoji}
                   onClick={() => handleAddReaction(emoji)}
-                  className="text-lg hover:bg-gray-100 p-1 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors text-xl transform hover:scale-110 active:scale-95"
                 >
                   {emoji}
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,22 +2,16 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { BankingMessageMessageTypeEnum } from './BankingMessageMessageTypeEnum';
-/**
- * Serializer for Message model.
- */
 export type BankingMessage = {
-    readonly id: string;
-    thread: string;
-    sender: string;
-    readonly sender_name: string;
-    encrypted_content?: string | null;
-    iv?: string | null;
-    auth_tag?: string | null;
-    readonly timestamp: string;
+    readonly id: number;
+    user: number;
+    subject: string;
+    body: string;
     is_read?: boolean;
     readonly read_at: string | null;
-    message_type?: BankingMessageMessageTypeEnum;
-    readonly is_from_current_user: boolean;
+    readonly thread_id: string | null;
+    parent_message?: number | null;
+    readonly replies: string;
+    readonly created_at: string;
 };
 

@@ -38,8 +38,9 @@ export default defineConfig({
     sourcemap: false,  // Disable sourcemaps in production for smaller bundles
   },
   server: {
-    host: '0.0.0.0',
+    host: 'localhost',  // Only bind to localhost (not 0.0.0.0)
     port: 3000,
+    strictPort: true,   // Fail if port 3000 is already in use
     watch: {
       usePolling: true,
     },
@@ -50,6 +51,12 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        secure: false,  // HTTP only, no HTTPS
+      },
+      '/media': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

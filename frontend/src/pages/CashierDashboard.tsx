@@ -8,8 +8,9 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 
-// Import sub-components
-import RefundsTab from '../components/cashier/RefundsTab';
+import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
+
+
 import ComplaintsTab from '../components/cashier/ComplaintsTab';
 import FraudAlertsTab from '../components/cashier/FraudAlertsTab';
 import AccountOpeningTab from '../components/cashier/AccountOpeningTab';
@@ -21,6 +22,9 @@ import PerformanceMonitoringTab from '../components/cashier/PerformanceMonitorin
 import ReportsTab from '../components/cashier/ReportsTab';
 import SecurityMonitoringTab from '../components/cashier/SecurityMonitoringTab';
 import MessagingTab from '../components/cashier/MessagingTab';
+import CashAdvancesTab from '../components/cashier/CashAdvancesTab';
+import TransactionSearchTab from '../components/cashier/TransactionSearchTab';
+
 
 // --- HELPER COMPONENTS ---
 
@@ -73,10 +77,10 @@ const CashierDashboard: React.FC = () => {
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [depositMemberId, setDepositMemberId] = useState('');
   const [withdrawalMemberId, setWithdrawalMemberId] = useState('');
-  const [accountType, setAccountType] = useState('Savings');
+  const [accountType, setAccountType] = useState('daily_susu');
   const [checkDepositAmount, setCheckDepositAmount] = useState('');
   const [checkDepositMemberId, setCheckDepositMemberId] = useState('');
-  const [checkDepositAccountType, setCheckDepositAccountType] = useState('Savings');
+  const [checkDepositAccountType, setCheckDepositAccountType] = useState('daily_susu');
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
   const [cameraMode, setCameraMode] = useState(false);
@@ -97,7 +101,7 @@ const CashierDashboard: React.FC = () => {
     '0.50': 0, '0.25': 0, '0.10': 0, '0.05': 0, '0.01': 0
   });
   const [accountOpeningData, setAccountOpeningData] = useState({
-    account_type: 'savings', first_name: '', last_name: '', date_of_birth: '', nationality: '', address: '', phone_number: '', email: ''
+    account_type: 'daily_susu', card_type: 'standard', first_name: '', last_name: '', date_of_birth: '', nationality: '', address: '', phone_number: '', email: '', photo: null
   });
   const [accountClosureData, setAccountClosureData] = useState({ account_id: '', closure_reason: '', other_reason: '' });
   const [products, setProducts] = useState([]);
@@ -164,16 +168,28 @@ const CashierDashboard: React.FC = () => {
     { id: 'cash_drawer', name: 'Cash Drawer', icon: '🗄️' },
     { id: 'performance_monitoring', name: 'Performance', icon: '📈' },
     { id: 'reports', name: 'Reports', icon: '📑' },
+    { id: 'my_payslips', name: 'My Payslips', icon: '💰' },
     { id: 'security_monitoring', name: 'Security', icon: '🛡️' },
     { id: 'messaging', name: 'Messaging', icon: '💬' }
   ];
 
-  const dailySummary = {
-    transactions: 45,
-    totalAmount: formatCurrencyGHS(125670),
-    cashOnHand: formatCurrencyGHS(5000),
-    pendingApprovals: 3
-  };
+  // Compute daily summary from actual transactions
+  const dailySummary = React.useMemo(() => {
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const todayTransactions = txArray.filter((tx: any) => {
+      const txDate = new Date(tx.created_at);
+      const today = new Date();
+      return txDate.toDateString() === today.toDateString();
+    });
+    const totalAmount = todayTransactions.reduce((sum: number, tx: any) => sum + Math.abs(tx.amount || 0), 0);
+    const srArray = Array.isArray(serviceRequests) ? serviceRequests : [];
+    return {
+      transactions: todayTransactions.length,
+      totalAmount: formatCurrencyGHS(totalAmount),
+      cashOnHand: formatCurrencyGHS(currentDrawer ? (currentDrawer as any).current_balance || 0 : 0),
+      pendingApprovals: srArray.filter((sr: any) => sr.status === 'pending').length
+    };
+  }, [transactions, currentDrawer, serviceRequests]);
 
   // --- EFFECTS ---
   useEffect(() => {
@@ -235,8 +251,8 @@ const CashierDashboard: React.FC = () => {
   const fetchRefunds = async () => { setRefundsLoading(true); try { const r = await api.get('banking/refunds/'); setRefunds(r.data || []); } catch (e) { console.error(e); } finally { setRefundsLoading(false); } };
   const fetchComplaints = async () => { setComplaintsLoading(true); try { const r = await api.get('banking/complaints/'); setComplaints(r.data || []); } catch (e) { console.error(e); } finally { setComplaintsLoading(false); } };
   // @ts-ignore
-  const fetchFraudAlerts = async () => { setFraudLoading(true); try { const r = await api.get('/api/fraud/alerts/', { params: { status: 'all' } }); setFraudAlerts(r.data || []); } catch (e) { console.error(e); } finally { setFraudLoading(false); } };
-  const fetchFraudStats = async () => { try { const r = await api.get('/api/fraud/alerts/dashboard_stats/'); setFraudStats(r.data || {}); } catch (e) { console.error(e); } };
+  const fetchFraudAlerts = async () => { setFraudLoading(true); try { const r = await api.get('fraud/alerts/', { params: { status: 'all' } }); setFraudAlerts(Array.isArray(r.data) ? r.data : (r.data?.results || [])); } catch (e) { console.error(e); } finally { setFraudLoading(false); } };
+  const fetchFraudStats = async () => { try { const r = await api.get('fraud/alerts/dashboard_stats/'); setFraudStats(r.data || {}); } catch (e) { console.error(e); } };
   const fetchPerformanceData = async () => {
     setPerformanceLoading(true);
     try {
@@ -273,7 +289,10 @@ const CashierDashboard: React.FC = () => {
       showMessage('success', `${type} Success!`);
       if (type === 'Deposit') { setDepositAmount(''); setDepositMemberId(''); } else { setWithdrawalAmount(''); setWithdrawalMemberId(''); }
       fetchTransactions();
-    } catch (error: any) { showMessage('error', error.response?.data?.error || 'Failed'); } finally { setLoading(false); }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || error.message || 'Transaction failed';
+      showMessage('error', errorMsg);
+    } finally { setLoading(false); }
   };
 
   const handleCheckDepositSubmit = async (e: any) => {
@@ -287,7 +306,7 @@ const CashierDashboard: React.FC = () => {
       formData.append('account_type', checkDepositAccountType);
       formData.append('front_image', frontImage);
       if (backImage) formData.append('back_image', backImage);
-      const r = await api.post('check-deposits/process_check_deposit/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const r = await api.post('check-deposits/process_check_deposit/', formData);
       showMessage('success', `Check Deposited! ID: ${r.data.transaction_id}`);
       setCheckDepositAmount(''); setCheckDepositMemberId(''); setFrontImage(null); setBackImage(null);
       fetchTransactions();
@@ -411,6 +430,8 @@ const CashierDashboard: React.FC = () => {
       case 'refunds': return <RefundsTab />;
       case 'complaints': return <ComplaintsTab />;
       case 'fraud_alerts': return <FraudAlertsTab />;
+      case 'cash_advances': return <CashAdvancesTab />;
+      case 'transaction_search': return <TransactionSearchTab />;
       case 'account_opening': return <ErrorBoundary><AccountOpeningTab /></ErrorBoundary>;
       case 'account_closure': return <ErrorBoundary><AccountClosureTab /></ErrorBoundary>;
       case 'products_promotions': return <ErrorBoundary><ProductsPromotionsTab /></ErrorBoundary>;
@@ -418,6 +439,7 @@ const CashierDashboard: React.FC = () => {
       case 'cash_drawer': return <ErrorBoundary><CashDrawerTab /></ErrorBoundary>;
       case 'performance_monitoring': return <PerformanceMonitoringTab />;
       case 'reports': return <ErrorBoundary><ReportsTab /></ErrorBoundary>;
+      case 'my_payslips': return <ErrorBoundary><StaffPayslipViewer /></ErrorBoundary>;
       case 'security_monitoring': return <SecurityMonitoringTab />;
       case 'messaging': return <MessagingTab onOpenMessaging={() => hasMessagingAccess ? navigate('/messaging') : alert('Access Denied')} />;
       default: return <Card><h2>🚧 Under Construction</h2></Card>;

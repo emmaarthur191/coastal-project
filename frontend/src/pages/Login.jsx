@@ -11,8 +11,7 @@ function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false,
-    role: 'member'
+    rememberMe: false
   });
   const [formErrors, setFormErrors] = useState({});
   const [validationWarnings, setValidationWarnings] = useState({});
@@ -123,7 +122,7 @@ function LoginPage() {
     setSuccessMessage('');
 
     try {
-      const result = await login(formData.email, formData.password, formData.role);
+      const result = await login(formData.email, formData.password);
 
       if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
@@ -231,9 +230,7 @@ function LoginPage() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
-              <span className="text-2xl">🌊</span>
-            </div>
+            <img src="/logo.png" alt="Coastal Banking Logo" className="h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-md border border-white/20" />
             <span className="text-white text-xl font-bold tracking-tight">Coastal Banking</span>
           </div>
         </div>
@@ -267,9 +264,7 @@ function LoginPage() {
 
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="lg:hidden mb-10 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
-              <span className="text-3xl text-white">🌊</span>
-            </div>
+            <img src="/logo.png" alt="Coastal Banking Logo" className="h-24 mx-auto mb-6 object-contain" />
             <h2 className="text-3xl font-bold text-secondary-900">Sign In</h2>
           </div>
 
@@ -303,25 +298,7 @@ function LoginPage() {
 
           <form onSubmit={handleSubmit} ref={formRef} noValidate className="space-y-6">
 
-            {/* Access Role */}
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-secondary-700 mb-1">
-                Access Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="block w-full px-4 py-3 bg-secondary-50 border border-secondary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-secondary-900 text-sm"
-              >
-                <option value="member">Member - Personal Banking</option>
-                <option value="cashier">Cashier - Teller Services</option>
-                <option value="mobile_banker">Mobile Banker - Field Services</option>
-                <option value="manager">Manager - Branch Management</option>
-                <option value="operations_manager">Operations Manager - Admin</option>
-              </select>
-            </div>
+
 
             {/* Email */}
             <div>

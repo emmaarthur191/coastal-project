@@ -1,13 +1,16 @@
 // Enhanced WebSocket Manager with typing indicators and presence
 class EnhancedWebSocketManager {
-  constructor(threadId, onMessage, onError, onConnectionChange, onTyping, onPresence, onReaction) {
+  constructor(threadId, userId, onMessage, onError, onConnectionChange, onTyping, onPresence, onReaction, onSignal) {
     this.threadId = threadId;
+    this.userId = userId;
     this.onMessage = onMessage;
     this.onError = onError;
     this.onConnectionChange = onConnectionChange;
     this.onTyping = onTyping;
     this.onPresence = onPresence;
+    this.onPresence = onPresence;
     this.onReaction = onReaction;
+    this.onSignal = onSignal;
     this.ws = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
@@ -84,6 +87,13 @@ class EnhancedWebSocketManager {
               break;
             case 'presence_update':
               this.onPresence?.(data);
+              break;
+            case 'call_offer':
+            case 'call_answer':
+            case 'new_ice_candidate':
+            case 'call_end':
+            case 'call_busy':
+              this.onSignal?.(data);
               break;
             case 'pong':
               // Heartbeat response
@@ -165,6 +175,50 @@ class EnhancedWebSocketManager {
         user_id: null // Will be set by backend
       }));
     }
+  }
+
+  // Signaling methods for WebRTC
+  sendOffer(offer, targetUserId) {
+    return this.sendMessage({
+      type: 'call_offer',
+      offer: offer,
+      sender_id: this.userId,
+      target_user_id: targetUserId
+    });
+  }
+
+  sendAnswer(answer, targetUserId) {
+    return this.sendMessage({
+      type: 'call_answer',
+      answer: answer,
+      sender_id: this.userId,
+      target_user_id: targetUserId
+    });
+  }
+
+  sendCandidate(candidate, targetUserId) {
+    return this.sendMessage({
+      type: 'new_ice_candidate',
+      candidate: candidate,
+      sender_id: this.userId,
+      target_user_id: targetUserId
+    });
+  }
+
+  sendEndCall(targetUserId) {
+    return this.sendMessage({
+      type: 'call_end',
+      sender_id: this.userId,
+      target_user_id: targetUserId
+    });
+  }
+
+  sendBusy(targetUserId) {
+    return this.sendMessage({
+      type: 'call_busy',
+      sender_id: this.userId,
+      target_user_id: targetUserId
+    });
   }
 
   disconnect() {
