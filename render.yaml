@@ -21,7 +21,8 @@ services:
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
       - key: CORS_ALLOWED_ORIGINS
-        sync: false  # Set to https://coastal-frontend.onrender.com
+        # REQUIRED: Set to your frontend URL, e.g., https://coastal-web.onrender.com
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: coastal-db
@@ -72,9 +73,11 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_PROD_API_URL
-        sync: false  # Set to https://coastal-backend.onrender.com/api/
+        # REQUIRED: Set to your backend URL, e.g., https://coastal-backend.onrender.com/api/
+        sync: false
       - key: VITE_PROD_WS_URL
-        sync: false  # Set to wss://coastal-backend.onrender.com/ws/
+        # OPTIONAL: Set to your backend WebSocket URL, e.g., wss://coastal-backend.onrender.com/ws/
+        sync: false
       - key: VITE_SENTRY_DSN
         sync: false
       - key: VITE_SENTRY_ENABLED
