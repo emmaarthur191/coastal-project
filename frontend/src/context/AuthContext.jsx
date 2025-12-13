@@ -36,11 +36,15 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.checkAuth();
       if (data.authenticated) {
         setUser(data.user);
+        return true;
       } else {
         setUser(null);
+        return false;
       }
     } catch (error) {
+      console.error('Auth check error:', error);
       setUser(null);
+      return false;
     } finally {
       setLoading(false);
     }
