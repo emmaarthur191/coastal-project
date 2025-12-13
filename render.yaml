@@ -39,7 +39,7 @@ services:
       - key: SENDEXA_AUTH_TOKEN
         sync: false
       - key: SENDEXA_SENDER_ID
-        value: "CoastalBank"
+        value: "Coastal"
       - key: SENTRY_DSN
         sync: false
       - key: PYTHON_VERSION
