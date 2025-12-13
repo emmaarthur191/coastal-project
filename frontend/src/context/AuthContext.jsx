@@ -36,12 +36,10 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.checkAuth();
       if (data.authenticated) {
         setUser(data.user);
-        console.log('Auth check user data:', data.user); // DEBUG: show otp_verified
       } else {
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -66,13 +64,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, role) => {
     try {
       const data = await authService.login(email, password);
-      console.log('[DEBUG] Login response data:', data);
-      console.log('[DEBUG] Login response user:', data.user);
       setUser(data.user);
       // Return user data with success so caller can use it immediately
       return { success: true, user: data.user };
     } catch (error) {
-      console.error('[DEBUG] Login error:', error);
       return { success: false, error: error.message };
     }
   };
