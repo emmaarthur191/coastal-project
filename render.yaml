@@ -27,6 +27,11 @@ services:
         fromDatabase:
           name: coastal-db
           property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: coastal-redis
+          property: connectionString
       - key: ADMIN_EMAIL
         value: "admin@coastal.com"
       - key: ADMIN_PASSWORD
@@ -47,6 +52,15 @@ services:
         value: "3.11.4"
     healthCheckPath: /api/performance/system-health/
     autoDeploy: true
+
+  # =============================================================================
+  # Redis - Key-Value Store (Caching & Channels)
+  # =============================================================================
+  - type: redis
+    name: coastal-redis
+    region: frankfurt
+    plan: free
+    ipAllowList: [] # Allow all internal connections
 
   # =============================================================================
   # Frontend - Vite/React Static Site
