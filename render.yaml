@@ -18,7 +18,6 @@ services:
       python manage.py create_initial_users
     startCommand: daphne -b 0.0.0.0 -p $PORT config.asgi:application
     envVars:
-      # Required - Generate a secure key: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -26,12 +25,11 @@ services:
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
       - key: CORS_ALLOWED_ORIGINS
-        sync: false  # Set manually to your frontend URL
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: coastal-db
           property: connectionString
-      # Initial User Configuration
       - key: ADMIN_EMAIL
         value: "admin@coastal.com"
       - key: ADMIN_PASSWORD
@@ -40,14 +38,12 @@ services:
         value: "manager@coastal.com"
       - key: MANAGER_PASSWORD
         sync: false
-      # Sendexa SMS Configuration
       - key: SENDEXA_API_URL
         sync: false
       - key: SENDEXA_AUTH_TOKEN
         sync: false
       - key: SENDEXA_SENDER_ID
         value: "CoastalBank"
-      # Optional: Sentry for error tracking
       - key: SENTRY_DSN
         sync: false
       - key: APP_VERSION
@@ -55,11 +51,12 @@ services:
     healthCheckPath: /api/performance/system-health/
     autoDeploy: true
 
-# =============================================================================
-# Frontend - Vite/React Static Site (separate key for static sites)
-# =============================================================================
-staticSites:
-  - name: coastal-frontend
+  # =============================================================================
+  # Frontend - Vite/React Static Site
+  # =============================================================================
+  - type: web
+    name: coastal-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
@@ -79,9 +76,9 @@ staticSites:
         destination: /index.html
     envVars:
       - key: VITE_PROD_API_URL
-        sync: false  # Set to https://coastal-backend.onrender.com/api/
+        sync: false
       - key: VITE_PROD_WS_URL
-        sync: false  # Set to wss://coastal-backend.onrender.com/ws/
+        sync: false
       - key: VITE_SENTRY_DSN
         sync: false
       - key: VITE_SENTRY_ENABLED
