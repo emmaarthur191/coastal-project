@@ -49,6 +49,7 @@ const ProtectedStaffRoute = ({
 
     // Redirect to login if not authenticated
     if (!isAuthenticated || !user) {
+        console.log('ProtectedStaffRoute: Auth failed or no user - network issue? Redirecting to login.');
         return <Navigate to="/login" replace />;
     }
 
