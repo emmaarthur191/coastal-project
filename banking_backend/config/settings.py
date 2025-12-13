@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -244,35 +245,36 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Caching - use Redis in production, local memory for development
+# Caches & Channels - Redis Configuration for Render
+# Use 'coastal-redis' key-value store via REDIS_URL
 if env('REDIS_URL', default=None):
+    REDIS_URL = env('REDIS_URL')
+    parsed = urlparse(REDIS_URL)
+    
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': env('REDIS_URL'),
+            'LOCATION': REDIS_URL,
+        }
+    }
+    
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [(parsed.hostname, parsed.port)],
+            },
         }
     }
 else:
+    # Fallback for local development without Redis
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
             'LOCATION': 'unique-snowflake',
         }
     }
-
-# Session Engine - use database for local dev (no Redis required)
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-
-# Channels - use in-memory for local dev, Redis for production
-if env('REDIS_URL', default=None):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [env('REDIS_URL')],
-            },
-        },
-    }
-else:
+    
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
