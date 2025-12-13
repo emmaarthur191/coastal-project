@@ -12,15 +12,15 @@ if (AMPLITUDE_API_KEY && AMPLITUDE_API_KEY !== '<YOUR_API_KEY>') {
     defaultTracking: true, // Explicitly enable default event tracking
   });
 } else {
-  console.warn('Amplitude API key not configured. Analytics tracking disabled.');
+  console.log('[Config] Amplitude API key not configured. Analytics tracking disabled.');
   // Create a mock instance for development
   amplitudeInstance = {
-    logEvent: () => {},
-    setUserId: () => {},
-    setUserProperties: () => {},
-    identify: () => {},
-    track: () => {},
-    reset: () => {},
+    logEvent: () => { },
+    setUserId: () => { },
+    setUserProperties: () => { },
+    identify: () => { },
+    track: () => { },
+    reset: () => { },
   };
 }
 

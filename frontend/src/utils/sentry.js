@@ -38,9 +38,8 @@ const initializeSentry = () => {
         browserTracingIntegration({
           tracePropagationTargets: [
             "localhost",
-            /^https:\/\/.*\.yourdomain\.com/,
-            /^https:\/\/.*\.vercel\.app/,
-            /^https:\/\/.*\.netlify\.app/
+            /^\//,
+            /^https:\/\/[a-zA-Z0-9-]+\.onrender\.com/,
           ],
         }),
         replayIntegration({
@@ -73,8 +72,8 @@ const initializeSentry = () => {
           const errorMessage = error.message || '';
           // Filter out network errors that are expected (user offline, CORS, etc.)
           if (errorMessage.includes('NetworkError') ||
-              errorMessage.includes('Failed to fetch') ||
-              errorMessage.includes('Load failed')) {
+            errorMessage.includes('Failed to fetch') ||
+            errorMessage.includes('Load failed')) {
             return null;
           }
         }

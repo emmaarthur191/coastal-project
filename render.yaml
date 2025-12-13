@@ -81,7 +81,7 @@ services:
       - key: VITE_SENTRY_DSN
         sync: false
       - key: VITE_SENTRY_ENABLED
-        value: "true"
+        value: "false"
     autoDeploy: true
 
 # =============================================================================
