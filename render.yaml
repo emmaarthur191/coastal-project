@@ -51,7 +51,7 @@ services:
   # Frontend - Vite/React Static Site
   # =============================================================================
   - type: web
-    name: coastal-frontend
+    name: coastal-web
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
