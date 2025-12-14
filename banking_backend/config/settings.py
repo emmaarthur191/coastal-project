@@ -410,6 +410,8 @@ if env.list('CORS_ALLOWED_ORIGINS', default=[]):
 # Production Security Headers
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_REDIRECT_EXEMPT = [r'^$', r'^api/health/simple/$', r'^api/performance/system-health/$']
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = False
