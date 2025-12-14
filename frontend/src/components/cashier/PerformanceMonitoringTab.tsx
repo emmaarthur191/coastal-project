@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PlayfulCard, SkeletonLoader } from './CashierTheme';
-import { api } from '../../services/api.ts';
+import { api } from '../../services/api';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface PerformanceData {
   performance_summary: {
@@ -97,170 +97,136 @@ const PerformanceMonitoringTab: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy': return '#00B894';
-      case 'warning': return '#FDCB6E';
-      case 'critical': return '#FF7675';
-      default: return '#636E72';
+      case 'healthy': return 'text-emerald-500 bg-emerald-50';
+      case 'warning': return 'text-amber-500 bg-amber-50';
+      case 'critical': return 'text-red-500 bg-red-50';
+      default: return 'text-gray-500 bg-gray-50';
+    }
+  };
+
+  const getAlertLevelBadge = (level: string) => {
+    switch (level) {
+      case 'critical': return 'bg-red-100 text-red-700';
+      case 'high': return 'bg-orange-100 text-orange-700';
+      case 'medium': return 'bg-amber-100 text-amber-700';
+      default: return 'bg-blue-100 text-blue-700';
     }
   };
 
   if (loading) {
-    return (
-      <PlayfulCard>
-        <h2>📈 Performance Monitoring</h2>
-        <SkeletonLoader />
-      </PlayfulCard>
-    );
+    return <div className="p-12 text-center text-gray-400"><div className="animate-spin text-4xl mb-4">⏳</div>Loading Metrics...</div>;
   }
 
   return (
-    <PlayfulCard>
-      <h2>📈 Performance Monitoring</h2>
-      <p>Monitor system performance and metrics.</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span>📈</span> Performance Monitoring
+        </h2>
+        <p className="text-gray-500">Real-time system health and performance metrics.</p>
+      </div>
 
       {message.text && (
-        <div style={{
-          padding: '10px',
-          marginBottom: '20px',
-          borderRadius: '8px',
-          backgroundColor: message.type === 'error' ? '#FFEBEE' : '#E8F5E8',
-          color: message.type === 'error' ? '#C62828' : '#2E7D32',
-          border: `1px solid ${message.type === 'error' ? '#FFCDD2' : '#C8E6C9'}`
-        }}>
+        <div className={`p-4 rounded-xl border ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
           {message.text}
         </div>
       )}
 
       {performanceData && (
-        <div style={{ display: 'grid', gap: '20px' }}>
-          {/* Performance Summary */}
-          <div>
-            <h3>Performance Summary</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2D3436' }}>
-                  {performanceData.performance_summary.total_metrics}
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Total Metrics</div>
-              </div>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2D3436' }}>
-                  {performanceData.performance_summary.average_response_time.toFixed(2)}ms
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Avg Response Time</div>
-              </div>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2D3436' }}>
-                  {performanceData.performance_summary.throughput.toFixed(2)}
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Throughput</div>
-              </div>
-            </div>
+        <div className="space-y-6">
+          {/* Performance Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <GlassCard className="p-6 text-center">
+              <div className="text-3xl font-black text-gray-800 mb-1">{performanceData.performance_summary.total_metrics}</div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Metrics</div>
+            </GlassCard>
+            <GlassCard className="p-6 text-center">
+              <div className="text-3xl font-black text-blue-600 mb-1">{performanceData.performance_summary.average_response_time.toFixed(2)}ms</div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Avg Response Time</div>
+            </GlassCard>
+            <GlassCard className="p-6 text-center">
+              <div className="text-3xl font-black text-violet-600 mb-1">{performanceData.performance_summary.throughput.toFixed(2)}</div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Throughput (req/sec)</div>
+            </GlassCard>
           </div>
 
           {/* System Health */}
-          <div>
-            <h3>System Health</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '15px' }}>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: getStatusColor(performanceData.system_health.overall_status) }}>
-                  {performanceData.system_health.overall_status.toUpperCase()}
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Overall Status</div>
+          <GlassCard className="p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-6 border-b border-gray-100 pb-2">System Health</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={`p-4 rounded-xl text-center ${getStatusColor(performanceData.system_health.overall_status)}`}>
+                <div className="text-2xl font-bold mb-1 uppercase tracking-wider">{performanceData.system_health.overall_status}</div>
+                <div className="text-[10px] opacity-70 uppercase font-bold">Overall Status</div>
               </div>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00B894' }}>
-                  {performanceData.system_health.healthy_components}
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Healthy</div>
+              <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl text-center">
+                <div className="text-2xl font-bold mb-1">{performanceData.system_health.healthy_components}</div>
+                <div className="text-[10px] opacity-70 uppercase font-bold">Healthy Nodes</div>
               </div>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FDCB6E' }}>
-                  {performanceData.system_health.warning_components}
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Warning</div>
+              <div className="bg-amber-50 text-amber-700 p-4 rounded-xl text-center">
+                <div className="text-2xl font-bold mb-1">{performanceData.system_health.warning_components}</div>
+                <div className="text-[10px] opacity-70 uppercase font-bold">Warnings</div>
               </div>
-              <div style={{ padding: '15px', border: '1px solid #DFE6E9', borderRadius: '8px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FF7675' }}>
-                  {performanceData.system_health.critical_components}
-                </div>
-                <div style={{ fontSize: '14px', color: '#636E72' }}>Critical</div>
+              <div className="bg-red-50 text-red-700 p-4 rounded-xl text-center">
+                <div className="text-2xl font-bold mb-1">{performanceData.system_health.critical_components}</div>
+                <div className="text-[10px] opacity-70 uppercase font-bold">Critical Errors</div>
               </div>
             </div>
+          </GlassCard>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Active Alerts */}
+            <GlassCard className="p-6 h-full">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                <span>Active Alerts</span>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{performanceData.active_alerts.length}</span>
+              </h3>
+              {performanceData.active_alerts.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 italic">No active alerts. System running smoothly.</div>
+              ) : (
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {performanceData.active_alerts.map((alert) => (
+                    <div key={alert.id} className="p-3 border border-gray-100 rounded-lg bg-gray-50 flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-gray-800 text-sm">{alert.title}</div>
+                        <div className="text-xs text-gray-500 mt-1">{alert.description}</div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${getAlertLevelBadge(alert.alert_level)}`}>
+                        {alert.alert_level}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+
+            {/* Recent Recommendations */}
+            <GlassCard className="p-6 h-full">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                <span>Recommendations</span>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{performanceData.recent_recommendations.length}</span>
+              </h3>
+              {performanceData.recent_recommendations.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 italic">No recommendations at this time.</div>
+              ) : (
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {performanceData.recent_recommendations.map((rec) => (
+                    <div key={rec.id} className="p-3 border border-gray-100 rounded-lg bg-white shadow-sm flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-gray-800 text-sm">{rec.title}</div>
+                        <div className="text-xs text-gray-500 mt-1">{rec.description}</div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${rec.priority === 'high' ? 'bg-red-100 text-red-700' : rec.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {rec.priority}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
           </div>
-
-          {/* Active Alerts */}
-          {performanceData.active_alerts.length > 0 && (
-            <div>
-              <h3>Active Alerts ({performanceData.active_alerts.length})</h3>
-              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #DFE6E9', borderRadius: '8px' }}>
-                {performanceData.active_alerts.map((alert) => (
-                  <div key={alert.id} style={{
-                    padding: '10px 15px',
-                    borderBottom: '1px solid #F0F0F0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div>
-                      <span style={{ fontWeight: 'bold' }}>{alert.title}</span>
-                      <span style={{ marginLeft: '10px', color: '#636E72', fontSize: '14px' }}>
-                        {alert.description}
-                      </span>
-                    </div>
-                    <span style={{
-                      padding: '2px 6px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      backgroundColor: getStatusColor(alert.alert_level)
-                    }}>
-                      {alert.alert_level}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent Recommendations */}
-          {performanceData.recent_recommendations.length > 0 && (
-            <div>
-              <h3>Recent Recommendations ({performanceData.recent_recommendations.length})</h3>
-              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #DFE6E9', borderRadius: '8px' }}>
-                {performanceData.recent_recommendations.map((rec) => (
-                  <div key={rec.id} style={{
-                    padding: '10px 15px',
-                    borderBottom: '1px solid #F0F0F0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div>
-                      <span style={{ fontWeight: 'bold' }}>{rec.title}</span>
-                      <span style={{ marginLeft: '10px', color: '#636E72', fontSize: '14px' }}>
-                        {rec.description}
-                      </span>
-                    </div>
-                    <span style={{
-                      padding: '2px 6px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      backgroundColor: rec.priority === 'high' ? '#FF7675' : rec.priority === 'medium' ? '#FDCB6E' : '#00B894'
-                    }}>
-                      {rec.priority}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
-    </PlayfulCard>
+    </div>
   );
 };
 

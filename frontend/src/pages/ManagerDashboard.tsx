@@ -4,7 +4,7 @@ import ProductsServicesManagement from '../components/manager/ProductsServicesMa
 import { formatCurrencyGHS } from '../utils/formatters';
 import { authService } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
-import { THEME } from '../components/manager/ManagerTheme';
+
 import DashboardLayout from '../components/layout/DashboardLayout.tsx'; // Unified Layout
 import OverviewSection from '../components/manager/OverviewSection';
 import MessagingSection from '../components/manager/MessagingSection';
@@ -107,7 +107,7 @@ function ManagerDashboard() {
   const fetchTransactions = async () => { const r = await authService.getAllTransactions(); if (r.success) setTransactions(Array.isArray(r.data) ? r.data : []); };
   const fetchLoans = async () => { const r = await authService.getPendingLoans(); if (r.success) setLoans(r.data); };
   const fetchCashFlow = async () => { const r = await authService.getCashFlow(); if (r.success) setCashFlow(r.data); };
-  const fetchInterest = async () => { const r = await authService.calculateInterest(); if (r.success) setInterestData(r.data); };
+  const fetchInterest = async () => { const r = await authService.calculateInterest({}); if (r.success) setInterestData(r.data); };
   const fetchCommission = async () => { const r = await authService.calculateCommission({}); if (r.success) setCommissionData(r.data); };
   const fetchServiceCharges = async () => { const r = await authService.getServiceCharges(); if (r.success) setServiceCharges(r.data); };
   const fetchStaffMembers = async () => { const r = await authService.getAllStaff(); if (r.success) setStaffMembers(r.data); };

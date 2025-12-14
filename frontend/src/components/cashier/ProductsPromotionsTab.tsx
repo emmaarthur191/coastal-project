@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { PlayfulCard, SkeletonLoader, PlayfulButton, PlayfulInput, ErrorBoundary } from './CashierTheme';
-import { api } from '../../services/api.ts';
+import { api } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface Product {
   id: string;
@@ -18,7 +20,7 @@ interface Product {
 
 interface Promotion {
   id: string;
-  name: string; // Changed from title to match backend
+  name: string;
   description: string;
   discount_percentage?: number;
   bonus_amount?: number;
@@ -46,7 +48,6 @@ const ProductsPromotionsTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('products/products/');
-      // Handle both paginated response {results: []} and direct array response
       const data = response.data?.results || response.data || [];
       setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -61,9 +62,7 @@ const ProductsPromotionsTab: React.FC = () => {
   const fetchPromotions = async () => {
     try {
       const response = await api.get('products/promotions/');
-      // Handle both paginated response {results: []} and direct array response
       const data = response.data?.results || response.data || [];
-      // Filter for active ones manually since we are using the general endpoint
       const activePromos = (Array.isArray(data) ? data : []).filter((p: any) => p.is_active);
       setPromotions(activePromos);
     } catch (error) {
@@ -80,12 +79,11 @@ const ProductsPromotionsTab: React.FC = () => {
 
     try {
       setEnrollmentLoading(true);
-      // Determine endpoint based on product type or generic enrollment
-      const response = await api.post('banking/account-openings/', {
-        user_id: selectedCustomer, // Assuming simplified flow where ID is passed
+      await api.post('banking/account-openings/', {
+        user_id: selectedCustomer,
         product_id: selectedProduct,
         promotion_id: selectedPromotion || null,
-        initial_deposit: 0 // Default for now
+        initial_deposit: 0
       });
 
       setMessage({ type: 'success', text: 'Product enrollment/application submitted successfully!' });
@@ -101,61 +99,45 @@ const ProductsPromotionsTab: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <PlayfulCard>
-        <h2>🏦 Banking Products & Services</h2>
-        <SkeletonLoader height="40px" />
-        <SkeletonLoader height="200px" style={{ marginTop: '20px' }} />
-      </PlayfulCard>
-    );
+    return <div className="p-12 text-center text-gray-400"><div className="animate-spin text-4xl mb-4">⏳</div>Loading Products...</div>;
   }
 
   return (
-    <ErrorBoundary>
-      <PlayfulCard>
-        <h2>🏦 Banking Products & Services</h2>
-        <p>Browse financial products and enroll customers.</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span>🏦</span> Banking Products & Services
+        </h2>
+        <p className="text-gray-500">Browse financial products and enroll customers.</p>
+      </div>
 
-        {message.text && (
-          <div style={{
-            padding: '10px',
-            marginBottom: '20px',
-            borderRadius: '8px',
-            backgroundColor: message.type === 'error' ? '#FFEBEE' : '#E8F5E8',
-            color: message.type === 'error' ? '#C62828' : '#2E7D32',
-            border: `1px solid ${message.type === 'error' ? '#FFCDD2' : '#C8E6C9'}`
-          }}>
-            {message.text}
+      {message.text && (
+        <div className={`p-4 rounded-xl border ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+          {message.text}
+        </div>
+      )}
+
+      {/* Product Enrollment Section */}
+      <GlassCard className="p-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-6 border-b border-gray-100 pb-2">New Enrollment</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div>
+            <Input
+              label="Customer ID / Account Number"
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+              placeholder="Enter customer ID"
+            />
           </div>
-        )}
-
-        {/* Product Enrollment Section */}
-        <div style={{ marginBottom: '30px', padding: '20px', border: '2px dashed #DFE6E9', borderRadius: '12px' }}>
-          <h3>New Details / Enrollment</h3>
-
-          <PlayfulInput
-            label="Customer ID / Account Number"
-            value={selectedCustomer}
-            onChange={(e) => setSelectedCustomer(e.target.value)}
-            placeholder="Enter customer ID"
-          />
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#636E72', marginLeft: '4px' }}>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
               Select Product
             </label>
             <select
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                borderRadius: '12px',
-                border: `3px solid #DFE6E9`,
-                fontSize: '16px',
-                outline: 'none',
-                background: '#F9F9F9'
-              }}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
             >
               <option value="">Choose a product...</option>
               {products.filter(p => p.is_active).map((product) => (
@@ -165,109 +147,93 @@ const ProductsPromotionsTab: React.FC = () => {
               ))}
             </select>
           </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#636E72', marginLeft: '4px' }}>
-              Apply Promotion (Optional)
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+              Promotion (Optional)
             </label>
             <select
               value={selectedPromotion}
               onChange={(e) => setSelectedPromotion(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                borderRadius: '12px',
-                border: `3px solid #DFE6E9`,
-                fontSize: '16px',
-                outline: 'none',
-                background: '#F9F9F9'
-              }}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
             >
               <option value="">No promotion</option>
               {promotions.map((promo) => (
                 <option key={promo.id} value={promo.id}>
-                  {promo.name} - {promo.discount_percentage ? `${promo.discount_percentage}% Rate Disc.` : `GHS ${promo.bonus_amount} Bonus`}
+                  {promo.name} - {promo.discount_percentage ? `${promo.discount_percentage}% Off` : `GHS ${promo.bonus_amount} Bonus`}
                 </option>
               ))}
             </select>
           </div>
+        </div>
 
-          <PlayfulButton
+        <div className="mt-6 flex justify-end">
+          <Button
             onClick={handleProductEnrollment}
             disabled={enrollmentLoading || !selectedCustomer || !selectedProduct}
             variant="success"
+            className="w-full md:w-auto px-8"
           >
             {enrollmentLoading ? 'Processing...' : 'Start Enrollment 📝'}
-          </PlayfulButton>
+          </Button>
         </div>
+      </GlassCard>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Products List */}
-        <div style={{ marginBottom: '30px' }}>
-          <h3>Available Financial Products ({products.filter(p => p.is_active).length})</h3>
-          <div style={{ display: 'grid', gap: '15px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+        <div className="lg:col-span-2 space-y-6">
+          <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+            Available Financial Products
+            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">{products.filter(p => p.is_active).length}</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {products.filter(p => p.is_active).map((product) => (
-              <div key={product.id} style={{
-                border: '1px solid #DFE6E9',
-                borderRadius: '8px',
-                padding: '15px',
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
-                  <h4 style={{ margin: '0', color: '#2D3436' }}>{product.name}</h4>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    color: 'white',
-                    backgroundColor: '#0984e3'
-                  }}>
+              <GlassCard key={product.id} className="p-5 hover:shadow-lg transition-shadow">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-bold text-gray-800 text-lg">{product.name}</h4>
+                  <span className="text-[10px] uppercase font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100">
                     {product.product_type_display}
                   </span>
                 </div>
 
-                <p style={{ margin: '0 0 10px 0', color: '#636E72', fontSize: '14px' }}>{product.description}</p>
+                <p className="text-gray-500 text-sm mb-4 line-clamp-2 min-h-[40px]">{product.description}</p>
 
-                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #eee' }}>
-                  {product.interest_rate && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ color: '#636E72', fontSize: '13px' }}>Interest Rate:</span>
-                      <span style={{ fontWeight: 'bold', color: '#27ae60' }}>{product.interest_rate}%</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#636E72', fontSize: '13px' }}>Min Balance:</span>
-                    <span style={{ fontWeight: 'bold' }}>{formatCurrencyGHS(Number(product.minimum_balance))}</span>
+                <div className="pt-4 border-t border-gray-50 flex justify-between items-center bg-gray-50 -mx-5 -mb-5 p-4 rounded-b-2xl mt-auto">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-400 font-bold uppercase">Interest</div>
+                    <div className="font-bold text-emerald-600 text-lg">{product.interest_rate || '0'}%</div>
+                  </div>
+                  <div className="w-px h-8 bg-gray-200"></div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-400 font-bold uppercase">Min Balance</div>
+                    <div className="font-bold text-gray-700">{formatCurrencyGHS(Number(product.minimum_balance))}</div>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
         </div>
 
         {/* Active Promotions */}
-        <div>
-          <h3>Active Promotions ({promotions.length})</h3>
+        <div className="space-y-6">
+          <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+            Active Promotions
+            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">{promotions.length}</span>
+          </h3>
           {promotions.length === 0 ? (
-            <p style={{ color: '#636E72', fontStyle: 'italic' }}>No active promotions</p>
+            <div className="text-center py-10 text-gray-400 italic bg-gray-50 rounded-xl border border-dashed border-gray-200">No active promotions</div>
           ) : (
-            <div style={{ display: 'grid', gap: '15px' }}>
+            <div className="space-y-4">
               {promotions.map((promo) => (
-                <div key={promo.id} style={{
-                  border: '1px solid #DFE6E9',
-                  borderRadius: '8px',
-                  padding: '15px',
-                  backgroundColor: '#FFF8E1'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#F57C00' }}>{promo.name}</h4>
-                  <p style={{ margin: '0 0 10px 0', color: '#636E72' }}>{promo.description}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold', color: '#F57C00' }}>
-                      {promo.discount_percentage ? `${promo.discount_percentage}% Rate Disc.` : `GHS ${promo.bonus_amount} Bonus`}
+                <div key={promo.id} className="bg-orange-50 border border-orange-100 rounded-xl p-5 relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 bg-orange-100 w-16 h-16 rounded-full opacity-50"></div>
+                  <h4 className="font-bold text-orange-800 mb-1 relative z-10">{promo.name}</h4>
+                  <p className="text-orange-900/70 text-sm mb-3 relative z-10">{promo.description}</p>
+                  <div className="flex justify-between items-center relative z-10">
+                    <span className="font-bold text-white bg-orange-400 px-2 py-1 rounded text-xs shadow-sm">
+                      {promo.discount_percentage ? `${promo.discount_percentage}% OFF` : `GHS ${promo.bonus_amount} BONUS`}
                     </span>
-                    <span style={{ color: '#636E72', fontSize: '14px' }}>
-                      Valid Until {new Date(promo.end_date).toLocaleDateString()}
+                    <span className="text-xs font-medium text-orange-700/60">
+                      Ends {new Date(promo.end_date).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -275,8 +241,8 @@ const ProductsPromotionsTab: React.FC = () => {
             </div>
           )}
         </div>
-      </PlayfulCard>
-    </ErrorBoundary>
+      </div>
+    </div>
   );
 };
 

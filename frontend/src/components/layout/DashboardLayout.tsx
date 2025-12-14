@@ -44,25 +44,26 @@ export default function DashboardLayout({
     const roleDisplay = user?.role ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Member';
 
     return (
-        // Added background gradient to make glass effects visible
-        <div className="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50/50 flex">
+        // Coastal Light Background
+        <div className="min-h-screen bg-slate-50 flex">
 
-            {/* Sidebar - Desktop - Glass Effect Applied */}
-            <aside className="hidden lg:flex flex-col w-64 glass-sidebar fixed h-full z-10 transition-all duration-300">
-                <div className="p-6 border-b border-white/10 flex items-center justify-center">
-                    <div className="h-10 w-10 flex items-center justify-center">
-                        <img src={logo} alt="Logo" className="h-full w-full object-contain" />
+            {/* Sidebar - Desktop - Coastal Dark Theme */}
+            <aside className="hidden lg:flex flex-col w-64 bg-coastal-dark fixed h-full z-10 transition-all duration-300 border-r border-slate-700/50">
+                <div className="p-6 border-b border-slate-700/50 flex items-center justify-center">
+                    <div className="h-10 w-10 flex items-center justify-center bg-coastal-primary rounded-xl shadow-lg shadow-indigo-500/20">
+                        <img src={logo} alt="Logo" className="h-6 w-6 object-contain filter brightness-0 invert" />
                     </div>
-                    <span className="ml-3 text-xl font-bold tracking-tight text-white drop-shadow-md">Coastal</span>
+                    <span className="ml-3 text-xl font-bold tracking-tight text-white drop-shadow-sm font-display">Coastal</span>
                 </div>
 
-                <div className="flex items-center p-4 bg-white/10 mx-4 mt-6 rounded-xl border border-white/20 backdrop-blur-md">
-                    <div className="h-10 w-10 rounded-full bg-primary-500/80 flex items-center justify-center text-white font-bold border-2 border-primary-200/50">
+                <div className="flex items-center p-4 bg-slate-800/50 mx-4 mt-6 rounded-xl border border-slate-700/50 backdrop-blur-sm">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-coastal-primary to-purple-500 flex items-center justify-center text-white font-bold border-2 border-slate-600 shadow-sm relative">
                         {displayName.charAt(0).toUpperCase()}
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-800 rounded-full"></div>
                     </div>
                     <div className="ml-3 overflow-hidden">
                         <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-                        <p className="text-xs text-primary-200 truncate">{roleDisplay}</p>
+                        <p className="text-xs text-slate-400 truncate font-medium">{roleDisplay}</p>
                     </div>
                 </div>
 
@@ -74,22 +75,23 @@ export default function DashboardLayout({
                                 key={item.id}
                                 onClick={() => item.available !== false && onNavigate(item.id)}
                                 disabled={item.available === false}
-                                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${isActive
-                                    ? 'bg-white/20 text-white shadow-inner border border-white/20 backdrop-blur-sm'
-                                    : 'text-primary-100 hover:bg-white/10 hover:text-white'
+                                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group relative ${isActive
+                                    ? 'bg-gradient-to-r from-coastal-primary to-indigo-600 text-white shadow-lg shadow-indigo-900/20'
+                                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
                                     } ${item.available === false ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <span className="text-lg mr-3 drop-shadow-sm">{item.icon}</span>
+                                <span className={`text-lg mr-3 transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>{item.icon}</span>
                                 {item.name}
+                                {isActive && <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full shadow-sm animate-pulse-gentle" />}
                             </button>
                         );
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-white/10">
+                <div className="p-4 border-t border-slate-700/50">
                     <button
                         onClick={onLogout}
-                        className="w-full flex items-center justify-center px-4 py-2 bg-error-500/20 border border-error-500/50 text-error-100 rounded-lg hover:bg-error-500/40 transition-colors text-sm font-medium backdrop-blur-sm"
+                        className="w-full flex items-center justify-center px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 transition-all text-sm font-medium"
                     >
                         Log Out
                     </button>

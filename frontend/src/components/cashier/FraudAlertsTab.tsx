@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { formatCurrencyGHS } from '../../utils/formatters';
+import { Input } from '../ui/Input';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface FraudAlert {
   id: number;
@@ -93,23 +93,24 @@ const FraudAlertsTab: React.FC = () => {
     }
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityBadge = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-600';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      case 'critical': return 'bg-red-600 text-white';
+      case 'high': return 'bg-orange-500 text-white';
+      case 'medium': return 'bg-amber-400 text-amber-900';
+      case 'low': return 'bg-blue-400 text-white';
+      default: return 'bg-gray-400 text-white';
     }
   };
 
-  const getSeverityBgColor = (severity: string) => {
+  const getAlertCardStyle = (severity: string, isResolved: boolean) => {
+    if (isResolved) return 'border-gray-100 bg-gray-50 opacity-70';
+
     switch (severity) {
-      case 'critical': return 'bg-red-100 border-red-300 text-red-800';
-      case 'high': return 'bg-orange-100 border-orange-300 text-orange-800';
-      case 'medium': return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-      case 'low': return 'bg-blue-100 border-blue-300 text-blue-800';
-      default: return 'bg-gray-100 border-gray-300 text-gray-800';
+      case 'critical': return 'border-red-200 bg-red-50 ring-1 ring-red-100';
+      case 'high': return 'border-orange-200 bg-orange-50 ring-1 ring-orange-100';
+      case 'medium': return 'border-amber-200 bg-amber-50';
+      default: return 'border-blue-100 bg-blue-50';
     }
   };
 
@@ -122,12 +123,7 @@ const FraudAlertsTab: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <Card className="text-center py-12">
-        <div className="animate-spin text-4xl mb-4">⏳</div>
-        <p className="text-secondary-600">Loading fraud alerts...</p>
-      </Card>
-    );
+    return <div className="p-12 text-center text-gray-400"><div className="animate-spin text-4xl mb-4">⏳</div>Loading Security Alerts...</div>;
   }
 
   return (
@@ -135,182 +131,185 @@ const FraudAlertsTab: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-secondary-900">🚨 Fraud Alerts</h2>
-          <p className="text-secondary-600">Monitor and respond to suspicious activities</p>
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <span>🚨</span> Fraud Alerts
+          </h2>
+          <p className="text-gray-500">Monitor and respond to suspicious activities</p>
         </div>
         <Button variant="primary" onClick={() => { fetchAlerts(); fetchStats(); }}>
-          ↻ Refresh
+          Refresh ↻
         </Button>
       </div>
 
-      {/* Message */}
       {message.text && (
-        <div className={`p-4 rounded-lg ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+        <div className={`p-4 rounded-xl border ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
           {message.text}
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-secondary-700">{stats?.total || 0}</div>
-          <div className="text-secondary-500 text-sm">Total Alerts</div>
-        </Card>
-        <Card className="text-center p-4 border-l-4 border-l-red-500">
-          <div className="text-3xl font-bold text-red-600">{stats?.unresolved || 0}</div>
-          <div className="text-secondary-500 text-sm">Unresolved</div>
-        </Card>
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-red-600">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-gray-700">{stats?.total || 0}</div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Alerts</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4 border-l-4 border-l-red-500">
+          <div className="text-3xl font-black text-red-600">{stats?.unresolved || 0}</div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Unresolved</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-red-600">
             {stats?.by_severity?.find(s => s.severity === 'critical')?.count || 0}
           </div>
-          <div className="text-secondary-500 text-sm">Critical</div>
-        </Card>
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-orange-600">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Critical</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-orange-500">
             {stats?.by_severity?.find(s => s.severity === 'high')?.count || 0}
           </div>
-          <div className="text-secondary-500 text-sm">High</div>
-        </Card>
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-green-600">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">High</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-emerald-500">
             {(stats?.total || 0) - (stats?.unresolved || 0)}
           </div>
-          <div className="text-secondary-500 text-sm">Resolved</div>
-        </Card>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Resolved</div>
+        </GlassCard>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div>
-            <label className="block text-sm font-medium text-secondary-600 mb-1">Severity</label>
-            <select
-              value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value)}
-              className="p-2 border border-secondary-300 rounded-lg"
-            >
-              <option value="">All Severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-secondary-600 mb-1">Status</label>
-            <select
-              value={filterResolved}
-              onChange={(e) => setFilterResolved(e.target.value)}
-              className="p-2 border border-secondary-300 rounded-lg"
-            >
-              <option value="">All</option>
-              <option value="false">Unresolved</option>
-              <option value="true">Resolved</option>
-            </select>
-          </div>
-          <div className="flex-1" />
-          <Button
-            variant="secondary"
-            onClick={() => { setFilterSeverity(''); setFilterResolved('false'); }}
+      <GlassCard className="p-4 flex flex-col md:flex-row gap-4 items-end">
+        <div className="w-full md:w-48">
+          <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Severity</label>
+          <select
+            value={filterSeverity}
+            onChange={(e) => setFilterSeverity(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 text-sm"
           >
-            Clear Filters
-          </Button>
+            <option value="">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
         </div>
-      </Card>
+
+        <div className="w-full md:w-48">
+          <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Status</label>
+          <select
+            value={filterResolved}
+            onChange={(e) => setFilterResolved(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 text-sm"
+          >
+            <option value="">All</option>
+            <option value="false">Unresolved</option>
+            <option value="true">Resolved</option>
+          </select>
+        </div>
+
+        <Button
+          variant="ghost"
+          onClick={() => { setFilterSeverity(''); setFilterResolved('false'); }}
+          className="md:ml-auto text-gray-500"
+        >
+          Clear Filters
+        </Button>
+      </GlassCard>
 
       {/* Alerts List */}
-      <Card>
-        <h3 className="text-lg font-bold text-secondary-900 mb-4">
-          Fraud Alerts ({filteredAlerts.length})
-        </h3>
-
+      <div className="space-y-4">
         {filteredAlerts.length === 0 ? (
-          <div className="text-center py-8 text-secondary-500">
-            <div className="text-4xl mb-2">✅</div>
-            <p>No fraud alerts found</p>
-            <p className="text-sm">All clear!</p>
-          </div>
+          <GlassCard className="text-center py-16 text-gray-400 italic">
+            <div className="text-5xl mb-4 text-emerald-100">✅</div>
+            <p>No fraud alerts found matching your criteria</p>
+          </GlassCard>
         ) : (
-          <div className="space-y-4">
-            {filteredAlerts.map(alert => (
-              <div
-                key={alert.id}
-                className={`p-4 rounded-lg border-2 ${getSeverityBgColor(alert.severity)} ${alert.is_resolved ? 'opacity-60' : ''}`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-bold text-white ${getSeverityColor(alert.severity)}`}>
-                        {alert.severity.toUpperCase()}
+          filteredAlerts.map(alert => (
+            <GlassCard
+              key={alert.id}
+              className={`p-5 pl-6 border-l-4 transition-all ${getAlertCardStyle(alert.severity, alert.is_resolved)} ${alert.severity === 'critical' ? 'border-l-red-500' : alert.severity === 'high' ? 'border-l-orange-500' : alert.severity === 'medium' ? 'border-l-amber-500' : 'border-l-blue-500'}`}
+            >
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getSeverityBadge(alert.severity)}`}>
+                      {alert.severity}
+                    </span>
+                    <span className="font-bold text-gray-800 uppercase text-sm tracking-wide">
+                      {alert.alert_type?.replace(/_/g, ' ') || 'ALERT'}
+                    </span>
+                    {alert.is_resolved && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        RESOLVED
                       </span>
-                      <span className="font-bold text-secondary-800">
-                        {alert.alert_type?.replace(/_/g, ' ')?.toUpperCase() || 'ALERT'}
-                      </span>
-                      {alert.is_resolved && (
-                        <span className="px-2 py-1 rounded text-xs font-bold bg-green-500 text-white">
-                          RESOLVED
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-secondary-700 mb-2">{alert.description}</p>
-                    <div className="text-sm text-secondary-500 flex flex-wrap gap-4">
-                      <span>🆔 Alert #{alert.id}</span>
-                      {alert.user_email && <span>👤 {alert.user_email}</span>}
-                      {alert.account_number && <span>💳 ****{alert.account_number}</span>}
-                      <span>📅 {new Date(alert.created_at).toLocaleString()}</span>
-                    </div>
-                    {alert.is_resolved && alert.resolution_notes && (
-                      <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
-                        <strong>Resolution:</strong> {alert.resolution_notes}
-                      </div>
                     )}
+                    <span className="text-xs text-gray-400 font-mono">#{alert.id}</span>
                   </div>
-                  <div className="flex gap-2">
-                    {!alert.is_resolved && (
-                      <>
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedAlert(alert);
-                            setShowResolveModal(true);
-                          }}
-                        >
-                          ✓ Resolve
-                        </Button>
-                        <Button variant="primary" size="sm">
-                          🔍 Investigate
-                        </Button>
-                      </>
-                    )}
+
+                  <p className="text-gray-800 font-medium mb-3">{alert.description}</p>
+
+                  <div className="flex flex-wrap gap-4 text-xs text-gray-500 items-center">
+                    {alert.user_email && <span className="flex items-center gap-1">👤 <span className="text-gray-700">{alert.user_email}</span></span>}
+                    {alert.account_number && <span className="flex items-center gap-1">💳 <span className="font-mono text-gray-700">****{alert.account_number}</span></span>}
+                    <span className="flex items-center gap-1">📅 {new Date(alert.created_at).toLocaleString()}</span>
                   </div>
+
+                  {alert.is_resolved && alert.resolution_notes && (
+                    <div className="mt-3 p-3 bg-white/60 rounded-lg text-sm text-gray-700 border border-gray-200">
+                      <strong className="text-emerald-700 text-xs uppercase block mb-1">Resolution</strong>
+                      {alert.resolution_notes}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  {!alert.is_resolved && (
+                    <>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedAlert(alert);
+                          setShowResolveModal(true);
+                        }}
+                        className="shadow-md shadow-emerald-50"
+                      >
+                        ✓ Resolve
+                      </Button>
+                      <Button variant="secondary" size="sm">
+                        Details
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+            </GlassCard>
+          ))
         )}
-      </Card>
+      </div>
 
       {/* Resolve Modal */}
       {showResolveModal && selectedAlert && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-secondary-900 mb-4">Resolve Fraud Alert</h3>
-            <p className="text-secondary-600 mb-4">
-              Alert #{selectedAlert.id} - {selectedAlert.alert_type?.replace(/_/g, ' ')}
-            </p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="border-b border-gray-100 pb-4 mb-4">
+              <h3 className="text-lg font-bold text-gray-800">Resolve Fraud Alert</h3>
+              <p className="text-gray-500 text-sm mt-1">
+                Alert #{selectedAlert.id} - {selectedAlert.alert_type?.replace(/_/g, ' ')}
+              </p>
+            </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-secondary-700 mb-1">
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">
                 Resolution Notes
               </label>
               <textarea
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
-                className="w-full p-3 border border-secondary-300 rounded-lg"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
                 rows={4}
                 placeholder="Describe the investigation outcome and actions taken..."
+                autoFocus
               />
             </div>
 

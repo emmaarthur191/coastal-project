@@ -1,11 +1,12 @@
 import React from 'react';
-import { PlayfulCard, PlayfulButton, THEME } from './MobileTheme';
+import { Button } from '../ui/Button';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface QuickActionButton {
   action: string;
   label: string;
   icon: string;
-  color: string;
+  variant: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost';
 }
 
 interface FieldToolboxProps {
@@ -15,21 +16,24 @@ interface FieldToolboxProps {
 
 const FieldToolbox: React.FC<FieldToolboxProps> = ({ quickActionButtons, onQuickAction }) => {
   return (
-    <PlayfulCard color="#FFF3E0">
-      <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', fontWeight: '900' }}>🧰 Field Toolbox</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    <GlassCard className="p-6 bg-amber-50/50 border-amber-100">
+      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        🧰 Field Toolbox
+      </h3>
+      <div className="flex flex-col gap-3">
         {quickActionButtons.map((btn, i) => (
-          <PlayfulButton
+          <Button
             key={i}
-            color={btn.color}
+            variant={btn.variant}
             onClick={() => onQuickAction(btn.action)}
-            style={{ justifyContent: 'flex-start' }}
+            className="w-full justify-start text-lg h-12"
           >
-            <span style={{ fontSize: '18px' }}>{btn.icon}</span> {btn.label}
-          </PlayfulButton>
+            <span className="mr-3 text-xl leading-none">{btn.icon}</span>
+            {btn.label}
+          </Button>
         ))}
       </div>
-    </PlayfulCard>
+    </GlassCard>
   );
 };
 
