@@ -87,7 +87,7 @@ const getApiBaseUrl = () => {
 // HTTPS enforcement removed - let the deployment environment handle this
 // Local development uses HTTP, production should use a reverse proxy with HTTPS
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 console.log('[Config] Final API_BASE_URL:', API_BASE_URL);
 
 // Extend Window interface for Sentry
