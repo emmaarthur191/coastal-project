@@ -4,6 +4,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     error?: string;
     className?: string;
+    as?: any; // Allow 'select' or other components
+    children?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(({
@@ -11,30 +13,35 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     error,
     className = '',
     type = 'text',
+    as: Component = 'input',
+    children,
     ...props
 }, ref) => {
     return (
-        <div className={`mb-4 ${className}`}>
+        <div className={`mb-4 w-full ${className}`}>
             {label && (
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                     {label}
                 </label>
             )}
-            <input
+            <Component
                 ref={ref}
                 type={type}
                 className={`
                     w-full px-4 py-3 rounded-xl border transition-all duration-200 outline-none
                     ${error
-                        ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-300 focus:ring-4 focus:ring-red-100'
-                        : 'border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10'
+                        ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30'
+                        : 'border-slate-200 dark:border-slate-600 bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
                     }
+                    backdrop-blur-sm
                     ${props.disabled ? 'opacity-60 cursor-not-allowed' : ''}
                 `}
                 {...props}
-            />
+            >
+                {children}
+            </Component>
             {error && (
-                <p className="mt-1 text-xs text-red-600 font-medium ml-1 flex items-center">
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-bold ml-1 flex items-center">
                     <span className="mr-1">⚠️</span> {error}
                 </p>
             )}

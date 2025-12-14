@@ -1,6 +1,6 @@
-
 import React from 'react';
-import { THEME, PlayfulButton } from './MobileTheme';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 
 // --- GENERIC MOBILE MODAL ---
 interface MobileModalProps {
@@ -15,45 +15,27 @@ const MobileModal: React.FC<MobileModalProps> = ({ isOpen, onClose, title, child
     if (!isOpen) return null;
 
     return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, padding: '20px'
-        }}>
-            <div style={{
-                background: 'white',
-                borderRadius: THEME.radius.medium,
-                width: '100%', maxWidth: '400px',
-                boxShadow: THEME.shadows.card,
-                overflow: 'hidden',
-                border: '3px solid black'
-            }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-100 animate-scale-in">
                 {/* Header */}
-                <div style={{
-                    padding: '15px 20px',
-                    background: THEME.colors.bg,
-                    borderBottom: '2px solid #eee',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: THEME.colors.text }}>{title}</h3>
-                    <button onClick={onClose} style={{
-                        background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: THEME.colors.muted
-                    }}>×</button>
+                <div className="px-5 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="m-0 text-lg font-black text-gray-800">{title}</h3>
+                    <button
+                        onClick={onClose}
+                        className="bg-transparent border-none text-2xl cursor-pointer text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        ×
+                    </button>
                 </div>
 
                 {/* Body */}
-                <div style={{ padding: '20px', maxHeight: '70vh', overflowY: 'auto' }}>
+                <div className="p-5 max-h-[70vh] overflow-y-auto">
                     {children}
                 </div>
 
                 {/* Footer */}
                 {footer && (
-                    <div style={{
-                        padding: '15px 20px',
-                        borderTop: '2px solid #eee',
-                        display: 'flex', justifyContent: 'flex-end', gap: '10px'
-                    }}>
+                    <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
                         {footer}
                     </div>
                 )}
@@ -64,31 +46,29 @@ const MobileModal: React.FC<MobileModalProps> = ({ isOpen, onClose, title, child
 
 // --- STYLED INPUTS ---
 const InputGroup = ({ label, type = 'text', value, onChange, placeholder, options }: any) => (
-    <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: THEME.colors.muted, marginBottom: '5px' }}>{label}</label>
+    <div className="mb-4">
         {options ? (
-            <select
-                value={value}
-                onChange={onChange}
-                style={{
-                    width: '100%', padding: '10px', borderRadius: '8px', border: `2px solid ${THEME.colors.border}`,
-                    fontWeight: 'bold', fontSize: '14px', outline: 'none'
-                }}
-            >
-                {options.map((opt: any) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-            </select>
+            <div className="relative">
+                <Input
+                    label={label}
+                    as="select"
+                    value={value}
+                    onChange={onChange}
+                    className="w-full font-bold"
+                >
+                    {options.map((opt: any) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </Input>
+            </div>
         ) : (
-            <input
+            <Input
+                label={label}
                 type={type}
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                style={{
-                    width: '100%', padding: '10px', borderRadius: '8px', border: `2px solid ${THEME.colors.border}`,
-                    fontWeight: 'bold', fontSize: '14px', outline: 'none'
-                }}
+                className="w-full font-bold"
             />
         )}
     </div>
@@ -103,8 +83,8 @@ export const DepositModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
         title="📥 New Deposit"
         footer={
             <>
-                <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Cancel</PlayfulButton>
-                <PlayfulButton onClick={onSubmit} color={THEME.colors.success}>Process Deposit</PlayfulButton>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
+                <Button onClick={onSubmit} variant="success">Process Deposit 💰</Button>
             </>
         }
     >
@@ -141,8 +121,8 @@ export const WithdrawalModal = ({ isOpen, onClose, formData, setFormData, onSubm
         title="📤 New Withdrawal"
         footer={
             <>
-                <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Cancel</PlayfulButton>
-                <PlayfulButton onClick={onSubmit} color={THEME.colors.danger}>Process Withdrawal</PlayfulButton>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
+                <Button onClick={onSubmit} variant="danger">Process Withdrawal 💸</Button>
             </>
         }
     >
@@ -169,8 +149,8 @@ export const PaymentModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
         title="💵 Collect Payment"
         footer={
             <>
-                <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Cancel</PlayfulButton>
-                <PlayfulButton onClick={onSubmit} color={THEME.colors.primary}>Collect</PlayfulButton>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
+                <Button onClick={onSubmit} variant="primary">Collect Payment 💳</Button>
             </>
         }
     >
@@ -187,7 +167,7 @@ export const PaymentModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
             onChange={(e: any) => setFormData({ ...formData, amount: e.target.value })}
             placeholder="0.00"
         />
-        <p style={{ fontSize: '12px', color: '#666' }}>Use this for loan repayments or generic collections.</p>
+        <p className="text-xs text-gray-500 mt-2 italic">Use this for loan repayments or generic collections.</p>
     </MobileModal>
 );
 
@@ -198,8 +178,8 @@ export const LoanModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: 
         title="🤝 Loan Application"
         footer={
             <>
-                <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Cancel</PlayfulButton>
-                <PlayfulButton onClick={onSubmit} color={THEME.colors.info}>Submit Application</PlayfulButton>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
+                <Button onClick={onSubmit} variant="secondary">Submit Application 📝</Button>
             </>
         }
     >
@@ -239,8 +219,8 @@ export const VisitModal = ({ isOpen, onClose, formData, setFormData, onSubmit }:
         title="🛵 Schedule Visit"
         footer={
             <>
-                <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Cancel</PlayfulButton>
-                <PlayfulButton onClick={onSubmit} color={THEME.colors.warning}>Schedule</PlayfulButton>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
+                <Button onClick={onSubmit} variant="warning" className="text-white">Schedule 📅</Button>
             </>
         }
     >
@@ -278,8 +258,8 @@ export const MessageModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
         title="💬 New Message"
         footer={
             <>
-                <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Cancel</PlayfulButton>
-                <PlayfulButton onClick={onSubmit} color={THEME.colors.primary}>Send</PlayfulButton>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
+                <Button onClick={onSubmit} variant="primary">Send Message 📨</Button>
             </>
         }
     >
@@ -299,17 +279,14 @@ export const MessageModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
             ]}
             onChange={(e: any) => setFormData({ ...formData, priority: e.target.value })}
         />
-        <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: THEME.colors.muted, marginBottom: '5px' }}>Message</label>
+        <div className="mb-4">
+            <label className="block text-sm font-bold text-gray-500 mb-1">Message</label>
             <textarea
                 value={formData.content || formData.message}
                 onChange={(e: any) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Type your message..."
                 rows={4}
-                style={{
-                    width: '100%', padding: '10px', borderRadius: '8px', border: `2px solid ${THEME.colors.border}`,
-                    fontWeight: 'bold', fontSize: '14px', outline: 'none', resize: 'vertical'
-                }}
+                className="w-full p-3 rounded-lg border-2 border-gray-200 outline-none focus:border-blue-400 font-medium text-gray-700 resize-y"
             />
         </div>
     </MobileModal>
@@ -321,9 +298,9 @@ export const KycModal = ({ isOpen, onClose }: any) => (
         onClose={onClose}
         title="📸 KYC Document"
         footer={
-            <PlayfulButton onClick={onClose} color="#ccc" style={{ color: '#333' }}>Close</PlayfulButton>
+            <Button onClick={onClose} variant="ghost" className="text-gray-600">Close</Button>
         }
     >
-        <p style={{ textAlign: 'center', color: '#666' }}>KYC Upload feature coming soon!</p>
+        <p className="text-center text-gray-500 py-8 italic">KYC Upload feature coming soon! 🚧</p>
     </MobileModal>
 );

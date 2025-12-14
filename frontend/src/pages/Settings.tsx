@@ -1,87 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api.ts';
+import { authService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-
-// --- PLAYFUL UI THEME CONSTANTS ---
-const THEME = {
-  colors: {
-    bg: '#FFF0F5', // Lavender Blush
-    primary: '#6C5CE7', // Purple
-    secondary: '#00CEC9', // Teal
-    success: '#00B894', // Green
-    danger: '#FF7675', // Salmon
-    warning: '#FDCB6E', // Mustard
-    sidebar: '#FFFFFF',
-    text: '#2D3436',
-    border: '#dfe6e9',
-  },
-  shadows: {
-    card: '0 8px 0px rgba(0,0,0,0.1)',
-    button: '0 4px 0px rgba(0,0,0,0.2)',
-    active: '0 2px 0px rgba(0,0,0,0.2)',
-  },
-  radius: {
-    card: '24px',
-    button: '50px',
-  }
-};
-
-// --- STYLED WRAPPERS ---
-const PlayfulCard = ({ children, color = '#FFFFFF', style = {} }: { children: any; color?: string; style?: any }) => (
-  <div style={{
-    background: color,
-    borderRadius: THEME.radius.card,
-    border: '3px solid #000000',
-    boxShadow: THEME.shadows.card,
-    padding: '24px',
-    marginBottom: '24px',
-    overflow: 'hidden',
-    ...style
-  }}>
-    {children}
-  </div>
-);
-
-const PlayfulButton = ({ children, onClick, variant = 'primary', style, disabled = false }: {
-  children: any;
-  onClick?: () => void;
-  variant?: string;
-  style?: any;
-  disabled?: boolean;
-}) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      background: disabled ? '#ccc' : (variant === 'danger' ? THEME.colors.danger : THEME.colors.primary),
-      color: 'white',
-      border: '3px solid #000000',
-      padding: '12px 24px',
-      borderRadius: THEME.radius.button,
-      fontWeight: '900',
-      fontSize: '16px',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      boxShadow: THEME.shadows.button,
-      transition: 'all 0.1s',
-      ...style
-    }}
-    onMouseDown={e => {
-      if (!disabled && onClick) {
-        e.currentTarget.style.transform = 'translateY(4px)';
-        e.currentTarget.style.boxShadow = THEME.shadows.active;
-      }
-    }}
-    onMouseUp={e => {
-      if (!disabled && onClick) {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = THEME.shadows.button;
-      }
-    }}
-  >
-    {children}
-  </button>
-);
+import GlassCard from '../components/ui/modern/GlassCard';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import DashboardLayout from '../components/layout/DashboardLayout';
 
 function Settings() {
   const { user, logout } = useAuth();
@@ -91,11 +15,11 @@ function Settings() {
   const [loading, setLoading] = useState(true);
 
   // Settings data state
-  const [userSettings, setUserSettings] = useState({});
-  const [systemSettings, setSystemSettings] = useState({});
-  const [apiUsage, setApiUsage] = useState([]);
-  const [rateLimits, setRateLimits] = useState([]);
-  const [healthChecks, setHealthChecks] = useState([]);
+  const [userSettings, setUserSettings] = useState<any[]>([]);
+  const [systemSettings, setSystemSettings] = useState<any[]>([]);
+  const [apiUsage, setApiUsage] = useState<any[]>([]);
+  const [rateLimits, setRateLimits] = useState<any[]>([]);
+  const [healthChecks, setHealthChecks] = useState<any[]>([]);
 
   // Form states
   const [userSettingsForm, setUserSettingsForm] = useState({
@@ -107,6 +31,7 @@ function Settings() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
 
   const fetchData = async () => {
@@ -197,196 +122,210 @@ function Settings() {
   };
 
   const menuItems = [
-    { id: 'user-settings', name: 'User Settings', icon: '👤', color: THEME.colors.primary },
-    { id: 'system-settings', name: 'System Settings', icon: '⚙️', color: THEME.colors.secondary },
-    { id: 'api-usage', name: 'API Usage', icon: '📊', color: THEME.colors.warning },
-    { id: 'rate-limits', name: 'Rate Limits', icon: '⏱️', color: THEME.colors.danger },
-    { id: 'health-checks', name: 'Health Checks', icon: '❤️', color: THEME.colors.success }
+    { id: 'user-settings', name: 'User Settings', icon: '👤' },
+    { id: 'system-settings', name: 'System Settings', icon: '⚙️' },
+    { id: 'api-usage', name: 'API Usage', icon: '📊' },
+    { id: 'rate-limits', name: 'Rate Limits', icon: '⏱️' },
+    { id: 'health-checks', name: 'Health Checks', icon: '❤️' }
   ];
 
   const renderContent = () => {
     if (loading) {
       return (
-        <PlayfulCard>
-          <div style={{ textAlign: 'center', padding: '48px' }}>
-            <div style={{ fontSize: '60px', animation: 'bounce 1s infinite' }}>⚙️</div>
-            <h2>Loading Settings...</h2>
-          </div>
-        </PlayfulCard>
+        <GlassCard className="flex flex-col items-center justify-center p-12">
+          <div className="text-6xl mb-4 animate-spin-slow">⚙️</div>
+          <h2 className="text-xl font-bold text-gray-800">Loading Configuration...</h2>
+        </GlassCard>
       );
     }
 
     switch (activeView) {
       case 'user-settings':
         return (
-          <div>
-            <PlayfulCard color="#E8F5E9">
-              <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Personal Preferences</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Theme</label>
+          <GlassCard className="p-8 max-w-3xl border-t-[6px] border-t-coastal-primary">
+            <h3 className="text-2xl font-bold text-gray-800 mb-8">Personal Preferences</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Theme</label>
+                <div className="relative">
                   <select
                     value={userSettingsForm.theme}
-                    onChange={(e) => setUserSettingsForm({...userSettingsForm, theme: e.target.value})}
-                    style={{ width: '100%', padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
+                    onChange={(e) => setUserSettingsForm({ ...userSettingsForm, theme: e.target.value })}
+                    className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all appearance-none font-medium text-gray-700"
                   >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="auto">Auto</option>
+                    <option value="light">☀️ Light Mode</option>
+                    <option value="dark">🌙 Dark Mode</option>
+                    <option value="auto">🖥️ System Default</option>
                   </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Language</label>
-                  <select
-                    value={userSettingsForm.language}
-                    onChange={(e) => setUserSettingsForm({...userSettingsForm, language: e.target.value})}
-                    style={{ width: '100%', padding: '12px', border: '2px solid #000', borderRadius: '12px', fontSize: '16px' }}
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Notifications</label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={userSettingsForm.notifications}
-                      onChange={(e) => setUserSettingsForm({...userSettingsForm, notifications: e.target.checked})}
-                      style={{ width: '20px', height: '20px' }}
-                    />
-                    Enable push notifications
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Email Updates</label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={userSettingsForm.email_updates}
-                      onChange={(e) => setUserSettingsForm({...userSettingsForm, email_updates: e.target.checked})}
-                      style={{ width: '20px', height: '20px' }}
-                    />
-                    Receive email updates
-                  </label>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                 </div>
               </div>
 
-              <PlayfulButton onClick={handleSaveUserSettings} style={{ marginTop: '24px' }}>
-                Save Settings 💾
-              </PlayfulButton>
-            </PlayfulCard>
-          </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Language</label>
+                <div className="relative">
+                  <select
+                    value={userSettingsForm.language}
+                    onChange={(e) => setUserSettingsForm({ ...userSettingsForm, language: e.target.value })}
+                    className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all appearance-none font-medium text-gray-700"
+                  >
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Spanish</option>
+                    <option value="fr">🇫🇷 French</option>
+                    <option value="de">🇩🇪 German</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-8">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-blue-200 transition-colors cursor-pointer" onClick={() => setUserSettingsForm({ ...userSettingsForm, notifications: !userSettingsForm.notifications })}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-colors ${userSettingsForm.notifications ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-400'}`}>
+                    🔔
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Push Notifications</h4>
+                    <p className="text-xs text-gray-500">Receive alerts about new transactions and messages</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full p-1 transition-colors ${userSettingsForm.notifications ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${userSettingsForm.notifications ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-blue-200 transition-colors cursor-pointer" onClick={() => setUserSettingsForm({ ...userSettingsForm, email_updates: !userSettingsForm.email_updates })}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-colors ${userSettingsForm.email_updates ? 'bg-purple-100 text-purple-600' : 'bg-gray-200 text-gray-400'}`}>
+                    📧
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Email Updates</h4>
+                    <p className="text-xs text-gray-500">Weekly summaries and marketing updates</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full p-1 transition-colors ${userSettingsForm.email_updates ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${userSettingsForm.email_updates ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={handleSaveUserSettings} className="w-full md:w-auto px-8" variant="primary">
+              Save Changes 💾
+            </Button>
+          </GlassCard>
         );
 
       case 'system-settings':
         return (
-          <PlayfulCard color="#E3F2FD">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>System Configuration</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">System Configuration</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.isArray(systemSettings) && systemSettings.map((setting: any, index: number) => (
-                <div key={index} style={{
-                  padding: '16px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9'
-                }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>{setting.key}</h4>
-                  <p style={{ margin: '0', color: '#666' }}>{setting.value}</p>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#888' }}>
-                    Type: {setting.setting_type}
+                <div key={index} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                      ⚙️
+                    </div>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded uppercase">{setting.setting_type}</span>
+                  </div>
+                  <h4 className="font-bold text-gray-800 mb-1">{setting.key}</h4>
+                  <p className="text-sm font-mono text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 break-all">
+                    {setting.value}
                   </p>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'api-usage':
         return (
-          <PlayfulCard color="#FFF3E0">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>API Usage Statistics</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">API Usage Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.isArray(apiUsage) && apiUsage.map((usage: any, index: number) => (
-                <div key={index} style={{
-                  padding: '16px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
-                  <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 'bold' }}>{usage.endpoint}</h4>
-                  <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold', color: THEME.colors.primary }}>
-                    {usage.request_count}
-                  </p>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>requests</p>
+                <div key={index} className="p-6 rounded-2xl bg-white border border-gray-100 text-center relative overflow-hidden group">
+                  {/* Background decoration */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+
+                  <div className="text-4xl mb-3 opacity-80 group-hover:scale-110 transition-transform duration-300">📊</div>
+
+                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2 truncate" title={usage.endpoint}>
+                    {usage.endpoint}
+                  </h4>
+
+                  <div className="text-3xl font-black text-gray-800 group-hover:text-coastal-primary transition-colors">
+                    {usage.request_count?.toLocaleString()}
+                  </div>
+
+                  <div className="text-xs text-gray-400 mt-1">requests</div>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'rate-limits':
         return (
-          <PlayfulCard color="#FFEBEE">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Rate Limiting Configuration</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Rate Limiting</h3>
+            <div className="space-y-4">
               {Array.isArray(rateLimits) && rateLimits.map((limit: any, index: number) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '16px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9'
-                }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 'bold' }}>{limit.name}</h4>
-                    <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>{limit.description}</p>
+                <div key={index} className="flex flex-col md:flex-row justify-between items-center p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                  <div className="mb-4 md:mb-0 text-center md:text-left">
+                    <h4 className="font-bold text-gray-800 text-lg mb-1">{limit.name}</h4>
+                    <p className="text-sm text-gray-500">{limit.description}</p>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: THEME.colors.primary }}>
-                      {limit.requests_per_hour}
-                    </p>
-                    <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>requests/hour</p>
+                  <div className="flex items-center gap-4 bg-gray-50 px-6 py-3 rounded-xl border border-gray-200">
+                    <div className="text-right">
+                      <div className="text-2xl font-black text-gray-800 leading-none">
+                        {limit.requests_per_hour?.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Req / Hour</div>
+                    </div>
+                    <div className="h-8 w-[1px] bg-gray-300"></div>
+                    <div className="text-2xl">⚡</div>
                   </div>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'health-checks':
         return (
-          <PlayfulCard color="#F3E5F5">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>System Health Checks</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">System Health</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.isArray(healthChecks) && healthChecks.map((check: any, index: number) => (
-                <div key={index} style={{
-                  padding: '20px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: check.status === 'healthy' ? '#D4EDDA' : '#F8D7DA'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 'bold' }}>{check.name}</h4>
-                  <div style={{ fontSize: '32px', marginBottom: '10px' }}>
-                    {check.status === 'healthy' ? '✅' : '❌'}
+                <div key={index} className={`
+                    p-6 rounded-2xl border relative overflow-hidden
+                    ${check.status === 'healthy' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}
+                `}>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className={`p-2 rounded-lg ${check.status === 'healthy' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                      {check.status === 'healthy' ? '✅' : '❌'}
+                    </div>
+                    <span className={`text-xs font-bold uppercase py-1 px-2 rounded ${check.status === 'healthy' ? 'bg-white/50 text-emerald-700' : 'bg-white/50 text-red-700'}`}>
+                      {check.status}
+                    </span>
                   </div>
-                  <p style={{ margin: '0', fontSize: '14px' }}>{check.message}</p>
-                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
-                    Last checked: {new Date(check.last_check).toLocaleString()}
-                  </p>
+
+                  <h4 className="font-bold text-gray-800 text-lg mb-2 relative z-10">{check.name}</h4>
+                  <p className="text-sm text-gray-600 mb-4 relative z-10">{check.message}</p>
+
+                  <div className="relative z-10 pt-4 border-t border-black/5">
+                    <p className="text-xs text-gray-500 font-medium">
+                      Last checked: {new Date(check.last_check).toLocaleTimeString()}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       default:
@@ -395,82 +334,16 @@ function Settings() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-          ::-webkit-scrollbar { width: 10px; }
-          ::-webkit-scrollbar-track { background: #fff; }
-          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; }
-          @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        `}
-      </style>
-
-      {/* Sidebar */}
-      <nav style={{
-        width: '280px',
-        background: '#fff',
-        borderRight: '3px solid #000',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflowY: 'auto'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ fontSize: '40px', background: THEME.colors.secondary, width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #000' }}>
-            ⚙️
-          </div>
-          <h1 style={{ margin: 0, fontWeight: '900', color: THEME.colors.text }}>Settings</h1>
-          <p style={{ margin: 0, fontSize: '14px', color: '#888' }}>{user?.email}</p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 16px',
-                border: activeView === item.id ? `3px solid ${item.color}` : '3px solid transparent',
-                background: activeView === item.id ? `${item.color}20` : 'transparent',
-                borderRadius: '16px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontSize: '16px',
-                fontWeight: '800',
-                color: activeView === item.id ? item.color : '#888',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span style={{ fontSize: '24px' }}>{item.icon}</span>
-              {item.name}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <PlayfulButton variant="danger" onClick={handleLogout}>
-            Log Out 👋
-          </PlayfulButton>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: '900', color: THEME.colors.text, margin: 0 }}>
-            {menuItems.find(i => i.id === activeView)?.icon} {menuItems.find(i => i.id === activeView)?.name}
-          </h2>
-          <div style={{ background: '#FFF', padding: '8px 16px', borderRadius: '20px', border: '2px solid #000', fontWeight: 'bold' }}>
-            📅 {new Date().toLocaleDateString()}
-          </div>
-        </header>
-
-        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-          {renderContent()}
-        </div>
-      </main>
-    </div>
+    <DashboardLayout
+      title="Settings"
+      user={user}
+      menuItems={menuItems}
+      activeView={activeView}
+      onNavigate={setActiveView}
+      onLogout={handleLogout}
+    >
+      {renderContent()}
+    </DashboardLayout>
   );
 }
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../../services/api';
-import { THEME } from './ManagerTheme';
+import GlassCard from '../ui/modern/GlassCard';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
 
 interface ServiceCharge {
   id: number;
@@ -31,7 +33,6 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
 }) => {
   const [charges, setCharges] = useState<ServiceCharge[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Banking operations that can have service charges
   const operations = [
@@ -111,301 +112,204 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
   };
 
   return (
-    <div>
-      <h3 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: '900' }}>🏷️ Service Charge Management</h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <h3 className="text-2xl font-bold text-gray-800">🏷️ Service Charge Management</h3>
+      </div>
 
-      {/* Create New Charge Form */}
-      <div style={{
-        background: '#fff',
-        padding: '24px',
-        borderRadius: THEME.radius.card,
-        border: '2px solid #000',
-        boxShadow: THEME.shadows.card,
-        marginBottom: '24px'
-      }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>
-          ➕ Create New Service Charge
-        </h4>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Create New Charge Form */}
+        <GlassCard className="p-6 border-t-[6px] border-t-blue-500">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">➕</span>
+            Create New Charge
+          </h4>
 
-        <form onSubmit={handleCreateCharge}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                Charge Name *
-              </label>
-              <input
-                type="text"
+          <form onSubmit={handleCreateCharge} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Charge Name *"
                 required
                 placeholder="e.g., Withdrawal Fee"
                 value={newCharge.name || ''}
                 onChange={(e) => setNewCharge({ ...newCharge, name: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '2px solid #000',
-                  borderRadius: THEME.radius.input,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
+              />
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                  Charge Type *
+                </label>
+                <select
+                  required
+                  value={newCharge.charge_type || 'fixed'}
+                  onChange={(e) => setNewCharge({ ...newCharge, charge_type: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
+                >
+                  <option value="fixed">Fixed Amount (GHS)</option>
+                  <option value="percentage">Percentage (%)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                Description
+              </label>
+              <textarea
+                placeholder="Describe when this charge applies..."
+                value={newCharge.description || ''}
+                onChange={(e) => setNewCharge({ ...newCharge, description: e.target.value })}
+                rows={2}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 resize-y"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                Charge Type *
-              </label>
-              <select
+              <Input
+                label="Rate/Amount *"
+                type="number"
+                step="0.01"
                 required
-                value={newCharge.charge_type || 'fixed'}
-                onChange={(e) => setNewCharge({ ...newCharge, charge_type: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '2px solid #000',
-                  borderRadius: THEME.radius.input,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
-              >
-                <option value="fixed">Fixed Amount (GHS)</option>
-                <option value="percentage">Percentage (%)</option>
-              </select>
+                placeholder={newCharge.charge_type === 'percentage' ? 'e.g., 2.5' : 'e.g., 5.00'}
+                value={newCharge.rate || ''}
+                onChange={(e) => setNewCharge({ ...newCharge, rate: e.target.value })}
+              />
+              <p className="text-xs text-gray-500 mt-1 ml-1">
+                {newCharge.charge_type === 'percentage'
+                  ? 'Enter percentage value (e.g., 2.5 for 2.5%)'
+                  : 'Enter amount in Ghana Cedis (GHS)'}
+              </p>
             </div>
-          </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-              Description
-            </label>
-            <textarea
-              placeholder="Describe when this charge applies..."
-              value={newCharge.description || ''}
-              onChange={(e) => setNewCharge({ ...newCharge, description: e.target.value })}
-              rows={2}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.input,
-                fontFamily: "'Nunito', sans-serif",
-                resize: 'vertical'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-              Rate/Amount *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              placeholder={newCharge.charge_type === 'percentage' ? 'e.g., 2.5' : 'e.g., 5.00'}
-              value={newCharge.rate || ''}
-              onChange={(e) => setNewCharge({ ...newCharge, rate: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.input,
-                fontFamily: "'Nunito', sans-serif"
-              }}
-            />
-            <small style={{ color: '#666', fontSize: '12px' }}>
-              {newCharge.charge_type === 'percentage'
-                ? 'Enter percentage value (e.g., 2.5 for 2.5%)'
-                : 'Enter amount in Ghana Cedis (GHS)'}
-            </small>
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '12px' }}>
-              Apply to Operations * (Select at least one)
-            </label>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: '10px'
-            }}>
-              {operations.map((operation) => {
-                const isSelected = (newCharge.applicable_to || []).includes(operation);
-                return (
-                  <label
-                    key={operation}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px',
-                      background: isSelected ? THEME.colors.primary : '#f5f5f5',
-                      color: isSelected ? '#fff' : '#000',
-                      border: '2px solid #000',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: isSelected ? '700' : '400',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => handleToggleOperation(operation)}
-                      style={{ marginRight: '8px', cursor: 'pointer' }}
-                    />
-                    {operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </label>
-                );
-              })}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">
+                Apply to Operations * (Select at least one)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {operations.map((operation) => {
+                  const isSelected = (newCharge.applicable_to || []).includes(operation);
+                  return (
+                    <button
+                      key={operation}
+                      type="button"
+                      onClick={() => handleToggleOperation(operation)}
+                      className={`
+                                        px-3 py-2 rounded-lg text-xs font-bold transition-all border
+                                        ${isSelected
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50'}
+                                    `}
+                    >
+                      {isSelected && <span className="mr-1">✓</span>}
+                      {operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            style={{
-              padding: '12px 32px',
-              background: THEME.colors.success,
-              color: '#fff',
-              border: '2px solid #000',
-              borderRadius: THEME.radius.button,
-              fontWeight: '900',
-              fontSize: '16px',
-              cursor: 'pointer',
-              boxShadow: THEME.shadows.button,
-              width: '100%'
-            }}
-          >
-            💾 Create Service Charge
-          </button>
-        </form>
-      </div>
+            <Button type="submit" variant="primary" className="w-full py-3 shadow-lg shadow-blue-100">
+              💾 Create Service Charge
+            </Button>
+          </form>
+        </GlassCard>
 
-      {/* Existing Charges List */}
-      <div style={{
-        background: '#fff',
-        padding: '24px',
-        borderRadius: THEME.radius.card,
-        border: '2px solid #000',
-        boxShadow: THEME.shadows.card
-      }}>
-        <h4 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>
-          📋 Existing Service Charges ({charges.length})
-        </h4>
+        {/* Existing Charges List */}
+        <GlassCard className="p-6">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-sm">📋</span>
+            Existing Service Charges ({charges.length})
+          </h4>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <div style={{ fontSize: '48px', animation: 'spin 1s linear infinite' }}>⏳</div>
-            <p>Loading charges...</p>
-            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-          </div>
-        ) : charges.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
-            <p>No service charges configured yet. Create one above!</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {charges.map((charge) => (
-              <div
-                key={charge.id}
-                style={{
-                  padding: '16px',
-                  background: charge.is_active ? '#fff' : '#f5f5f5',
-                  border: '2px solid #000',
-                  borderRadius: '8px',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  gap: '16px',
-                  alignItems: 'center',
-                  opacity: charge.is_active ? 1 : 0.6
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '900' }}>
-                      {charge.name}
-                    </h5>
-                    <span style={{
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      background: charge.charge_type === 'fixed' ? THEME.colors.info : THEME.colors.warning,
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase'
-                    }}>
-                      {charge.charge_type}
-                    </span>
-                    <span style={{
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      background: charge.is_active ? THEME.colors.success : '#95a5a6',
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: '700'
-                    }}>
-                      {charge.is_active ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500 font-medium">Loading charges...</p>
+            </div>
+          ) : charges.length === 0 ? (
+            <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <div className="text-4xl mb-4">📭</div>
+              <p>No service charges configured yet.</p>
+              <p className="text-sm">Create one using the form.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              {charges.map((charge) => (
+                <div
+                  key={charge.id}
+                  className={`
+                        p-4 rounded-xl border transition-all
+                        ${charge.is_active
+                      ? 'bg-white border-gray-100 shadow-sm hover:shadow-md'
+                      : 'bg-gray-50 border-gray-100 opacity-75'}
+                    `}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h5 className="font-bold text-gray-800">{charge.name}</h5>
+                        {charge.applicable_to.length > 0 && (
+                          <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase">
+                            {charge.applicable_to.length} Ops
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${charge.charge_type === 'fixed' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {charge.charge_type}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${charge.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>
+                          {charge.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-black text-coastal-primary">
+                        {charge.charge_type === 'percentage' ? `${charge.rate}%` : `GHS ${charge.rate}`}
+                      </div>
+                    </div>
                   </div>
-                  <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '14px' }}>
-                    {charge.description || 'No description'}
+
+                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                    {charge.description || 'No description provided.'}
                   </p>
-                  <div style={{ fontSize: '20px', fontWeight: '900', color: THEME.colors.primary, marginBottom: '8px' }}>
-                    {charge.charge_type === 'percentage' ? `${charge.rate}%` : `GHS ${charge.rate}`}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {charge.applicable_to.map((op, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          padding: '4px 8px',
-                          background: THEME.colors.secondary,
-                          color: '#fff',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: '600'
-                        }}
-                      >
-                        {op.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {charge.applicable_to.slice(0, 3).map((op, i) => (
+                      <span key={i} className="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        {op.replace(/_/g, ' ')}
                       </span>
                     ))}
+                    {charge.applicable_to.length > 3 && (
+                      <span className="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        +{charge.applicable_to.length - 3} more
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-3 border-t border-gray-100">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 text-xs py-1"
+                      onClick={() => handleToggleActive(charge.id)}
+                    >
+                      {charge.is_active ? '⏸️ Deactivate' : '▶️ Activate'}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="flex-1 text-xs py-1"
+                      onClick={() => handleDeleteCharge(charge.id)}
+                    >
+                      🗑️ Delete
+                    </Button>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button
-                    onClick={() => handleToggleActive(charge.id)}
-                    style={{
-                      padding: '8px 16px',
-                      background: charge.is_active ? '#ffc107' : THEME.colors.success,
-                      color: '#fff',
-                      border: '2px solid #000',
-                      borderRadius: '6px',
-                      fontWeight: '700',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {charge.is_active ? '⏸️ Deactivate' : '▶️ Activate'}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCharge(charge.id)}
-                    style={{
-                      padding: '8px 16px',
-                      background: THEME.colors.danger,
-                      color: '#fff',
-                      border: '2px solid #000',
-                      borderRadius: '6px',
-                      fontWeight: '700',
-                      fontSize: '13px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </GlassCard>
       </div>
     </div>
   );

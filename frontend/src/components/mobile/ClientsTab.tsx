@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlayfulCard, PlayfulButton, THEME } from './MobileTheme';
-import { formatCurrencyGHS } from '../../utils/formatters';
+import GlassCard from '../ui/modern/GlassCard';
+import { Button } from '../ui/Button';
 
 interface Client {
   id: number;
@@ -19,24 +19,45 @@ interface ClientsTabProps {
 const ClientsTab: React.FC<ClientsTabProps> = ({ assignedClients }) => {
   return (
     <>
-      <h2 style={{ fontSize: '20px', fontWeight: '900', marginBottom: '15px' }}>📋 My Clients</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <h2 className="text-xl font-black text-gray-800 mb-4">📋 My Clients</h2>
+      <div className="flex flex-col gap-4">
         {assignedClients.map((client) => (
-          <PlayfulCard key={client.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', borderLeft: client.priority === 'high' ? `8px solid ${THEME.colors.danger}` : `3px solid black` }}>
-            <div style={{ width: '50px', height: '50px', background: '#dfe6e9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', border: '2px solid black' }}>
+          <GlassCard
+            key={client.id}
+            className={`flex items-center gap-4 p-4 !border-l-4 ${client.priority === 'high' ? '!border-l-red-500' : '!border-l-black'}`}
+          >
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-lg border-2 border-black text-gray-700">
               {client.name.charAt(0)}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{client.name}</div>
-              <div style={{ fontSize: '14px', color: '#636e72' }}>📍 {client.location}</div>
-              {client.priority === 'high' && <span style={{ background: THEME.colors.danger, color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 'bold' }}>URGENT</span>}
+            <div className="flex-1">
+              <div className="font-bold text-lg text-gray-800">{client.name}</div>
+              <div className="text-sm text-gray-500">📍 {client.location}</div>
+              {client.priority === 'high' && (
+                <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 inline-block">
+                  URGENT
+                </span>
+              )}
             </div>
-            <div style={{ textAlign: 'right' }}>
-              {client.amountDue && <div style={{ color: THEME.colors.danger, fontWeight: '900' }}>{client.amountDue}</div>}
-              <PlayfulButton onClick={() => {}} style={{ padding: '5px 10px', fontSize: '12px', marginTop: '5px' }}>Visit</PlayfulButton>
+            <div className="text-right">
+              {client.amountDue && (
+                <div className="text-red-500 font-black mb-1">{client.amountDue}</div>
+              )}
+              <Button
+                onClick={() => { }}
+                size="sm"
+                className="text-xs px-3 py-1"
+                variant="primary"
+              >
+                Visit
+              </Button>
             </div>
-          </PlayfulCard>
+          </GlassCard>
         ))}
+        {assignedClients.length === 0 && (
+          <div className="text-center py-10 text-gray-400">
+            <p>No clients assigned yet.</p>
+          </div>
+        )}
       </div>
     </>
   );

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { THEME } from './ManagerTheme';
 import { authService } from '../../services/api';
+import GlassCard from '../ui/modern/GlassCard';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 
 interface InterestSectionProps {
   interestData: any;
@@ -48,177 +50,109 @@ const InterestSection: React.FC<InterestSectionProps> = ({ interestData: initial
   };
 
   return (
-    <div>
-      <h3 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: '900' }}>📈 Interest Calculations</h3>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <span>📈</span> Interest Calculations
+      </h3>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) 1fr', gap: '24px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calculator Form */}
-        <div style={{
-          background: '#fff',
-          padding: '24px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card,
-          height: 'fit-content'
-        }}>
-          <h4 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>
-            🔢 Loan & Savings Interest
+        <GlassCard className="p-6 border-t-[6px] border-t-purple-500">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-sm">🔢</span>
+            Loan & Savings Interest
           </h4>
 
-          <form onSubmit={handleCalculate}>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                Principal Amount (GHS)
-              </label>
-              <input
+          <form onSubmit={handleCalculate} className="space-y-5">
+            <Input
+              label="Principal Amount (GHS)"
+              type="number"
+              name="principal"
+              value={formData.principal}
+              onChange={handleChange}
+              required
+              placeholder="0.00"
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Annual Rate (%)"
                 type="number"
-                name="principal"
-                value={formData.principal}
+                name="rate"
+                value={formData.rate}
                 onChange={handleChange}
                 required
-                placeholder="0.00"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #000',
-                  borderRadius: THEME.radius.input,
-                  fontFamily: "'Nunito', sans-serif",
-                  fontSize: '16px'
-                }}
+                placeholder="e.g. 5.5"
+                step="0.01"
+              />
+
+              <Input
+                label="Duration (Months)"
+                type="number"
+                name="months"
+                value={formData.months}
+                onChange={handleChange}
+                required
+                placeholder="e.g. 12"
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              <div>
-                <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                  Annual Rate (%)
-                </label>
-                <input
-                  type="number"
-                  name="rate"
-                  value={formData.rate}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g. 5.5"
-                  step="0.01"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #000',
-                    borderRadius: THEME.radius.input,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                  Duration (Months)
-                </label>
-                <input
-                  type="number"
-                  name="months"
-                  value={formData.months}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g. 12"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #000',
-                    borderRadius: THEME.radius.input,
-                    fontFamily: "'Nunito', sans-serif"
-                  }}
-                />
-              </div>
-            </div>
-
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '16px',
-                background: loading ? '#ccc' : THEME.colors.primary,
-                color: '#fff',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.button,
-                fontWeight: '900',
-                fontSize: '16px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : THEME.shadows.button
-              }}
+              variant="primary"
+              className="w-full py-3 shadow-lg shadow-purple-100 bg-purple-600 hover:bg-purple-700 border-purple-700 text-white"
             >
               {loading ? 'Calculating...' : 'Calculate Interest'}
-            </button>
+            </Button>
           </form>
 
           {error && (
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              background: '#ffebee',
-              color: '#d32f2f',
-              border: '2px solid #d32f2f',
-              borderRadius: '8px',
-              fontWeight: '700'
-            }}>
-              ⚠️ {error}
+            <div className="mt-4 p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl font-medium flex items-center gap-2">
+              <span>⚠️</span> {error}
             </div>
           )}
-        </div>
+        </GlassCard>
 
         {/* Results Panel */}
-        <div style={{
-          background: THEME.colors.bg,
-          padding: '24px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          opacity: result ? 1 : 0.6,
-          transition: 'opacity 0.3s'
-        }}>
+        <GlassCard className={`p-8 flex flex-col justify-center transition-all duration-500 ${result ? 'opacity-100' : 'opacity-80'}`}>
           {!result ? (
-            <div style={{ textAlign: 'center', color: '#666' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📉</div>
-              <p>Enter loan or savings details to project interest earnings or costs.</p>
+            <div className="text-center text-gray-400 py-12">
+              <div className="text-6xl mb-4 grayscale opacity-30">📉</div>
+              <p className="max-w-xs mx-auto">Enter loan or savings details to project interest earnings or costs.</p>
             </div>
           ) : (
-            <>
-              <h4 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: '900', textAlign: 'center' }}>
+            <div className="animate-fade-in-up">
+              <h4 className="text-lg font-bold text-gray-800 mb-6 text-center">
                 Projection Result
               </h4>
 
-              <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #ddd' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#666' }}>Interest Earned/Due</span>
-                  <span style={{ fontWeight: '700', color: THEME.colors.success }}>{formatCurrency(parseFloat(result.interest_amount))}</span>
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 mb-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-50">
+                  <span className="text-gray-500 font-medium">Interest Earned/Due</span>
+                  <span className="text-xl font-bold text-emerald-600">{formatCurrency(parseFloat(result.interest_amount))}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#666' }}>Est. Monthly Payment</span>
-                  <span style={{ fontWeight: '700' }}>{formatCurrency(parseFloat(result.monthly_repayment))}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">Est. Monthly Payment</span>
+                  <span className="text-xl font-bold text-gray-800">{formatCurrency(parseFloat(result.monthly_repayment))}</span>
                 </div>
               </div>
 
-              <div style={{
-                marginTop: 'auto',
-                background: THEME.colors.primary,
-                padding: '24px',
-                borderRadius: '12px',
-                border: '2px solid #000',
-                textAlign: 'center',
-                boxShadow: '4px 4px 0 #000',
-                color: '#fff'
-              }}>
-                <div style={{ fontSize: '14px', marginBottom: '8px', opacity: 0.9 }}>TOTAL REPAYMENT AMOUNT</div>
-                <div style={{ fontSize: '32px', fontWeight: '900' }}>
-                  {formatCurrency(parseFloat(result.total_amount))}
+              <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 rounded-2xl text-center shadow-xl shadow-purple-200 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                  <span className="text-9xl">💰</span>
+                </div>
+
+                <div className="relative z-10">
+                  <div className="text-sm font-bold text-purple-200 mb-2 uppercase tracking-widest">Total Repayment Amount</div>
+                  <div className="text-4xl font-black tracking-tight">
+                    {formatCurrency(parseFloat(result.total_amount))}
+                  </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
-        </div>
+        </GlassCard>
       </div>
     </div>
   );
