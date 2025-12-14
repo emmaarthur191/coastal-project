@@ -1,5 +1,5 @@
 import React from 'react';
-import { THEME, PlayfulButton } from './ManagerTheme';
+import { Button } from '../ui/Button';
 
 interface MenuItem {
   id: string;
@@ -21,70 +21,48 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
   setActiveView,
   handleLogout,
   user,
-  menuItems
+  menuItems = []
 }) => {
-  console.log('ManagerSidebar: menuItems:', menuItems);
-
-  // Use the passed menuItems
-  const itemsToRender = menuItems;
-
   return (
-    <nav style={{
-      width: '280px',
-      background: '#fff',
-      borderRight: '3px solid #000',
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      overflowY: 'auto'
-    }}>
-      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <div style={{
-          fontSize: '40px',
-          background: THEME.colors.warning,
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
-          margin: '0 auto 10px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '3px solid #000'
-        }}>🦁</div>
-        <h1 style={{ margin: 0, fontWeight: '900', color: THEME.colors.text }}>Boss Mode</h1>
-        <p style={{ margin: 0, fontSize: '14px', color: '#888' }}>{(user as any)?.name}</p>
+    <nav className="w-72 bg-white/95 backdrop-blur-xl border-r border-gray-200 p-6 flex flex-col h-full shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300">
+      <div className="text-center mb-10">
+        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-4xl shadow-xl shadow-amber-100 border-4 border-white">
+          🦁
+        </div>
+        <h1 className="font-black text-gray-800 text-xl tracking-tight">Manager Portal</h1>
+        <p className="text-sm font-medium text-gray-400 mt-1">Hello, {user?.name || 'Manager'}</p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {itemsToRender.map(item => (
+      <div className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+        {menuItems.map(item => (
           <button
             key={item.id}
             onClick={() => setActiveView(item.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 16px',
-              border: activeView === item.id ? `3px solid ${item.color}` : '3px solid transparent',
-              background: activeView === item.id ? `${item.color}20` : 'transparent',
-              borderRadius: '16px',
-              cursor: 'pointer',
-              textAlign: 'left',
-              fontSize: '16px',
-              fontWeight: '800',
-              color: activeView === item.id ? item.color : '#888',
-              transition: 'all 0.2s ease',
-              minHeight: '50px', // Ensure buttons are visible
-            }}
+            className={`
+              w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group
+              ${activeView === item.id
+                ? 'bg-gray-900 text-white shadow-lg shadow-gray-200 scale-100'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 hover:scale-[1.02]'}
+            `}
           >
-            <span style={{ fontSize: '24px' }}>{item.icon}</span>
-            {item.name}
+            <span className={`
+                text-xl transition-transform duration-300 group-hover:scale-110
+                ${activeView === item.id ? 'scale-110' : ''}
+            `}>
+              {item.icon}
+            </span>
+            <span className="font-bold text-sm tracking-wide">{item.name}</span>
+            {activeView === item.id && (
+              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            )}
           </button>
         ))}
       </div>
 
-      <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-        <PlayfulButton variant="danger" onClick={handleLogout} style={{ width: '100%' }}>
+      <div className="mt-auto pt-6 border-t border-gray-100">
+        <Button variant="danger" onClick={handleLogout} className="w-full shadow-lg shadow-red-100 dark:shadow-none">
           Log Out 👋
-        </PlayfulButton>
+        </Button>
       </div>
     </nav>
   );

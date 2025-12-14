@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { THEME } from './ManagerTheme';
+import GlassCard from '../ui/modern/GlassCard';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 
 interface PayslipSectionProps {
   formData: any;
@@ -45,7 +47,6 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
   const onGenerateClick = () => {
     handleGeneratePayslip();
     // Simulate getting data for print since the API call void prop doesn't return data here
-    // In a real scenario, handleGeneratePayslip would return the data
     const basePay = parseFloat(formData.base_pay) || 0;
     const allowances = parseFloat(formData.allowances) || 0;
     const ssnit = basePay * 0.135;
@@ -70,7 +71,7 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Styles for Printing */}
       <style>
         {`
@@ -94,63 +95,63 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
         `}
       </style>
 
-      {/* Printable Area (Hidden by default) */}
-      <div id="printable-payslip" style={{ display: 'none' }}>
+      {/* Printable Area (Hidden by default via inline style, visible on print via CSS) */}
+      <div id="printable-payslip" className="hidden">
         {printData && (
-          <div style={{ fontFamily: "'Nunito', sans-serif", border: '4px solid #000', padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
+          <div className="font-sans border-4 border-black p-10 max-w-[800px] mx-auto">
             {/* Header */}
-            <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '20px', marginBottom: '30px' }}>
-              <h1 style={{ fontSize: '32px', fontWeight: '900', margin: 0, textTransform: 'uppercase' }}>Coastal Community Union</h1>
-              <p style={{ fontSize: '16px', color: '#666', marginTop: '5px' }}>Official Payslip Document</p>
+            <div className="text-center border-b-2 border-black pb-5 mb-8">
+              <h1 className="text-3xl font-black m-0 uppercase">Coastal Community Union</h1>
+              <p className="text-base text-gray-600 mt-1">Official Payslip Document</p>
             </div>
 
             {/* Staff Details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
+            <div className="grid grid-cols-2 gap-5 mb-10">
               <div>
-                <strong style={{ display: 'block', fontSize: '14px', color: '#666', textTransform: 'uppercase' }}>Employee Name</strong>
-                <div style={{ fontSize: '20px', fontWeight: '700' }}>{printData.staffName}</div>
+                <strong className="block text-sm text-gray-600 uppercase">Employee Name</strong>
+                <div className="text-xl font-bold">{printData.staffName}</div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <strong style={{ display: 'block', fontSize: '14px', color: '#666', textTransform: 'uppercase' }}>Date Issued</strong>
-                <div style={{ fontSize: '20px', fontWeight: '700' }}>{printData.date}</div>
+              <div className="text-right">
+                <strong className="block text-sm text-gray-600 uppercase">Date Issued</strong>
+                <div className="text-xl font-bold">{printData.date}</div>
               </div>
             </div>
 
             {/* Earnings Table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
+            <table className="w-full border-collapse mb-10">
               <thead>
-                <tr style={{ background: '#000', color: '#fff' }}>
-                  <th style={{ padding: '15px', textAlign: 'left' }}>Description</th>
-                  <th style={{ padding: '15px', textAlign: 'right' }}>Amount</th>
+                <tr className="bg-black text-white">
+                  <th className="p-4 text-left">Description</th>
+                  <th className="p-4 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '15px' }}>Base Salary</td>
-                  <td style={{ padding: '15px', textAlign: 'right', fontWeight: '700' }}>{formatCurrency(printData.basePay)}</td>
+                <tr className="border-b border-gray-300">
+                  <td className="p-4">Base Salary</td>
+                  <td className="p-4 text-right font-bold">{formatCurrency(printData.basePay)}</td>
                 </tr>
-                <tr style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '15px' }}>Allowances</td>
-                  <td style={{ padding: '15px', textAlign: 'right', fontWeight: '700' }}>{formatCurrency(printData.allowances)}</td>
+                <tr className="border-b border-gray-300">
+                  <td className="p-4">Allowances</td>
+                  <td className="p-4 text-right font-bold">{formatCurrency(printData.allowances)}</td>
                 </tr>
-                <tr style={{ borderBottom: '2px solid #000' }}>
-                  <td style={{ padding: '15px' }}>SSNIT Contribution (13.5%)</td>
-                  <td style={{ padding: '15px', textAlign: 'right', fontWeight: '700', color: '#666' }}>{formatCurrency(printData.ssnit)}</td>
+                <tr className="border-b-2 border-black">
+                  <td className="p-4">SSNIT Contribution (13.5%)</td>
+                  <td className="p-4 text-right font-bold text-gray-600">{formatCurrency(printData.ssnit)}</td>
                 </tr>
-                <tr style={{ background: '#f0f0f0' }}>
-                  <td style={{ padding: '20px', fontSize: '20px', fontWeight: '900' }}>Starting Total Pay</td>
-                  <td style={{ padding: '20px', textAlign: 'right', fontSize: '24px', fontWeight: '900' }}>{formatCurrency(printData.total)}</td>
+                <tr className="bg-gray-100">
+                  <td className="p-5 text-xl font-black">Starting Total Pay</td>
+                  <td className="p-5 text-right text-2xl font-black">{formatCurrency(printData.total)}</td>
                 </tr>
               </tbody>
             </table>
 
             {/* Footer */}
-            <div style={{ marginTop: '60px', paddingTop: '20px', borderTop: '2px solid #000', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div className="mt-16 pt-5 border-t-2 border-black flex justify-between items-end">
               <div>
-                <div style={{ width: '200px', height: '1px', background: '#000', marginBottom: '10px' }}></div>
-                <span style={{ fontSize: '14px', fontWeight: '700' }}>Authorized Signature</span>
+                <div className="w-[200px] h-px bg-black mb-2"></div>
+                <span className="text-sm font-bold">Authorized Signature</span>
               </div>
-              <div style={{ textAlign: 'right', fontStyle: 'italic', fontSize: '12px', color: '#666' }}>
+              <div className="text-right italic text-xs text-gray-600">
                 <p>This is a computer-generated document.</p>
                 <p>Generated on {new Date().toLocaleString()}</p>
               </div>
@@ -159,201 +160,112 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
         )}
       </div>
 
-      <h3 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: '900' }}>🧧 Payslip Generation</h3>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">🧧 Payslip Generation</h3>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '24px'
-      }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Form */}
-        <div style={{
-          background: '#fff',
-          padding: '24px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card
-        }}>
-          <h4 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>
-            📝 Staff Pay Details
+        <GlassCard className="p-6 border-t-[6px] border-t-coastal-primary">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">📝</span>
+            Staff Pay Details
           </h4>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-              Select Staff Member
-            </label>
-            <select
-              name="staff_id"
-              value={formData.staff_id || ''}
-              onChange={handleChange}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.small,
-                fontFamily: "'Nunito', sans-serif",
-                fontSize: '16px'
-              }}
-            >
-              <option value="">-- Select Staff --</option>
-              {staffMembers.map((staff: any) => (
-                <option key={staff.id} value={staff.id}>
-                  {staff.first_name} {staff.last_name} ({staff.email})
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                Select Staff Member
+              </label>
+              <select
+                name="staff_id"
+                value={formData.staff_id || ''}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
+              >
+                <option value="">-- Select Staff --</option>
+                {staffMembers.map((staff: any) => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.first_name} {staff.last_name} ({staff.email})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-              Base Pay (GHS)
-            </label>
-            <input
+            <Input
+              label="Base Pay (GHS)"
               type="number"
               name="base_pay"
               value={formData.base_pay || ''}
               onChange={handleChange}
               placeholder="e.g. 2000.00"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.small,
-                fontFamily: "'Nunito', sans-serif",
-                fontSize: '16px'
-              }}
             />
-          </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-              Allowances (GHS)
-            </label>
-            <input
+            <Input
+              label="Allowances (GHS)"
               type="number"
               name="allowances"
               value={formData.allowances || ''}
               onChange={handleChange}
               placeholder="e.g. 500.00"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.small,
-                fontFamily: "'Nunito', sans-serif",
-                fontSize: '16px'
-              }}
             />
-          </div>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <button
-              onClick={onGenerateClick}
-              disabled={!formData.staff_id || !formData.base_pay}
-              style={{
-                flex: 1,
-                padding: '16px',
-                background: (!formData.staff_id || !formData.base_pay) ? '#ccc' : THEME.colors.primary,
-                color: '#fff',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.medium,
-                fontWeight: '900',
-                fontSize: '18px',
-                cursor: (!formData.staff_id || !formData.base_pay) ? 'not-allowed' : 'pointer',
-                boxShadow: (!formData.staff_id || !formData.base_pay) ? 'none' : THEME.shadows.button,
-                transition: 'transform 0.1s'
-              }}
-              onMouseDown={(e) => !(!formData.staff_id || !formData.base_pay) && (e.currentTarget.style.transform = 'translateY(2px)')}
-              onMouseUp={(e) => !(!formData.staff_id || !formData.base_pay) && (e.currentTarget.style.transform = 'translateY(0)')}
-            >
-              ⚙️ Generate
-            </button>
-
-            {isGenerated && (
-              <button
-                onClick={handlePrint}
-                style={{
-                  flex: 1,
-                  padding: '16px',
-                  background: THEME.colors.success,
-                  color: '#fff',
-                  border: '2px solid #000',
-                  borderRadius: THEME.radius.medium,
-                  fontWeight: '900',
-                  fontSize: '18px',
-                  cursor: 'pointer',
-                  boxShadow: THEME.shadows.button,
-                  transition: 'transform 0.1s'
-                }}
-                onMouseDown={(e) => (e.currentTarget.style.transform = 'translateY(2px)')}
-                onMouseUp={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            <div className="flex gap-4 pt-4">
+              <Button
+                onClick={onGenerateClick}
+                disabled={!formData.staff_id || !formData.base_pay}
+                variant="primary"
+                className="flex-1 shadow-lg shadow-blue-100"
               >
-                🖨️ Print / Save
-              </button>
-            )}
+                ⚙️ Generate
+              </Button>
+
+              {isGenerated && (
+                <Button
+                  onClick={handlePrint}
+                  variant="success"
+                  className="flex-1 shadow-lg shadow-emerald-100"
+                >
+                  🖨️ Print / Save
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Live Preview / Breakdown */}
-        <div style={{
-          background: THEME.colors.bg,
-          padding: '24px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <h4 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: '900', textAlign: 'center' }}>
-            📊 Salary Breakdown
+        <GlassCard className="p-6 bg-gradient-to-br from-gray-50 to-white flex flex-col justify-center border-l-4 border-l-gray-300">
+          <h4 className="text-lg font-bold text-gray-800 mb-8 text-center flex items-center justify-center gap-2">
+            <span>📊</span> Salary Breakdown
           </h4>
 
-          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '16px', color: '#666' }}>Base Pay</span>
-            <span style={{ fontSize: '18px', fontWeight: '700' }}>{formatCurrency(parseFloat(formData.base_pay) || 0)}</span>
-          </div>
-
-          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '16px', color: '#666' }}>Allowances</span>
-            <span style={{ fontSize: '18px', fontWeight: '700' }}>{formatCurrency(parseFloat(formData.allowances) || 0)}</span>
-          </div>
-
-          <div style={{
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingBottom: '16px',
-            borderBottom: '2px dashed #ccc'
-          }}>
-            <div>
-              <span style={{ fontSize: '16px', color: '#666' }}>SSNIT Contribution</span>
-              <div style={{ fontSize: '12px', color: THEME.colors.info, fontWeight: '700' }}>
-                (13.5% of Base Pay)
-              </div>
+          <div className="space-y-6 flex-1">
+            <div className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="text-gray-500 font-medium">Base Pay</span>
+              <span className="text-lg font-bold text-gray-800">{formatCurrency(parseFloat(formData.base_pay) || 0)}</span>
             </div>
-            <span style={{ fontSize: '18px', fontWeight: '700', color: THEME.colors.info }}>
-              {formatCurrency(ssnitAmount)}
-            </span>
+
+            <div className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="text-gray-500 font-medium">Allowances</span>
+              <span className="text-lg font-bold text-gray-800">{formatCurrency(parseFloat(formData.allowances) || 0)}</span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 rounded-lg border-b-2 border-dashed border-gray-200 pb-6">
+              <div>
+                <span className="text-gray-500 font-medium block">SSNIT Contribution</span>
+                <span className="text-xs text-blue-500 font-bold">(13.5% of Base Pay)</span>
+              </div>
+              <span className="text-lg font-bold text-blue-600">
+                {formatCurrency(ssnitAmount)}
+              </span>
+            </div>
           </div>
 
-          <div style={{
-            marginTop: 'auto',
-            background: '#fff',
-            padding: '20px',
-            borderRadius: '12px',
-            border: '2px solid #000',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            boxShadow: '4px 4px 0 #000'
-          }}>
-            <span style={{ fontSize: '20px', fontWeight: '900' }}>TOTAL PAYSLIP</span>
-            <span style={{ fontSize: '24px', fontWeight: '900', color: THEME.colors.success }}>
+          <div className="mt-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-xl shadow-gray-100 flex justify-between items-center transform scale-105">
+            <span className="text-lg font-black text-gray-700">TOTAL PAYSLIP</span>
+            <span className="text-2xl font-black text-emerald-600">
               {formatCurrency(totalAmount)}
             </span>
           </div>
-        </div>
+        </GlassCard>
       </div>
     </div>
   );

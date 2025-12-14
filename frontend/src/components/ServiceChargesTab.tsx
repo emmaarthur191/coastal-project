@@ -1,74 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatCurrencyGHS } from '../utils/formatters';
-
-// --- PLAYFUL UI THEME CONSTANTS ---
-const THEME = {
-  colors: {
-    bg: '#FFF0F5', // Lavender Blush
-    primary: '#6C5CE7', // Purple
-    secondary: '#00CEC9', // Teal
-    success: '#00B894', // Green
-    danger: '#FF7675', // Salmon
-    warning: '#FDCB6E', // Mustard
-    sidebar: '#FFFFFF',
-    text: '#2D3436',
-    border: '#dfe6e9',
-  },
-  shadows: {
-    card: '0 8px 0px rgba(0,0,0,0.1)',
-    button: '0 4px 0px rgba(0,0,0,0.2)',
-    active: '0 2px 0px rgba(0,0,0,0.2)',
-  },
-  radius: {
-    card: '24px',
-    button: '50px',
-  }
-};
-
-// --- STYLED WRAPPERS ---
-const PlayfulCard = ({ children, color = '#FFFFFF', style = {} }) => (
-  <div style={{
-    background: color,
-    borderRadius: THEME.radius.card,
-    border: '3px solid #000000',
-    boxShadow: THEME.shadows.card,
-    padding: '24px',
-    marginBottom: '24px',
-    overflow: 'hidden',
-    ...style
-  }}>
-    {children}
-  </div>
-);
-
-const PlayfulButton = ({ children, onClick, variant = 'primary', style = {} }) => (
-  <button
-    onClick={onClick}
-    style={{
-      background: variant === 'danger' ? THEME.colors.danger : THEME.colors.primary,
-      color: 'white',
-      border: '3px solid #000000',
-      padding: '12px 24px',
-      borderRadius: THEME.radius.button,
-      fontWeight: '900',
-      fontSize: '16px',
-      cursor: 'pointer',
-      boxShadow: THEME.shadows.button,
-      transition: 'all 0.1s',
-      ...style
-    }}
-    onMouseDown={e => {
-      e.currentTarget.style.transform = 'translateY(4px)';
-      e.currentTarget.style.boxShadow = THEME.shadows.active;
-    }}
-    onMouseUp={e => {
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = THEME.shadows.button;
-    }}
-  >
-    {children}
-  </button>
-);
+import GlassCard from './ui/modern/GlassCard';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 
 interface ServiceChargesTabProps {
   serviceCharges: any[];
@@ -123,119 +57,216 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
   const applicableTypes = ['deposit', 'withdrawal', 'transfer'];
 
   return (
-    <PlayfulCard>
-      <h3 style={{ fontSize: '24px', fontWeight: '900', color: THEME.colors.text, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        💸 Service Charge Management
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <span>💸</span> Service Charge Management
       </h3>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Create Service Charge */}
-        <PlayfulCard color="#f8f9fa" style={{ marginBottom: '0' }}>
-          <h4 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: THEME.colors.text }}>➕ Create New Service Charge</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <input type="text" placeholder="Charge Name" value={newCharge.name} onChange={(e) => setNewCharge({...newCharge, name: e.target.value})}
-              style={{ padding: '12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }} />
-            <textarea placeholder="Description" value={newCharge.description} onChange={(e) => setNewCharge({...newCharge, description: e.target.value})}
-              style={{ padding: '12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px', minHeight: '60px' }} />
-
-            <select value={newCharge.charge_type} onChange={(e) => setNewCharge({...newCharge, charge_type: e.target.value})}
-              style={{ padding: '12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }}>
-              <option value="percentage">Percentage</option>
-              <option value="fixed">Fixed Amount</option>
-            </select>
-
-            <input type="number" placeholder={newCharge.charge_type === 'percentage' ? 'Rate (%)' : 'Fixed Amount (GHS)'} value={newCharge.rate} onChange={(e) => setNewCharge({...newCharge, rate: e.target.value})}
-              style={{ padding: '12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }} />
+        <GlassCard className="p-6 border-t-[6px] border-t-purple-500">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-sm">➕</span>
+            Create New Service Charge
+          </h4>
+          <div className="space-y-4">
+            <Input
+              label="Charge Name"
+              placeholder="e.g. Withdrawal Fee"
+              value={newCharge.name}
+              onChange={(e) => setNewCharge({ ...newCharge, name: e.target.value })}
+            />
 
             <div>
-              <label style={{ fontSize: '16px', fontWeight: '600', color: THEME.colors.text, display: 'block', marginBottom: '8px' }}>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                Description
+              </label>
+              <textarea
+                placeholder="Short description..."
+                value={newCharge.description}
+                onChange={(e) => setNewCharge({ ...newCharge, description: e.target.value })}
+                rows={2}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 resize-y"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                  Type
+                </label>
+                <select
+                  value={newCharge.charge_type}
+                  onChange={(e) => setNewCharge({ ...newCharge, charge_type: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+              <Input
+                label={newCharge.charge_type === 'percentage' ? 'Rate (%)' : 'Fixed Amount (GHS)'}
+                type="number"
+                value={newCharge.rate}
+                onChange={(e) => setNewCharge({ ...newCharge, rate: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">
                 Applicable to:
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div className="flex flex-wrap gap-2">
                 {applicableTypes.map(type => (
-                  <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fff', padding: '8px 12px', borderRadius: '8px', border: '2px solid #ddd' }}>
-                    <input type="checkbox" checked={newCharge.applicable_to.includes(type)} onChange={(e) => {
-                      const updated = e.target.checked ? [...newCharge.applicable_to, type] : newCharge.applicable_to.filter((t: string) => t !== type);
-                      setNewCharge({...newCharge, applicable_to: updated});
-                    }} />
-                    <span style={{ fontSize: '14px', fontWeight: '600' }}>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                  </label>
+                  <button
+                    key={type}
+                    onClick={() => {
+                      const updated = newCharge.applicable_to.includes(type)
+                        ? newCharge.applicable_to.filter((t: string) => t !== type)
+                        : [...newCharge.applicable_to, type];
+                      setNewCharge({ ...newCharge, applicable_to: updated });
+                    }}
+                    type="button"
+                    className={`
+                            px-3 py-2 rounded-lg text-xs font-bold transition-all border
+                            ${newCharge.applicable_to.includes(type)
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:bg-purple-50'}
+                        `}
+                  >
+                    {newCharge.applicable_to.includes(type) && <span className="mr-1">✓</span>}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
                 ))}
               </div>
             </div>
 
-            <PlayfulButton onClick={handleCreateCharge} style={{ width: '100%', justifyContent: 'center' }}>
+            <Button onClick={handleCreateCharge} variant="primary" className="w-full shadow-lg shadow-purple-100">
               Create Service Charge
-            </PlayfulButton>
+            </Button>
           </div>
-        </PlayfulCard>
+        </GlassCard>
 
         {/* Service Charge Calculator */}
-        <PlayfulCard color="#f8f9fa" style={{ marginBottom: '0' }}>
-          <h4 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: THEME.colors.text }}>🧮 Service Charge Calculator</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <select onChange={(e) => setServiceChargeCalculation(c => ({...c, transaction_type: e.target.value}))}
-              style={{ padding: '12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }}>
-              <option value="">Select Transaction Type</option>
-              {applicableTypes.map(type => <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>)}
-            </select>
+        <GlassCard className="p-6 border-t-[6px] border-t-amber-500 flex flex-col h-full">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-sm">🧮</span>
+            Service Charge Calculator
+          </h4>
 
-            <input type="number" placeholder="Transaction Amount (GHS)" onChange={(e) => setServiceChargeCalculation(c => ({...c, amount: parseFloat(e.target.value)}))}
-              style={{ padding: '12px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }} />
+          <div className="space-y-4 flex-1">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                Transaction Type
+              </label>
+              <select
+                onChange={(e) => setServiceChargeCalculation(c => ({ ...c, transaction_type: e.target.value }))}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
+              >
+                <option value="">Select Transaction Type</option>
+                {applicableTypes.map(type => <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>)}
+              </select>
+            </div>
 
-            <PlayfulButton onClick={handleCalculateCharge} variant="secondary" style={{ width: '100%', justifyContent: 'center' }}>
+            <Input
+              label="Transaction Amount (GHS)"
+              type="number"
+              onChange={(e) => setServiceChargeCalculation(c => ({ ...c, amount: parseFloat(e.target.value) }))}
+            />
+
+            <Button onClick={handleCalculateCharge} variant="secondary" className="w-full flex-1">
               Calculate Charge
-            </PlayfulButton>
+            </Button>
 
             {serviceChargeCalculation && serviceChargeCalculation.charge_breakdown && (
-              <div style={{ marginTop: '16px', padding: '16px', background: '#fff', borderRadius: '12px', border: '2px solid #ddd' }}>
-                <h5 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', color: THEME.colors.text }}>Calculation Result</h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
-                    <p><strong>Transaction Amount:</strong> {formatCurrencyGHS(serviceChargeCalculation.transaction_amount)}</p>
-                    <p><strong>Total Service Charge:</strong> {formatCurrencyGHS(serviceChargeCalculation.total_service_charge)}</p>
-                    <p><strong>Net Amount:</strong> {formatCurrencyGHS(serviceChargeCalculation.net_amount)}</p>
+              <div className="mt-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm animate-fade-in-up">
+                <h5 className="font-bold text-gray-800 mb-3 border-b border-gray-100 pb-2">Calculation Result</h5>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Transaction Amount:</span>
+                    <span className="font-mono font-bold">{formatCurrencyGHS(serviceChargeCalculation.transaction_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Total Service Charge:</span>
+                    <span className="font-mono font-bold text-red-600">-{formatCurrencyGHS(serviceChargeCalculation.total_service_charge)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-dashed border-gray-200">
+                    <span className="font-bold text-gray-700">Net Amount:</span>
+                    <span className="font-mono font-black text-emerald-600">{formatCurrencyGHS(serviceChargeCalculation.net_amount)}</span>
+                  </div>
 
-                    <h6 style={{ fontSize: '14px', fontWeight: '600', marginTop: '8px', color: THEME.colors.text }}>Breakdown:</h6>
-                    {serviceChargeCalculation.charge_breakdown.map((charge: any, index: number) => (
-                        <div key={index} style={{ padding: '8px', background: '#f0f0f0', borderRadius: '8px', border: '1px solid #ddd' }}>
-                            {charge.name}: {formatCurrencyGHS(charge.amount)} ({charge.type}: <strong>{charge.rate}{charge.type === 'percentage' ? '%' : ' GHS'}</strong>)
+                  <div className="mt-4">
+                    <h6 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Breakdown:</h6>
+                    <div className="space-y-1">
+                      {serviceChargeCalculation.charge_breakdown.map((charge: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center text-xs p-2 bg-gray-50 rounded">
+                          <span>{charge.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-gray-200 text-gray-600 px-1.5 rounded">{charge.rate}{charge.type === 'percentage' ? '%' : ''}</span>
+                            <span className="font-bold">{formatCurrencyGHS(charge.amount)}</span>
+                          </div>
                         </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
-        </PlayfulCard>
+        </GlassCard>
       </div>
 
       {/* Active Service Charges List */}
-      <div style={{ marginTop: '24px' }}>
-        <h4 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: THEME.colors.text }}>📋 Active Service Charges</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-          {serviceCharges.map((charge: any, index: number) => (
-            <div key={index} style={{ padding: '16px', background: '#f8f9fa', borderRadius: '12px', border: '2px solid #ddd' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <h5 style={{ fontSize: '16px', fontWeight: '700', color: THEME.colors.text }}>{charge.name}</h5>
-                <span style={{
-                  background: charge.charge_type === 'percentage' ? THEME.colors.primary : THEME.colors.warning,
-                  color: 'white',
-                  border: 'none', padding: '4px 8px', fontSize: '11px', borderRadius: '12px', fontWeight: 'bold'
-                }}>
-                  {charge.charge_type.toUpperCase()}
-                </span>
+      <GlassCard className="p-6">
+        <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-sm">📋</span>
+          Active Service Charges
+        </h4>
+
+        {serviceCharges.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">No active service charges found.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {serviceCharges.map((charge: any, index: number) => (
+              <div key={index} className="p-5 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                {/* Decorative background circle */}
+                <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors z-0"></div>
+
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start mb-2">
+                    <h5 className="font-bold text-gray-800 pr-8">{charge.name}</h5>
+                    <span className={`
+                                text-[10px] font-bold px-2 py-0.5 rounded-full uppercase
+                                ${charge.charge_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}
+                            `}>
+                      {charge.charge_type}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-500 mb-4 h-10 line-clamp-2">{charge.description}</p>
+
+                  <div className="flex justify-between items-end border-t border-gray-50 pt-3">
+                    <div>
+                      <h6 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Applies To</h6>
+                      <div className="flex flex-wrap gap-1">
+                        {charge.applicable_to.map((t: string, i: number) => (
+                          <span key={i} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded capitalize">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xl font-black text-gray-800">
+                      {charge.rate}{charge.charge_type === 'percentage' ? '%' : <span className="text-xs text-gray-400 font-normal ml-0.5">GHS</span>}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{charge.description}</p>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: THEME.colors.text }}>
-                  <strong>{charge.rate}{charge.charge_type === 'percentage' ? '%' : ' GHS'}</strong>
-              </div>
-              <div style={{ fontSize: '12px', marginTop: '8px', color: '#666', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                  Applies to: <strong>{charge.applicable_to.map((t: string) => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')}</strong>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </PlayfulCard>
+            ))}
+          </div>
+        )}
+      </GlassCard>
+    </div>
   );
 };
 

@@ -1,98 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api.ts';
+import { authService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-
-// --- PLAYFUL UI THEME CONSTANTS ---
-const THEME = {
-  colors: {
-    bg: '#F0F4F8',
-    primary: '#6C5CE7', // Purple
-    success: '#00B894', // Green
-    danger: '#FF7675', // Salmon Red
-    warning: '#FDCB6E', // Mustard
-    info: '#74B9FF', // Sky Blue
-    white: '#FFFFFF',
-    text: '#2D3436',
-    muted: '#636E72',
-    border: '#DFE6E9',
-  },
-  shadows: {
-    card: '0 10px 20px rgba(0,0,0,0.08), 0 6px 6px rgba(0,0,0,0.1)',
-    button: '0 4px 0px rgba(0,0,0,0.15)', // "Pressed" 3D effect
-    buttonActive: '0 2px 0px rgba(0,0,0,0.15)',
-  },
-  radius: {
-    small: '12px',
-    medium: '20px',
-    large: '35px',
-    round: '50px'
-  }
-};
-
-// --- STYLED SUB-COMPONENTS ---
-
-const PlayfulCard = ({ children, color = THEME.colors.white, style = {} }: { children: React.ReactNode; color?: string; style?: React.CSSProperties }) => (
-  <div style={{
-    background: color,
-    borderRadius: THEME.radius.medium,
-    boxShadow: THEME.shadows.card,
-    padding: '24px',
-    border: '3px solid white',
-    ...style
-  }}>
-    {children}
-  </div>
-);
-
-const PlayfulButton = ({ children, onClick, variant = 'primary', style, disabled = false }: { children: React.ReactNode; onClick?: () => void; variant?: string; style?: React.CSSProperties; disabled?: boolean }) => {
-  const bg = variant === 'danger' ? THEME.colors.danger :
-            variant === 'success' ? THEME.colors.success :
-            THEME.colors.primary;
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        background: disabled ? '#ccc' : bg,
-        color: 'white',
-        border: 'none',
-        padding: '12px 24px',
-        borderRadius: THEME.radius.round,
-        fontSize: '16px',
-        fontWeight: 'bold',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        boxShadow: THEME.shadows.button,
-        transition: 'transform 0.1s, box-shadow 0.1s',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        ...style
-      }}
-      onMouseDown={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(4px)';
-          e.currentTarget.style.boxShadow = THEME.shadows.buttonActive;
-        }
-      }}
-      onMouseUp={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(0px)';
-          e.currentTarget.style.boxShadow = THEME.shadows.button;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(0px)';
-          e.currentTarget.style.boxShadow = THEME.shadows.button;
-        }
-      }}
-    >
-      {children}
-    </button>
-  );
-};
+import GlassCard from '../components/ui/modern/GlassCard';
+import { Button } from '../components/ui/Button';
+import DashboardLayout from '../components/layout/DashboardLayout';
 
 function PerformanceDashboard() {
   const { user, logout } = useAuth();
@@ -102,16 +14,17 @@ function PerformanceDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Performance data state
-  const [dashboardData, setDashboardData] = useState([]);
-  const [systemHealth, setSystemHealth] = useState({});
-  const [metrics, setMetrics] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [transactionVolume, setTransactionVolume] = useState({});
-  const [chartData, setChartData] = useState([]);
+  const [dashboardData, setDashboardData] = useState<any[]>([]);
+  const [systemHealth, setSystemHealth] = useState<any>({});
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [transactionVolume, setTransactionVolume] = useState<any>({});
+  const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
 
   const fetchData = async () => {
@@ -180,7 +93,6 @@ function PerformanceDashboard() {
   };
 
   const fetchAnalytics = async () => {
-    // Fetch transaction volume and chart data
     const [volumeResult, chartResult] = await Promise.all([
       authService.getTransactionVolume({ time_range: '24h' }),
       authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' })
@@ -200,268 +112,239 @@ function PerformanceDashboard() {
   };
 
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: '📊', color: THEME.colors.primary },
-    { id: 'health', name: 'System Health', icon: '❤️', color: THEME.colors.success },
-    { id: 'metrics', name: 'Metrics', icon: '📈', color: THEME.colors.secondary },
-    { id: 'alerts', name: 'Alerts', icon: '🚨', color: THEME.colors.danger },
-    { id: 'recommendations', name: 'Recommendations', icon: '💡', color: THEME.colors.warning },
-    { id: 'analytics', name: 'Analytics', icon: '📊', color: THEME.colors.primary }
+    { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+    { id: 'health', name: 'System Health', icon: '❤️' },
+    { id: 'metrics', name: 'Metrics', icon: '📈' },
+    { id: 'alerts', name: 'Alerts', icon: '🚨' },
+    { id: 'recommendations', name: 'Recommendations', icon: '💡' },
+    { id: 'analytics', name: 'Analytics', icon: '📉' }
   ];
 
   const renderContent = () => {
     if (loading) {
       return (
-        <PlayfulCard>
-          <div style={{ textAlign: 'center', padding: '48px' }}>
-            <div style={{ fontSize: '60px', animation: 'bounce 1s infinite' }}>📊</div>
-            <h2>Loading Performance Data...</h2>
-          </div>
-        </PlayfulCard>
+        <GlassCard className="flex flex-col items-center justify-center p-12">
+          <div className="text-6xl mb-4 animate-bounce-slow">📊</div>
+          <h2 className="text-xl font-bold text-gray-800">Loading Performance Data...</h2>
+        </GlassCard>
       );
     }
 
     switch (activeView) {
       case 'dashboard':
         return (
-          <div>
-            <PlayfulCard color="#E8F5E9">
-              <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Performance Overview</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-                {dashboardData.map((item, index) => (
-                  <div key={index} style={{
-                    padding: '16px',
-                    border: '2px solid #000',
-                    borderRadius: '12px',
-                    background: '#f9f9f9',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>{item.icon || '📊'}</div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 'bold' }}>{item.metric}</h4>
-                    <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold', color: THEME.colors.primary }}>{item.value}</p>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>{item.unit}</p>
-                  </div>
-                ))}
-              </div>
-            </PlayfulCard>
-          </div>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <span>🚀</span> Performance Overview
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {dashboardData.map((item, index) => (
+                <div key={index} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center transform hover:-translate-y-1 transition-transform duration-300">
+                  <div className="text-3xl mb-3">{item.icon || '📊'}</div>
+                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">{item.metric}</h4>
+                  <p className="text-3xl font-black text-coastal-primary">{item.value}</p>
+                  <p className="text-xs text-gray-400 mt-1">{item.unit}</p>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
         );
 
       case 'health':
         return (
-          <PlayfulCard color="#E3F2FD">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>System Health Status</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-              <div style={{
-                padding: '20px',
-                border: '2px solid #000',
-                borderRadius: '12px',
-                background: systemHealth.status === 'healthy' ? '#D4EDDA' : '#F8D7DA'
-              }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 'bold' }}>Overall Status</h4>
-                <div style={{ fontSize: '48px', marginBottom: '10px' }}>
-                  {systemHealth.status === 'healthy' ? '✅' : '❌'}
-                </div>
-                <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold' }}>
-                  {systemHealth.status === 'healthy' ? 'All Systems Operational' : 'Issues Detected'}
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <span>🏥</span> System Health Status
+            </h3>
+
+            <div className={`
+                p-6 rounded-2xl mb-8 border flex items-center gap-4 shadow-sm
+                ${systemHealth.status === 'healthy' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}
+            `}>
+              <div className="text-5xl">
+                {systemHealth.status === 'healthy' ? '✅' : '❌'}
+              </div>
+              <div>
+                <h4 className={`text-xl font-black ${systemHealth.status === 'healthy' ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {systemHealth.status === 'healthy' ? 'All Systems Operational' : 'System Issues Detected'}
+                </h4>
+                <p className="text-sm opacity-70">
+                  Last check completed successfully
                 </p>
               </div>
+            </div>
 
-              {systemHealth.components && systemHealth.components.map((component, index) => (
-                <div key={index} style={{
-                  padding: '20px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: component.status === 'healthy' ? '#D4EDDA' : '#F8D7DA'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 'bold' }}>{component.name}</h4>
-                  <div style={{ fontSize: '32px', marginBottom: '10px' }}>
-                    {component.status === 'healthy' ? '✅' : '❌'}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {systemHealth.components && systemHealth.components.map((component: any, index: number) => (
+                <div key={index} className={`
+                    p-5 rounded-2xl border bg-white
+                    ${component.status === 'healthy' ? 'border-gray-100' : 'border-red-100 shadow-red-50'}
+                `}>
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-bold text-gray-800">{component.name}</h4>
+                    <span className="text-xl">{component.status === 'healthy' ? '✅' : '❌'}</span>
                   </div>
-                  <p style={{ margin: '0', fontSize: '14px' }}>{component.message}</p>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>
-                    Last checked: {new Date(component.last_check).toLocaleString()}
+                  <p className="text-sm text-gray-600 mb-3">{component.message}</p>
+                  <p className="text-xs text-gray-400 font-medium">
+                    Last checked: {new Date(component.last_check).toLocaleTimeString()}
                   </p>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'metrics':
         return (
-          <PlayfulCard color="#FFF3E0">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Performance Metrics</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Detailed Metrics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {metrics.map((metric, index) => (
-                <div key={index} style={{
-                  padding: '20px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 'bold' }}>{metric.name}</h4>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold', color: THEME.colors.primary }}>
-                        {metric.value}
-                      </p>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>{metric.unit}</p>
-                    </div>
-                    <div style={{
-                      padding: '8px',
-                      borderRadius: '50%',
-                      background: metric.status === 'good' ? THEME.colors.success :
-                                 metric.status === 'warning' ? THEME.colors.warning : THEME.colors.danger
-                    }}>
-                      {metric.status === 'good' ? '✅' : metric.status === 'warning' ? '⚠️' : '❌'}
-                    </div>
+                <div key={index} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden">
+                  <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10 
+                       ${metric.status === 'good' ? 'bg-emerald-500' : metric.status === 'warning' ? 'bg-amber-500' : 'bg-red-500'}
+                   `}></div>
+
+                  <h4 className="font-bold text-gray-800 mb-4 relative z-10">{metric.name}</h4>
+
+                  <div className="flex items-end gap-2 mb-2 relative z-10">
+                    <span className="text-3xl font-black text-gray-900">{metric.value}</span>
+                    <span className="text-xs text-gray-500 font-bold uppercase mb-1.5">{metric.unit}</span>
                   </div>
-                  <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#666' }}>
+
+                  <div className="flex items-center gap-2 mb-4 relative z-10">
+                    <span className={`
+                          w-2 h-2 rounded-full
+                          ${metric.status === 'good' ? 'bg-emerald-500' : metric.status === 'warning' ? 'bg-amber-500' : 'bg-red-500'}
+                      `}></span>
+                    <span className="text-xs font-bold text-gray-500 uppercase">{metric.status}</span>
+                  </div>
+
+                  <p className="text-sm text-gray-500 relative z-10">
                     {metric.description}
                   </p>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'alerts':
         return (
-          <PlayfulCard color="#FFEBEE">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Performance Alerts</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {alerts.map((alert, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '16px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: alert.severity === 'critical' ? '#F8D7DA' :
-                             alert.severity === 'warning' ? '#FFF3CD' : '#D1ECF1'
-                }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 'bold' }}>{alert.title}</h4>
-                    <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>{alert.message}</p>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#888' }}>
-                      {new Date(alert.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      background: alert.severity === 'critical' ? THEME.colors.danger :
-                                 alert.severity === 'warning' ? THEME.colors.warning : THEME.colors.secondary,
-                      color: 'white',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 'bold'
-                    }}>
-                      {alert.severity.toUpperCase()}
-                    </span>
-                    <PlayfulButton
-                      onClick={() => {/* Handle alert action */}}
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Performance Alerts</h3>
+            <div className="space-y-4">
+              {alerts.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  No active alerts
+                </div>
+              ) : (
+                alerts.map((alert, index) => (
+                  <div key={index} className={`
+                        p-5 rounded-xl border flex flex-col md:flex-row justify-between items-start md:items-center
+                        ${alert.severity === 'critical' ? 'bg-red-50 border-red-100' :
+                      alert.severity === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}
+                    `}>
+                    <div className="mb-4 md:mb-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl">
+                          {alert.severity === 'critical' ? '🚨' : alert.severity === 'warning' ? '⚠️' : 'ℹ️'}
+                        </span>
+                        <h4 className={`font-bold ${alert.severity === 'critical' ? 'text-red-900' :
+                            alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
+                          }`}>{alert.title}</h4>
+                      </div>
+                      <p className={`text-sm ml-8 ${alert.severity === 'critical' ? 'text-red-700' :
+                          alert.severity === 'warning' ? 'text-amber-700' : 'text-blue-700'
+                        }`}>{alert.message}</p>
+                      <p className="text-xs opacity-60 ml-8 mt-1">
+                        {new Date(alert.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className={`
+                            bg-white hover:bg-opacity-80 border-transparent shadow-sm
+                            ${alert.severity === 'critical' ? 'text-red-600' :
+                          alert.severity === 'warning' ? 'text-amber-600' : 'text-blue-600'}
+                        `}
+                      onClick={() => {/* Handle alert action */ }}
                     >
                       Acknowledge
-                    </PlayfulButton>
+                    </Button>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'recommendations':
         return (
-          <PlayfulCard color="#E8F5E9">
-            <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Performance Recommendations</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <GlassCard className="p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">System Recommendations</h3>
+            <div className="space-y-6">
               {recommendations.map((rec, index) => (
-                <div key={index} style={{
-                  padding: '16px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>{rec.title}</h4>
-                      <p style={{ margin: '0 0 8px 0', color: '#666' }}>{rec.description}</p>
-                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#888' }}>
-                        <span>💡 {rec.category}</span>
-                        <span>📊 Impact: {rec.impact}</span>
-                        <span>⏱️ Effort: {rec.effort}</span>
+                <div key={index} className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl text-indigo-600">
+                    💡
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-gray-800 mb-2">{rec.title}</h4>
+                    <p className="text-gray-600 mb-4 leading-relaxed">{rec.description}</p>
+
+                    <div className="flex flex-wrap gap-4">
+                      <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
+                        Category: <span className="text-gray-800">{rec.category}</span>
+                      </div>
+                      <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
+                        Impact: <span className="text-gray-800">{rec.impact}</span>
+                      </div>
+                      <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
+                        Effort: <span className="text-gray-800">{rec.effort}</span>
                       </div>
                     </div>
-                    <PlayfulButton
-                      onClick={() => {/* Handle recommendation action */}}
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
-                    >
-                      Implement
-                    </PlayfulButton>
+                  </div>
+                  <div className="flex items-center">
+                    <Button variant="primary">Implement</Button>
                   </div>
                 </div>
               ))}
             </div>
-          </PlayfulCard>
+          </GlassCard>
         );
 
       case 'analytics':
         return (
-          <div>
-            <PlayfulCard color="#F3E5F5">
-              <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Transaction Volume (24h)</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div style={{
-                  padding: '20px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9',
-                  textAlign: 'center'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>Total Transactions</h4>
-                  <p style={{ margin: '0', fontSize: '32px', fontWeight: 'bold', color: THEME.colors.primary }}>
-                    {transactionVolume.total || 0}
-                  </p>
-                </div>
-                <div style={{
-                  padding: '20px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9',
-                  textAlign: 'center'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>Success Rate</h4>
-                  <p style={{ margin: '0', fontSize: '32px', fontWeight: 'bold', color: THEME.colors.success }}>
-                    {transactionVolume.success_rate || 0}%
-                  </p>
-                </div>
-                <div style={{
-                  padding: '20px',
-                  border: '2px solid #000',
-                  borderRadius: '12px',
-                  background: '#f9f9f9',
-                  textAlign: 'center'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>Average Response Time</h4>
-                  <p style={{ margin: '0', fontSize: '32px', fontWeight: 'bold', color: THEME.colors.secondary }}>
-                    {transactionVolume.avg_response_time || 0}ms
-                  </p>
-                </div>
-              </div>
-            </PlayfulCard>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <GlassCard className="p-6 text-center">
+                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Total Volume</h4>
+                <div className="text-4xl font-black text-coastal-primary">{transactionVolume.total || 0}</div>
+                <div className="text-xs text-gray-400 mt-1">transactions (24h)</div>
+              </GlassCard>
+              <GlassCard className="p-6 text-center">
+                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Success Rate</h4>
+                <div className="text-4xl font-black text-emerald-500">{transactionVolume.success_rate || 0}%</div>
+                <div className="text-xs text-gray-400 mt-1">completion rate</div>
+              </GlassCard>
+              <GlassCard className="p-6 text-center">
+                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Avg Response</h4>
+                <div className="text-4xl font-black text-blue-500">{transactionVolume.avg_response_time || 0}ms</div>
+                <div className="text-xs text-gray-400 mt-1">latency</div>
+              </GlassCard>
+            </div>
 
-            <PlayfulCard color="#E3F2FD">
-              <h3 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '900' }}>Response Time Chart</h3>
-              <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #ccc', borderRadius: '12px' }}>
-                <p style={{ color: '#666', fontSize: '18px' }}>📊 Chart visualization would go here</p>
+            <GlassCard className="p-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Response Time Analysis</h3>
+              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                <div className="text-center">
+                  <div className="text-4xl mb-2 opacity-20">📉</div>
+                  <p className="text-gray-400 font-medium">Chart Visualization Placeholder</p>
+                  <p className="text-xs text-gray-300 mt-1">{chartData.length} data points available</p>
+                </div>
               </div>
-              <p style={{ margin: '16px 0 0 0', fontSize: '14px', color: '#666', textAlign: 'center' }}>
-                Chart data points: {chartData.length}
-              </p>
-            </PlayfulCard>
+            </GlassCard>
           </div>
         );
 
@@ -471,82 +354,16 @@ function PerformanceDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: THEME.colors.bg, fontFamily: "'Nunito', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-          ::-webkit-scrollbar { width: 10px; }
-          ::-webkit-scrollbar-track { background: #fff; }
-          ::-webkit-scrollbar-thumb { background: ${THEME.colors.primary}; border-radius: 5px; }
-          @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        `}
-      </style>
-
-      {/* Sidebar */}
-      <nav style={{
-        width: '280px',
-        background: '#fff',
-        borderRight: '3px solid #000',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflowY: 'auto'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ fontSize: '40px', background: THEME.colors.secondary, width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #000' }}>
-            📊
-          </div>
-          <h1 style={{ margin: 0, fontWeight: '900', color: THEME.colors.text }}>Performance</h1>
-          <p style={{ margin: 0, fontSize: '14px', color: '#888' }}>{user?.name}</p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 16px',
-                border: activeView === item.id ? `3px solid ${item.color}` : '3px solid transparent',
-                background: activeView === item.id ? `${item.color}20` : 'transparent',
-                borderRadius: '16px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontSize: '16px',
-                fontWeight: '800',
-                color: activeView === item.id ? item.color : '#888',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span style={{ fontSize: '24px' }}>{item.icon}</span>
-              {item.name}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <PlayfulButton variant="danger" onClick={handleLogout} style={{ width: '100%' }}>
-            Log Out 👋
-          </PlayfulButton>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: '900', color: THEME.colors.text, margin: 0 }}>
-            {menuItems.find(i => i.id === activeView)?.icon} {menuItems.find(i => i.id === activeView)?.name}
-          </h2>
-          <div style={{ background: '#FFF', padding: '8px 16px', borderRadius: '20px', border: '2px solid #000', fontWeight: 'bold' }}>
-            📅 {new Date().toLocaleDateString()}
-          </div>
-        </header>
-
-        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-          {renderContent()}
-        </div>
-      </main>
-    </div>
+    <DashboardLayout
+      title="Performance Monitor"
+      user={user}
+      menuItems={menuItems}
+      activeView={activeView}
+      onNavigate={setActiveView}
+      onLogout={handleLogout}
+    >
+      {renderContent()}
+    </DashboardLayout>
   );
 }
 
