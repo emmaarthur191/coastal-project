@@ -79,7 +79,7 @@ services:
       # Security Headers
       - path: /*
         name: Content-Security-Policy
-        value: "frame-ancestors 'self'; default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+        value: "frame-ancestors 'self'; default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;"
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
