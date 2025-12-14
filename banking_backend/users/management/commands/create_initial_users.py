@@ -10,13 +10,12 @@ class Command(BaseCommand):
         
         from django.utils.crypto import get_random_string
 
-        # Get credentials from environment or use provided defaults
-        admin_email = os.environ.get('ADMIN_EMAIL', 'snyper191@gmail.com')
+        # Get credentials from environment or generate random
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@coastal.com')
         admin_password = os.environ.get('ADMIN_PASSWORD')
         if not admin_password:
-            # Default password provided by user
-            admin_password = 'Emma1991!))!'
-            self.stdout.write(self.style.WARNING(f"ADMIN_PASSWORD not set. Using default."))
+            admin_password = get_random_string(16)
+            self.stdout.write(self.style.WARNING(f"ADMIN_PASSWORD not set. Generated: {admin_password}"))
         
         manager_email = os.environ.get('MANAGER_EMAIL', 'manager@coastal.com')
         manager_password = os.environ.get('MANAGER_PASSWORD')
