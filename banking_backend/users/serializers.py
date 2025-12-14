@@ -67,6 +67,23 @@ class StaffCreationSerializer(UserRegistrationSerializer):
         
         return user
 
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return attrs
+
+    def validate_new_password(self, value):
+        from .security import validate_password_strength
+        is_valid, errors = validate_password_strength(value)
+        if not is_valid:
+            raise serializers.ValidationError(errors)
+        return value
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()

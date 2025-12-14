@@ -4,12 +4,13 @@ from .views import (
     UserRegistrationView, LoginView, LogoutView, UserDetailView, 
     UserListView, AuthCheckView, MemberDashboardView, SendOTPView, VerifyOTPView,
     LoginAttemptsView, UserSessionsView, MembersListView, StaffListView, StaffIdsView,
-    SessionTerminateView, CreateStaffView
+    SessionTerminateView, CreateStaffView, ChangePasswordView
 )
 
 urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='register'),
     path('create/', CreateStaffView.as_view(), name='create-staff'), # Maps to 'users/create/' based on config
+    path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/check/', AuthCheckView.as_view(), name='auth-check'),
