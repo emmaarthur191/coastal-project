@@ -100,6 +100,47 @@ class CreateStaffView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangePasswordView(APIView):
+    """
+    Endpoint for authenticated users to change their password.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .serializers import ChangePasswordSerializer
+        
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
+            
+            # Verify old password
+            if not user.check_password(old_password):
+                return Response(
+                    {"old_password": ["Wrong password."]}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Set new password
+            user.set_password(new_password)
+            user.save()
+            
+            # Update session/token if needed, but for JWT usually client just gets new token next time
+            # Or we can invalidate old tokens (Blacklist) if strict security is needed.
+            # For now, just keeping it simple.
+            
+            return Response(
+                {"message": "Password updated successfully."}, 
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
