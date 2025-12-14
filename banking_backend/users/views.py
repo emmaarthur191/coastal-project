@@ -9,11 +9,86 @@ from .serializers import UserSerializer, UserRegistrationSerializer, LoginSerial
 from .models import User
 from core.permissions import IsAdmin
 from django.conf import settings
+from .services import SendexaService
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
+
+    permission_classes = [AllowAny]
+
+
+class CreateStaffView(APIView):
+    """
+    Admin-only endpoint to create staff users.
+    Auto-generates password and sends via SMS.
+    """
+    # In production, use IsAdminUser. For dev/testing flow, IsAuthenticated might be easier if using Postman
+    # But for real security: permission_classes = [IsAdminUser] 
+    # We will use IsAuthenticated and check role manually or rely on custom permission
+    permission_classes = [IsAuthenticated] 
+
+    def post(self, request):
+        # 1. Check Permissions (ensure caller is manager/admin)
+        if request.user.role not in ['admin', 'manager', 'operations_manager']:
+            return Response(
+                {"error": "You do not have permission to create staff users."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        data = request.data.copy()
+        
+        # 2. Map frontend 'phone' to backend 'phone_number'
+        if 'phone' in data and 'phone_number' not in data:
+            data['phone_number'] = data['phone']
+            
+        phone_number = data.get('phone_number')
+        if not phone_number:
+            return Response({"phone": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 3. Generate Random Password
+        generated_password = User.objects.make_random_password(length=12)
+        
+        # 4. Prepare User Data
+        # We'll use the serializer logic but override password
+        from .serializers import UserRegistrationSerializer
+        
+        # Add dummy password to satisfy serializer if it requires it (it usually does for write_only)
+        data['password'] = generated_password
+        data['password_confirm'] = generated_password
+        
+        serializer = UserRegistrationSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                # Create user
+                user = serializer.save()
+                
+                # Ensure password is set correctly (serializer might hash it, which is good)
+                # But just to be sure we match the generated one:
+                # Actually, serializer.save() calls create() which uses create_user()
+                # So the password in 'data' was used.
+                
+                # 5. Send Credentials via SMS
+                from .services import SendexaService
+                message = f"Welcome to Coastal! Your staff login credentials. Email: {user.email}, Password: {generated_password} . Please login and change immediately."
+                
+                sms_success, sms_resp = SendexaService.send_sms(phone_number, message)
+                
+                response_data = serializer.data
+                response_data['staff_id'] = user.staff_id
+                response_data['sms_sent'] = sms_success
+                
+                if settings.DEBUG:
+                     response_data['debug_password'] = generated_password
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
+                
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LoginView(APIView):
     permission_classes = [AllowAny]

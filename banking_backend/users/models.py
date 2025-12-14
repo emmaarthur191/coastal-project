@@ -13,6 +13,7 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
     email = models.EmailField(unique=True, blank=False)
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     staff_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     
     # Security: Account lockout fields
