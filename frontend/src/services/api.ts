@@ -57,37 +57,31 @@ const getApiBaseUrl = () => {
     return legacyUrl.endsWith('/') ? legacyUrl : legacyUrl + '/';
   }
 
-  // Priority 4: Production Mode Safety Check
-  // If we are in production mode OR running on a non-localhost domain
-  // WE MUST NOT FALLBACK TO LOCALHOST
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-  if (isProd || !isLocalhost) {
-    console.error('[Config] CRITICAL: No API URL found in production environment!');
-
-    // Attempt to infer backend URL from hostname
-    const hostname = window.location.hostname;
-    if (hostname.includes('.onrender.com')) {
-      // Infer backend from '-web' -> '-backend' naming convention
-      const backendHostname = hostname.replace('-web', '-backend');
-      const inferredUrl = `https://${backendHostname}/api/`;
-      console.warn('[Config] No VITE_PROD_API_URL set, inferring:', inferredUrl);
-      return inferredUrl;
+  // Priority 4: Dynamic Inference for Render
+  // If we are on coastal-web.onrender.com, assume backend is coastal-backend.onrender.com
+  const hostname = window.location.hostname;
+  if (hostname.includes('onrender.com')) {
+    const backendHostname = hostname.replace('coastal-web', 'coastal-backend').replace('web-', 'backend-');
+    // Fallback if regex didn't change anything (e.g. custom domain) 
+    // but specific to this project's likely naming:
+    if (backendHostname === hostname) {
+      // Try hardcoded fallback if standard replacement failed
+      return 'https://coastal-backend.onrender.com/api/';
     }
-
-    // Can't infer, return relative path (will likely fail but app won't crash)
-    console.warn('[Config] Cannot infer API URL, using /api/ fallback');
-    return '/api/';
+    const inferredUrl = `https://${backendHostname}/api/`;
+    console.warn('[Config] Auto-inferring backend URL:', inferredUrl);
+    return inferredUrl;
   }
 
-  // Priority 5: Development Fallback
+  // Priority 5: Development / Localhost Fallback
+  // If we are explicitly in dev mode or on localhost
   if (devUrl) {
     console.log('[Config] Using VITE_DEV_API_URL');
     return devUrl.endsWith('/') ? devUrl : devUrl + '/';
   }
 
   console.log('[Config] Using default localhost fallback');
-  return '/api/';
+  return 'http://localhost:8000/api/'; // Explicitly point to 8000 for clarity
 };
 
 // HTTPS enforcement removed - let the deployment environment handle this
