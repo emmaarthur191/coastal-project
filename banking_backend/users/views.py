@@ -535,13 +535,25 @@ class LoginAttemptsView(APIView):
         
         results = []
         for activity in activities:
+            details = activity.details or {}
+            
+            # Construct friendly device name
+            device_name = details.get('device', 'Unknown Device')
+            if device_name == 'Unknown Device':
+                 # Fallback
+                 if 'Mobile' in activity.user_agent: device_name = "Mobile"
+                 elif 'Windows' in activity.user_agent: device_name = "PC"
+                 else: device_name = "Other"
+
             results.append({
                 'id': activity.id,
                 'email': activity.user.email,
                 'success': activity.action == 'login',
                 'ip_address': activity.ip_address,
+                'location': details.get('location', 'Unknown'),
+                'device': device_name,
                 'timestamp': activity.created_at.isoformat(),
-                'user_agent': activity.user_agent
+                'user_agent': activity.user_agent # Keep full UA for debug if needed
             })
             
         return Response(results)
@@ -570,14 +582,34 @@ class UserSessionsView(APIView):
         sessions = {}
         for login in recent_logins:
             if login.user.id not in sessions:
-                # Estimate location from IP (mock)
-                location = "Accra, Ghana" 
+                # Extract device and location from stored activity details
+                details = login.details or {}
+                device_name = details.get('device', 'Unknown Device')
+                os_info = details.get('os', '')
+                browser_info = details.get('browser', '')
+                location = details.get('location', 'Unknown Location')
+                
+                # Fallback to User-Agent parsing if details are empty (for old logs)
+                if device_name == 'Unknown Device':
+                    ua = login.user_agent
+                    if 'Mobile' in ua:
+                        device_name = "Mobile Device"
+                    elif 'Macintosh' in ua:
+                        device_name = "Mac"
+                    elif 'Windows' in ua:
+                        device_name = "PC"
+                    else:
+                         device_name = ua[:30] + '...'
+
+                full_device_string = f"{device_name}"
+                if os_info:
+                    full_device_string += f" ({os_info})"
                 
                 sessions[login.user.id] = {
                     'id': login.id,
                     'user': login.user.email,
                     'ip_address': login.ip_address,
-                    'device': login.user_agent[:30] + '...', # Shorten UA
+                    'device': full_device_string,
                     'location': location, 
                     'last_active': login.created_at.isoformat(),
                     'status': 'Active'
