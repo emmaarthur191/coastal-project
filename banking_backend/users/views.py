@@ -11,6 +11,8 @@ from core.permissions import IsAdmin
 from django.conf import settings
 from .services import SendexaService
 from django.utils.crypto import get_random_string
+import string
+import secrets
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -48,9 +50,15 @@ class CreateStaffView(APIView):
         if not phone_number:
             return Response({"phone": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 3. Generate Random Password
-        chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-        generated_password = get_random_string(length=12, allowed_chars=chars)
+        # 3. Generate Random Password (with guaranteed complexity)
+        alphabet = string.ascii_letters + string.digits + '!@#$%^&*'
+        while True:
+            generated_password = ''.join(secrets.choice(alphabet) for i in range(12))
+            if (any(c.islower() for c in generated_password)
+                    and any(c.isupper() for c in generated_password)
+                    and any(c.isdigit() for c in generated_password)
+                    and any(c in '!@#$%^&*' for c in generated_password)):
+                break
         
         # 4. Prepare User Data
         # We'll use the serializer logic but override password
