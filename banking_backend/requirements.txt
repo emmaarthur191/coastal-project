@@ -31,4 +31,5 @@ reportlab
 # Static Files
 whitenoise
 gunicorn
+django-csp
 uvicorn[standard]
