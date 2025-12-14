@@ -35,13 +35,68 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData }) => {
           </PlayfulCard>
         ))}
       </div>
-      <PlayfulCard>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', fontWeight: '900' }}>📊 System Overview</h3>
-        <p style={{ color: '#666', margin: 0 }}>
-          Welcome to Boss Mode! Your comprehensive banking management dashboard.
-          Monitor system performance, manage staff, oversee transactions, and control all banking operations from here.
-        </p>
-      </PlayfulCard>
+
+      {/* Detailed Sections */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+        {/* Staff Performance */}
+        <PlayfulCard>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '800' }}>🏆 Staff Performance</h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #f0f0f0', color: '#888' }}>
+                  <th style={{ textAlign: 'left', padding: '10px' }}>Name</th>
+                  <th style={{ textAlign: 'left', padding: '10px' }}>Role</th>
+                  <th style={{ textAlign: 'center', padding: '10px' }}>TXs</th>
+                  <th style={{ textAlign: 'center', padding: '10px' }}>Eff.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboardData?.staff_performance?.map((staff, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                    <td style={{ padding: '10px', fontWeight: 'bold' }}>{staff.name}</td>
+                    <td style={{ padding: '10px', color: '#666' }}>{staff.role}</td>
+                    <td style={{ padding: '10px', textAlign: 'center' }}>{staff.transactions}</td>
+                    <td style={{ padding: '10px', textAlign: 'center', color: THEME.colors.success }}>{staff.efficiency}</td>
+                  </tr>
+                ))}
+                {(!dashboardData?.staff_performance || dashboardData.staff_performance.length === 0) && (
+                  <tr><td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: '#999' }}>No active staff metrics today.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </PlayfulCard>
+
+        {/* Pending Approvals */}
+        <PlayfulCard>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '800', display: 'flex', justifyContent: 'space-between' }}>
+            <span>📝 Pending Approvals</span>
+            <span style={{ fontSize: '12px', background: THEME.colors.warning, color: 'white', padding: '2px 8px', borderRadius: '10px' }}>
+              {dashboardData?.pending_approvals?.length || 0} New
+            </span>
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {dashboardData?.pending_approvals?.map((item, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '10px', background: '#fff9f0', borderRadius: '8px', borderLeft: `4px solid ${THEME.colors.warning}` }}>
+                <div style={{ marginRight: '10px', fontSize: '18px' }}>
+                  {item.type === 'Loan Application' ? '💰' : '👤'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{item.type}</div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>{item.description}</div>
+                </div>
+                <div style={{ fontSize: '10px', color: '#999' }}>
+                  {new Date(item.date).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+            {(!dashboardData?.pending_approvals || dashboardData.pending_approvals.length === 0) && (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>No pending items. All clear! 🎉</div>
+            )}
+          </div>
+        </PlayfulCard>
+      </div>
     </div>
   );
 };

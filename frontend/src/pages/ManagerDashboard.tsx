@@ -95,8 +95,8 @@ function ManagerDashboard() {
               { label: 'API Speed', value: `${response.data.api_response_time}ms`, change: '-5ms', trend: 'up', icon: '⚡' },
               { label: 'Failed TXs', value: response.data.failed_transactions?.toString() || '0', change: `+${response.data.failed_change || 0}`, trend: 'down', icon: '❌' }
             ],
-            staff_performance: [],
-            pending_approvals: []
+            staff_performance: response.data.staff_performance || [],
+            pending_approvals: response.data.pending_approvals || []
           });
         } else { console.error('Failed to fetch dashboard data:', response.error); }
       } catch (error) { console.error('Error fetching dashboard data:', error); } finally { setLoading(false); }
