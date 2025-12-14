@@ -31,25 +31,31 @@ class EnhancedWebSocketManager {
 
     // Get WebSocket base URL from environment or fallback to localhost:8001
     const getWebSocketBaseUrl = () => {
-      // Check for VITE_WS_BASE_URL (used in docker-compose)
-      if (import.meta.env.VITE_WS_BASE_URL) {
-        return import.meta.env.VITE_WS_BASE_URL;
-      }
-      // Check for VITE_WS_URL for Railway
-      if (import.meta.env.VITE_WS_URL) {
-        return import.meta.env.VITE_WS_URL;
-      }
-      // In production, use environment variable or fallback
+      // PROD SAFEGUARD: If we are in production and ANY env var tries to point to localhost, ignore it.
       if (import.meta.env.PROD) {
-        if (import.meta.env.VITE_PROD_WS_URL) {
-          return import.meta.env.VITE_PROD_WS_URL;
+        // Double check against localhost/127.0.0.1
+        const possibleUrls = [
+          import.meta.env.VITE_WS_BASE_URL,
+          import.meta.env.VITE_WS_URL,
+          import.meta.env.VITE_PROD_WS_URL
+        ];
+
+        // If we have a valid non-localhost URL in env, use it.
+        for (const url of possibleUrls) {
+          if (url && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+            return url;
+          }
         }
-        throw new Error('VITE_PROD_WS_URL environment variable is required in production');
+
+        // Fallback to hardcoded production URL if env vars are missing or dangerous
+        return 'coastal-backend-annc.onrender.com';
       }
-      // In development, use localhost:8001 (since 8000 is occupied)
-      if (import.meta.env.VITE_DEV_WS_URL) {
-        return import.meta.env.VITE_DEV_WS_URL;
-      }
+
+      // DEVELOPMENT: Use env vars or default to localhost
+      if (import.meta.env.VITE_WS_BASE_URL) return import.meta.env.VITE_WS_BASE_URL;
+      if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+      if (import.meta.env.VITE_DEV_WS_URL) return import.meta.env.VITE_DEV_WS_URL;
+
       return 'localhost:8001';
     };
 
