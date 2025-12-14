@@ -31,13 +31,15 @@ const getApiBaseUrl = () => {
   const legacyUrl = import.meta.env.VITE_API_URL;
 
   // Safe logging that won't expose sensitive info if we had any
-  console.log('[Config] Environment Detection:', {
-    isProd,
-    hasDevUrl: !!devUrl,
-    hasProdUrl: !!prodUrl,
-    hasBaseUrl: !!baseUrl,
-    hostname: window.location.hostname
-  });
+  if (!isProd) {
+    console.log('[Config] Environment Detection:', {
+      isProd,
+      hasDevUrl: !!devUrl,
+      hasProdUrl: !!prodUrl,
+      hasBaseUrl: !!baseUrl,
+      hostname: window.location.hostname
+    });
+  }
 
   // Priority 1: Check VITE_PROD_API_URL (Explicit Production)
   if (prodUrl) {
@@ -47,7 +49,7 @@ const getApiBaseUrl = () => {
     if (hostname.includes('onrender.com') && prodUrl.includes('localhost')) {
       console.warn('[Config] EXPLICTLY IGNORING localhost VITE_PROD_API_URL in production');
     } else {
-      console.log('[Config] Using VITE_PROD_API_URL');
+      if (!isProd) console.log('[Config] Using VITE_PROD_API_URL');
       return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
     }
   }
@@ -95,7 +97,9 @@ const getApiBaseUrl = () => {
 // Local development uses HTTP, production should use a reverse proxy with HTTPS
 
 export const API_BASE_URL = getApiBaseUrl();
-console.log('[Config] Final API_BASE_URL:', API_BASE_URL);
+if (import.meta.env.DEV) {
+  console.log('[Config] Final API_BASE_URL:', API_BASE_URL);
+}
 
 // Extend Window interface for Sentry
 declare global {

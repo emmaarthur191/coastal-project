@@ -22,7 +22,7 @@ const initializeSentry = () => {
   const environment = import.meta.env.PROD ? 'production' : 'development';
 
   if (!sentryEnabled || !sentryDsn) {
-    console.log('[Sentry] Disabled or no DSN configured');
+    // console.log('[Sentry] Disabled or no DSN configured');
     return false;
   }
 
