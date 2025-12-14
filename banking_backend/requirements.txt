@@ -33,3 +33,7 @@ whitenoise
 gunicorn
 django-csp
 uvicorn[standard]
+# Device & Location Monitoring
+django-user-agents
+ua-parser
+geoip2
