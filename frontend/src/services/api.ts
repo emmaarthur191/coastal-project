@@ -80,8 +80,8 @@ const getApiBaseUrl = () => {
     return devUrl.endsWith('/') ? devUrl : devUrl + '/';
   }
 
-  console.log('[Config] Using default localhost fallback');
-  return 'http://localhost:8000/api/'; // Explicitly point to 8000 for clarity
+  console.log('[Config] Using production fallback (localhost must use env var)');
+  return 'https://coastal-backend-annc.onrender.com/api/';
 };
 
 // HTTPS enforcement removed - let the deployment environment handle this
