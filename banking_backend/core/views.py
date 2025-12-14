@@ -2052,13 +2052,13 @@ class OperationsMetricsView(APIView):
         pending_items = []
         
         # Pending Loans
-        loans = Loan.objects.filter(status='pending').order_by('-applied_at')[:5]
+        loans = Loan.objects.filter(status='pending').order_by('-created_at')[:5]
         for loan in loans:
             pending_items.append({
                 'id': str(loan.id),
                 'type': 'Loan Application',
                 'description': f"{loan.user.get_full_name()} - {float(loan.amount)}",
-                'date': loan.applied_at.isoformat(),
+                'date': loan.created_at.isoformat(),
                 'status': 'pending'
             })
             
