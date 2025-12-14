@@ -209,14 +209,34 @@ class UserAdmin(BaseUserAdmin):
 class UserActivityAdmin(admin.ModelAdmin):
     """Admin for viewing user activity logs."""
     
-    list_display = ('user', 'action', 'ip_address', 'created_at', 'details_preview')
+    list_display = ('user', 'action', 'ip_address', 'get_location_display', 'get_device_display', 'created_at')
     list_filter = ('action', 'created_at')
     search_fields = ('user__email', 'user__username', 'ip_address')
     ordering = ('-created_at',)
-    readonly_fields = ('user', 'action', 'ip_address', 'user_agent', 'details', 'created_at')
+    readonly_fields = ('user', 'action', 'ip_address', 'get_location_display', 'get_device_display', 'user_agent', 'details', 'created_at')
     date_hierarchy = 'created_at'
     
     actions = [export_to_csv, export_to_json]
+    
+    def get_device_display(self, obj):
+        """Extract device name from details or user agent."""
+        if obj.details and 'device' in obj.details:
+            return obj.details['device']
+        # Fallback to simple parser if not in details
+        ua = obj.user_agent
+        if 'Mobile' in ua: return "Mobile Device"
+        if 'Windows' in ua: return "Windows PC"
+        if 'Macintosh' in ua: return "Mac"
+        if 'Linux' in ua: return "Linux PC"
+        return "Unknown"
+    get_device_display.short_description = 'Device'
+        
+    def get_location_display(self, obj):
+        """Extract location from details."""
+        if obj.details and 'location' in obj.details:
+            return obj.details['location']
+        return "-"
+    get_location_display.short_description = 'Location'
     
     def details_preview(self, obj):
         """Show preview of details JSON."""
