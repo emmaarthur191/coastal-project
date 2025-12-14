@@ -18,22 +18,22 @@ class SendexaService:
             logger.error("Sendexa: Phone number is required")
             return False, "Phone number is required"
             
-        url = settings.SENDEXA_API_URL
+        # User provided configuration for Sendexa.co
+        url = getattr(settings, 'SENDEXA_API_URL', 'https://api.sendexa.co/v1/sms/send')
+        api_key = getattr(settings, 'SENDEXA_API_KEY', '')
+        sender_id = getattr(settings, 'SENDEXA_SENDER_ID', 'Coastal')
         
-        # Prepare headers with Base64 token (Basic Auth standard)
+        # Prepare headers - Example uses Bearer YOUR_API_KEY
         headers = {
-            'Authorization': f'Basic {settings.SENDEXA_AUTH_TOKEN}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
         }
         
-        # Prepare payload
+        # Prepare payload - Example uses "to": ["number"], "sender": "Name", "message": "Content"
         payload = {
-            'recipient': phone_number,
-            'sender': settings.SENDEXA_SENDER_ID,
-            'message': message,
-            # Some APIs use 'to'/'from'/'text' - including alternatives if standard fails is hard without docs
-            # But standard structure usually involves recipient, sender, message
+            'to': [phone_number],
+            'sender': sender_id,
+            'message': message
         }
         
         try:
@@ -48,7 +48,7 @@ class SendexaService:
                 # return SendexaService._handle_response(response)
                 return True, "Mock SMS sent successfully"
             
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
             return SendexaService._handle_response(response)
             
         except requests.RequestException as e:
