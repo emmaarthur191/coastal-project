@@ -173,6 +173,10 @@ STORAGES = {
     },
 }
 
+# WhiteNoise Cache Configuration
+# Hashed static files get 1 year max-age (safe due to content hashing)
+WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
+
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
