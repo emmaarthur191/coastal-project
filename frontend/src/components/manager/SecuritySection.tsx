@@ -18,6 +18,8 @@ interface LoginAttempt {
     ip_address: string;
     timestamp: string;
     user_agent: string;
+    location?: string;
+    device?: string;
 }
 
 interface FraudAlert {
@@ -236,8 +238,8 @@ const SecuritySection: React.FC = () => {
                             <tr style={{ background: '#f8fafc' }}>
                                 <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Email</th>
                                 <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Status</th>
-                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>IP Address</th>
-                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Browser</th>
+                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Location/IP</th>
+                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Device</th>
                                 <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Timestamp</th>
                             </tr>
                         </thead>
@@ -260,8 +262,15 @@ const SecuritySection: React.FC = () => {
                                                 {attempt.success ? '✓ Success' : '✗ Failed'}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontFamily: 'monospace', fontSize: '12px' }}>{attempt.ip_address}</td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{attempt.user_agent}</td>
+                                        <td style={{ padding: '12px 16px' }}>
+                                            <div style={{ fontWeight: '500', fontSize: '13px' }}>{attempt.location || 'Unknown'}</div>
+                                            <div style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '11px' }}>{attempt.ip_address}</div>
+                                        </td>
+                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>
+                                            <div title={attempt.user_agent}>
+                                                {attempt.device || attempt.user_agent.substring(0, 30)}
+                                            </div>
+                                        </td>
                                         <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{new Date(attempt.timestamp).toLocaleString()}</td>
                                     </tr>
                                 ))
@@ -332,9 +341,9 @@ const SecuritySection: React.FC = () => {
                         <thead>
                             <tr style={{ background: '#f8fafc' }}>
                                 <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>User</th>
-                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>IP Address</th>
+                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Location/IP</th>
                                 <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Device</th>
-                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Started</th>
+                                <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Last Active</th>
                                 <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>Actions</th>
                             </tr>
                         </thead>
@@ -345,9 +354,12 @@ const SecuritySection: React.FC = () => {
                                 activeSessions.map((session) => (
                                     <tr key={session.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                         <td style={{ padding: '12px 16px', fontWeight: '600' }}>{session.user_name || session.user}</td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontFamily: 'monospace', fontSize: '12px' }}>{session.ip_address}</td>
+                                        <td style={{ padding: '12px 16px' }}>
+                                            <div style={{ fontWeight: '500', fontSize: '13px' }}>{session.location || 'Unknown'}</div>
+                                            <div style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '11px' }}>{session.ip_address}</div>
+                                        </td>
                                         <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{session.device || session.user_agent}</td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{new Date(session.created_at || session.started_at).toLocaleString()}</td>
+                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{new Date(session.created_at || session.last_active || session.started_at).toLocaleString()}</td>
                                         <td style={{ padding: '12px 16px' }}>
                                             <button
                                                 onClick={() => terminateSession(session.id)}
