@@ -41,7 +41,7 @@ services:
       - key: MANAGER_PASSWORD
         value: "Emma1991!))!"
       - key: SENDEXA_API_URL
-        value: "https://api.sendexa.com/v1/sms/send"
+        value: "https://api.sendexa.co/v1/sms/send"
       - key: SENDEXA_API_KEY
         value: "sms_76720964"
       - key: SENDEXA_API_SECRET
