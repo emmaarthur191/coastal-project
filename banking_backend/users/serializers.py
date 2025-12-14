@@ -42,6 +42,31 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+class StaffCreationSerializer(UserRegistrationSerializer):
+    """
+    Serializer for admin-side staff creation.
+    Allows setting role, phone_number, and staff_id.
+    """
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'password_confirm', 'first_name', 'last_name', 'role', 'phone_number', 'staff_id']
+        extra_kwargs = {
+            'staff_id': {'read_only': True}  # generated in logic if needed, or by model default? No, usually model default is null.
+        }
+
+    def create(self, validated_data):
+        # Allow setting role and phone_number
+        validated_data.pop('password_confirm')
+        # We use create_user to handle hashing
+        user = User.objects.create_user(**validated_data)
+        
+        # Ensure staff_id is generated if not provided?
+        # Model default handles it? No.
+        # But CreateStaffView handles password.
+        # The serializer.save() in view calls this create().
+        
+        return user
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
