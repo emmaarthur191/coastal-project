@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlayfulCard, SkeletonLoader, PlayfulButton, PlayfulInput } from './CashierTheme';
-import { api } from '../../services/api.ts';
+import { api, API_BASE_URL } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
 
 interface Report {
@@ -68,7 +68,7 @@ const ReportsTab: React.FC = () => {
     console.log(`Downloading report: ${report.title} from ${report.report_url}`);
 
     // Construct full API URL
-    const apiBaseUrl = import.meta.env.VITE_DEV_API_URL || 'http://localhost:8000/api/';
+    const apiBaseUrl = API_BASE_URL;
     // Strip leading /api/ from report_url if present (for backward compatibility)
     let cleanUrl = report.report_url;
     if (cleanUrl.startsWith('/api/')) cleanUrl = cleanUrl.substring(4);
