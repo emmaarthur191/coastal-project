@@ -66,7 +66,7 @@ const getApiBaseUrl = () => {
     // but specific to this project's likely naming:
     if (backendHostname === hostname) {
       // Try hardcoded fallback if standard replacement failed
-      return 'https://coastal-backend.onrender.com/api/';
+      return 'https://coastal-backend-annc.onrender.com/api/';
     }
     const inferredUrl = `https://${backendHostname}/api/`;
     console.warn('[Config] Auto-inferring backend URL:', inferredUrl);
