@@ -3,8 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { api } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
-import { THEME } from '../components/mobile/MobileTheme';
-import DashboardLayout from '../components/layout/DashboardLayout.tsx'; // Unified Layout
+import { Card } from '../components/ui/Card';
+import DashboardLayout from '../components/layout/DashboardLayout'; // Unified Layout
 import MobileMetrics from '../components/mobile/MobileMetrics';
 import ClientsTab from '../components/mobile/ClientsTab';
 import VisitsTab from '../components/mobile/VisitsTab';
@@ -172,13 +172,12 @@ function MobileBankerDashboard() {
   const handleMessageSubmit = async (e: any) => { e.preventDefault(); try { await api.post('operations/messages/', messageForm); alert('Sent!'); setShowMessageModal(false); fetchMessages(); } catch (e) { alert('Error'); } };
   const handleScheduleSubmit = async (e: any) => { e.preventDefault(); try { const r = await api.post('operations/schedule_visit/', scheduleForm); setScheduledVisits([...scheduledVisits, r.data] as any); alert('Scheduled!'); setShowScheduleModal(false); } catch (e) { alert('Error'); } };
 
-  // Quick action buttons config
   const quickActionButtons = [
-    { action: 'deposit', label: 'Deposit', icon: '📥', color: THEME.colors.success },
-    { action: 'withdrawal', label: 'Withdraw', icon: '📤', color: THEME.colors.danger },
-    { action: 'loan', label: 'New Loan', icon: '🤝', color: THEME.colors.info }, // Use blue for Loan on new theme? Or Keep colors as is? FieldToolbox uses colors.
-    { action: 'payment', label: 'Collect', icon: '💵', color: THEME.colors.primary },
-    { action: 'kyc', label: 'KYC Doc', icon: '📸', color: THEME.colors.warning }
+    { action: 'deposit', label: 'Deposit', icon: '📥', variant: 'success' as const },
+    { action: 'withdrawal', label: 'Withdraw', icon: '📤', variant: 'danger' as const },
+    { action: 'loan', label: 'New Loan', icon: '🤝', variant: 'primary' as const },
+    { action: 'payment', label: 'Collect', icon: '💵', variant: 'warning' as const },
+    { action: 'kyc', label: 'KYC Doc', icon: '📸', variant: 'secondary' as const }
   ];
 
   return (
@@ -199,7 +198,7 @@ function MobileBankerDashboard() {
 
         {/* LEFT COLUMN: Dynamic Tab Content (Spans 2 cols on Large) */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-secondary-200 p-6">
+          <Card className="min-h-[500px]">
             {activeTab === 'client-registration' && <ClientRegistrationTab />}
             {activeTab === 'clients' && <ClientsTab assignedClients={assignedClients} />}
             {activeTab === 'visits' && (
@@ -215,7 +214,7 @@ function MobileBankerDashboard() {
               }} />
             )}
             {activeTab === 'my_payslips' && <StaffPayslipViewer />}
-          </div>
+          </Card>
         </div>
 
         {/* RIGHT COLUMN: Field Toolbox */}

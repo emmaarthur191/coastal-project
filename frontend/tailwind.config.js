@@ -7,6 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Coastal Premium Theme
+        coastal: {
+          dark: '#0f172a',    // Deep Navy
+          light: '#f8fafc',   // Crisp White/Grey
+          primary: '#6366f1', // Indigo Purple
+          success: '#14b8a6', // Teal
+          surface: '#ffffff', // Pure White
+          blue: '#0ea5e9',    // Sky Blue
+        },
         // Deep Ocean Primary - #0284c7 (Light Blue) to #0c4a6e (Deep Ocean)
         primary: {
           50: '#f0f9ff',

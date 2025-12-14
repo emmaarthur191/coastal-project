@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../../services/api';
-import { THEME } from './ManagerTheme';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Card } from '../ui/Card';
+import GlassCard from '../ui/modern/GlassCard';
+import ModernStatCard from '../ui/modern/ModernStatCard';
 
 interface Transaction {
   id: number;
@@ -60,14 +64,19 @@ const TransactionsSection: React.FC = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed': return THEME.colors.success;
-      case 'pending': return THEME.colors.warning;
-      case 'failed': return THEME.colors.danger;
-      case 'cancelled': return '#95a5a6';
-      default: return THEME.colors.secondary;
-    }
+  const getStatusBadge = (status: string) => {
+    const s = status.toLowerCase();
+    let classes = 'bg-gray-100 text-gray-600';
+    if (s === 'completed') classes = 'bg-emerald-100 text-emerald-700';
+    else if (s === 'pending') classes = 'bg-amber-100 text-amber-700';
+    else if (s === 'failed') classes = 'bg-red-100 text-red-700';
+    else if (s === 'cancelled') classes = 'bg-slate-200 text-slate-600';
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${classes}`}>
+        {status}
+      </span>
+    );
   };
 
   const getTypeIcon = (type: string) => {
@@ -90,236 +99,149 @@ const TransactionsSection: React.FC = () => {
     return matchesType && matchesStatus && matchesSearch;
   });
 
+  const totalVolume = filteredTransactions
+    .filter(t => t.status === 'completed')
+    .reduce((sum, t) => sum + (typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount), 0);
+
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px' }}>
-        <div style={{ fontSize: '48px', animation: 'spin 1s linear infinite' }}>⏳</div>
+      <div className="flex flex-col items-center justify-center p-20 text-gray-400">
+        <div className="animate-spin text-4xl mb-4">⏳</div>
         <p>Loading transactions...</p>
-        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h3 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>💸 All Transactions</h3>
-        <button
-          onClick={fetchTransactions}
-          style={{
-            padding: '10px 20px',
-            background: THEME.colors.primary,
-            color: '#fff',
-            border: '2px solid #000',
-            borderRadius: THEME.radius.button,
-            fontWeight: '700',
-            cursor: 'pointer',
-            boxShadow: THEME.shadows.button
-          }}
-        >
-          🔄 Refresh
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div style={{
-        background: '#fff',
-        padding: '20px',
-        borderRadius: THEME.radius.card,
-        border: '2px solid #000',
-        boxShadow: THEME.shadows.card,
-        marginBottom: '20px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px'
-      }}>
-        <div>
-          <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>Search</label>
-          <input
-            type="text"
-            placeholder="ID or description..."
-            value={filter.search}
-            onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '2px solid #000',
-              borderRadius: THEME.radius.input,
-              fontFamily: "'Nunito', sans-serif"
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>Type</label>
-          <select
-            value={filter.type}
-            onChange={(e) => setFilter({ ...filter, type: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '2px solid #000',
-              borderRadius: THEME.radius.input,
-              fontFamily: "'Nunito', sans-serif"
-            }}
-          >
-            <option value="all">All Types</option>
-            <option value="deposit">Deposit</option>
-            <option value="withdrawal">Withdrawal</option>
-            <option value="transfer">Transfer</option>
-            <option value="payment">Payment</option>
-            <option value="fee">Fee</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>Status</label>
-          <select
-            value={filter.status}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '2px solid #000',
-              borderRadius: THEME.radius.input,
-              fontFamily: "'Nunito', sans-serif"
-            }}
-          >
-            <option value="all">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span>💸</span> All Transactions
+        </h3>
+        <Button onClick={fetchTransactions} variant="secondary" icon={() => <span>🔄</span>}>
+          Refresh
+        </Button>
       </div>
 
       {/* Stats Summary */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px',
-        marginBottom: '20px'
-      }}>
-        <div style={{
-          background: '#fff',
-          padding: '20px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card
-        }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
-          <div style={{ fontSize: '24px', fontWeight: '900' }}>{filteredTransactions.length}</div>
-          <div style={{ color: '#666', fontSize: '14px' }}>Total Transactions</div>
-        </div>
-        <div style={{
-          background: '#fff',
-          padding: '20px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card
-        }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
-          <div style={{ fontSize: '24px', fontWeight: '900' }}>
-            {filteredTransactions.filter(t => t.status === 'completed').length}
-          </div>
-          <div style={{ color: '#666', fontSize: '14px' }}>Completed</div>
-        </div>
-        <div style={{
-          background: '#fff',
-          padding: '20px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card
-        }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>⏳</div>
-          <div style={{ fontSize: '24px', fontWeight: '900' }}>
-            {filteredTransactions.filter(t => t.status === 'pending').length}
-          </div>
-          <div style={{ color: '#666', fontSize: '14px' }}>Pending</div>
-        </div>
-        <div style={{
-          background: '#fff',
-          padding: '20px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card
-        }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
-          <div style={{ fontSize: '20px', fontWeight: '900' }}>
-            {formatCurrency(
-              filteredTransactions
-                .filter(t => t.status === 'completed')
-                .reduce((sum, t) => sum + (typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount), 0)
-            )}
-          </div>
-          <div style={{ color: '#666', fontSize: '14px' }}>Total Volume</div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <ModernStatCard
+          label="Total Transactions"
+          value={String(filteredTransactions.length)}
+          icon={<span>📊</span>}
+          colorClass="text-blue-600 bg-blue-50"
+          trend="neutral"
+        />
+        <ModernStatCard
+          label="Completed"
+          value={String(filteredTransactions.filter(t => t.status === 'completed').length)}
+          icon={<span>✅</span>}
+          colorClass="text-emerald-600 bg-emerald-50"
+          trend="up"
+        />
+        <ModernStatCard
+          label="Pending"
+          value={String(filteredTransactions.filter(t => t.status === 'pending').length)}
+          icon={<span>⏳</span>}
+          colorClass="text-amber-600 bg-amber-50"
+          trend="neutral"
+        />
+        <ModernStatCard
+          label="Total Volume"
+          value={formatCurrency(totalVolume)}
+          icon={<span>💰</span>}
+          colorClass="text-purple-600 bg-purple-50"
+          trend="up"
+        />
       </div>
 
+      {/* Filters */}
+      <Card className="p-6 bg-white">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Search</label>
+            <Input
+              className="mb-0"
+              placeholder="ID or description..."
+              value={filter.search}
+              onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Type</label>
+            <select
+              value={filter.type}
+              onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
+            >
+              <option value="all">All Types</option>
+              <option value="deposit">Deposit</option>
+              <option value="withdrawal">Withdrawal</option>
+              <option value="transfer">Transfer</option>
+              <option value="payment">Payment</option>
+              <option value="fee">Fee</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Status</label>
+            <select
+              value={filter.status}
+              onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
+            >
+              <option value="all">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
       {/* Transactions Table */}
-      <div style={{
-        background: '#fff',
-        borderRadius: THEME.radius.card,
-        border: '2px solid #000',
-        boxShadow: THEME.shadows.card,
-        overflow: 'hidden'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <GlassCard className="overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ background: THEME.colors.bg, borderBottom: '2px solid #000' }}>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '900' }}>ID</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '900' }}>Type</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '900' }}>Amount</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '900' }}>Description</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '900' }}>Status</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '900' }}>Date</th>
+              <tr className="bg-gray-50/50 border-b border-gray-200 text-left">
+                <th className="p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">ID</th>
+                <th className="p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Type</th>
+                <th className="p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Amount</th>
+                <th className="p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Description</th>
+                <th className="p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Status</th>
+                <th className="p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Date</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+                  <td colSpan={6} className="p-10 text-center text-gray-400">
+                    <div className="text-4xl mb-2">📭</div>
                     <p>No transactions found</p>
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((tx, index) => (
+                filteredTransactions.map((tx) => (
                   <tr
                     key={tx.id}
-                    style={{
-                      borderBottom: '1px solid #e0e0e0',
-                      background: index % 2 === 0 ? '#fff' : '#fafafa',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#fafafa'}
+                    className="hover:bg-blue-50/30 transition-colors"
                   >
-                    <td style={{ padding: '16px', fontWeight: '700' }}>#{tx.id}</td>
-                    <td style={{ padding: '16px' }}>
-                      <span style={{ fontSize: '20px', marginRight: '8px' }}>{getTypeIcon(tx.transaction_type)}</span>
+                    <td className="p-4 font-mono text-sm text-gray-500">#{tx.id}</td>
+                    <td className="p-4 font-medium text-gray-800">
+                      <span className="text-xl mr-2">{getTypeIcon(tx.transaction_type)}</span>
                       {tx.transaction_type}
                     </td>
-                    <td style={{ padding: '16px', fontWeight: '700', color: THEME.colors.success }}>
+                    <td className="p-4 font-bold text-gray-900">
                       {formatCurrency(tx.amount)}
                     </td>
-                    <td style={{ padding: '16px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <td className="p-4 text-gray-600 text-sm max-w-xs truncate">
                       {tx.description || 'No description'}
                     </td>
-                    <td style={{ padding: '16px' }}>
-                      <span style={{
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        background: getStatusColor(tx.status),
-                        color: '#fff',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        textTransform: 'uppercase'
-                      }}>
-                        {tx.status}
-                      </span>
+                    <td className="p-4">
+                      {getStatusBadge(tx.status)}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '13px', color: '#666' }}>
+                    <td className="p-4 text-sm text-gray-500">
                       {formatDate(tx.timestamp)}
                     </td>
                   </tr>
@@ -328,7 +250,7 @@ const TransactionsSection: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };

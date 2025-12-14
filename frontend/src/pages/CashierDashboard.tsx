@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import ModernStatCard from '../components/ui/modern/ModernStatCard';
 
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 
@@ -24,19 +26,16 @@ import SecurityMonitoringTab from '../components/cashier/SecurityMonitoringTab';
 import MessagingTab from '../components/cashier/MessagingTab';
 import CashAdvancesTab from '../components/cashier/CashAdvancesTab';
 import TransactionSearchTab from '../components/cashier/TransactionSearchTab';
+import RefundsTab from '../components/cashier/RefundsTab';
+import OverviewTab from '../components/cashier/OverviewTab';
+import DepositTab from '../components/cashier/DepositTab';
+import WithdrawalTab from '../components/cashier/WithdrawalTab';
+import CheckDepositTab from '../components/cashier/CheckDepositTab';
 
 
 // --- HELPER COMPONENTS ---
 
-const Input = ({ label, className = "", ...props }: any) => (
-  <div className={`mb-4 ${className}`}>
-    {label && <label className="block mb-2 font-medium text-secondary-700 ml-1">{label}</label>}
-    <input
-      className="w-full padding-3 rounded-lg border-secondary-300 border focus:border-primary-500 focus:ring-primary-500 p-3 bg-secondary-50 transition-colors"
-      {...props}
-    />
-  </div>
-);
+// --- HELPER COMPONENTS ---
 
 // Error Boundary
 interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
@@ -318,114 +317,52 @@ const CashierDashboard: React.FC = () => {
     switch (activeTab) {
       case 'overview':
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="flex flex-col items-center justify-center p-6 text-center hover:border-warning-300">
-                <div className="text-secondary-500 font-bold uppercase text-xs mb-2">Transactions Today</div>
-                <div className="text-3xl font-bold text-secondary-900">{dailySummary.transactions}</div>
-              </Card>
-              <Card className="flex flex-col items-center justify-center p-6 text-center hover:border-success-300">
-                <div className="text-secondary-500 font-bold uppercase text-xs mb-2">Total Amount</div>
-                <div className="text-3xl font-bold text-success-600">{dailySummary.totalAmount}</div>
-              </Card>
-              <Card className="flex flex-col items-center justify-center p-6 text-center hover:border-primary-300">
-                <div className="text-secondary-500 font-bold uppercase text-xs mb-2">Cash On Hand</div>
-                <div className="text-3xl font-bold text-primary-600">{dailySummary.cashOnHand}</div>
-              </Card>
-            </div>
-            <Card>
-              <h3 className="text-lg font-bold text-secondary-900 mb-4">Recent Transactions</h3>
-              <div className="space-y-2">
-                {transactions.slice(0, 5).map((tx, i) => (
-                  <div key={i} className="flex justify-between items-center p-3 hover:bg-secondary-50 rounded-lg transition-colors border-b border-secondary-100 last:border-0">
-                    <span className="font-mono text-sm text-secondary-600">{tx.id || 'TX-ID'}</span>
-                    <span className="font-bold text-secondary-900">{formatCurrencyGHS(tx.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+          <OverviewTab
+            dailySummary={dailySummary}
+            transactions={transactions}
+          />
         );
       case 'deposit':
         return (
-          <Card className="max-w-md mx-auto border-t-4 border-t-success-500">
-            <h2 className="text-2xl font-bold text-success-700 mb-6 text-center">💰 Make a Deposit</h2>
-            <form onSubmit={(e) => handleTransactionSubmit(e, 'Deposit')}>
-              <Input
-                label="Member ID"
-                placeholder="Search or Enter Member ID"
-                list="member-list"
-                value={depositMemberId}
-                onChange={(e: any) => setDepositMemberId(e.target.value)}
-              />
-              <Input
-                label="Amount (GHS)"
-                type="number"
-                placeholder="0.00"
-                value={depositAmount}
-                onChange={(e: any) => setDepositAmount(e.target.value)}
-              />
-              <Button type="submit" variant="success" className="w-full mt-4" disabled={loading}>
-                {loading ? 'Processing...' : 'Process Deposit'}
-              </Button>
-            </form>
-          </Card>
+          <DepositTab
+            depositAmount={depositAmount}
+            setDepositAmount={setDepositAmount}
+            depositMemberId={depositMemberId}
+            setDepositMemberId={setDepositMemberId}
+            members={members}
+            loading={loading}
+            handleTransactionSubmit={handleTransactionSubmit}
+          />
         );
       case 'withdrawal':
         return (
-          <Card className="max-w-md mx-auto border-t-4 border-t-error-500">
-            <h2 className="text-2xl font-bold text-error-700 mb-6 text-center">💸 Make a Withdrawal</h2>
-            <form onSubmit={(e) => handleTransactionSubmit(e, 'Withdrawal')}>
-              <Input
-                label="Member ID"
-                placeholder="Search or Enter Member ID"
-                list="member-list"
-                value={withdrawalMemberId}
-                onChange={(e: any) => setWithdrawalMemberId(e.target.value)}
-              />
-              <Input
-                label="Amount (GHS)"
-                type="number"
-                placeholder="0.00"
-                value={withdrawalAmount}
-                onChange={(e: any) => setWithdrawalAmount(e.target.value)}
-              />
-              <Button type="submit" variant="danger" className="w-full mt-4" disabled={loading}>
-                {loading ? 'Processing...' : 'Process Withdrawal'}
-              </Button>
-            </form>
-          </Card>
+          <WithdrawalTab
+            withdrawalAmount={withdrawalAmount}
+            setWithdrawalAmount={setWithdrawalAmount}
+            withdrawalMemberId={withdrawalMemberId}
+            setWithdrawalMemberId={setWithdrawalMemberId}
+            members={members}
+            loading={loading}
+            handleTransactionSubmit={handleTransactionSubmit}
+          />
         );
       case 'check_deposit':
         return (
-          <Card className="max-w-md mx-auto border-t-4 border-t-warning-500">
-            <h2 className="text-2xl font-bold text-warning-700 mb-6 text-center">📄 Check Deposit</h2>
-            <form onSubmit={handleCheckDepositSubmit}>
-              <Input
-                label="Member ID"
-                value={checkDepositMemberId}
-                onChange={(e: any) => setCheckDepositMemberId(e.target.value)}
-                list="member-list"
-              />
-              <Input
-                label="Check Amount"
-                type="number"
-                value={checkDepositAmount}
-                onChange={(e: any) => setCheckDepositAmount(e.target.value)}
-              />
-              <div className="bg-secondary-50 p-6 rounded-xl border-2 border-dashed border-secondary-300 text-center mb-6 hover:border-primary-400 transition-colors">
-                <label className="cursor-pointer">
-                  <div className="text-4xl mb-2">📸</div>
-                  <span className="font-bold text-secondary-600 block">Upload Front Photo</span>
-                  <input type="file" onChange={(e: any) => setFrontImage(e.target.files[0])} className="hidden" />
-                </label>
-                {frontImage && <p className="text-success-600 font-bold mt-2">File Selected: {frontImage.name}</p>}
-              </div>
-              <Button type="submit" variant="primary" className="w-full bg-warning-500 hover:bg-warning-600 text-white border-warning-600" disabled={loading}>
-                {loading ? 'Scanning...' : 'Deposit Check'}
-              </Button>
-            </form>
-          </Card>
+          <CheckDepositTab
+            checkDepositAmount={checkDepositAmount}
+            setCheckDepositAmount={setCheckDepositAmount}
+            checkDepositMemberId={checkDepositMemberId}
+            setCheckDepositMemberId={setCheckDepositMemberId}
+            checkDepositAccountType={checkDepositAccountType}
+            setCheckDepositAccountType={setCheckDepositAccountType}
+            frontImage={frontImage}
+            setFrontImage={setFrontImage}
+            backImage={backImage}
+            setBackImage={setBackImage}
+            members={members}
+            loading={loading}
+            handleCheckDepositSubmit={handleCheckDepositSubmit}
+          />
         );
       case 'refunds': return <RefundsTab />;
       case 'complaints': return <ComplaintsTab />;

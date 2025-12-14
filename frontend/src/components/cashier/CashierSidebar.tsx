@@ -1,11 +1,12 @@
 import React from 'react';
-import { THEME, PlayfulButton } from './CashierTheme';
+import { Button } from '../ui/Button';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface Tab {
   id: string;
   name: string;
   icon: string;
-  color: string;
+  color?: string;
 }
 
 interface CashierSidebarProps {
@@ -24,57 +25,57 @@ const CashierSidebar: React.FC<CashierSidebarProps> = ({
   tabs
 }) => {
   return (
-    <nav style={{
-      width: '260px',
-      background: THEME.colors.white,
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      borderRight: `3px solid ${THEME.colors.border}`,
-      overflowY: 'auto'
-    }}>
-      <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-        <div style={{
-          width: '60px', height: '60px', background: THEME.colors.primary,
-          borderRadius: '50%', margin: '0 auto 10px', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', fontSize: '30px'
-        }}>🏦</div>
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: THEME.colors.primary }}>PiggyBank OS</h1>
-        <p style={{ margin: 0, fontSize: '14px', color: THEME.colors.muted }}>Hello, {user?.name || 'Friend'}!</p>
+    <div className="w-[260px] bg-white border-r border-gray-200 h-screen overflow-y-auto flex flex-col p-4 fixed left-0 top-0 z-20 shadow-xl shadow-gray-200/50">
+      <div className="mb-8 text-center pt-4">
+        <div className="w-16 h-16 bg-coastal-primary rounded-full mx-auto mb-3 flex items-center justify-center text-3xl shadow-lg shadow-coastal-primary/30">
+          🏦
+        </div>
+        <h1 className="text-xl font-black text-coastal-primary mb-1 tracking-tight">PiggyBank OS</h1>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Coastal Banking</p>
+
+        {user && (
+          <div className="mt-4 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 flex items-center gap-2 justify-center">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-sm font-medium text-gray-600 truncate max-w-[150px]">{user.name || user.email}</span>
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div className="flex flex-col gap-2 flex-1">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 16px',
-              border: activeTab === tab.id ? `3px solid ${tab.color || THEME.colors.primary}` : '3px solid transparent',
-              background: activeTab === tab.id ? `${tab.color}15` : 'transparent',
-              borderRadius: THEME.radius.medium,
-              cursor: 'pointer',
-              textAlign: 'left',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: activeTab === tab.id ? (tab.color || THEME.colors.primary) : THEME.colors.muted,
-              transition: 'all 0.2s ease',
-              transform: activeTab === tab.id ? 'scale(1.02)' : 'none'
-            }}
+            className={`
+              flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-left
+              ${activeTab === tab.id
+                ? 'bg-gradient-to-r from-coastal-primary to-blue-600 text-white shadow-lg shadow-blue-200 scale-105 font-bold'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium'
+              }
+            `}
           >
-            <span style={{ fontSize: '20px' }}>{tab.icon || '⏺️'}</span>
-            {tab.name}
+            <span className={`text-xl transition-transform group-hover:scale-110 ${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`}>
+              {tab.icon || '⏺️'}
+            </span>
+            <span className="text-sm tracking-wide">{tab.name}</span>
+            {activeTab === tab.id && (
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+            )}
           </button>
         ))}
       </div>
 
-      <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-         <PlayfulButton variant="danger" onClick={handleLogout} style={{ width: '100%' }}>
-           Logout 👋
-         </PlayfulButton>
+      <div className="mt-auto pt-6 border-t border-gray-100">
+        <Button
+          variant="danger"
+          onClick={handleLogout}
+          className="w-full justify-center shadow-lg shadow-red-50 hover:shadow-red-100"
+        >
+          Logout 👋
+        </Button>
+        <p className="text-[10px] text-center text-gray-300 mt-4 font-mono">v2.5.0 • Secure</p>
       </div>
-    </nav>
+    </div>
   );
 };
 

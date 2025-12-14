@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayfulCard, THEME } from './MobileTheme';
+import ModernStatCard from '../ui/modern/ModernStatCard';
 import { formatCurrencyGHS } from '../../utils/formatters';
 
 interface MobileMetricsProps {
@@ -14,20 +14,47 @@ interface MobileMetricsProps {
 
 const MobileMetrics: React.FC<MobileMetricsProps> = ({ metrics, loadingMetrics }) => {
   const fieldMetrics = [
-    { label: 'Visits', value: loadingMetrics ? '...' : (metrics?.scheduled_visits || 0).toString(), icon: '🛵', color: THEME.colors.primary },
-    { label: 'Done', value: loadingMetrics ? '...' : (metrics?.completed_today || 0).toString(), icon: '✅', color: THEME.colors.success },
-    { label: 'Collect', value: loadingMetrics ? '...' : formatCurrencyGHS(metrics?.collections_due || 0), icon: '💰', color: THEME.colors.warning },
-    { label: 'New Apps', value: loadingMetrics ? '...' : (metrics?.new_applications || 0).toString(), icon: '📝', color: THEME.colors.info }
+    {
+      label: 'Visits',
+      value: loadingMetrics ? '...' : (metrics?.scheduled_visits || 0).toString(),
+      icon: '🛵',
+      colorClass: 'text-indigo-600 bg-indigo-50',
+      trend: 'neutral'
+    },
+    {
+      label: 'Done',
+      value: loadingMetrics ? '...' : (metrics?.completed_today || 0).toString(),
+      icon: '✅',
+      colorClass: 'text-emerald-600 bg-emerald-50',
+      trend: 'up'
+    },
+    {
+      label: 'Collect',
+      value: loadingMetrics ? '...' : formatCurrencyGHS(metrics?.collections_due || 0),
+      icon: '💰',
+      colorClass: 'text-amber-600 bg-amber-50',
+      trend: 'neutral'
+    },
+    {
+      label: 'New Apps',
+      value: loadingMetrics ? '...' : (metrics?.new_applications || 0).toString(),
+      icon: '📝',
+      colorClass: 'text-sky-600 bg-sky-50',
+      trend: 'up'
+    }
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       {fieldMetrics.map((m, i) => (
-        <PlayfulCard key={i} color={m.color} style={{ color: 'white', borderColor: 'black', textAlign: 'center', padding: '15px' }}>
-          <div style={{ fontSize: '24px', marginBottom: '5px' }}>{m.icon}</div>
-          <div style={{ fontSize: '20px', fontWeight: '900' }}>{m.value}</div>
-          <div style={{ fontSize: '12px', fontWeight: 'bold', opacity: 0.9 }}>{m.label}</div>
-        </PlayfulCard>
+        <ModernStatCard
+          key={i}
+          label={m.label}
+          value={m.value}
+          icon={<span className="text-2xl">{m.icon}</span>}
+          colorClass={m.colorClass}
+          trend={m.trend as any}
+        />
       ))}
     </div>
   );

@@ -149,14 +149,12 @@ function OperationsManagerDashboard() {
     switch (activeView) {
       case 'overview':
         return (
-          <Card>
-            <OverviewTab
-              loading={loading}
-              metrics={metrics}
-              branchActivity={branchActivity}
-              workflowStatus={workflowStatus}
-            />
-          </Card>
+          <OverviewTab
+            loading={loading}
+            metrics={metrics}
+            branchActivity={branchActivity}
+            workflowStatus={workflowStatus}
+          />
         );
       case 'accounts': return <Card><AccountsTab /></Card>;
       case 'client-registration': return <Card><ClientRegistrationTab /></Card>;
@@ -167,7 +165,6 @@ function OperationsManagerDashboard() {
             staffIds={staffIds}
             staffIdFilters={staffIdFilters}
             setStaffIdFilters={setStaffIdFilters}
-            fetchStaffIds={fetchStaffIds}
             fetchStaffIds={fetchStaffIds}
           />
         );

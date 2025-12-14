@@ -1,9 +1,9 @@
 import React from 'react';
 
-export const Card = ({ children, className = '', padding = 'p-6', variant = 'glass' }) => {
+export const Card = ({ children, className = '', padding = 'p-6', variant = 'default' }) => {
     const baseClasses = variant === 'glass'
         ? 'glass-card'
-        : 'bg-white rounded-xl shadow-sm border border-secondary-200';
+        : 'bg-white rounded-2xl shadow-card border border-gray-100 hover:shadow-lg transition-shadow duration-200';
 
     return (
         <div className={`${baseClasses} ${padding} ${className}`}>
