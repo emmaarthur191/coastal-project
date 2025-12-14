@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     # Favicon
     path('favicon.ico', RedirectView.as_view(url='/static/core/favicon.ico', permanent=True)),
+    # Root path
+    path('', health_check_simple, name='root'),
 ]
