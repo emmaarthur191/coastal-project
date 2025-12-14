@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     # Local apps
     'core',
     'users.apps.UsersConfig',  # Use full config for signal loading
+    'csp', # Content Security Policy
 ]
 
 MIDDLEWARE = [
@@ -92,7 +93,8 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'csp.middleware.CSPMiddleware', # Replace XFrameOptionsMiddleware with CSP
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware', # Removed in favor of CSP
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
@@ -413,6 +415,20 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+# Content Security Policy (via django-csp)
+# Replaces X-Frame-Options
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'") # Needed for Admin/DRF styles sometimes
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'") # Often needed for legacy or complex frontends
+CSP_IMG_SRC = ("'self'", "data:")
+CSP_FONT_SRC = ("'self'", "data:")
+# Frame Ancestors - Equivalent to SAMEORIGIN, but stronger
+CSP_FRAME_ANCESTORS = ("'self'",)
+
+# Allow external CSP sources if defined in env (e.g., for analytics, sentry)
+if env.list('CSP_SCRIPT_SRC', default=[]):
+    CSP_SCRIPT_SRC += tuple(env.list('CSP_SCRIPT_SRC'))
 
 # Allow credentials (cookies, authorization headers)
 CORS_ALLOW_CREDENTIALS = True
