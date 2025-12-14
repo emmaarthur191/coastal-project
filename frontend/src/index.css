@@ -23,6 +23,18 @@
   --color-white-dark: #f1f5f9;
   /* Slate 100 */
 
+  /* Glass Variables (Light Mode Default) */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-text-primary: #1e293b;
+  --glass-text-secondary: #475569;
+
+  /* App Background */
+  --app-bg: #f0f4f8;
+  /* Light gray-blue base */
+  --app-bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
   /* Secondary/Accent - Cyan/Slate */
   --color-secondary: #64748b;
   /* Slate 500 */
@@ -75,6 +87,40 @@
   --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* Dark Mode Variables */
+.dark {
+  /* Backgrounds */
+  --color-white: #0f172a;
+  /* Slate 900 base */
+  --color-white-light: #1e293b;
+  /* Slate 800 */
+  --color-white-dark: #334155;
+  /* Slate 700 */
+
+  /* App Background */
+  --app-bg: #0f172a;
+  --app-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+
+  /* Glass Variables (Dark Mode) */
+  --glass-bg: rgba(30, 41, 59, 0.70);
+  /* Slate 800 with opacity */
+  --glass-border: rgba(148, 163, 184, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-text-primary: #f8fafc;
+  /* Slate 50 */
+  --glass-text-secondary: #cbd5e1;
+  /* Slate 300 */
+
+  /* Text Colors */
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+
+  /* Borders */
+  --color-border-light: #334155;
+  --color-border-medium: #475569;
+}
+
 /* Base Styles with WCAG 2.1 AA Compliance */
 * {
   box-sizing: border-box;
@@ -84,10 +130,8 @@
 
 html {
   font-size: 16px;
-  /* Base font size for rem calculations */
   scroll-behavior: smooth;
 
-  /* Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
     scroll-behavior: auto;
   }
@@ -95,752 +139,84 @@ html {
 
 body {
   font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: var(--color-white);
+  background-color: var(--app-bg);
+  background-image: var(--app-bg-gradient);
+  background-attachment: fixed;
+  /* Parallax-like feel */
   color: var(--color-text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    border: 2px solid var(--color-text-primary);
-  }
-}
-
-/* Focus Management - WCAG 2.1 AA Compliance */
-*:focus {
-  outline: none;
-}
-
-*:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
-  transition: outline-offset var(--motion-fast) var(--easing-standard);
-}
-
-/* High contrast focus for error states */
-.error-input:focus-visible {
-  outline-color: var(--color-error);
-  box-shadow: 0 0 0 3px var(--color-focus-ring-error);
-}
-
-/* Skip Link Styles */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.sr-only:focus {
-  position: static;
-  width: auto;
-  height: auto;
-  padding: 8px 16px;
-  margin: 0;
-  overflow: visible;
-  clip: auto;
-  white-space: normal;
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
-  z-index: 9999;
-}
-
-/* Selection Colors */
-::selection {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-::-moz-selection {
-  background-color: var(--color-primary);
-  color: var(--color-white);
+  min-height: 100vh;
 }
 
 /* Component Styles */
 @layer components {
 
-  /* Login Form Container */
-  .login-container {
-    @apply min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative;
+  /* Global Glass Card Utility */
+  .glass-card-global {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: var(--glass-text-primary);
   }
 
-  /* Login Card */
-  .login-card {
-    @apply bg-white py-8 px-4 shadow-float rounded-2xl border border-neutral-200 sm:px-10 relative;
+  /* Glass Panel */
+  .glass-panel {
+    @apply glass-card-global shadow-xl;
   }
 
-  /* Form Input Styles */
+  /* Glass Card (Tailwind class override/extension) */
+  .glass-card {
+    @apply glass-card-global rounded-2xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply hover:bg-opacity-90;
+    /* In dark mode, maybe brighten slightly? handled by opacity */
+  }
+
+  /* Inputs */
   .form-input {
-    @apply w-full px-4 py-3.5 bg-white border rounded-xl text-neutral-900 placeholder-neutral-400 focus:bg-white focus:ring-4 transition-all duration-200 min-h-touch;
+    @apply w-full px-4 py-3.5 border rounded-xl transition-all duration-200 min-h-touch;
+    background-color: rgba(255, 255, 255, 0.5);
+    /* Semi-transparent white default */
+    border-color: var(--color-border-medium);
+    color: var(--color-text-primary);
+  }
+
+  .dark .form-input {
+    background-color: rgba(15, 23, 42, 0.5);
+    /* Dark transparent */
+    color: white;
   }
 
   .form-input:focus {
+    background-color: var(--color-white);
+    /* Solid on focus for readability? Or more opaque */
     border-color: var(--color-primary);
     box-shadow: 0 0 0 4px var(--color-focus-ring);
   }
 
-  .form-input.error {
-    border-color: var(--color-error);
-    box-shadow: 0 0 0 4px var(--color-focus-ring-error);
+  .dark .form-input:focus {
+    background-color: rgba(15, 23, 42, 0.8);
   }
 
-  .form-input.error:focus {
-    border-color: var(--color-error);
-    box-shadow: 0 0 0 4px var(--color-focus-ring-error);
-  }
-
-  /* Button Styles */
+  /* Buttons */
   .btn-primary {
     @apply w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-sm text-white font-semibold transition-all duration-200 min-h-touch relative overflow-hidden;
     background-color: var(--color-primary);
   }
 
-  .btn-primary:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 10px 25px rgba(0, 102, 204, 0.25);
+  /* Text Colors */
+  .text-secondary-900 {
+    color: var(--color-text-primary);
   }
 
-  .btn-primary:focus {
-    box-shadow: 0 0 0 4px var(--color-focus-ring);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* Error Message Styles */
-  .error-message {
-    @apply mt-1 text-sm flex items-center gap-1;
-    color: var(--color-error);
-  }
-
-  .error-message svg {
-    flex-shrink: 0;
-  }
-
-  /* Success Message Styles */
-  .success-message {
-    @apply mb-6 p-4 rounded-xl animate-slide-down;
-    background-color: var(--color-success-light);
-    border: 1px solid var(--color-success);
-  }
-
-  /* Password Strength Indicator */
-  .password-strength {
-    @apply mt-2;
-  }
-
-  .password-strength-bar {
-    @apply w-full bg-neutral-200 rounded-full h-2;
-  }
-
-  .password-strength-fill {
-    @apply h-2 rounded-full transition-all duration-300;
-  }
-
-  .password-strength-fill.weak {
-    background-color: var(--color-error);
-  }
-
-  .password-strength-fill.medium {
-    background-color: var(--color-warning);
-  }
-
-  .password-strength-fill.strong {
-    background-color: var(--color-success);
-  }
-
-  /* Social Login Buttons */
-  .btn-social {
-    @apply w-full inline-flex justify-center py-3 px-4 border border-neutral-300 rounded-xl shadow-sm bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-all duration-200 min-h-touch;
-  }
-
-  .btn-social:focus {
-    box-shadow: 0 0 0 4px var(--color-focus-ring);
-  }
-
-  /* Remember Me Checkbox */
-  .checkbox {
-    @apply h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 transition-colors;
-  }
-
-  .checkbox:focus {
-    box-shadow: 0 0 0 4px var(--color-focus-ring);
-  }
-
-  /* Loading Spinner */
-  .spinner {
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  /* Form Labels */
-  .form-label {
-    @apply block text-sm font-semibold mb-2;
-    color: var(--color-text-secondary);
-  }
-
-  .form-label.required::after {
-    content: ' *';
-    color: var(--color-error);
-  }
-
-  /* Background Decorative Elements */
-  .bg-decoration {
-    @apply absolute inset-0 overflow-hidden pointer-events-none;
-  }
-
-  .bg-decoration::before {
-    content: '';
-    @apply absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-3xl opacity-30;
-    background-color: var(--color-primary-light);
-  }
-
-  .bg-decoration::after {
-    content: '';
-    @apply absolute -bottom-40 -left-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-3xl opacity-20;
-    background-color: var(--color-warning-medium);
-  }
-
-  /* Trust Indicators */
-  .trust-indicator {
-    @apply bg-white/90 backdrop-blur-sm rounded-xl p-3 text-center border border-neutral-100 shadow-soft;
-  }
-
-  /* Logo Container */
-  .logo-container {
-    @apply inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6 shadow-elevated;
-    background-color: var(--color-primary);
-  }
-
-  /* Status Badge */
-  .status-badge {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full border;
-    background-color: var(--color-primary-light);
-    border-color: var(--color-primary);
-  }
-
-  .status-dot {
-    @apply w-2 h-2 rounded-full;
-    background-color: var(--color-success);
-    animation: pulse-gentle 2s infinite;
-  }
-
-  /* Error Summary */
-  .error-summary {
-    @apply mb-6 p-4 rounded-xl;
-    background-color: var(--color-error-light);
-    border: 1px solid var(--color-error);
-  }
-
-  /* Input Groups */
-  .input-group {
-    @apply relative;
-  }
-
-  .input-icon {
-    @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400;
-  }
-
-  .input-icon-right {
-    @apply absolute right-4 top-1/2 transform -translate-y-1/2 text-neutral-400;
-  }
-
-  .input-toggle {
-    @apply absolute right-4 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
-  }
-
-  /* Divider */
-  .divider {
-    @apply relative;
-  }
-
-  .divider::before {
-    content: '';
-    @apply absolute inset-0 flex items-center;
-  }
-
-  .divider::before {
-    @apply w-full border-t border-neutral-300;
-  }
-
-  .divider-text {
-    @apply relative flex justify-center text-sm px-2 bg-white;
+  .text-secondary-500 {
     color: var(--color-text-tertiary);
-  }
-
-  /* Glassmorphism Utilities */
-  .glass-panel {
-    @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-xl;
-  }
-
-  .glass-card {
-    @apply bg-white/60 backdrop-blur-sm border border-white/40 shadow-lg rounded-2xl hover:bg-white/80 transition-all duration-300;
-  }
-
-  .glass-button {
-    @apply bg-white/30 backdrop-blur-sm border border-white/40 hover:bg-white/50 transition-all active:scale-95 text-secondary-900;
-  }
-
-  .glass-sidebar {
-    @apply bg-slate-900/90 backdrop-blur-lg border-r border-slate-700/50 text-white;
-  }
-
-  .glass-header {
-    @apply bg-white/70 backdrop-blur-lg border-b border-white/20 shadow-sm sticky top-0 z-50;
-  }
-
-  .deep-ocean-glass {
-    @apply bg-slate-800/60 backdrop-blur-md border border-slate-600/30 text-white shadow-2xl;
-  }
-
-  .glass-input {
-    @apply bg-white/50 backdrop-blur-sm border border-secondary-200 focus:bg-white/90 focus:ring-2 focus:ring-primary-500/50 transition-all;
-  }
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes pulse-gentle {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.8;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes bounce-gentle {
-
-  0%,
-  100% {
-    transform: translateY(-5%);
-    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-  }
-
-  50% {
-    transform: translateY(0);
-    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-  }
-}
-
-/* Animation Classes */
-.animate-fade-in {
-  animation: fadeIn var(--motion-normal) var(--easing-standard);
-}
-
-.animate-slide-up {
-  animation: slideUp var(--motion-slow) var(--easing-emphasized);
-}
-
-.animate-slide-down {
-  animation: slideDown var(--motion-slow) var(--easing-emphasized);
-}
-
-.animate-scale-in {
-  animation: scaleIn var(--motion-normal) var(--easing-emphasized);
-}
-
-.animate-pulse-gentle {
-  animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.animate-bounce-gentle {
-  animation: bounce-gentle 2s infinite;
-}
-
-.animate-shimmer {
-  animation: shimmer 2s infinite linear;
-}
-
-/* Reduced Motion Preferences */
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-
-  .animate-pulse-gentle,
-  .animate-bounce-gentle,
-  .animate-shimmer {
-    animation: none;
-  }
-}
-
-/* High Contrast Mode Support */
-@media (prefers-contrast: high) {
-  .login-card {
-    border: 3px solid var(--color-text-primary);
-  }
-
-  .form-input {
-    border: 2px solid var(--color-text-primary);
-  }
-
-  .btn-primary {
-    border: 2px solid var(--color-text-primary);
-  }
-
-  .error-message {
-    font-weight: 600;
-  }
-}
-
-/* Dark Mode Support (Future Enhancement) */
-@media (prefers-color-scheme: dark) {
-  /* Dark mode styles can be added here if needed */
-}
-
-/* Print Styles */
-@media print {
-  .login-container {
-    background: white;
-    box-shadow: none;
-  }
-
-  .login-card {
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-
-  .btn-primary {
-    background: white;
-    color: black;
-    border: 1px solid black;
-  }
-
-  .bg-decoration {
-    display: none;
-  }
-}
-
-/* Screen Reader Only Content */
-.screen-reader-only {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
-/* Utility Classes */
-@layer utilities {
-
-  /* Touch Target Sizing */
-  .min-h-touch {
-    min-height: 44px;
-  }
-
-  .min-w-touch {
-    min-width: 44px;
-  }
-
-  /* Focus Ring Utilities */
-  .focus-ring {
-    box-shadow: 0 0 0 3px var(--color-focus-ring);
-  }
-
-  .focus-ring-error {
-    box-shadow: 0 0 0 3px var(--color-focus-ring-error);
-  }
-
-  .focus-ring-warning {
-    box-shadow: 0 0 0 3px var(--color-focus-ring-warning);
-  }
-
-  /* Text Utilities */
-  .text-primary {
-    color: var(--color-primary);
-  }
-
-  .text-error {
-    color: var(--color-error);
-  }
-
-  .text-warning {
-    color: var(--color-warning);
-  }
-
-  .text-success {
-    color: var(--color-success);
-  }
-
-  /* Background Utilities */
-  .bg-primary {
-    background-color: var(--color-primary);
-  }
-
-  .bg-error {
-    background-color: var(--color-error);
-  }
-
-  .bg-warning {
-    background-color: var(--color-warning);
-  }
-
-  .bg-success {
-    background-color: var(--color-success);
-  }
-
-  /* Spacing Utilities */
-  .safe-area-inset {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Z-index Utilities for Accessibility */
-  .z-skip-link {
-    z-index: 9999;
-  }
-
-  .z-modal {
-    z-index: 1000;
-  }
-
-  .z-tooltip {
-    z-index: 1100;
-  }
-}
-
-/* Responsive Design Helpers */
-@media (max-width: 640px) {
-  .login-card {
-    @apply mx-4;
-  }
-
-  .form-input {
-    @apply text-base;
-    /* Prevents zoom on iOS */
-  }
-}
-
-/* Large Screen Optimizations */
-@media (min-width: 1280px) {
-  .login-container {
-    @apply px-12;
-  }
-}
-
-/* Very Small Screens */
-@media (max-width: 374px) {
-  .login-card {
-    @apply mx-2 py-6 px-3;
-  }
-
-  .btn-primary {
-    @apply py-3 text-sm;
-  }
-}
-
-/* Loading States */
-.loading {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-.loading .spinner {
-  animation: spin 1s linear infinite;
-}
-
-/* Error States */
-.error-state {
-  border-color: var(--color-error) !important;
-  box-shadow: 0 0 0 4px var(--color-focus-ring-error) !important;
-}
-
-/* Success States */
-.success-state {
-  border-color: var(--color-success) !important;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
-}
-
-/* Warning States */
-.warning-state {
-  border-color: var(--color-warning) !important;
-  box-shadow: 0 0 0 4px var(--color-focus-ring-warning) !important;
-}
-
-/* Dashboard Responsive Layout */
-.dashboard-layout {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
-@media (max-width: 1200px) {
-  .dashboard-layout {
-    grid-template-columns: 1fr 350px;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .dashboard-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-layout {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin: 0 8px;
-  }
-}
-
-/* Responsive Grid Utilities */
-.responsive-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-@media (max-width: 640px) {
-  .responsive-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-}
-
-.responsive-grid-small {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-@media (max-width: 640px) {
-  .responsive-grid-small {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px;
-  }
-}
-
-/* Tab Navigation Responsive */
-.tab-navigation {
-  display: flex;
-  gap: 8px;
-  padding: 4px;
-  background: var(--md-sys-color-surface-container-highest);
-  border-radius: var(--md-sys-shape-corner-large);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.tab-navigation::-webkit-scrollbar {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  .tab-navigation {
-    gap: 4px;
-    padding: 2px;
-  }
-
-  .tab-button {
-    flex: 0 0 auto;
-    min-width: 80px;
-    padding: 8px 12px !important;
-    font-size: 12px !important;
   }
 }

@@ -1,74 +1,7 @@
 import React from 'react';
 import { formatCurrencyGHS } from '../utils/formatters';
-
-// --- PLAYFUL UI THEME CONSTANTS ---
-const THEME = {
-  colors: {
-    bg: '#FFF0F5', // Lavender Blush
-    primary: '#6C5CE7', // Purple
-    secondary: '#00CEC9', // Teal
-    success: '#00B894', // Green
-    danger: '#FF7675', // Salmon
-    warning: '#FDCB6E', // Mustard
-    sidebar: '#FFFFFF',
-    text: '#2D3436',
-    border: '#dfe6e9',
-  },
-  shadows: {
-    card: '0 8px 0px rgba(0,0,0,0.1)',
-    button: '0 4px 0px rgba(0,0,0,0.2)',
-    active: '0 2px 0px rgba(0,0,0,0.2)',
-  },
-  radius: {
-    card: '24px',
-    button: '50px',
-  }
-};
-
-// --- STYLED WRAPPERS ---
-const PlayfulCard = ({ children, color = '#FFFFFF', style = {} }) => (
-  <div style={{
-    background: color,
-    borderRadius: THEME.radius.card,
-    border: '3px solid #000000',
-    boxShadow: THEME.shadows.card,
-    padding: '24px',
-    marginBottom: '24px',
-    overflow: 'hidden',
-    ...style
-  }}>
-    {children}
-  </div>
-);
-
-const PlayfulButton = ({ children, onClick, variant = 'primary', style = {} }) => (
-  <button
-    onClick={onClick}
-    style={{
-      background: variant === 'danger' ? THEME.colors.danger : THEME.colors.primary,
-      color: 'white',
-      border: '3px solid #000000',
-      padding: '12px 24px',
-      borderRadius: THEME.radius.button,
-      fontWeight: '900',
-      fontSize: '16px',
-      cursor: 'pointer',
-      boxShadow: THEME.shadows.button,
-      transition: 'all 0.1s',
-      ...style
-    }}
-    onMouseDown={e => {
-      e.currentTarget.style.transform = 'translateY(4px)';
-      e.currentTarget.style.boxShadow = THEME.shadows.active;
-    }}
-    onMouseUp={e => {
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = THEME.shadows.button;
-    }}
-  >
-    {children}
-  </button>
-);
+import GlassCard from './ui/modern/GlassCard';
+import { Button } from './ui/Button';
 
 interface ReportsTabProps {
   handleGenerateReport: (reportType: string) => void;
@@ -79,256 +12,209 @@ interface ReportsTabProps {
 
 const ReportsTab: React.FC<ReportsTabProps> = ({ handleGenerateReport, authService, reportData, setReportData }) => {
   return (
-    <PlayfulCard>
-      <h3 style={{
-        fontSize: '24px',
-        fontWeight: '900',
-        color: THEME.colors.text,
-        marginBottom: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        🧾 Report Generation
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <span>🧾</span> Report Generation
       </h3>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             type: 'daily_transaction',
             title: 'Daily Transaction Report',
             description: 'Comprehensive daily transaction summary',
-            icon: '📊'
+            icon: '📊',
+            color: 'blue'
           },
           {
             type: 'system_performance',
             title: 'System Performance Report',
             description: 'System uptime and performance metrics',
-            icon: '⚡'
+            icon: '⚡',
+            color: 'amber'
           },
           {
             type: 'staff_activity',
             title: 'Staff Activity Report',
             description: 'Staff productivity and activity logs',
-            icon: '👥'
+            icon: '👥',
+            color: 'emerald'
           },
           {
             type: 'security_audit',
             title: 'Security Audit Report',
             description: 'Security incidents and compliance status',
-            icon: '🔒'
+            icon: '🔒',
+            color: 'red'
           }
         ].map((report, index) => (
-          <div key={index} style={{
-            cursor: 'pointer',
-            padding: '20px',
-            background: '#f8f9fa',
-            borderRadius: '12px',
-            border: '2px solid #ddd',
-            transition: 'all 0.2s ease'
-          }}
-          onClick={() => handleGenerateReport(report.type)}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = THEME.colors.primary}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#ddd'}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>{report.icon}</div>
-            <h4 style={{
-              fontSize: '16px',
-              fontWeight: '700',
-              color: THEME.colors.text,
-              marginBottom: '8px'
-            }}>
+          <button
+            key={index}
+            onClick={() => handleGenerateReport(report.type)}
+            className={`
+                group text-left p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
+                bg-white border-gray-200 hover:border-${report.color}-300 hover:bg-${report.color}-50/30
+            `}
+          >
+            <div className={`text-3xl mb-4 p-3 rounded-xl inline-block bg-${report.color}-100 text-${report.color}-600`}>
+              {report.icon}
+            </div>
+            <h4 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-coastal-primary transition-colors">
               {report.title}
             </h4>
-            <p style={{
-              fontSize: '14px',
-              color: '#666'
-            }}>
+            <p className="text-sm text-gray-500 leading-relaxed">
               {report.description}
             </p>
-          </div>
+          </button>
         ))}
       </div>
 
       {reportData && (
-        <PlayfulCard style={{ marginTop: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <GlassCard className="p-0 overflow-hidden animate-fade-in-up border-t-[6px] border-t-coastal-primary">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <div>
-              <h4 style={{ fontSize: '20px', fontWeight: '700', color: THEME.colors.text, marginBottom: '4px' }}>
+              <h4 className="text-xl font-bold text-gray-800">
                 {reportData.report_type}
               </h4>
-              <p style={{ fontSize: '16px', color: '#666' }}>
-                Period: {reportData.period}
+              <p className="text-sm text-gray-500 font-medium mt-1">
+                Period: <span className="text-gray-700">{reportData.period}</span>
               </p>
             </div>
-            <PlayfulButton
-              onClick={() => setReportData && setReportData(null)}
+            <Button
+              size="sm"
               variant="danger"
+              onClick={() => setReportData && setReportData(null)}
+              className="shadow-sm"
             >
-              Close Report
-            </PlayfulButton>
+              Close Report ✕
+            </Button>
           </div>
 
-          {/* Daily Transaction Report */}
-          {reportData.report_type === 'Daily Transaction Report' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {reportData.total_transactions?.toLocaleString() || 0}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Total Transactions
-                </div>
-              </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>💰</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {formatCurrencyGHS(reportData.total_volume || 0)}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Total Volume
-                </div>
-              </div>
-              {reportData.by_type && Object.entries(reportData.by_type).map(([type, data]: [string, any]) => (
-                <div key={type} className="md-outlined-card" style={{ padding: '16px' }}>
-                  <div className="md-typescale-title-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '8px', textTransform: 'capitalize' }}>
-                    {type}
+          <div className="p-8">
+            {/* Daily Transaction Report */}
+            {reportData.report_type === 'Daily Transaction Report' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-6 rounded-2xl text-center border border-blue-100">
+                    <div className="text-4xl mb-2">📊</div>
+                    <div className="text-3xl font-black text-gray-800 mb-1">{reportData.total_transactions?.toLocaleString() || 0}</div>
+                    <div className="text-sm text-gray-500 font-bold uppercase tracking-wider">Total Transactions</div>
                   </div>
-                  <div className="md-typescale-body-medium" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Count: {data.count?.toLocaleString() || 0}
-                  </div>
-                  <div className="md-typescale-body-medium" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Volume: {formatCurrencyGHS(data.volume || 0)}
+                  <div className="bg-emerald-50 p-6 rounded-2xl text-center border border-emerald-100">
+                    <div className="text-4xl mb-2">💰</div>
+                    <div className="text-3xl font-black text-emerald-600 mb-1">{formatCurrencyGHS(reportData.total_volume || 0)}</div>
+                    <div className="text-sm text-gray-500 font-bold uppercase tracking-wider">Total Volume</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* System Performance Report */}
-          {reportData.report_type === 'System Performance Report' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>⏱️</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-secondary)', marginBottom: '4px' }}>
-                  {reportData.uptime}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  System Uptime
-                </div>
+                {reportData.by_type && (
+                  <div>
+                    <h5 className="font-bold text-gray-800 mb-4 ml-1">Breakdown by Type</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {Object.entries(reportData.by_type).map(([type, data]: [string, any]) => (
+                        <div key={type} className="p-4 rounded-xl border border-gray-200 hover:border-blue-200 bg-white transition-colors">
+                          <div className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">{type}</div>
+                          <div className="flex justify-between items-end">
+                            <div>
+                              <div className="text-xs text-gray-400">Count</div>
+                              <div className="font-bold text-gray-800">{data.count?.toLocaleString() || 0}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-gray-400">Volume</div>
+                              <div className="font-bold text-coastal-primary">{formatCurrencyGHS(data.volume || 0)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚡</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {reportData.avg_response_time}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Avg Response Time
-                </div>
-              </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📈</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {reportData.total_requests?.toLocaleString() || 0}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Total Requests
-                </div>
-              </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>❌</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-error)', marginBottom: '4px' }}>
-                  {reportData.failed_requests?.toLocaleString() || 0}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Failed Requests
-                </div>
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Staff Activity Report */}
-          {reportData.report_type === 'Staff Activity Report' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>👥</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {reportData.total_staff || 0}
+            {/* System Performance Report */}
+            {reportData.report_type === 'System Performance Report' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
+                  <div className="text-3xl mb-3">⏱️</div>
+                  <div className="text-2xl font-black text-blue-600 mb-1">{reportData.uptime}</div>
+                  <div className="text-xs text-gray-400 font-bold uppercase">System Uptime</div>
                 </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Total Staff
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
+                  <div className="text-3xl mb-3">⚡</div>
+                  <div className="text-2xl font-black text-gray-800 mb-1">{reportData.avg_response_time}</div>
+                  <div className="text-xs text-gray-400 font-bold uppercase">Avg Response</div>
                 </div>
-              </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🟢</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-secondary)', marginBottom: '4px' }}>
-                  {reportData.active_staff || 0}
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
+                  <div className="text-3xl mb-3">📈</div>
+                  <div className="text-2xl font-black text-gray-800 mb-1">{reportData.total_requests?.toLocaleString() || 0}</div>
+                  <div className="text-xs text-gray-400 font-bold uppercase">Total Requests</div>
                 </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Active Staff
-                </div>
-              </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {reportData.transactions_processed?.toLocaleString() || 0}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Transactions Processed
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center">
+                  <div className="text-3xl mb-3">❌</div>
+                  <div className="text-2xl font-black text-red-500 mb-1">{reportData.failed_requests?.toLocaleString() || 0}</div>
+                  <div className="text-xs text-gray-400 font-bold uppercase">Failed Requests</div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Security Audit Report */}
-          {reportData.report_type === 'Security Audit Report' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🚨</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-error)', marginBottom: '4px' }}>
-                  {reportData.failed_login_attempts || 0}
+            {/* Staff Activity Report */}
+            {reportData.report_type === 'Staff Activity Report' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white text-center shadow-lg shadow-indigo-100">
+                  <div className="text-4xl mb-4 opacity-80">👥</div>
+                  <div className="text-4xl font-black mb-1">{reportData.total_staff || 0}</div>
+                  <div className="text-indigo-100 font-medium">Total Staff Members</div>
                 </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Failed Login Attempts
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white text-center shadow-lg shadow-emerald-100">
+                  <div className="text-4xl mb-4 opacity-80">🟢</div>
+                  <div className="text-4xl font-black mb-1">{reportData.active_staff || 0}</div>
+                  <div className="text-emerald-100 font-medium">Currently Active</div>
                 </div>
-              </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-tertiary)', marginBottom: '4px' }}>
-                  {reportData.suspicious_activities || 0}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Suspicious Activities
+                <div className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl p-6 text-white text-center shadow-lg shadow-gray-200">
+                  <div className="text-4xl mb-4 opacity-80">📊</div>
+                  <div className="text-4xl font-black mb-1">{reportData.transactions_processed?.toLocaleString() || 0}</div>
+                  <div className="text-gray-300 font-medium">Transactions Processed</div>
                 </div>
               </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🛡️</div>
-                <div className="md-typescale-headline-small" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-                  {reportData.security_incidents || 0}
+            )}
+
+            {/* Security Audit Report */}
+            {reportData.report_type === 'Security Audit Report' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-6 rounded-2xl bg-red-50 border border-red-100 text-center">
+                  <div className="text-3xl mb-2">🚨</div>
+                  <div className="text-2xl font-black text-red-600 mb-1">{reportData.failed_login_attempts || 0}</div>
+                  <div className="text-xs font-bold text-red-400 uppercase">Failed Logins</div>
                 </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Security Incidents
+                <div className="p-6 rounded-2xl bg-amber-50 border border-amber-100 text-center">
+                  <div className="text-3xl mb-2">⚠️</div>
+                  <div className="text-2xl font-black text-amber-600 mb-1">{reportData.suspicious_activities || 0}</div>
+                  <div className="text-xs font-bold text-amber-400 uppercase">Suspicious Activity</div>
+                </div>
+                <div className="p-6 rounded-2xl bg-gray-50 border border-gray-200 text-center">
+                  <div className="text-3xl mb-2">🛡️</div>
+                  <div className="text-2xl font-black text-gray-800 mb-1">{reportData.security_incidents || 0}</div>
+                  <div className="text-xs font-bold text-gray-400 uppercase">Incidents</div>
+                </div>
+                <div className={`
+                    p-6 rounded-2xl border text-center
+                    ${reportData.compliance_status === 'Compliant' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}
+                 `}>
+                  <div className="text-3xl mb-2">
+                    {reportData.compliance_status === 'Compliant' ? '✅' : '❌'}
+                  </div>
+                  <div className={`text-xl font-black mb-1 ${reportData.compliance_status === 'Compliant' ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {reportData.compliance_status}
+                  </div>
+                  <div className="text-xs font-bold opacity-60 uppercase">Compliance</div>
                 </div>
               </div>
-              <div className="md-filled-card" style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>
-                  {reportData.compliance_status === 'Compliant' ? '✅' : '❌'}
-                </div>
-                <div className="md-typescale-headline-small" style={{
-                  color: reportData.compliance_status === 'Compliant' ? 'var(--md-sys-color-secondary)' : 'var(--md-sys-color-error)',
-                  marginBottom: '4px'
-                }}>
-                  {reportData.compliance_status}
-                </div>
-                <div className="md-typescale-body-small" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                  Compliance Status
-                </div>
-              </div>
-            </div>
-          )}
-        </PlayfulCard>
+            )}
+          </div>
+        </GlassCard>
       )}
-    </PlayfulCard>
+    </div>
   );
 };
 

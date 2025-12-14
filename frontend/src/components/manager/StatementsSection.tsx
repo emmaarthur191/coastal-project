@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { THEME } from './ManagerTheme';
 import { authService } from '../../services/api';
+import GlassCard from '../ui/modern/GlassCard';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 
 interface StatementsSectionProps {
   formData: any;
@@ -49,155 +51,98 @@ const StatementsSection: React.FC<StatementsSectionProps> = ({
   };
 
   return (
-    <div>
-      <h3 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: '900' }}>📜 Account Statements</h3>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <span>📜</span> Account Statements
+      </h3>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(300px, 1fr) 1fr',
-        gap: '24px'
-      }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Generation Form */}
-        <div style={{
-          background: '#fff',
-          padding: '24px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          boxShadow: THEME.shadows.card,
-          height: 'fit-content'
-        }}>
-          <h4 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>
-            🛠️ Generate New Statement
+        <GlassCard className="p-6 border-t-[6px] border-t-blue-600">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">🛠️</span>
+            Generate New Statement
           </h4>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-              Select Account
-            </label>
-            <select
-              name="account_number"
-              value={formData.account_number || ''}
-              onChange={handleChange}
-              disabled={loadingAccounts}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '2px solid #000',
-                borderRadius: THEME.radius.input,
-                fontFamily: "'Nunito', sans-serif"
-              }}
-            >
-              <option value="">
-                {loadingAccounts ? 'Loading accounts...' : '-- Choose Account --'}
-              </option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.account_number}>
-                  {account.account_number} - {account.owner?.first_name} {account.owner?.last_name} ({account.type})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+          <div className="space-y-5">
             <div>
-              <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                Start Date
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                Select Account
               </label>
-              <input
+              <select
+                name="account_number"
+                value={formData.account_number || ''}
+                onChange={handleChange}
+                disabled={loadingAccounts}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                <option value="">
+                  {loadingAccounts ? 'Loading accounts...' : '-- Choose Account --'}
+                </option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.account_number}>
+                    {account.account_number} - {account.owner?.first_name} {account.owner?.last_name} ({account.type})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Start Date"
                 type="date"
                 name="start_date"
                 value={formData.start_date || ''}
                 onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '2px solid #000',
-                  borderRadius: THEME.radius.input,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
               />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px' }}>
-                End Date
-              </label>
-              <input
+
+              <Input
+                label="End Date"
                 type="date"
                 name="end_date"
                 value={formData.end_date || ''}
                 onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '2px solid #000',
-                  borderRadius: THEME.radius.input,
-                  fontFamily: "'Nunito', sans-serif"
-                }}
               />
             </div>
-          </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={!formData.account_number || !formData.start_date || generating}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: generating ? '#ccc' : THEME.colors.primary,
-              color: '#fff',
-              border: '2px solid #000',
-              borderRadius: THEME.radius.button,
-              fontWeight: '900',
-              cursor: generating ? 'not-allowed' : 'pointer',
-              boxShadow: generating ? 'none' : THEME.shadows.button,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            {generating ? (
-              <>
-                <div style={{
-                  width: '16px',
-                  height: '16px',
-                  border: '2px solid #fff',
-                  borderTopColor: 'transparent',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                Generating PDF...
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-              </>
-            ) : (
-              <>📄 Generate PDF</>
-            )}
-          </button>
-        </div>
+            <Button
+              onClick={handleGenerate}
+              disabled={!formData.account_number || !formData.start_date || generating}
+              variant="primary"
+              className="w-full py-4 shadow-lg shadow-blue-100 flex justify-center items-center gap-2"
+            >
+              {generating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                <>📄 Generate PDF</>
+              )}
+            </Button>
+          </div>
+        </GlassCard>
 
         {/* Info / Preview Panel */}
-        <div style={{
-          background: THEME.colors.bg,
-          padding: '24px',
-          borderRadius: THEME.radius.card,
-          border: '2px solid #000',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '64px', marginBottom: '24px' }}>🖨️</div>
-          <h4 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: '900' }}>
+        <GlassCard className="p-6 flex flex-col items-center justify-center text-center bg-gradient-to-br from-gray-50 to-white">
+          <div className="text-6xl mb-6 opacity-80 animate-bounce-slow">🖨️</div>
+
+          <h4 className="text-xl font-bold text-gray-800 mb-4">
             Ready to Print
           </h4>
-          <p style={{ maxWidth: '300px', color: '#666', lineHeight: '1.6' }}>
+
+          <p className="max-w-xs text-gray-500 leading-relaxed mb-8">
             Select an account and date range to generate a comprehensive PDF statement including all transactions, fees, and interest applied.
           </p>
-          <div style={{ marginTop: '24px', padding: '16px', background: '#fff', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px' }}>
-            <strong>Note:</strong> Statements are generated in PDF format and will be automatically downloaded properly.
+
+          <div className="w-full max-w-sm p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 text-sm text-left flex gap-3">
+            <span className="text-xl">ℹ️</span>
+            <div>
+              <strong className="block mb-1">Note:</strong>
+              Statements are generated in PDF format and will be automatically downloaded to your device.
+            </div>
           </div>
-        </div>
+        </GlassCard>
       </div>
     </div>
   );

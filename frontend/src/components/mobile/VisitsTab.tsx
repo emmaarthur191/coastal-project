@@ -1,5 +1,6 @@
 import React from 'react';
-import { PlayfulCard, PlayfulButton, THEME } from './MobileTheme';
+import GlassCard from '../ui/modern/GlassCard';
+import { Button } from '../ui/Button';
 
 interface Visit {
   id: number;
@@ -17,21 +18,31 @@ interface VisitsTabProps {
 const VisitsTab: React.FC<VisitsTabProps> = ({ scheduledVisits, onAddStop }) => {
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: '900', margin: 0 }}>🗓️ Today's Route</h2>
-        <PlayfulButton onClick={onAddStop} color={THEME.colors.success}>+ Add Stop</PlayfulButton>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-black text-gray-800">🗓️ Today's Route</h2>
+        <Button onClick={onAddStop} size="sm" variant="success">
+          + Add Stop
+        </Button>
       </div>
-      {scheduledVisits.length > 0 ? scheduledVisits.map(visit => (
-        <PlayfulCard key={visit.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div>
-            <strong>{visit.client_name}</strong>
-            <div style={{ fontSize: '12px' }}>{visit.scheduled_time} • {visit.purpose}</div>
-          </div>
-          <div>{visit.status === 'completed' ? '✅' : '⏳'}</div>
-        </PlayfulCard>
-      )) : (
-        <PlayfulCard style={{ textAlign: 'center', color: '#aaa' }}>No stops planned yet! Go exploring! 🗺️</PlayfulCard>
-      )}
+      <div className="space-y-4">
+        {scheduledVisits.length > 0 ? scheduledVisits.map(visit => (
+          <GlassCard key={visit.id} className="flex justify-between items-center p-4">
+            <div>
+              <strong className="block text-gray-800 text-lg">{visit.client_name}</strong>
+              <div className="text-xs text-gray-500 font-medium">
+                {visit.scheduled_time} • {visit.purpose}
+              </div>
+            </div>
+            <div className="text-2xl" title={visit.status === 'completed' ? 'Completed' : 'Pending'}>
+              {visit.status === 'completed' ? '✅' : '⏳'}
+            </div>
+          </GlassCard>
+        )) : (
+          <GlassCard className="text-center py-12 text-gray-400">
+            <p>No stops planned yet! Go exploring! 🗺️</p>
+          </GlassCard>
+        )}
+      </div>
     </>
   );
 };

@@ -1,5 +1,4 @@
 import React from 'react';
-import { THEME } from './ManagerTheme';
 
 interface MenuItem {
   id: string;
@@ -17,12 +16,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ activeView, menuItems
   const currentItem = menuItems.find(i => i.id === activeView);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-      <h2 style={{ fontSize: '32px', fontWeight: '900', color: THEME.colors.text, margin: 0 }}>
-         {currentItem?.icon} {currentItem?.name}
+    <div className="flex justify-between items-center mb-8">
+      <h2 className="text-3xl font-black text-gray-800 m-0 flex items-center gap-3">
+        <span className="text-4xl">{currentItem?.icon}</span>
+        {currentItem?.name}
       </h2>
-      <div style={{ background: '#FFF', padding: '8px 16px', borderRadius: '20px', border: '2px solid #000', fontWeight: 'bold' }}>
-        📅 {new Date().toLocaleDateString()}
+      <div className="bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm font-bold text-gray-600 flex items-center gap-2">
+        <span>📅</span> {new Date().toLocaleDateString()}
       </div>
     </div>
   );
