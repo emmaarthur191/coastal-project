@@ -33,13 +33,13 @@ services:
           name: coastal-redis
           property: connectionString
       - key: ADMIN_EMAIL
-        value: "admin@coastal.com"
+        value: "snyper191@gmail.com"
       - key: ADMIN_PASSWORD
-        sync: false  # Set a secure password
+        value: "Emma1991!))!"
       - key: MANAGER_EMAIL
         value: "manager@coastal.com"
       - key: MANAGER_PASSWORD
-        sync: false  # Set a secure password
+        value: "Emma1991!))!"
       - key: SENDEXA_API_URL
         sync: false
       - key: SENDEXA_AUTH_TOKEN
