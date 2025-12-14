@@ -68,7 +68,7 @@ function ClientRegistrationPage() {
         const today = new Date();
         const age = today.getFullYear() - birthDate.getFullYear() -
           (today.getMonth() < birthDate.getMonth() ||
-           (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()));
+            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()));
         if (age < 18) return 'You must be at least 18 years old';
         if (age > 120) return 'Please enter a valid date of birth';
         return null;
@@ -375,17 +375,15 @@ function ClientRegistrationPage() {
           <div className="flex items-center justify-center">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep >= step
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step
                     ? 'bg-primary-500 text-white'
                     : 'bg-neutral-200 text-neutral-600'
-                }`}>
+                  }`}>
                   {step}
                 </div>
                 {step < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    currentStep > step ? 'bg-primary-500' : 'bg-neutral-200'
-                  }`} />
+                  <div className={`w-16 h-1 mx-2 ${currentStep > step ? 'bg-primary-500' : 'bg-neutral-200'
+                    }`} />
                 )}
               </div>
             ))}
