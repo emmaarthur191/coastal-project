@@ -63,14 +63,93 @@ class SecurityService:
         cache.set(cache_key, attempts + 1, SecurityService.LOGIN_RATE_LIMIT_WINDOW)
     
     @staticmethod
+    def get_location_info(ip):
+        """
+        Get location info from IP address using a public API.
+        Fails gracefully if API is unreachable or rate limited.
+        """
+        if ip in ['127.0.0.1', 'localhost', '0.0.0.0']:
+            return "Localhost"
+            
+        try:
+            import requests
+            # Using ip-api.com (free for non-commercial use, no key required)
+            # Timeout set to 2 seconds to avoid blocking login flow
+            response = requests.get(f'http://ip-api.com/json/{ip}', timeout=2)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'success':
+                    city = data.get('city', '')
+                    country = data.get('country', '')
+                    return f"{city}, {country}"
+        except Exception as e:
+            logger.warning(f"Failed to resolve location for IP {ip}: {str(e)}")
+            
+        return "Unknown Location"
+
+    @staticmethod
+    def parse_user_agent(ua_string):
+        """Parse User-Agent string to get device, OS, and browser info."""
+        try:
+            from user_agents import parse
+            user_agent = parse(ua_string)
+            
+            device_family = user_agent.device.family
+            device_brand = user_agent.device.brand
+            device_model = user_agent.device.model
+            
+            os_family = user_agent.os.family
+            os_version = user_agent.os.version_string
+            
+            browser_family = user_agent.browser.family
+            
+            # Construct a friendly device name
+            if device_brand and device_model:
+                device_name = f"{device_brand} {device_model}"
+            elif device_family != 'Other':
+                device_name = device_family
+            else:
+                device_name = "Unknown Device"
+                
+            return {
+                'device': device_name,
+                'os': f"{os_family} {os_version}".strip(),
+                'browser': browser_family,
+                'is_mobile': user_agent.is_mobile,
+                'is_tablet': user_agent.is_tablet,
+                'is_pc': user_agent.is_pc,
+                'is_bot': user_agent.is_bot
+            }
+        except ImportError:
+            logger.error("user_agents library not installed")
+            return {}
+        except Exception as e:
+            logger.error(f"Error parsing user agent: {str(e)}")
+            return {}
+
+    @staticmethod
     def log_activity(user: User, action: str, request, details: dict = None):
-        """Log a user activity with IP and user agent."""
+        """Log a user activity with comprehensive device and location info."""
+        ip = SecurityService.get_client_ip(request)
+        ua_string = request.META.get('HTTP_USER_AGENT', '')
+        
+        # Enrich details with device and location info
+        activity_details = details or {}
+        
+        # Parse Device Info
+        device_info = SecurityService.parse_user_agent(ua_string)
+        activity_details.update(device_info)
+        
+        # Get Location (only for meaningful actions like login/failed_login to verify security)
+        if action in ['login', 'failed_login', 'account_locked']:
+             activity_details['location'] = SecurityService.get_location_info(ip)
+        
         UserActivity.objects.create(
             user=user,
             action=action,
-            ip_address=SecurityService.get_client_ip(request),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
-            details=details or {}
+            ip_address=ip,
+            user_agent=ua_string[:500],
+            details=activity_details
         )
     
     @staticmethod
