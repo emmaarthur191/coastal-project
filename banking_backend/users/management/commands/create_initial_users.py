@@ -23,29 +23,40 @@ class Command(BaseCommand):
             manager_password = get_random_string(16)
             self.stdout.write(self.style.WARNING(f"MANAGER_PASSWORD not set. Generated: {manager_password}"))
 
-        # Create Admin
-        if not User.objects.filter(email=admin_email).exists():
-            self.stdout.write(f'Creating admin user: {admin_email}...')
-            User.objects.create_superuser(
-                email=admin_email,
-                username=admin_email,
-                password=admin_password,
-                role='admin'
-            )
-            self.stdout.write(self.style.SUCCESS('Admin user created.'))
+        # Create or Update Admin
+        admin_user, created = User.objects.get_or_create(email=admin_email, defaults={
+            'username': admin_email,
+            'role': 'admin',
+            'is_superuser': True,
+            'is_staff': True
+        })
+        
+        if created:
+            admin_user.set_password(admin_password)
+            admin_user.save()
+            self.stdout.write(self.style.SUCCESS(f'Admin user created: {admin_email}'))
+        elif admin_password and not admin_user.check_password(admin_password):
+            # Update password if env var provides explicit password and it doesn't match
+            admin_user.set_password(admin_password)
+            admin_user.save()
+            self.stdout.write(self.style.SUCCESS(f'Admin user password updated from environment.'))
         else:
-            self.stdout.write('Admin user already exists.')
+            self.stdout.write('Admin user exists and password matches/not provided.')
 
-        # Create Manager
-        if not User.objects.filter(email=manager_email).exists():
-            self.stdout.write(f'Creating manager user: {manager_email}...')
-            manager = User.objects.create_user(
-                email=manager_email,
-                username=manager_email,
-                password=manager_password,
-                role='manager',
-                is_staff=True
-            )
-            self.stdout.write(self.style.SUCCESS('Manager user created.'))
+        # Create or Update Manager
+        manager_user, created = User.objects.get_or_create(email=manager_email, defaults={
+            'username': manager_email,
+            'role': 'manager',
+            'is_staff': True
+        })
+
+        if created:
+            manager_user.set_password(manager_password)
+            manager_user.save()
+            self.stdout.write(self.style.SUCCESS(f'Manager user created: {manager_email}'))
+        elif manager_password and not manager_user.check_password(manager_password):
+            manager_user.set_password(manager_password)
+            manager_user.save()
+            self.stdout.write(self.style.SUCCESS(f'Manager user password updated from environment.'))
         else:
-            self.stdout.write('Manager user already exists.')
+             self.stdout.write('Manager user exists and password matches/not provided.')
