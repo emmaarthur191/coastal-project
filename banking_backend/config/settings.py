@@ -418,17 +418,20 @@ if not DEBUG:
 
 # Content Security Policy (via django-csp)
 # Replaces X-Frame-Options
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'") # Needed for Admin/DRF styles sometimes
-CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'") # Often needed for legacy or complex frontends
-CSP_IMG_SRC = ("'self'", "data:")
-CSP_FONT_SRC = ("'self'", "data:")
-# Frame Ancestors - Equivalent to SAMEORIGIN, but stronger
-CSP_FRAME_ANCESTORS = ("'self'",)
-
-# Allow external CSP sources if defined in env (e.g., for analytics, sentry)
+CSP_SCRIPT_SRC_DEFAULTS = ("'self'", "'unsafe-inline'", "'unsafe-eval'")
 if env.list('CSP_SCRIPT_SRC', default=[]):
-    CSP_SCRIPT_SRC += tuple(env.list('CSP_SCRIPT_SRC'))
+    CSP_SCRIPT_SRC_DEFAULTS += tuple(env.list('CSP_SCRIPT_SRC'))
+
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": ["'self'"],
+        "script-src": CSP_SCRIPT_SRC_DEFAULTS,
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:"],
+        "font-src": ["'self'", "data:"],
+        "frame-ancestors": ["'self'"],
+    }
+}
 
 # Allow credentials (cookies, authorization headers)
 CORS_ALLOW_CREDENTIALS = True
