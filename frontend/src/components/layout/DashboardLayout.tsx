@@ -53,7 +53,7 @@ export default function DashboardLayout({
             <aside className="hidden lg:flex flex-col w-64 glass-card-global fixed h-[96%] left-2 top-[2%] z-10 transition-all duration-300 border-r border-white/10 rounded-2xl shadow-xl">
                 <div className="p-6 border-b border-white/10 flex items-center justify-center">
                     <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20">
-                        <img src={logo} alt="Logo" className="h-6 w-6 object-contain filter brightness-0 invert" />
+                        <img src={logo} alt="Logo" className="h-6 w-6 object-contain" />
                     </div>
                     <span className="ml-3 text-xl font-bold tracking-tight text-current drop-shadow-sm font-display">Coastal</span>
                 </div>
