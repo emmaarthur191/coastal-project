@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { api } from '../services/api';
+import { api, API_BASE_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FraudRule, FraudRuleRequest } from '../api/models/FraudRule';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -10,15 +10,12 @@ const getWsBaseUrl = () => {
   if (import.meta.env.VITE_WS_BASE_URL) {
     return import.meta.env.VITE_WS_BASE_URL;
   }
-  if (import.meta.env.VITE_API_BASE_URL) {
-    // Convert HTTP(S) API URL to WS(S)
-    return import.meta.env.VITE_API_BASE_URL
-      .replace('http://', 'ws://')
-      .replace('https://', 'wss://')
-      .replace('/api/', '/ws/');
-  }
-  // Fallback for development
-  return 'ws://localhost:8000/ws/';
+
+  // Use centralized API_BASE_URL and convert to WebSocket
+  return API_BASE_URL
+    .replace('http://', 'ws://')
+    .replace('https://', 'wss://')
+    .replace('/api/', '/ws/');
 };
 
 const FraudRules: React.FC = React.memo(() => {
