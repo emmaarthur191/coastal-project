@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button } from '../ui/Button';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface Loan {
   id: string;
@@ -14,44 +16,53 @@ interface LoansSectionProps {
 
 const LoansSection: React.FC<LoansSectionProps> = ({ loans, handleApproveLoan }) => {
   return (
-    <div>
-      <h3 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: '900' }}>📝 Loan Applications</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-        {loans.length > 0 ? loans.map((loan) => (
-          <div key={loan.id} style={{
-            padding: '20px',
-            border: '2px solid #eee',
-            borderRadius: '12px',
-            background: '#f9f9f9'
-          }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>{loan.applicant_name}</h4>
-            <p style={{ margin: '0 0 12px 0', color: '#666' }}>
-              Amount: ${loan.amount.toLocaleString()} | Status: {loan.status}
-            </p>
-            {loan.status === 'pending' && (
-              <button
-                onClick={() => handleApproveLoan(loan.id)}
-                style={{
-                  background: '#00B894',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                Approve Loan
-              </button>
-            )}
-          </div>
-        )) : (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#666', gridColumn: '1 / -1' }}>
-            <div style={{ fontSize: '60px', marginBottom: '16px' }}>📝</div>
-            <h4>No loan applications at the moment</h4>
-            <p>All loans are up to date! 🎉</p>
-          </div>
-        )}
-      </div>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <span className="text-3xl">📝</span> Loan Applications
+      </h3>
+
+      {loans.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loans.map((loan) => (
+            <GlassCard key={loan.id} className="p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+                    {loan.applicant_name.charAt(0)}
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${loan.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                      loan.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                        'bg-gray-100 text-gray-600'
+                    }`}>
+                    {loan.status}
+                  </span>
+                </div>
+
+                <h4 className="text-lg font-bold text-gray-900 mb-1">{loan.applicant_name}</h4>
+                <p className="text-2xl font-black text-gray-900 mb-4">
+                  {new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(loan.amount)}
+                </p>
+              </div>
+
+              {loan.status === 'pending' && (
+                <Button
+                  onClick={() => handleApproveLoan(loan.id)}
+                  variant="success"
+                  className="w-full mt-2"
+                >
+                  Approve Loan
+                </Button>
+              )}
+            </GlassCard>
+          ))}
+        </div>
+      ) : (
+        <GlassCard className="p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+          <div className="text-6xl mb-6 animate-bounce">📝</div>
+          <h4 className="text-xl font-bold text-gray-800 mb-2">No loan applications</h4>
+          <p className="text-gray-500">All loans are up to date! 🎉</p>
+        </GlassCard>
+      )}
     </div>
   );
 };

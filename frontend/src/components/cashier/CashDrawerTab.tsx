@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { PlayfulCard, SkeletonLoader, PlayfulButton, PlayfulInput, ErrorBoundary } from './CashierTheme';
-import { api } from '../../services/api.ts';
+import { api } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import GlassCard from '../ui/modern/GlassCard';
 
 interface CashDrawer {
   id: string;
@@ -38,7 +40,6 @@ const CashDrawerTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('banking/cash-drawers/');
-      // Handle both paginated response {results: []} and direct array response
       const data = response.data?.results || response.data || [];
       const drawersArray = Array.isArray(data) ? data : [];
       setCashDrawers(drawersArray);
@@ -55,7 +56,7 @@ const CashDrawerTab: React.FC = () => {
   };
 
   const handleOpenDrawer = async () => {
-    if (!openingBalance || parseFloat(openingBalance) <= 0) {
+    if (!openingBalance || parseFloat(openingBalance) < 0) {
       setMessage({ type: 'error', text: 'Please enter a valid opening balance' });
       return;
     }
@@ -112,258 +113,209 @@ const CashDrawerTab: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <PlayfulCard>
-        <h2>🗄️ Cash Drawer</h2>
-        <SkeletonLoader height="40px" />
-        <SkeletonLoader height="200px" style={{ marginTop: '20px' }} />
-      </PlayfulCard>
-    );
+    return <div className="p-12 text-center text-gray-400"><div className="animate-spin text-4xl mb-4">⏳</div>Loading Cash Drawer...</div>;
   }
 
   return (
-    <ErrorBoundary>
-      <PlayfulCard>
-        <h2>🗄️ Cash Drawer Management</h2>
-        <p>Manage cash drawer operations and balances.</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span>🗄️</span> Cash Drawer Management
+        </h2>
+        <p className="text-gray-500">Manage cash drawer operations and balances.</p>
+      </div>
 
-        {message.text && (
-          <div style={{
-            padding: '10px',
-            marginBottom: '20px',
-            borderRadius: '8px',
-            backgroundColor: message.type === 'error' ? '#FFEBEE' : '#E8F5E8',
-            color: message.type === 'error' ? '#C62828' : '#2E7D32',
-            border: `1px solid ${message.type === 'error' ? '#FFCDD2' : '#C8E6C9'}`
-          }}>
-            {message.text}
-          </div>
-        )}
+      {message.text && (
+        <div className={`p-4 rounded-xl border ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+          {message.text}
+        </div>
+      )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Current Drawer Status */}
-        <div style={{ marginBottom: '30px', padding: '20px', border: '2px solid #DFE6E9', borderRadius: '12px' }}>
-          <h3>Current Drawer Status</h3>
+        <GlassCard className="lg:col-span-2 p-6 flex flex-col justify-between">
+          <h3 className="text-lg font-bold text-gray-800 mb-6 border-b border-gray-100 pb-2">Current Drawer Status</h3>
           {currentDrawer ? (
-            <div>
-              <p><strong>Status:</strong> <span style={{
-                color: currentDrawer.status === 'open' ? '#00B894' : '#FF7675',
-                fontWeight: 'bold'
-              }}>{currentDrawer.status.toUpperCase()}</span></p>
-              <p><strong>Opening Balance:</strong> {formatCurrencyGHS(currentDrawer.opening_balance)}</p>
-              <p><strong>Current Balance:</strong> {formatCurrencyGHS(currentDrawer.current_balance)}</p>
-              {currentDrawer.closing_balance && <p><strong>Closing Balance:</strong> {formatCurrencyGHS(currentDrawer.closing_balance)}</p>}
-              <p><strong>Opened At:</strong> {new Date(currentDrawer.opened_at).toLocaleString()}</p>
-              {currentDrawer.closed_at && <p><strong>Closed At:</strong> {new Date(currentDrawer.closed_at).toLocaleString()}</p>}
-              <p><strong>Opened By:</strong> {currentDrawer.opened_by}</p>
-            </div>
-          ) : (
-            <p>No active cash drawer</p>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '30px' }}>
-          {!currentDrawer || currentDrawer.status !== 'open' ? (
-            <PlayfulButton onClick={() => setShowOpenDrawer(true)} variant="success">
-              Open Drawer 🚪
-            </PlayfulButton>
-          ) : (
-            <>
-              <PlayfulButton onClick={() => setShowCloseDrawer(true)} variant="danger">
-                Close Drawer 🔒
-              </PlayfulButton>
-              <PlayfulButton onClick={() => setShowReconcile(true)} variant="primary">
-                Reconcile 💰
-              </PlayfulButton>
-            </>
-          )}
-        </div>
-
-        {/* Open Drawer Modal */}
-        {showOpenDrawer && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              width: '400px',
-              maxWidth: '90%'
-            }}>
-              <h3>Open Cash Drawer</h3>
-              <PlayfulInput
-                label="Opening Balance"
-                type="number"
-                step="0.01"
-                value={openingBalance}
-                onChange={(e) => setOpeningBalance(e.target.value)}
-                placeholder="0.00"
-              />
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <PlayfulButton onClick={() => setShowOpenDrawer(false)} variant="danger">
-                  Cancel
-                </PlayfulButton>
-                <PlayfulButton onClick={handleOpenDrawer} disabled={drawerLoading} variant="success">
-                  {drawerLoading ? 'Opening...' : 'Open Drawer'}
-                </PlayfulButton>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl">
+                <span className="text-gray-600 font-medium">Status</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-bold uppercase ${currentDrawer.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  {currentDrawer.status}
+                </span>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Close Drawer Modal */}
-        {showCloseDrawer && currentDrawer && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              width: '500px',
-              maxWidth: '90%',
-              maxHeight: '80vh',
-              overflowY: 'auto'
-            }}>
-              <h3>Close Cash Drawer</h3>
-              <p>Expected Balance: {formatCurrencyGHS(currentDrawer.current_balance)}</p>
-
-              <PlayfulInput
-                label="Actual Closing Balance"
-                type="number"
-                step="0.01"
-                value={closingBalance}
-                onChange={(e) => setClosingBalance(e.target.value)}
-                placeholder="0.00"
-              />
-
-              <h4>Denomination Count</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-                {Object.entries(denominations).map(([denom, count]) => (
-                  <div key={denom}>
-                    <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px' }}>
-                      ₵{denom}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={count}
-                      onChange={(e) => setDenominations(prev => ({
-                        ...prev,
-                        [denom]: parseInt(e.target.value) || 0
-                      }))}
-                      style={{
-                        width: '100%',
-                        padding: '8px',
-                        border: '1px solid #DFE6E9',
-                        borderRadius: '4px'
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <p style={{ marginTop: '10px', fontWeight: 'bold' }}>
-                Total from Denominations: {formatCurrencyGHS(calculateTotalFromDenominations())}
-              </p>
-
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <PlayfulButton onClick={() => setShowCloseDrawer(false)} variant="danger">
-                  Cancel
-                </PlayfulButton>
-                <PlayfulButton onClick={handleCloseDrawer} disabled={drawerLoading} variant="success">
-                  {drawerLoading ? 'Closing...' : 'Close Drawer'}
-                </PlayfulButton>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Reconcile Modal */}
-        {showReconcile && currentDrawer && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              width: '400px',
-              maxWidth: '90%'
-            }}>
-              <h3>Reconcile Cash Drawer</h3>
-              <p>Current Balance: {formatCurrencyGHS(currentDrawer.current_balance)}</p>
-              <p>This feature is under development.</p>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <PlayfulButton onClick={() => setShowReconcile(false)} variant="primary">
-                  Close
-                </PlayfulButton>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Drawer History */}
-        <div>
-          <h3>Drawer History</h3>
-          <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #DFE6E9', borderRadius: '8px' }}>
-            {cashDrawers.map((drawer) => (
-              <div key={drawer.id} style={{
-                padding: '10px 15px',
-                borderBottom: '1px solid #F0F0F0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <span style={{ fontWeight: 'bold' }}>Drawer #{drawer.id.slice(-8)}</span>
-                  <span style={{ marginLeft: '10px', color: '#636E72' }}>
-                    {drawer.status} • {formatCurrencyGHS(drawer.opening_balance)}
-                  </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded-xl">
+                  <span className="text-xs text-blue-600 font-bold uppercase tracking-wider">Opening Balance</span>
+                  <div className="text-2xl font-bold text-blue-900 mt-1">{formatCurrencyGHS(currentDrawer.opening_balance)}</div>
                 </div>
-                <span style={{
-                  padding: '2px 6px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  color: 'white',
-                  backgroundColor: drawer.status === 'open' ? '#00B894' : '#636E72'
-                }}>
+                <div className="bg-indigo-50 p-4 rounded-xl">
+                  <span className="text-xs text-indigo-600 font-bold uppercase tracking-wider">Current Balance</span>
+                  <div className="text-2xl font-bold text-indigo-900 mt-1">{formatCurrencyGHS(currentDrawer.current_balance)}</div>
+                </div>
+                {currentDrawer.closing_balance && (
+                  <div className="bg-gray-100 p-4 rounded-xl sm:col-span-2">
+                    <span className="text-xs text-gray-600 font-bold uppercase tracking-wider">Closing Balance</span>
+                    <div className="text-2xl font-bold text-gray-900 mt-1">{formatCurrencyGHS(currentDrawer.closing_balance)}</div>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-400 mt-4 flex justify-between">
+                <span>Opened: {new Date(currentDrawer.opened_at).toLocaleString()}</span>
+                <span>By: {currentDrawer.opened_by}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-400 italic">
+              No active cash drawer found.
+            </div>
+          )}
+        </GlassCard>
+
+        {/* Actions */}
+        <div className="space-y-6">
+          <GlassCard className="p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              {!currentDrawer || currentDrawer.status !== 'open' ? (
+                <Button onClick={() => setShowOpenDrawer(true)} variant="success" className="w-full justify-center py-4 text-lg shadow-lg shadow-green-200">
+                  Open Drawer 🚪
+                </Button>
+              ) : (
+                <>
+                  <Button onClick={() => setShowCloseDrawer(true)} variant="danger" className="w-full justify-center py-4 text-lg shadow-lg shadow-red-200">
+                    Close Drawer 🔒
+                  </Button>
+                  <Button onClick={() => setShowReconcile(true)} variant="primary" className="w-full justify-center py-3">
+                    Reconcile 💰
+                  </Button>
+                </>
+              )}
+            </div>
+          </GlassCard>
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 text-amber-800 text-sm">
+            <strong>Note:</strong> Ensure all cash is counted accurately before opening or closing the drawer. Discrepancies will be flagged.
+          </div>
+        </div>
+      </div>
+
+      {/* Drawer History */}
+      <GlassCard className="p-0 overflow-hidden mt-6">
+        <div className="p-4 bg-gray-50/50 border-b border-gray-100">
+          <h3 className="font-bold text-gray-700">Drawer History</h3>
+        </div>
+        <div className="max-h-[300px] overflow-y-auto">
+          {cashDrawers.map((drawer) => (
+            <div key={drawer.id} className="p-4 border-b border-gray-50 flex justify-between items-center last:border-0 hover:bg-gray-50">
+              <div>
+                <div className="font-mono font-bold text-gray-600 text-sm">#{drawer.id.slice(-8)}</div>
+                <div className="text-xs text-gray-400 mt-1">{new Date(drawer.opened_at).toLocaleDateString()}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-gray-800">{formatCurrencyGHS(drawer.opening_balance)}</div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase ${drawer.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
                   {drawer.status}
                 </span>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+      </GlassCard>
+
+      {/* Open Drawer Modal */}
+      {showOpenDrawer && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-xl font-bold mb-4">Open Cash Drawer</h3>
+            <Input
+              label="Opening Balance"
+              type="number"
+              step="0.01"
+              value={openingBalance}
+              onChange={(e) => setOpeningBalance(e.target.value)}
+              placeholder="0.00"
+              autoFocus
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="secondary" onClick={() => setShowOpenDrawer(false)} disabled={drawerLoading}>Cancel</Button>
+              <Button variant="success" onClick={handleOpenDrawer} disabled={drawerLoading}>
+                {drawerLoading ? 'Opening...' : 'Open Drawer'}
+              </Button>
+            </div>
           </div>
         </div>
-      </PlayfulCard>
-    </ErrorBoundary>
+      )}
+
+      {/* Close Drawer Modal */}
+      {showCloseDrawer && currentDrawer && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-2">Close Cash Drawer</h3>
+            <p className="text-gray-500 mb-6">Expected Balance: <span className="font-bold text-gray-800">{formatCurrencyGHS(currentDrawer.current_balance)}</span></p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
+              <div className="col-span-2 md:col-span-1">
+                <Input
+                  label="Actual Closing Balance"
+                  type="number"
+                  step="0.01"
+                  value={closingBalance}
+                  onChange={(e) => setClosingBalance(e.target.value)}
+                  placeholder="0.00"
+                  className="text-lg font-bold"
+                />
+              </div>
+              <div className="col-span-2 md:col-span-1 flex flex-col justify-end">
+                <div className="bg-white p-3 rounded-lg border border-gray-200 text-right">
+                  <span className="text-xs text-gray-500 block">Calculated Total</span>
+                  <span className="text-xl font-bold text-coastal-primary">{formatCurrencyGHS(calculateTotalFromDenominations())}</span>
+                </div>
+              </div>
+            </div>
+
+            <h4 className="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Denomination Count (GHS)</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+              {Object.entries(denominations).map(([denom, count]) => (
+                <div key={denom}>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">₵{denom}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={count}
+                    onChange={(e) => setDenominations(prev => ({
+                      ...prev,
+                      [denom]: parseInt(e.target.value) || 0
+                    }))}
+                    className="w-full p-2 border border-gray-200 rounded-lg text-center font-mono focus:border-coastal-primary focus:ring-2 focus:ring-coastal-primary/20 outline-none transition-all"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+              <Button variant="secondary" onClick={() => setShowCloseDrawer(false)} disabled={drawerLoading}>Cancel</Button>
+              <Button variant="danger" onClick={handleCloseDrawer} disabled={drawerLoading}>
+                {drawerLoading ? 'Closing...' : 'Close Drawer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reconcile Modal */}
+      {showReconcile && currentDrawer && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div className="text-4xl mb-2">💰</div>
+            <h3 className="text-xl font-bold mb-2">Reconcile Cash Drawer</h3>
+            <p className="text-gray-600 mb-4">Current Balance: <span className="font-bold">{formatCurrencyGHS(currentDrawer.current_balance)}</span></p>
+            <p className="text-sm text-gray-400 italic mb-6">This feature is currently under development.</p>
+            <Button onClick={() => setShowReconcile(false)} variant="primary" className="w-full">Close</Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

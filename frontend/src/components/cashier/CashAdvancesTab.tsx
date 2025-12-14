@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import GlassCard from '../ui/modern/GlassCard';
 import { formatCurrencyGHS } from '../../utils/formatters';
 
 interface CashAdvance {
@@ -75,25 +76,20 @@ const CashAdvancesTab: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
+      pending: 'bg-amber-100 text-amber-800',
+      approved: 'bg-emerald-100 text-emerald-800',
       rejected: 'bg-red-100 text-red-800',
       disbursed: 'bg-blue-100 text-blue-800'
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status}
       </span>
     );
   };
 
   if (loading) {
-    return (
-      <Card className="text-center py-12">
-        <div className="animate-spin text-4xl mb-4">⏳</div>
-        <p className="text-secondary-600">Loading cash advances...</p>
-      </Card>
-    );
+    return <div className="p-12 text-center text-gray-400"><div className="animate-spin text-4xl mb-4">⏳</div>Loading Cash Advances...</div>;
   }
 
   return (
@@ -101,87 +97,83 @@ const CashAdvancesTab: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-secondary-900">💵 Cash Advances</h2>
-          <p className="text-secondary-600">Manage member cash advance requests</p>
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <span>💵</span> Cash Advances
+          </h2>
+          <p className="text-gray-500">Manage member cash advance requests</p>
         </div>
         <Button
           variant="primary"
           onClick={() => setShowNewAdvance(true)}
         >
-          + New Cash Advance
+          New Cash Advance ➕
         </Button>
       </div>
 
       {/* Message */}
       {message.text && (
-        <div className={`p-4 rounded-lg ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+        <div className={`p-4 rounded-xl border ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
           {message.text}
         </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-primary-600">{advances.length}</div>
-          <div className="text-secondary-500 text-sm">Total Advances</div>
-        </Card>
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-yellow-600">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-gray-700">{advances.length}</div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Advances</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-amber-500">
             {advances.filter(a => a.status === 'pending').length}
           </div>
-          <div className="text-secondary-500 text-sm">Pending</div>
-        </Card>
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-green-600">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pending</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-emerald-500">
             {advances.filter(a => a.status === 'approved').length}
           </div>
-          <div className="text-secondary-500 text-sm">Approved</div>
-        </Card>
-        <Card className="text-center p-4">
-          <div className="text-3xl font-bold text-blue-600">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Approved</div>
+        </GlassCard>
+        <GlassCard className="text-center p-4">
+          <div className="text-3xl font-black text-blue-500">
             {advances.filter(a => a.status === 'disbursed').length}
           </div>
-          <div className="text-secondary-500 text-sm">Disbursed</div>
-        </Card>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Disbursed</div>
+        </GlassCard>
       </div>
 
       {/* New Advance Form */}
       {showNewAdvance && (
-        <Card className="border-t-4 border-t-primary-500">
-          <h3 className="text-lg font-bold text-secondary-900 mb-4">New Cash Advance Request</h3>
+        <GlassCard className="p-6 border-2 border-coastal-primary/10">
+          <h3 className="text-lg font-bold text-gray-800 mb-6">New Cash Advance Request</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">Member ID *</label>
-                <input
-                  type="text"
-                  value={formData.member_id}
-                  onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
-                  className="w-full p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter member ID"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">Amount (GHS) *</label>
-                <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </div>
+              <Input
+                label="Member ID *"
+                value={formData.member_id}
+                onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
+                placeholder="Enter member ID"
+                required
+              />
+              <Input
+                label="Amount (GHS) *"
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                required
+              />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">Reason</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Reason</label>
               <select
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                className="w-full p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
               >
                 <option value="">Select reason</option>
                 <option value="emergency">Emergency</option>
@@ -191,71 +183,76 @@ const CashAdvancesTab: React.FC = () => {
                 <option value="other">Other</option>
               </select>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">Notes</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
                 rows={3}
                 placeholder="Additional notes..."
               />
             </div>
-            <div className="flex gap-3">
+
+            <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
+              <Button type="button" variant="secondary" onClick={() => setShowNewAdvance(false)} disabled={submitting}>
+                Cancel
+              </Button>
               <Button type="submit" variant="primary" disabled={submitting}>
                 {submitting ? 'Submitting...' : 'Submit Request'}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setShowNewAdvance(false)}>
-                Cancel
-              </Button>
             </div>
           </form>
-        </Card>
+        </GlassCard>
       )}
 
       {/* Advances List */}
-      <Card>
-        <h3 className="text-lg font-bold text-secondary-900 mb-4">Cash Advance Requests</h3>
+      <GlassCard className="p-0 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+          <h3 className="font-bold text-gray-700">Cash Advance Requests</h3>
+        </div>
+
         {advances.length === 0 ? (
-          <div className="text-center py-8 text-secondary-500">
-            <div className="text-4xl mb-2">💵</div>
+          <div className="text-center py-12 text-gray-400">
+            <div className="text-4xl mb-4">💵</div>
             <p>No cash advance requests found</p>
-            <p className="text-sm">Click "New Cash Advance" to create one</p>
+            <p className="text-sm mt-2">Click "New Cash Advance" to create one</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-secondary-50">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-500 cursor-default text-xs uppercase font-bold">
                 <tr>
-                  <th className="text-left p-3 font-medium text-secondary-600">ID</th>
-                  <th className="text-left p-3 font-medium text-secondary-600">Member</th>
-                  <th className="text-left p-3 font-medium text-secondary-600">Amount</th>
-                  <th className="text-left p-3 font-medium text-secondary-600">Reason</th>
-                  <th className="text-left p-3 font-medium text-secondary-600">Status</th>
-                  <th className="text-left p-3 font-medium text-secondary-600">Date</th>
-                  <th className="text-left p-3 font-medium text-secondary-600">Actions</th>
+                  <th className="p-4 border-b border-gray-200">ID</th>
+                  <th className="p-4 border-b border-gray-200">Member</th>
+                  <th className="p-4 border-b border-gray-200">Amount</th>
+                  <th className="p-4 border-b border-gray-200">Reason</th>
+                  <th className="p-4 border-b border-gray-200">Status</th>
+                  <th className="p-4 border-b border-gray-200">Date</th>
+                  <th className="p-4 border-b border-gray-200 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {advances.map((advance) => (
-                  <tr key={advance.id} className="border-b border-secondary-100 hover:bg-secondary-50">
-                    <td className="p-3 font-mono text-sm">CA-{advance.id}</td>
-                    <td className="p-3">{advance.member_name || advance.member_id}</td>
-                    <td className="p-3 font-bold">{formatCurrencyGHS(parseFloat(advance.amount))}</td>
-                    <td className="p-3">{advance.reason || '-'}</td>
-                    <td className="p-3">{getStatusBadge(advance.status)}</td>
-                    <td className="p-3 text-sm text-secondary-500">
+                  <tr key={advance.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-4 font-mono text-xs text-gray-500">CA-{advance.id}</td>
+                    <td className="p-4 font-medium text-gray-800">{advance.member_name || advance.member_id}</td>
+                    <td className="p-4 font-bold text-gray-700">{formatCurrencyGHS(parseFloat(advance.amount))}</td>
+                    <td className="p-4 text-gray-500 capitalize">{advance.reason || '-'}</td>
+                    <td className="p-4">{getStatusBadge(advance.status)}</td>
+                    <td className="p-4 text-gray-500 text-xs text-nowrap">
                       {new Date(advance.created_at).toLocaleDateString()}
                     </td>
-                    <td className="p-3">
+                    <td className="p-4 text-right">
                       {advance.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button variant="success" size="sm">Approve</Button>
-                          <Button variant="danger" size="sm">Reject</Button>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="success" size="sm" className="h-8 px-2 text-xs">Approve</Button>
+                          <Button variant="danger" size="sm" className="h-8 px-2 text-xs">Reject</Button>
                         </div>
                       )}
                       {advance.status === 'approved' && (
-                        <Button variant="primary" size="sm">Disburse</Button>
+                        <Button variant="primary" size="sm" className="h-8 px-3 text-xs">Disburse</Button>
                       )}
                     </td>
                   </tr>
@@ -264,7 +261,7 @@ const CashAdvancesTab: React.FC = () => {
             </table>
           </div>
         )}
-      </Card>
+      </GlassCard>
     </div>
   );
 };

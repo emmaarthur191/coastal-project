@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { PlayfulCard, SkeletonLoader, PlayfulButton, PlayfulInput, ErrorBoundary } from './CashierTheme';
-import { api } from '../../services/api.ts';
+import { api } from '../../services/api';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import GlassCard from '../ui/modern/GlassCard';
 
 const AccountClosureTab: React.FC = () => {
   const [accountClosureData, setAccountClosureData] = useState({
@@ -166,209 +168,97 @@ const AccountClosureTab: React.FC = () => {
   };
 
   return (
-    <ErrorBoundary>
-      <PlayfulCard>
-        <h2>🔒 Account Closure</h2>
-        <p>Securely close customer accounts with OTP verification and proper documentation.</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span>🔒</span> Account Closure
+        </h2>
+        <p className="text-gray-500">Securely close customer accounts with OTP verification.</p>
+      </div>
 
-        {message.text && (
-          <div style={{
-            padding: '10px',
-            marginBottom: '20px',
-            borderRadius: '8px',
-            backgroundColor: message.type === 'error' ? '#FFEBEE' : '#E8F5E8',
-            color: message.type === 'error' ? '#C62828' : '#2E7D32',
-            border: `1px solid ${message.type === 'error' ? '#FFCDD2' : '#C8E6C9'}`
-          }}>
-            {message.text}
-          </div>
-        )}
-
-        {/* OTP Verification Modal */}
-        {showOtpModal && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              padding: '30px',
-              maxWidth: '450px',
-              width: '90%',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
-            }}>
-              <h3 style={{ margin: '0 0 20px 0', color: '#D63031', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                📱 Phone Verification for Account Closure
-              </h3>
-
-              <p style={{ color: '#636E72', marginBottom: '20px' }}>
-                For security, we need to verify via phone: <strong>{accountClosureData.phone_number}</strong>
-              </p>
-
-              <div style={{
-                backgroundColor: '#FFF3CD',
-                padding: '10px',
-                borderRadius: '8px',
-                marginBottom: '15px'
-              }}>
-                ⚠️ Closing account: <strong>{accountClosureData.account_id}</strong>
-              </div>
-
-              {!otpSent ? (
-                <div>
-                  <PlayfulButton
-                    onClick={sendOtp}
-                    disabled={otpLoading}
-                    variant="primary"
-                    style={{ width: '100%', marginBottom: '15px' }}
-                  >
-                    {otpLoading ? 'Sending...' : '📤 Send OTP Code'}
-                  </PlayfulButton>
-                </div>
-              ) : (
-                <div>
-                  <div style={{
-                    backgroundColor: '#E8F5E8',
-                    padding: '10px',
-                    borderRadius: '8px',
-                    marginBottom: '15px',
-                    textAlign: 'center'
-                  }}>
-                    ✅ OTP sent successfully!
-                    {debugOtp && (
-                      <div style={{ marginTop: '5px', fontSize: '12px', color: '#666' }}>
-                        Debug OTP: <strong>{debugOtp}</strong>
-                      </div>
-                    )}
-                  </div>
-
-                  <PlayfulInput
-                    label="Enter 6-digit OTP Code"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="123456"
-                    maxLength={6}
-                  />
-
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <PlayfulButton
-                      onClick={verifyAndSubmit}
-                      disabled={otpLoading || otpCode.length !== 6}
-                      variant="danger"
-                      style={{ flex: 1 }}
-                    >
-                      {otpLoading ? 'Verifying...' : '✅ Verify & Close Account'}
-                    </PlayfulButton>
-                    <PlayfulButton
-                      onClick={sendOtp}
-                      disabled={otpLoading}
-                      variant="primary"
-                    >
-                      🔄 Resend
-                    </PlayfulButton>
-                  </div>
-                </div>
-              )}
-
-              <PlayfulButton
-                onClick={closeOtpModal}
-                variant="primary"
-                style={{ width: '100%', marginTop: '15px' }}
-              >
-                ✕ Cancel
-              </PlayfulButton>
-            </div>
-          </div>
-        )}
-
-        {/* Account Lookup */}
-        <div style={{ marginBottom: '30px', padding: '20px', border: '2px solid #DFE6E9', borderRadius: '12px' }}>
-          <h3>Account Lookup</h3>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'end' }}>
-            <div style={{ flex: 1 }}>
-              <PlayfulInput
-                label="Account ID"
-                value={accountClosureData.account_id}
-                onChange={(e) => setAccountClosureData(prev => ({ ...prev, account_id: e.target.value }))}
-                placeholder="Enter account ID to lookup"
-              />
-            </div>
-            <PlayfulButton onClick={fetchAccountDetails} disabled={loading} variant="primary">
-              {loading ? 'Loading...' : 'Lookup Account 🔍'}
-            </PlayfulButton>
-          </div>
+      {message.text && (
+        <div className={`p-4 rounded-xl border ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+          {message.text}
         </div>
+      )}
 
-        {/* Account Details */}
-        {accountDetails && (
-          <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>
-            <h3>Account Details</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-              <div>
-                <strong>Account ID:</strong> {accountDetails.id}
-              </div>
-              <div>
-                <strong>Account Type:</strong> {accountDetails.account_type}
-              </div>
-              <div>
-                <strong>Balance:</strong> ₵{accountDetails.balance}
-              </div>
-              <div>
-                <strong>Status:</strong> {accountDetails.status || 'Active'}
-              </div>
-              <div>
-                <strong>Owner:</strong> {accountDetails.customer_name || 'N/A'}
-              </div>
-              <div>
-                <strong>Opened:</strong> {new Date(accountDetails.created_at).toLocaleDateString()}
-              </div>
+      {/* Account Lookup */}
+      <GlassCard className="p-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-4">Account Lookup</h3>
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <Input
+              label="Account ID"
+              value={accountClosureData.account_id}
+              onChange={(e) => setAccountClosureData(prev => ({ ...prev, account_id: e.target.value }))}
+              placeholder="Enter account ID to lookup"
+            />
+          </div>
+          <Button onClick={fetchAccountDetails} disabled={loading} variant="primary" className="w-full sm:w-auto">
+            {loading ? 'Loading...' : 'Lookup Account 🔍'}
+          </Button>
+        </div>
+      </GlassCard>
+
+      {/* Account Details */}
+      {accountDetails && (
+        <GlassCard className="p-6 bg-gradient-to-br from-gray-50 to-white">
+          <h3 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2">Account Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Account ID</span>
+              <span className="font-mono text-gray-800">{accountDetails.id}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Type</span>
+              <span className="text-gray-800">{accountDetails.account_type}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Balance</span>
+              <span className="text-xl font-bold text-coastal-primary">₵{accountDetails.balance}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Status</span>
+              <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${accountDetails.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                {accountDetails.status || 'Active'}
+              </span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Owner</span>
+              <span className="text-gray-800">{accountDetails.customer_name || 'N/A'}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Opened</span>
+              <span className="text-gray-800">{new Date(accountDetails.created_at).toLocaleDateString()}</span>
             </div>
           </div>
-        )}
+        </GlassCard>
+      )}
 
-        {/* Closure Form */}
-        {accountDetails && (
-          <div style={{ marginBottom: '30px', padding: '20px', border: '2px solid #FF7675', borderRadius: '12px' }}>
-            <h3 style={{ color: '#D63031' }}>Closure Request</h3>
-            <p style={{ color: '#D63031', fontWeight: 'bold' }}>
-              ⚠️ Warning: This action cannot be undone. The account will be permanently closed.
-            </p>
+      {/* Closure Form */}
+      {accountDetails && (
+        <GlassCard className="p-8 border-l-4 border-l-red-500 ring-1 ring-red-100">
+          <h3 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">⚠️ Closure Request</h3>
+          <p className="text-red-800 font-medium mb-6 bg-red-50 p-3 rounded-lg text-sm border border-red-100">
+            Warning: This action cannot be undone. The account will be permanently closed.
+          </p>
 
-            {/* Phone Number for OTP */}
-            <div style={{ marginBottom: '16px' }}>
-              <PlayfulInput
-                label="Customer Phone Number (for OTP verification) *"
-                value={accountClosureData.phone_number}
-                onChange={(e) => setAccountClosureData(prev => ({ ...prev, phone_number: e.target.value }))}
-                placeholder="+233 XX XXX XXXX"
-              />
-            </div>
+          <div className="space-y-6">
+            <Input
+              label="Customer Phone Number (for OTP verification) *"
+              value={accountClosureData.phone_number}
+              onChange={(e) => setAccountClosureData(prev => ({ ...prev, phone_number: e.target.value }))}
+              placeholder="+233 XX XXX XXXX"
+            />
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#636E72', marginLeft: '4px' }}>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
                 Reason for Closure *
               </label>
               <select
                 value={accountClosureData.closure_reason}
                 onChange={(e) => setAccountClosureData(prev => ({ ...prev, closure_reason: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  border: `3px solid #DFE6E9`,
-                  fontSize: '16px',
-                  outline: 'none',
-                  background: '#F9F9F9'
-                }}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none bg-white"
               >
                 <option value="">Select reason...</option>
                 <option value="customer_request">Customer Request</option>
@@ -380,7 +270,7 @@ const AccountClosureTab: React.FC = () => {
             </div>
 
             {accountClosureData.closure_reason === 'other' && (
-              <PlayfulInput
+              <Input
                 label="Please specify reason"
                 value={accountClosureData.other_reason}
                 onChange={(e) => setAccountClosureData(prev => ({ ...prev, other_reason: e.target.value }))}
@@ -388,71 +278,132 @@ const AccountClosureTab: React.FC = () => {
               />
             )}
 
-            <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#FFF3CD', borderRadius: '8px', border: '1px solid #FFEAA7' }}>
-              <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#D68910' }}>
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+              <p className="text-amber-800 font-bold mb-2 text-sm uppercase tracking-wide">
                 Confirmation Required
               </p>
-              <p style={{ margin: '0 0 10px 0', color: '#856404' }}>
+              <p className="text-amber-700 mb-3 text-sm">
                 Type "CLOSE" in the box below to confirm account closure:
               </p>
-              <PlayfulInput
+              <Input
                 value={accountClosureData.confirmation}
                 onChange={(e) => setAccountClosureData(prev => ({ ...prev, confirmation: e.target.value }))}
                 placeholder="Type CLOSE to confirm"
+                className="border-amber-200 focus:border-amber-500 focus:ring-amber-500/20"
               />
             </div>
 
-            <PlayfulButton
+            <Button
               onClick={() => setShowConfirmation(true)}
               disabled={loading || !accountClosureData.closure_reason || accountClosureData.confirmation !== 'CLOSE' || !accountClosureData.phone_number.trim()}
               variant="danger"
+              className="w-full justify-center py-4 font-bold text-lg shadow-lg shadow-red-100"
             >
               {loading ? 'Processing...' : 'Submit Closure Request 🚫'}
-            </PlayfulButton>
+            </Button>
           </div>
-        )}
+        </GlassCard>
+      )}
 
-        {/* Confirmation Modal */}
-        {showConfirmation && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              width: '400px',
-              maxWidth: '90%'
-            }}>
-              <h3 style={{ color: '#D63031' }}>⚠️ Final Confirmation</h3>
-              <p>Are you absolutely sure you want to close account <strong>{accountClosureData.account_id}</strong>?</p>
-              <p>This will permanently close the account and cannot be reversed.</p>
-              <p style={{ color: '#636E72' }}>
-                📱 An OTP will be sent to <strong>{accountClosureData.phone_number}</strong> for verification.
-              </p>
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-red-600 mb-4">⚠️ Final Confirmation</h3>
+            <p className="mb-2">Are you absolutely sure you want to close account <strong>{accountClosureData.account_id}</strong>?</p>
+            <p className="mb-4 text-gray-500 text-sm">This will permanently close the account and cannot be reversed.</p>
+            <p className="text-gray-600 bg-gray-50 p-3 rounded-lg text-sm border border-gray-100 mb-6">
+              📱 An OTP will be sent to <strong>{accountClosureData.phone_number}</strong> for verification.
+            </p>
 
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                <PlayfulButton onClick={() => setShowConfirmation(false)} variant="primary">
-                  Cancel
-                </PlayfulButton>
-                <PlayfulButton onClick={handleClosureSubmit} disabled={loading} variant="danger">
-                  {loading ? 'Processing...' : 'Proceed with OTP Verification'}
-                </PlayfulButton>
-              </div>
+            <div className="flex gap-3 justify-end">
+              <Button onClick={() => setShowConfirmation(false)} variant="secondary">
+                Cancel
+              </Button>
+              <Button onClick={handleClosureSubmit} disabled={loading} variant="danger">
+                {loading ? 'Processing...' : 'Proceed with OTP Verification'}
+              </Button>
             </div>
           </div>
-        )}
-      </PlayfulCard>
-    </ErrorBoundary>
+        </div>
+      )}
+
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              📱 Phone Verification
+            </h3>
+
+            <p className="text-gray-600 mb-6">
+              For security, we need to verify via phone: <strong>{accountClosureData.phone_number}</strong>
+            </p>
+
+            <div className="bg-amber-50 text-amber-800 p-3 rounded-xl mb-6 text-sm border border-amber-100">
+              ⚠️ Closing account: <strong>{accountClosureData.account_id}</strong>
+            </div>
+
+            {!otpSent ? (
+              <div>
+                <Button
+                  onClick={sendOtp}
+                  disabled={otpLoading}
+                  variant="primary"
+                  className="w-full justify-center"
+                >
+                  {otpLoading ? 'Sending...' : '📤 Send OTP Code'}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-green-50 text-green-700 p-3 rounded-xl text-center border border-green-100">
+                  <p className="font-bold">✅ OTP sent successfully!</p>
+                  {debugOtp && (
+                    <p className="text-xs mt-1 text-green-600/70">Debug OTP: {debugOtp}</p>
+                  )}
+                </div>
+
+                <Input
+                  label="Enter 6-digit OTP Code"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="123456"
+                  maxLength={6}
+                  className="text-center text-2xl tracking-widest font-mono"
+                />
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={verifyAndSubmit}
+                    disabled={otpLoading || otpCode.length !== 6}
+                    variant="danger"
+                    className="flex-1 justify-center"
+                  >
+                    {otpLoading ? 'Verifying...' : '✅ Verify & Close'}
+                  </Button>
+                  <Button
+                    onClick={sendOtp}
+                    disabled={otpLoading}
+                    variant="secondary"
+                  >
+                    🔄 Resend
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={closeOtpModal}
+              variant="ghost"
+              className="w-full mt-6 text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
