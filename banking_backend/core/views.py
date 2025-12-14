@@ -14,7 +14,7 @@ from django.db import connection
 from .models import Account, Transaction, Loan, FraudAlert, BankingMessage, ServiceRequest, AccountOpeningRequest, AccountClosureRequest
 from .serializers import AccountSerializer, TransactionSerializer, LoanSerializer, FraudAlertSerializer, BankingMessageSerializer, ServiceRequestSerializer, AccountOpeningRequestSerializer, AccountClosureRequestSerializer
 from .permissions import IsCustomer, IsStaff, IsAdmin
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import AccountService, TransactionService, LoanService, FraudAlertService, BankingMessageService
 
 
@@ -414,7 +414,7 @@ class BankingMessageViewSet(mixins.ListModelMixin,
 
 
 class SystemHealthView(APIView):
-    permission_classes = [IsStaff]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         # Check database connection
