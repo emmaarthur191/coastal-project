@@ -41,8 +41,15 @@ const getApiBaseUrl = () => {
 
   // Priority 1: Check VITE_PROD_API_URL (Explicit Production)
   if (prodUrl) {
-    console.log('[Config] Using VITE_PROD_API_URL');
-    return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
+    // Safety check: specific override for production environment
+    // If we are on the live site but the env var points to localhost, IGNORE IT
+    const hostname = window.location.hostname;
+    if (hostname.includes('onrender.com') && prodUrl.includes('localhost')) {
+      console.warn('[Config] EXPLICTLY IGNORING localhost VITE_PROD_API_URL in production');
+    } else {
+      console.log('[Config] Using VITE_PROD_API_URL');
+      return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
+    }
   }
 
   // Priority 2: Check VITE_API_BASE_URL (Docker/General)
