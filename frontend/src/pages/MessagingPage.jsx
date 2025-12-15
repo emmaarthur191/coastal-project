@@ -8,6 +8,12 @@ import {
 // API base URL
 const API_BASE_URL = '/api/';
 
+// Helper to get CSRF token from cookies
+const getCsrfToken = () => {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : null;
+};
+
 /**
  * Simple WhatsApp-style Chat Page
  * Features: Room list, real-time messaging, direct & group chats
@@ -97,9 +103,14 @@ export default function MessagingPage() {
 
     const createRoom = async (memberIds, name = '', isGroup = false) => {
         try {
+            const csrfToken = getCsrfToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
             const response = await fetch(`${API_BASE_URL}chat/rooms/create/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 credentials: 'include',
                 body: JSON.stringify({
                     member_ids: memberIds,
