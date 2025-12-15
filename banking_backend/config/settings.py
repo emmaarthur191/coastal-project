@@ -128,6 +128,10 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
+# Enforce SSL for Database in Production
+if not DEBUG:
+    DATABASES['default']['OPTIONS'] = {'sslmode': 'require'}
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
