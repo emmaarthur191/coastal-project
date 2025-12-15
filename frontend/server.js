@@ -29,6 +29,18 @@ const apiProxy = createProxyMiddleware({
     },
     on: {
         proxyReq: (proxyReq, req, res) => {
+            // CRITICAL: Forward original Origin header for CSRF validation
+            // Without this, Django sees the proxy's origin, not the client's
+            const origin = req.headers.origin || req.headers.referer;
+            if (origin) {
+                proxyReq.setHeader('Origin', origin);
+                proxyReq.setHeader('Referer', origin);
+            }
+
+            // Forward X-Forwarded headers for proper request context
+            proxyReq.setHeader('X-Forwarded-Host', req.headers.host);
+            proxyReq.setHeader('X-Forwarded-Proto', 'https');
+
             console.log(`[Proxy API] ${req.method} ${req.path} -> ${BACKEND_URL}${req.path}`);
         },
         error: (err, req, res) => {
