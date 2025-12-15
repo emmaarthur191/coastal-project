@@ -194,6 +194,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 # Django REST Framework
+# Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'users.authentication.JWTCookieAuthentication',
@@ -239,10 +240,10 @@ SIMPLE_JWT = {
     # Custom Cookie Settings
     'AUTH_COOKIE': 'access',  # Name of the access token cookie
     'REFRESH_COOKIE': 'refresh', # Name of the refresh token cookie
-    'AUTH_COOKIE_SECURE': not DEBUG, # True in production (HTTPS only)
+    'AUTH_COOKIE_SECURE': not DEBUG, # True in production (HTTPS only), False in DEBUG (localhost)
     'AUTH_COOKIE_HTTP_ONLY': True, # Prevent JS access
     'AUTH_COOKIE_PATH': '/',
-    'AUTH_COOKIE_SAMESITE': 'Lax',  # 'Lax' for widespread support, 'Strict' for high security
+    'AUTH_COOKIE_SAMESITE': 'Lax' if DEBUG else 'None',  # 'None' required for cross-site (Frontend <-> Backend) in prod
 }
 
 # DRF Spectacular (OpenAPI)
