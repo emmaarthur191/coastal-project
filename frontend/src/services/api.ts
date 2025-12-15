@@ -602,9 +602,9 @@ const MockTransaction = {
 // Authentication service
 export const authService = {
   async login(email, password) {
-    console.log('[DEBUG] authService.login called with:', email, '[PASSWORD HIDDEN]');
+
     try {
-      console.log('[DEBUG] Fetching CSRF token...');
+
       // 1. Fetch CSRF token first (Ensure cookie is set)
       let csrfToken = null;
       try {
@@ -624,9 +624,8 @@ export const authService = {
         if (match) csrfToken = match[1];
       }
 
-      console.log('[DEBUG] CSRF Token obtained:', csrfToken ? 'Yes' : 'No');
 
-      console.log('[DEBUG] Making login request to backend...');
+
       // 2. Perform Login with CSRF Headers
       const headers = {
         'Content-Type': 'application/json',
@@ -643,7 +642,7 @@ export const authService = {
         credentials: 'include', // Important for sessions
       });
 
-      console.log('[DEBUG] Login response status:', response.status);
+
 
       if (!response.ok) {
         let errorData: { detail?: string; error?: string;[key: string]: any } = {};
@@ -661,7 +660,7 @@ export const authService = {
           errorData = { detail: `HTTP error! status: ${response.status}` };
         }
 
-        console.log('[DEBUG] Login failed with error data:', errorData);
+
 
         // Handle rate limiting (429) specifically
         if (response.status === 429) {
@@ -696,14 +695,8 @@ export const authService = {
       }
 
       const data = await response.json();
-      console.log('[DEBUG] Login successful, tokens set in httpOnly cookies');
-
-      // Tokens are managed via HttpOnly cookies for security. 
-      // Do NOT store them in localStorage.
-
       return data;
     } catch (error) {
-      console.log('[DEBUG] Login threw exception:', error);
       console.error('Login error:', error);
       throw error;
     }
