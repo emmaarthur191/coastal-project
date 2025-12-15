@@ -7,7 +7,9 @@
     "backend": "cd banking_backend && python manage.py runserver localhost:8000",
     "frontend": "cd frontend && npm run dev",
     "frontend:fast": "cd frontend && npx vite",
-    "sync": "cd frontend && npm run api:sync"
+    "sync": "cd frontend && npm run api:sync",
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npm start"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
