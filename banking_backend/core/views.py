@@ -2894,9 +2894,10 @@ class OperationsMessagesViewSet(viewsets.ModelViewSet):
         
         class OperationsMessageSerializer(serializers.ModelSerializer):
             sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
-            class Meta:
+            	class Meta:
                 model = OperationsMessage
-                fields = '__all__'
+                fields = ['id', 'sender', 'sender_name', 'recipient', 'title', 'message', 'priority', 'is_read', 'created_at']
+                read_only_fields = ['id', 'sender', 'sender_name', 'created_at']
         
         return OperationsMessageSerializer
 
@@ -2917,9 +2918,10 @@ class VisitScheduleViewSet(viewsets.ModelViewSet):
         from .models import VisitSchedule
         
         class VisitScheduleSerializer(serializers.ModelSerializer):
-            class Meta:
+            	class Meta:
                 model = VisitSchedule
-                fields = '__all__'
+                fields = ['id', 'mobile_banker', 'client_name', 'location', 'scheduled_time', 'status', 'notes', 'created_at', 'updated_at']
+                read_only_fields = ['id', 'mobile_banker', 'created_at', 'updated_at']
         
         return VisitScheduleSerializer
 
