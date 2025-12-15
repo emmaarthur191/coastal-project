@@ -56,7 +56,8 @@ export default function MessagingPage() {
             });
             if (response.ok) {
                 const data = await response.json();
-                setRooms(data);
+                // Handle both paginated {results: [...]} and array responses
+                setRooms(data.results || data || []);
             }
         } catch (error) {
             console.error('Failed to load rooms:', error);
