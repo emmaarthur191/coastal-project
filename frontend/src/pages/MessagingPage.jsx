@@ -686,8 +686,9 @@ function MessagingPage() {
     // We need to patch EnhancedWebSocketManager or just instantiate a direct WS here for simplicity as requested.
 
     // SIMPLIFIED IMPLEMENTATION
-    const token = localStorage.getItem('access_token'); // Or however you store it
-    const socket = new WebSocket(`${wsUrl}?token=${token}`);
+    // SIMPLIFIED IMPLEMENTATION
+    // We now rely on HttpOnly cookies via the updated backend middleware
+    const socket = new WebSocket(`${wsUrl}`);
 
     socket.onopen = () => {
       console.log('[WS] Connected to global messaging');
