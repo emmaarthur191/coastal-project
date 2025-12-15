@@ -4,6 +4,9 @@
 
 set -o errexit  # Exit on error
 
+echo "=== Upgrading pip ==="
+pip install --upgrade pip
+
 echo "=== Installing dependencies ==="
 pip install -r requirements.txt
 
