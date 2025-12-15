@@ -30,11 +30,21 @@ const apiProxy = createProxyMiddleware({
     on: {
         proxyReq: (proxyReq, req, res) => {
             // CRITICAL: Forward original Origin header for CSRF validation
-            // Without this, Django sees the proxy's origin, not the client's
-            const origin = req.headers.origin || req.headers.referer;
+            let origin = req.headers.origin;
+
+            // If Origin is missing (sometimes on same-origin POSTs), try to extract from Referer
+            if (!origin && req.headers.referer) {
+                try {
+                    const refererUrl = new URL(req.headers.referer);
+                    origin = `${refererUrl.protocol}//${refererUrl.host}`;
+                } catch (e) {
+                    console.error('[Proxy] Failed to parse Referer for Origin:', e);
+                }
+            }
+
             if (origin) {
                 proxyReq.setHeader('Origin', origin);
-                proxyReq.setHeader('Referer', origin);
+                proxyReq.setHeader('Referer', origin); // Or keep original referer? Better to keep original referer actually.
             }
 
             // Forward X-Forwarded headers for proper request context
