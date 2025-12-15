@@ -247,22 +247,35 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        response = Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
-        
         try:
-            refresh_token = request.data.get('refresh')
+            refresh_token = request.data.get("refresh")
             if refresh_token:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-        except Exception:
-            pass
+        except Exception as e:
+            # Continue with logout even if token blacklist fails (e.g. invalid token)
+             pass
             
-        # Clear cookies
+        response = Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
+        
+        # Clear Auth Cookie
         from django.conf import settings
         response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE'])
         response.delete_cookie(settings.SIMPLE_JWT['REFRESH_COOKIE'])
         
         return response
+
+
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
+from django.middleware.csrf import get_token
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class GetCSRFToken(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({'csrfToken': get_token(request)})
 
 
 class AuthCheckView(APIView):
