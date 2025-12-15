@@ -25,11 +25,8 @@ const ProtectedStaffRoute = ({
 }) => {
     const { isAuthenticated, user, loading } = useAuth();
 
-    // Fast client-side check: if no token, redirect immediately
-    const hasToken = !!localStorage.getItem('accessToken');
-    if (!hasToken) {
-        return <Navigate to="/login" replace />;
-    }
+    // SECURITY: Auth state is managed by useAuth hook via HTTP-only cookies
+    // Do NOT use localStorage for token checks - vulnerable to XSS
 
     // Show loading state while checking remote authentication
     if (loading) {

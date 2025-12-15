@@ -70,12 +70,11 @@ const ReportsTab: React.FC = () => {
       ? cleanUrl
       : `${apiBaseUrl.replace(/\/$/, '')}${cleanUrl}`;
 
-    const token = localStorage.getItem('accessToken');
+    // SECURITY: Auth handled by HTTP-only cookies (credentials: 'include')
+    // Do NOT use localStorage for token storage - vulnerable to XSS attacks
 
     fetch(downloadUrl, {
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : ''
-      }
+      credentials: 'include' // Cookies are sent automatically
     })
       .then(response => {
         if (!response.ok) throw new Error('Download failed');

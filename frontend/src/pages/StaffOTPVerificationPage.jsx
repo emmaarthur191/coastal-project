@@ -69,7 +69,9 @@ const StaffOTPVerificationPage = () => {
 
     // If user is already verified, redirect to dashboard
     useEffect(() => {
-        if (user?.otp_verified || localStorage.getItem(`otp_verified_${user?.id}`)) {
+        // SECURITY: OTP verification status is tracked on the backend (user.otp_verified)
+        // Do NOT rely on localStorage for security-sensitive state
+        if (user?.otp_verified) {
             const dashboardRoute = getDashboardRoute ? getDashboardRoute() : '/dashboard';
             navigate(dashboardRoute, { replace: true });
         }
@@ -129,8 +131,8 @@ const StaffOTPVerificationPage = () => {
             });
 
             if (response.success) {
-                // Mark user as OTP verified (localStorage for now, backend should also track)
-                localStorage.setItem(`otp_verified_${user?.id}`, 'true');
+                // SECURITY: OTP verification is tracked on the backend via user.otp_verified
+                // The checkAuth() call below will refresh the user state from the server
 
                 setSuccess('Phone verified successfully! Redirecting to your dashboard...');
 

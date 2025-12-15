@@ -350,8 +350,8 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
       processedConfig = await interceptor(processedConfig);
     }
 
-    // Get access token from localStorage for JWT authentication
-    const accessToken = localStorage.getItem('accessToken');
+    // SECURITY: Auth tokens are handled via HTTP-only cookies (credentials: 'include').
+    // Do NOT use localStorage for tokens - vulnerable to XSS attacks.
 
     // Build headers object - ensure processedConfig.headers is treated as Record
     const configHeaders = (processedConfig.headers || {}) as Record<string, string>;
@@ -733,19 +733,13 @@ export const authService = {
 
   async checkAuth() {
     try {
-      const accessToken = localStorage.getItem('accessToken');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      // Include JWT token if available
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
+      // SECURITY: Auth tokens are stored in HTTP-only cookies only.
+      // Do NOT use localStorage for token storage - vulnerable to XSS attacks.
       const response = await fetch(`${API_BASE_URL}users/auth/check/`, {
-        headers,
-        credentials: 'include', // Also include cookies for CSRF
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Cookies are sent automatically
       });
 
       if (response.ok) {
@@ -809,974 +803,948 @@ export const authService = {
       return false;
     }
   },
-  if(!accessToken) {
-    return false;
-  }
-
-      const response = await fetch(`${API_BASE_URL}users/auth/check/`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    credentials: 'include',
-  });
-  if(response.ok) {
-    const data = await response.json();
-return data.authenticated || false;
-      }
-return false;
-    } catch (error) {
-  logger.error('Auth check failed:', error);
-  return false;
-}
-  },
-
-  // Helper function to refresh access token (deprecated - handled automatically by cookies)
-  async refreshAccessToken(): Promise < string | null > {
-  logger.warn('refreshAccessToken is deprecated. Token refresh is handled automatically via cookies.');
-  return null;
-},
 
   // Manager Dashboard Methods
-  async getOperationalMetrics(): Promise < { success; data?: any; error?: string } > {
+  async getOperationalMetrics(): Promise<{ success; data?: any; error?: string }> {
     try {
       const response = await api.get('operations/metrics/');
       return { success: true, data: response.data || {} };
-    } catch(error: any) {
+    } catch (error: any) {
       console.error('Error fetching operational metrics:', error);
       return { success: false, error: error.message, data: {} };
     }
   },
 
-    async getAllTransactions(): Promise < { success; data?: any; error?: string } > {
-      try {
-        const response = await api.get('transactions/');
-        return { success: true, data: response.data };
-      } catch(error: any) {
-        return { success: false, error: error.message };
-      }
-    },
+  async getAllTransactions(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('transactions/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
 
-      async getPendingLoans(): Promise < { success; data?: any; error?: string } > {
-        try {
-          const response = await api.get('banking/loans/pending/');
-          return { success: true, data: response.data };
-        } catch(error: any) {
-          return { success: false, error: error.message };
-        }
-      },
+  async getPendingLoans(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/loans/pending/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
 
-        async getCashFlow(): Promise < { success; data?: any; error?: string } > {
-          try {
-            const response = await api.get('operations/cash-flow/');
-            return { success: true, data: response.data };
-          } catch(error: any) {
-            return { success: false, error: error.message };
-          }
-        },
+  async getCashFlow(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/cash-flow/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
 
 
 
-          async getCommissionSummary(): Promise < { success; data?: any; error?: string } > {
-            try {
-              // Use the commission summary endpoint which provides daily/weekly/monthly breakdowns
-              const response = await api.get('operations/commissions/summary/');
-              return { success: true, data: response.data };
-            } catch(error: any) {
-              return { success: false, error: error.message };
+  async getCommissionSummary(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      // Use the commission summary endpoint which provides daily/weekly/monthly breakdowns
+      const response = await api.get('operations/commissions/summary/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getServiceCharges(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/service-charges/');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      console.error('Error fetching service charges:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  },
+
+  async createServiceCharge(chargeData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/service-charges/', chargeData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async calculateServiceCharge(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/calculate-service-charge/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getAllStaff(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/staff/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffIds(filters?: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const queryString = filters ? `?${new URLSearchParams(filters).toString()}` : '';
+      const response = await api.get(`users/staff-ids/${queryString}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getExpenses(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/expenses/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async sendOTP(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('users/send-otp/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async verifyOTP(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('users/verify-otp/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createUser(userData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      // Check if userData contains file uploads
+      const hasFileUploads = userData.passport_picture || userData.application_letter || userData.appointment_letter;
+
+      if (hasFileUploads) {
+        // Handle file uploads with FormData
+        const formData = new FormData();
+
+        // Add regular fields
+        Object.keys(userData).forEach(key => {
+          if (key !== 'passport_picture' && key !== 'application_letter' && key !== 'appointment_letter') {
+            if (userData[key] !== null && userData[key] !== undefined) {
+              formData.append(key, userData[key]);
             }
-          },
-
-            async getServiceCharges(): Promise < { success; data?: any; error?: string } > {
-              try {
-                const response = await api.get('operations/service-charges/');
-                return { success: true, data: response.data || [] };
-              } catch(error: any) {
-                console.error('Error fetching service charges:', error);
-                return { success: false, error: error.message, data: [] };
-              }
-            },
-
-              async createServiceCharge(chargeData: any): Promise < { success; data?: any; error?: string } > {
-                try {
-                  const response = await api.post('operations/service-charges/', chargeData);
-                  return { success: true, data: response.data };
-                } catch(error: any) {
-                  return { success: false, error: error.message };
-                }
-              },
-
-                async calculateServiceCharge(data: any): Promise < { success; data?: any; error?: string } > {
-                  try {
-                    const response = await api.post('operations/calculate-service-charge/', data);
-                    return { success: true, data: response.data };
-                  } catch(error: any) {
-                    return { success: false, error: error.message };
-                  }
-                },
-
-                  async getAllStaff(): Promise < { success; data?: any; error?: string } > {
-                    try {
-                      const response = await api.get('users/staff/');
-                      return { success: true, data: response.data };
-                    } catch(error: any) {
-                      return { success: false, error: error.message };
-                    }
-                  },
-
-                    async getStaffIds(filters ?: any): Promise < { success; data?: any; error?: string } > {
-                      try {
-                        const queryString = filters ? `?${new URLSearchParams(filters).toString()}` : '';
-                        const response = await api.get(`users/staff-ids/${queryString}`);
-                        return { success: true, data: response.data };
-                      } catch(error: any) {
-                        return { success: false, error: error.message };
-                      }
-                    },
-
-                      async getExpenses(): Promise < { success; data?: any; error?: string } > {
-                        try {
-                          const response = await api.get('operations/expenses/');
-                          return { success: true, data: response.data };
-                        } catch(error: any) {
-                          return { success: false, error: error.message };
-                        }
-                      },
-
-                        async sendOTP(data: any): Promise < { success; data?: any; error?: string } > {
-                          try {
-                            const response = await api.post('users/send-otp/', data);
-                            return { success: true, data: response.data };
-                          } catch(error: any) {
-                            return { success: false, error: error.message };
-                          }
-                        },
-
-                          async verifyOTP(data: any): Promise < { success; data?: any; error?: string } > {
-                            try {
-                              const response = await api.post('users/verify-otp/', data);
-                              return { success: true, data: response.data };
-                            } catch(error: any) {
-                              return { success: false, error: error.message };
-                            }
-                          },
-
-                            async createUser(userData: any): Promise < { success; data?: any; error?: string } > {
-                              try {
-                                // Check if userData contains file uploads
-                                const hasFileUploads = userData.passport_picture || userData.application_letter || userData.appointment_letter;
-
-                                if(hasFileUploads) {
-                                  // Handle file uploads with FormData
-                                  const formData = new FormData();
-
-                                  // Add regular fields
-                                  Object.keys(userData).forEach(key => {
-                                    if (key !== 'passport_picture' && key !== 'application_letter' && key !== 'appointment_letter') {
-                                      if (userData[key] !== null && userData[key] !== undefined) {
-                                        formData.append(key, userData[key]);
-                                      }
-                                    }
-                                  });
-
-                                  // Add files if they exist
-                                  if (userData.passport_picture) {
-                                    formData.append('passport_picture', userData.passport_picture);
-                                  }
-                                  if (userData.application_letter) {
-                                    formData.append('application_letter', userData.application_letter);
-                                  }
-                                  if (userData.appointment_letter) {
-                                    formData.append('appointment_letter', userData.appointment_letter);
-                                  }
-
-                                  // Make request with FormData
-                                  const response = await fetch(`${API_BASE_URL}users/create/`, {
-                                    method: 'POST',
-                                    body: formData,
-                                    // Don't set Content-Type header - let browser set it with boundary
-                                  });
-
-                                  if (!response.ok) {
-                                    const errorData = await response.json();
-                                    return { success: false, error: errorData.error || 'Failed to create user' };
-                                  }
-
-                                  return { success: true, data: await response.json() };
-                                } else {
-                                  // Regular JSON request for backward compatibility
-                                  const response = await api.post('users/create/', userData);
-                                  return { success: true, data: response.data };
-                                }
-                              } catch(error: any) {
-                                return { success: false, error: error.message };
-                              }
-                            },
-
-                              async approveLoan(loanId: string): Promise < { success; data?: any; error?: string } > {
-                                try {
-                                  const response = await api.post(`banking/loans/${loanId}/approve/`, {});
-                                  return { success: true, data: response.data };
-                                } catch(error: any) {
-                                  return { success: false, error: error.message };
-                                }
-                              },
-
-                                async rejectLoan(loanId: string, notes ?: string): Promise < { success; data?: any; error?: string } > {
-                                  try {
-                                    const response = await api.post(`banking/loans/${loanId}/reject/`, { notes: notes || '' });
-                                    return { success: true, data: response.data };
-                                  } catch(error: any) {
-                                    return { success: false, error: error.message };
-                                  }
-                                },
-
-                                  async generatePayslip(data: any): Promise < { success; data?: any; error?: string } > {
-                                    try {
-                                      const response = await api.post('operations/generate-payslip/', data);
-                                      return { success: true, data: response.data };
-                                    } catch(error: any) {
-                                      return { success: false, error: error.message };
-                                    }
-                                  },
-
-                                    async generateStatement(data: any): Promise < { success; data?: any; error?: string } > {
-                                      try {
-                                        const response = await api.post('banking/generate-statement/', data);
-                                        return { success: true, data: response.data };
-                                      } catch(error: any) {
-                                        return { success: false, error: error.message };
-                                      }
-                                    },
-
-                                      // Operations Manager Methods
-                                      async getBranchActivity(): Promise < { success; data?: any; error?: string } > {
-                                        try {
-                                          const response = await api.get('operations/branch-activity/');
-                                          return { success: true, data: response.data || [] };
-                                        } catch(error: any) {
-                                          console.error('Error fetching branch activity:', error);
-                                          return { success: false, error: error.message, data: [] };
-                                        }
-                                      },
-
-                                        async getSystemAlerts(): Promise < { success; data?: any; error?: string } > {
-                                          try {
-                                            const response = await api.get('operations/system-alerts/');
-                                            return { success: true, data: response.data || [] };
-                                          } catch(error: any) {
-                                            console.error('Error fetching system alerts:', error);
-                                            return { success: false, error: error.message, data: [] };
-                                          }
-                                        },
-
-                                          async getWorkflowStatus(): Promise < { success; data?: any; error?: string } > {
-                                            try {
-                                              const response = await api.get('operations/workflow-status/');
-                                              return { success: true, data: response.data || {} };
-                                            } catch(error: any) {
-                                              console.error('Error fetching workflow status:', error);
-                                              return { success: false, error: error.message, data: {} };
-                                            }
-                                          },
-
-                                            async generateReport(reportData: any): Promise < { success; data?: any; error?: string } > {
-                                              try {
-                                                const response = await api.post('operations/generate-report/', reportData);
-                                                return { success: true, data: response.data || null };
-                                              } catch(error: any) {
-                                                console.error('Error generating report:', error);
-                                                return { success: false, error: error.message, data: null };
-                                              }
-                                            },
-
-                                              // Staff Management Methods
-                                              async deactivateStaff(data: any): Promise < { success; data?: any; error?: string } > {
-                                                try {
-                                                  const response = await api.post('users/deactivate-staff/', data);
-                                                  return { success: true, data: response.data };
-                                                } catch(error: any) {
-                                                  return { success: false, error: error.message };
-                                                }
-                                              },
-
-                                                async reactivateStaff(data: any): Promise < { success; data?: any; error?: string } > {
-                                                  try {
-                                                    const response = await api.post('users/reactivate-staff/', data);
-                                                    return { success: true, data: response.data };
-                                                  } catch(error: any) {
-                                                    return { success: false, error: error.message };
-                                                  }
-                                                },
-
-                                                  // Expense Management
-                                                  async createExpense(expenseData: any): Promise < { success; data?: any; error?: string } > {
-                                                    try {
-                                                      const response = await api.post('operations/expenses/', expenseData);
-                                                      return { success: true, data: response.data };
-                                                    } catch(error: any) {
-                                                      return { success: false, error: error.message };
-                                                    }
-                                                  },
-
-
-                                                    async getAllUsers(): Promise < { success; data?: any; error?: string } > {
-                                                      try {
-                                                        const response = await api.get('users/all/');
-                                                        return { success: true, data: response.data };
-                                                      } catch(error: any) {
-                                                        return { success: false, error: error.message };
-                                                      }
-                                                    },
-
-                                                      // Messaging API Methods
-                                                      async getMessageThreads(): Promise < { success; data?: any; error?: string } > {
-                                                        try {
-                                                          const response = await api.get('banking/message-threads/');
-                                                          return { success: true, data: response.data };
-                                                        } catch(error: any) {
-                                                          return { success: false, error: error.message };
-                                                        }
-                                                      },
-
-                                                        async getThreadMessages(threadId: string): Promise < { success; data?: any; error?: string } > {
-                                                          try {
-                                                            const response = await api.get(`banking/messages/?thread=${threadId}`);
-                                                            return { success: true, data: response.data };
-                                                          } catch(error: any) {
-                                                            return { success: false, error: error.message };
-                                                          }
-                                                        },
-
-                                                          async sendMessage(messageData: any): Promise < { success; data?: any; error?: string } > {
-                                                            try {
-                                                              const response = await api.post('banking/messages/', messageData);
-                                                              return { success: true, data: response.data };
-                                                            } catch(error: any) {
-                                                              return { success: false, error: error.message };
-                                                            }
-                                                          },
-
-                                                            async createMessageThread(threadData: any): Promise < { success; data?: any; error?: string } > {
-                                                              try {
-                                                                const response = await api.post('banking/message-threads/', threadData);
-                                                                return { success: true, data: response.data };
-                                                              } catch(error: any) {
-                                                                return { success: false, error: error.message };
-                                                              }
-                                                            },
-
-                                                              async markThreadRead(threadId: string): Promise < { success; data?: any; error?: string } > {
-                                                                try {
-                                                                  const response = await api.patch(`banking/message-threads/${threadId}/`, { is_read: true });
-                                                                  return { success: true, data: response.data };
-                                                                } catch(error: any) {
-                                                                  return { success: false, error: error.message };
-                                                                }
-                                                              },
-
-                                                                async getUserEncryptionKey(userId: string): Promise < { success; data?: any; error?: string } > {
-                                                                  try {
-                                                                    const response = await api.get(`banking/encryption-keys/${userId}/`);
-                                                                    return { success: true, data: response.data };
-                                                                  } catch(error: any) {
-                                                                    return { success: false, error: error.message };
-                                                                  }
-                                                                },
-
-                                                                  async createUserEncryptionKey(keyData: any): Promise < { success; data?: any; error?: string } > {
-                                                                    try {
-                                                                      const response = await api.post('banking/encryption-keys/', keyData);
-                                                                      return { success: true, data: response.data };
-                                                                    } catch(error: any) {
-                                                                      return { success: false, error: error.message };
-                                                                    }
-                                                                  },
-
-                                                                    async getStaffUsers(): Promise < { success; data?: any; error?: string } > {
-                                                                      try {
-                                                                        const response = await api.get('users/staff/');
-                                                                        return { success: true, data: response.data };
-                                                                      } catch(error: any) {
-                                                                        return { success: false, error: error.message };
-                                                                      }
-                                                                    },
-
-                                                                      async addMessageReaction(messageId: string, emoji: string): Promise < { success; data?: any; error?: string } > {
-                                                                        try {
-                                                                          const response = await api.post(`banking/messages/${messageId}/add_reaction/`, { emoji });
-                                                                          return { success: true, data: response.data };
-                                                                        } catch(error: any) {
-                                                                          return { success: false, error: error.message };
-                                                                        }
-                                                                      },
-
-                                                                        async removeMessageReaction(messageId: string, emoji: string): Promise < { success; data?: any; error?: string } > {
-                                                                          try {
-                                                                            const response = await api.post(`banking/messages/${messageId}/remove_reaction/`, { emoji });
-                                                                            return { success: true, data: response.data };
-                                                                          } catch(error: any) {
-                                                                            return { success: false, error: error.message };
-                                                                          }
-                                                                        },
-
-                                                                          async uploadMedia(file: File): Promise < { success; data?: any; error?: string } > {
-                                                                            try {
-                                                                              const formData = new FormData();
-                                                                              formData.append('file', file);
-
-                                                                              const response = await api.post('banking/messages/upload_media/', formData);
-                                                                              return { success: true, data: response.data };
-                                                                            } catch(error: any) {
-                                                                              return { success: false, error: error.message };
-                                                                            }
-                                                                          },
-
-                                                                            async registerDevice(deviceData: any): Promise < { success; data?: any; error?: string } > {
-                                                                              try {
-                                                                                const response = await api.post('banking/devices/', deviceData);
-                                                                                return { success: true, data: response.data };
-                                                                              } catch(error: any) {
-                                                                                return { success: false, error: error.message };
-                                                                              }
-                                                                            },
-
-                                                                              async syncDeviceData(deviceId: string): Promise < { success; data?: any; error?: string } > {
-                                                                                try {
-                                                                                  const response = await api.get(`banking/devices/sync_data/?device_id=${deviceId}`);
-                                                                                  return { success: true, data: response.data };
-                                                                                } catch(error: any) {
-                                                                                  return { success: false, error: error.message };
-                                                                                }
-                                                                              },
-
-                                                                                async markMessageRead(messageId: string, deviceId: string): Promise < { success; data?: any; error?: string } > {
-                                                                                  try {
-                                                                                    const response = await api.post('banking/read-statuses/', {
-                                                                                      message: messageId,
-                                                                                      device_id: deviceId
-                                                                                    });
-                                                                                    return { success: true, data: response.data };
-                                                                                  } catch(error: any) {
-                                                                                    return { success: false, error: error.message };
-                                                                                  }
-                                                                                },
-
-                                                                                  async createBackup(backupType: string = 'full'): Promise < { success; data?: any; error?: string } > {
-                                                                                    try {
-                                                                                      const response = await api.post('banking/backups/', {
-                                                                                        backup_type: backupType
-                                                                                      });
-                                                                                      return { success: true, data: response.data };
-                                                                                    } catch(error: any) {
-                                                                                      return { success: false, error: error.message };
-                                                                                    }
-                                                                                  },
-
-                                                                                    async getBackups(): Promise < { success; data?: any; error?: string } > {
-                                                                                      try {
-                                                                                        const response = await api.get('banking/backups/');
-                                                                                        return { success: true, data: response.data };
-                                                                                      } catch(error: any) {
-                                                                                        return { success: false, error: error.message };
-                                                                                      }
-                                                                                    },
-
-                                                                                      async restoreBackup(backupId: string): Promise < { success; data?: any; error?: string } > {
-                                                                                        try {
-                                                                                          const response = await api.post(`banking/backups/${backupId}/restore/`, {});
-                                                                                          return { success: true, data: response.data };
-                                                                                        } catch(error: any) {
-                                                                                          return { success: false, error: error.message };
-                                                                                        }
-                                                                                      },
-
-                                                                                        // Additional Operations APIs
-                                                                                        async calculateCommission(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                          try {
-                                                                                            const response = await api.post('operations/calculate-commission/', data);
-                                                                                            return { success: true, data: response.data };
-                                                                                          } catch(error: any) {
-                                                                                            return { success: false, error: error.message };
-                                                                                          }
-                                                                                        },
-
-                                                                                          async calculateInterest(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                            try {
-                                                                                              const response = await api.post('operations/calculate-interest/', data);
-                                                                                              return { success: true, data: response.data };
-                                                                                            } catch(error: any) {
-                                                                                              return { success: false, error: error.message };
-                                                                                            }
-                                                                                          },
-
-
-
-                                                                                            async processDeposit(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                              try {
-                                                                                                const response = await api.post('operations/process_deposit/', data);
-                                                                                                return { success: true, data: response.data };
-                                                                                              } catch(error: any) {
-                                                                                                return { success: false, error: error.message };
-                                                                                              }
-                                                                                            },
-
-                                                                                              async processWithdrawal(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                try {
-                                                                                                  const response = await api.post('operations/process_withdrawal/', data);
-                                                                                                  return { success: true, data: response.data };
-                                                                                                } catch(error: any) {
-                                                                                                  return { success: false, error: error.message };
-                                                                                                }
-                                                                                              },
-
-                                                                                                // CRUD Operations for Operations entities
-                                                                                                async getWorkflows(): Promise < { success; data?: any; error?: string } > {
-                                                                                                  try {
-                                                                                                    const response = await api.get('operations/workflows/');
-                                                                                                    return { success: true, data: response.data };
-                                                                                                  } catch(error: any) {
-                                                                                                    return { success: false, error: error.message };
-                                                                                                  }
-                                                                                                },
-
-                                                                                                  async createWorkflow(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                    try {
-                                                                                                      const response = await api.post('operations/workflows/', data);
-                                                                                                      return { success: true, data: response.data };
-                                                                                                    } catch(error: any) {
-                                                                                                      return { success: false, error: error.message };
-                                                                                                    }
-                                                                                                  },
-
-                                                                                                    async getWorkflowSteps(workflowId ?: string): Promise < { success; data?: any; error?: string } > {
-                                                                                                      try {
-                                                                                                        const url = workflowId ? `operations/workflow-steps/?workflow=${workflowId}` : 'operations/workflow-steps/';
-                                                                                                        const response = await api.get(url);
-                                                                                                        return { success: true, data: response.data };
-                                                                                                      } catch(error: any) {
-                                                                                                        return { success: false, error: error.message };
-                                                                                                      }
-                                                                                                    },
-
-                                                                                                      async createWorkflowStep(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                        try {
-                                                                                                          const response = await api.post('operations/workflow-steps/', data);
-                                                                                                          return { success: true, data: response.data };
-                                                                                                        } catch(error: any) {
-                                                                                                          return { success: false, error: error.message };
-                                                                                                        }
-                                                                                                      },
-
-                                                                                                        async getClientKYC(): Promise < { success; data?: any; error?: string } > {
-                                                                                                          try {
-                                                                                                            const response = await api.get('operations/client-kyc/');
-                                                                                                            return { success: true, data: response.data };
-                                                                                                          } catch(error: any) {
-                                                                                                            return { success: false, error: error.message };
-                                                                                                          }
-                                                                                                        },
-
-                                                                                                          async createClientKYC(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                            try {
-                                                                                                              const response = await api.post('operations/client-kyc/', data);
-                                                                                                              return { success: true, data: response.data };
-                                                                                                            } catch(error: any) {
-                                                                                                              return { success: false, error: error.message };
-                                                                                                            }
-                                                                                                          },
-
-                                                                                                            async getFieldCollections(): Promise < { success; data?: any; error?: string } > {
-                                                                                                              try {
-                                                                                                                const response = await api.get('operations/field-collections/');
-                                                                                                                return { success: true, data: response.data };
-                                                                                                              } catch(error: any) {
-                                                                                                                return { success: false, error: error.message };
-                                                                                                              }
-                                                                                                            },
-
-                                                                                                              async createFieldCollection(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                try {
-                                                                                                                  const response = await api.post('operations/field-collections/', data);
-                                                                                                                  return { success: true, data: response.data };
-                                                                                                                } catch(error: any) {
-                                                                                                                  return { success: false, error: error.message };
-                                                                                                                }
-                                                                                                              },
-
-                                                                                                                async getCommissions(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                  try {
-                                                                                                                    const response = await api.get('operations/commissions/');
-                                                                                                                    return { success: true, data: response.data };
-                                                                                                                  } catch(error: any) {
-                                                                                                                    return { success: false, error: error.message };
-                                                                                                                  }
-                                                                                                                },
-
-                                                                                                                  async createCommission(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                    try {
-                                                                                                                      const response = await api.post('operations/commissions/', data);
-                                                                                                                      return { success: true, data: response.data };
-                                                                                                                    } catch(error: any) {
-                                                                                                                      return { success: false, error: error.message };
-                                                                                                                    }
-                                                                                                                  },
-
-                                                                                                                    async getVisitSchedules(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                      try {
-                                                                                                                        const response = await api.get('operations/visit_schedules/');
-                                                                                                                        return { success: true, data: response.data };
-                                                                                                                      } catch(error: any) {
-                                                                                                                        return { success: false, error: error.message };
-                                                                                                                      }
-                                                                                                                    },
-
-
-                                                                                                                      async getMembers(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                        try {
-                                                                                                                          const response = await api.get('users/members/');
-                                                                                                                          return { success: true, data: response.data || [] };
-                                                                                                                        } catch(error: any) {
-                                                                                                                          return { success: false, error: error.message };
-                                                                                                                        }
-                                                                                                                      },
-
-                                                                                                                        async createVisitSchedule(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                          try {
-                                                                                                                            const response = await api.post('operations/visit_schedules/', data);
-                                                                                                                            return { success: true, data: response.data };
-                                                                                                                          } catch(error: any) {
-                                                                                                                            return { success: false, error: error.message };
-                                                                                                                          }
-                                                                                                                        },
-
-                                                                                                                          async getClientAssignments(filters: any = {}): Promise < { success; data?: any; error?: string } > {
-                                                                                                                            try {
-                                                                                                                              // Build query string from filters
-                                                                                                                              const queryParams = new URLSearchParams();
-                                                                                                                              if(filters.mobile_banker) queryParams.append('mobile_banker', filters.mobile_banker);
-                                                                                                                              if(filters.status) queryParams.append('status', filters.status);
-
-                                                                                                                              const response = await api.get(`operations/assignments/?${queryParams.toString()}`);
-                                                                                                                              return { success: true, data: response.data };
-                                                                                                                            } catch(error: any) {
-                                                                                                                              return { success: false, error: error.message };
-                                                                                                                            }
-                                                                                                                          },
-
-                                                                                                                            async assignClient(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                              try {
-                                                                                                                                const response = await api.post('operations/assignments/', data);
-                                                                                                                                return { success: true, data: response.data };
-                                                                                                                              } catch(error: any) {
-                                                                                                                                return { success: false, error: error.message };
-                                                                                                                              }
-                                                                                                                            },
-
-                                                                                                                              async updateAssignment(id: number | string, data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                try {
-                                                                                                                                  const response = await api.patch(`operations/assignments/${id}/`, data);
-                                                                                                                                  return { success: true, data: response.data };
-                                                                                                                                } catch(error: any) {
-                                                                                                                                  return { success: false, error: error.message };
-                                                                                                                                }
-                                                                                                                              },
-
-                                                                                                                                async getMobileBankerMetrics(mobileBankerId ?: string): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                  try {
-                                                                                                                                    const url = mobileBankerId
-                                                                                                                                      ? `operations/mobile-banker-metrics/?mobile_banker_id=${mobileBankerId}`
-                                                                                                                                      : 'operations/mobile-banker-metrics/';
-                                                                                                                                    const response = await api.get(url);
-                                                                                                                                    return { success: true, data: response.data };
-                                                                                                                                  } catch(error: any) {
-                                                                                                                                    return { success: false, error: error.message };
-                                                                                                                                  }
-                                                                                                                                },
-
-                                                                                                                                  async getOperationsMessages(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                    try {
-                                                                                                                                      const response = await api.get('operations/messages/');
-                                                                                                                                      return { success: true, data: response.data };
-                                                                                                                                    } catch(error: any) {
-                                                                                                                                      return { success: false, error: error.message };
-                                                                                                                                    }
-                                                                                                                                  },
-
-                                                                                                                                    async createOperationsMessage(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                      try {
-                                                                                                                                        const response = await api.post('operations/messages/', data);
-                                                                                                                                        return { success: true, data: response.data };
-                                                                                                                                      } catch(error: any) {
-                                                                                                                                        return { success: false, error: error.message };
-                                                                                                                                      }
-                                                                                                                                    },
-
-                                                                                                                                      // Reports API Methods
-                                                                                                                                      async getReportTemplates(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                        try {
-                                                                                                                                          const response = await api.get('reports/templates/');
-                                                                                                                                          return { success: true, data: response.data };
-                                                                                                                                        } catch(error: any) {
-                                                                                                                                          return { success: false, error: error.message };
-                                                                                                                                        }
-                                                                                                                                      },
-
-                                                                                                                                        async createReportTemplate(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                          try {
-                                                                                                                                            const response = await api.post('reports/templates/', data);
-                                                                                                                                            return { success: true, data: response.data };
-                                                                                                                                          } catch(error: any) {
-                                                                                                                                            return { success: false, error: error.message };
-                                                                                                                                          }
-                                                                                                                                        },
-
-                                                                                                                                          async getReports(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                            try {
-                                                                                                                                              const response = await api.get('reports/reports/');
-                                                                                                                                              return { success: true, data: response.data };
-                                                                                                                                            } catch(error: any) {
-                                                                                                                                              return { success: false, error: error.message };
-                                                                                                                                            }
-                                                                                                                                          },
-
-                                                                                                                                            async createReport(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                              try {
-                                                                                                                                                const response = await api.post('reports/reports/', data);
-                                                                                                                                                return { success: true, data: response.data };
-                                                                                                                                              } catch(error: any) {
-                                                                                                                                                return { success: false, error: error.message };
-                                                                                                                                              }
-                                                                                                                                            },
-
-                                                                                                                                              async getReportSchedules(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                try {
-                                                                                                                                                  const response = await api.get('reports/schedules/');
-                                                                                                                                                  return { success: true, data: response.data };
-                                                                                                                                                } catch(error: any) {
-                                                                                                                                                  return { success: false, error: error.message };
-                                                                                                                                                }
-                                                                                                                                              },
-
-                                                                                                                                                async createReportSchedule(data: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                  try {
-                                                                                                                                                    const response = await api.post('reports/schedules/', data);
-                                                                                                                                                    return { success: true, data: response.data };
-                                                                                                                                                  } catch(error: any) {
-                                                                                                                                                    return { success: false, error: error.message };
-                                                                                                                                                  }
-                                                                                                                                                },
-
-                                                                                                                                                  async getReportAnalytics(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                    try {
-                                                                                                                                                      const response = await api.get('reports/analytics/');
-                                                                                                                                                      return { success: true, data: response.data };
-                                                                                                                                                    } catch(error: any) {
-                                                                                                                                                      return { success: false, error: error.message };
-                                                                                                                                                    }
-                                                                                                                                                  },
-
-                                                                                                                                                    // Performance API Methods
-                                                                                                                                                    async getPerformanceDashboardData(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                      try {
-                                                                                                                                                        const response = await api.get('performance/dashboard-data/');
-                                                                                                                                                        return { success: true, data: response.data };
-                                                                                                                                                      } catch(error: any) {
-                                                                                                                                                        return { success: false, error: error.message };
-                                                                                                                                                      }
-                                                                                                                                                    },
-
-                                                                                                                                                      async getSystemHealth(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                        try {
-                                                                                                                                                          const response = await api.get('performance/system-health/');
-                                                                                                                                                          return { success: true, data: response.data };
-                                                                                                                                                        } catch(error: any) {
-                                                                                                                                                          return { success: false, error: error.message };
-                                                                                                                                                        }
-                                                                                                                                                      },
-
-                                                                                                                                                        async getPerformanceMetrics(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                          try {
-                                                                                                                                                            const response = await api.get('performance/metrics/');
-                                                                                                                                                            return { success: true, data: response.data };
-                                                                                                                                                          } catch(error: any) {
-                                                                                                                                                            return { success: false, error: error.message };
-                                                                                                                                                          }
-                                                                                                                                                        },
-
-                                                                                                                                                          async getPerformanceAlerts(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                            try {
-                                                                                                                                                              const response = await api.get('performance/alerts/');
-                                                                                                                                                              return { success: true, data: response.data };
-                                                                                                                                                            } catch(error: any) {
-                                                                                                                                                              return { success: false, error: error.message };
-                                                                                                                                                            }
-                                                                                                                                                          },
-
-                                                                                                                                                            async getPerformanceRecommendations(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                              try {
-                                                                                                                                                                const response = await api.get('performance/recommendations/');
-                                                                                                                                                                return { success: true, data: response.data };
-                                                                                                                                                              } catch(error: any) {
-                                                                                                                                                                return { success: false, error: error.message };
-                                                                                                                                                              }
-                                                                                                                                                            },
-
-                                                                                                                                                              async getTransactionVolume(params ?: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                try {
-                                                                                                                                                                  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-                                                                                                                                                                  const response = await api.get(`performance/transaction-volume/${queryString}`);
-                                                                                                                                                                  return { success: true, data: response.data };
-                                                                                                                                                                } catch(error: any) {
-                                                                                                                                                                  return { success: false, error: error.message };
-                                                                                                                                                                }
-                                                                                                                                                              },
-
-                                                                                                                                                                async getPerformanceChartData(params ?: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                  try {
-                                                                                                                                                                    const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-                                                                                                                                                                    const response = await api.get(`performance/chart-data/${queryString}`);
-                                                                                                                                                                    return { success: true, data: response.data };
-                                                                                                                                                                  } catch(error: any) {
-                                                                                                                                                                    return { success: false, error: error.message };
-                                                                                                                                                                  }
-                                                                                                                                                                },
-
-                                                                                                                                                                  // Settings API Methods
-                                                                                                                                                                  async getUserSettings(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                    try {
-                                                                                                                                                                      const response = await api.get('settings/user-settings/');
-                                                                                                                                                                      return { success: true, data: response.data };
-                                                                                                                                                                    } catch(error: any) {
-                                                                                                                                                                      return { success: false, error: error.message };
-                                                                                                                                                                    }
-                                                                                                                                                                  },
-
-                                                                                                                                                                    async updateUserSettings(settings: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                      try {
-                                                                                                                                                                        const response = await api.post('settings/user-settings/', settings);
-                                                                                                                                                                        return { success: true, data: response.data };
-                                                                                                                                                                      } catch(error: any) {
-                                                                                                                                                                        return { success: false, error: error.message };
-                                                                                                                                                                      }
-                                                                                                                                                                    },
-
-                                                                                                                                                                      async getSystemSettings(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                        try {
-                                                                                                                                                                          const response = await api.get('settings/system-settings/');
-                                                                                                                                                                          return { success: true, data: response.data };
-                                                                                                                                                                        } catch(error: any) {
-                                                                                                                                                                          return { success: false, error: error.message };
-                                                                                                                                                                        }
-                                                                                                                                                                      },
-
-                                                                                                                                                                        async getApiUsage(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                          try {
-                                                                                                                                                                            const response = await api.get('settings/api-usage/');
-                                                                                                                                                                            return { success: true, data: response.data };
-                                                                                                                                                                          } catch(error: any) {
-                                                                                                                                                                            return { success: false, error: error.message };
-                                                                                                                                                                          }
-                                                                                                                                                                        },
-
-                                                                                                                                                                          async getRateLimits(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                            try {
-                                                                                                                                                                              const response = await api.get('settings/rate-limits/');
-                                                                                                                                                                              return { success: true, data: response.data };
-                                                                                                                                                                            } catch(error: any) {
-                                                                                                                                                                              return { success: false, error: error.message };
-                                                                                                                                                                            }
-                                                                                                                                                                          },
-
-                                                                                                                                                                            async getHealthChecks(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                              try {
-                                                                                                                                                                                const response = await api.get('settings/health-checks/');
-                                                                                                                                                                                return { success: true, data: response.data };
-                                                                                                                                                                              } catch(error: any) {
-                                                                                                                                                                                return { success: false, error: error.message };
-                                                                                                                                                                              }
-                                                                                                                                                                            },
-
-                                                                                                                                                                              // Banking API Methods
-                                                                                                                                                                              async getLoans(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                try {
-                                                                                                                                                                                  const response = await api.get('banking/loans/');
-                                                                                                                                                                                  return { success: true, data: response.data };
-                                                                                                                                                                                } catch(error: any) {
-                                                                                                                                                                                  return { success: false, error: error.message };
-                                                                                                                                                                                }
-                                                                                                                                                                              },
-
-                                                                                                                                                                                async createLoan(loanData: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                  try {
-                                                                                                                                                                                    const response = await api.post('banking/loans/', loanData);
-                                                                                                                                                                                    return { success: true, data: response.data };
-                                                                                                                                                                                  } catch(error: any) {
-                                                                                                                                                                                    return { success: false, error: error.message };
-                                                                                                                                                                                  }
-                                                                                                                                                                                },
-
-                                                                                                                                                                                  async getStaffAccounts(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                    try {
-                                                                                                                                                                                      const response = await api.get('banking/staff-accounts/');
-                                                                                                                                                                                      return { success: true, data: response.data };
-                                                                                                                                                                                    } catch(error: any) {
-                                                                                                                                                                                      return { success: false, error: error.message };
-                                                                                                                                                                                    }
-                                                                                                                                                                                  },
-
-                                                                                                                                                                                    async getStaffAccountsSummary(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                      try {
-                                                                                                                                                                                        const response = await api.get('banking/staff-accounts/summary/');
-                                                                                                                                                                                        return { success: true, data: response.data };
-                                                                                                                                                                                      } catch(error: any) {
-                                                                                                                                                                                        return { success: false, error: error.message };
-                                                                                                                                                                                      }
-                                                                                                                                                                                    },
-
-                                                                                                                                                                                      async getComplaints(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                        try {
-                                                                                                                                                                                          const response = await api.get('banking/complaints/');
-                                                                                                                                                                                          return { success: true, data: response.data };
-                                                                                                                                                                                        } catch(error: any) {
-                                                                                                                                                                                          return { success: false, error: error.message };
-                                                                                                                                                                                        }
-                                                                                                                                                                                      },
-
-                                                                                                                                                                                        async createComplaint(complaintData: any): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                          try {
-                                                                                                                                                                                            const response = await api.post('banking/complaints/', complaintData);
-                                                                                                                                                                                            return { success: true, data: response.data };
-                                                                                                                                                                                          } catch(error: any) {
-                                                                                                                                                                                            return { success: false, error: error.message };
-                                                                                                                                                                                          }
-                                                                                                                                                                                        },
-
-                                                                                                                                                                                          async getCashAdvances(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                            try {
-                                                                                                                                                                                              const response = await api.get('banking/cash-advances/');
-                                                                                                                                                                                              return { success: true, data: response.data };
-                                                                                                                                                                                            } catch(error: any) {
-                                                                                                                                                                                              return { success: false, error: error.message };
-                                                                                                                                                                                            }
-                                                                                                                                                                                          },
-
-                                                                                                                                                                                            async getRefunds(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                              try {
-                                                                                                                                                                                                const response = await api.get('banking/refunds/');
-                                                                                                                                                                                                return { success: true, data: response.data };
-                                                                                                                                                                                              } catch(error: any) {
-                                                                                                                                                                                                return { success: false, error: error.message };
-                                                                                                                                                                                              }
-                                                                                                                                                                                            },
-
-                                                                                                                                                                                              async getAccounts(): Promise < { success; data?: any; error?: string } > {
-                                                                                                                                                                                                try {
-                                                                                                                                                                                                  const response = await api.get('accounts/');
-                                                                                                                                                                                                  return { success: true, data: response.data };
-                                                                                                                                                                                                } catch(error: any) {
-                                                                                                                                                                                                  return { success: false, error: error.message };
-                                                                                                                                                                                                }
-                                                                                                                                                                                              },
+          }
+        });
+
+        // Add files if they exist
+        if (userData.passport_picture) {
+          formData.append('passport_picture', userData.passport_picture);
+        }
+        if (userData.application_letter) {
+          formData.append('application_letter', userData.application_letter);
+        }
+        if (userData.appointment_letter) {
+          formData.append('appointment_letter', userData.appointment_letter);
+        }
+
+        // Make request with FormData
+        const response = await fetch(`${API_BASE_URL}users/create/`, {
+          method: 'POST',
+          body: formData,
+          // Don't set Content-Type header - let browser set it with boundary
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          return { success: false, error: errorData.error || 'Failed to create user' };
+        }
+
+        return { success: true, data: await response.json() };
+      } else {
+        // Regular JSON request for backward compatibility
+        const response = await api.post('users/create/', userData);
+        return { success: true, data: response.data };
+      }
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async approveLoan(loanId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/loans/${loanId}/approve/`, {});
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async rejectLoan(loanId: string, notes?: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/loans/${loanId}/reject/`, { notes: notes || '' });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async generatePayslip(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/generate-payslip/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async generateStatement(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/generate-statement/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Operations Manager Methods
+  async getBranchActivity(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/branch-activity/');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      console.error('Error fetching branch activity:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  },
+
+  async getSystemAlerts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/system-alerts/');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      console.error('Error fetching system alerts:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  },
+
+  async getWorkflowStatus(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/workflow-status/');
+      return { success: true, data: response.data || {} };
+    } catch (error: any) {
+      console.error('Error fetching workflow status:', error);
+      return { success: false, error: error.message, data: {} };
+    }
+  },
+
+  async generateReport(reportData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/generate-report/', reportData);
+      return { success: true, data: response.data || null };
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      return { success: false, error: error.message, data: null };
+    }
+  },
+
+  // Staff Management Methods
+  async deactivateStaff(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('users/deactivate-staff/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async reactivateStaff(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('users/reactivate-staff/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Expense Management
+  async createExpense(expenseData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/expenses/', expenseData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+
+  async getAllUsers(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/all/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Messaging API Methods
+  async getMessageThreads(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/message-threads/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getThreadMessages(threadId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get(`banking/messages/?thread=${threadId}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async sendMessage(messageData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/messages/', messageData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createMessageThread(threadData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/message-threads/', threadData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async markThreadRead(threadId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.patch(`banking/message-threads/${threadId}/`, { is_read: true });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getUserEncryptionKey(userId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get(`banking/encryption-keys/${userId}/`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createUserEncryptionKey(keyData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/encryption-keys/', keyData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffUsers(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/staff/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async addMessageReaction(messageId: string, emoji: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/messages/${messageId}/add_reaction/`, { emoji });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async removeMessageReaction(messageId: string, emoji: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/messages/${messageId}/remove_reaction/`, { emoji });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async uploadMedia(file: File): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post('banking/messages/upload_media/', formData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async registerDevice(deviceData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/devices/', deviceData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async syncDeviceData(deviceId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get(`banking/devices/sync_data/?device_id=${deviceId}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async markMessageRead(messageId: string, deviceId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/read-statuses/', {
+        message: messageId,
+        device_id: deviceId
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createBackup(backupType: string = 'full'): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/backups/', {
+        backup_type: backupType
+      });
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getBackups(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/backups/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async restoreBackup(backupId: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/backups/${backupId}/restore/`, {});
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Additional Operations APIs
+  async calculateCommission(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/calculate-commission/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async calculateInterest(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/calculate-interest/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+
+
+  async processDeposit(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/process_deposit/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async processWithdrawal(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/process_withdrawal/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // CRUD Operations for Operations entities
+  async getWorkflows(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/workflows/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createWorkflow(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/workflows/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getWorkflowSteps(workflowId?: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const url = workflowId ? `operations/workflow-steps/?workflow=${workflowId}` : 'operations/workflow-steps/';
+      const response = await api.get(url);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createWorkflowStep(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/workflow-steps/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getClientKYC(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/client-kyc/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createClientKYC(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/client-kyc/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getFieldCollections(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/field-collections/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createFieldCollection(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/field-collections/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getCommissions(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/commissions/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createCommission(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/commissions/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getVisitSchedules(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/visit_schedules/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+
+  async getMembers(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('users/members/');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createVisitSchedule(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/visit_schedules/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getClientAssignments(filters: any = {}): Promise<{ success; data?: any; error?: string }> {
+    try {
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      if (filters.mobile_banker) queryParams.append('mobile_banker', filters.mobile_banker);
+      if (filters.status) queryParams.append('status', filters.status);
+
+      const response = await api.get(`operations/assignments/?${queryParams.toString()}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async assignClient(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/assignments/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateAssignment(id: number | string, data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.patch(`operations/assignments/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getMobileBankerMetrics(mobileBankerId?: string): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const url = mobileBankerId
+        ? `operations/mobile-banker-metrics/?mobile_banker_id=${mobileBankerId}`
+        : 'operations/mobile-banker-metrics/';
+      const response = await api.get(url);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getOperationsMessages(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('operations/messages/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createOperationsMessage(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('operations/messages/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Reports API Methods
+  async getReportTemplates(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/templates/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createReportTemplate(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('reports/templates/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getReports(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/reports/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createReport(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('reports/reports/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getReportSchedules(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/schedules/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createReportSchedule(data: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('reports/schedules/', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getReportAnalytics(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('reports/analytics/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Performance API Methods
+  async getPerformanceDashboardData(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/dashboard-data/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getSystemHealth(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/system-health/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceMetrics(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/metrics/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceAlerts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/alerts/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceRecommendations(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('performance/recommendations/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getTransactionVolume(params?: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+      const response = await api.get(`performance/transaction-volume/${queryString}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPerformanceChartData(params?: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+      const response = await api.get(`performance/chart-data/${queryString}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Settings API Methods
+  async getUserSettings(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/user-settings/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateUserSettings(settings: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('settings/user-settings/', settings);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getSystemSettings(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/system-settings/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getApiUsage(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/api-usage/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getRateLimits(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/rate-limits/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getHealthChecks(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('settings/health-checks/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Banking API Methods
+  async getLoans(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/loans/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createLoan(loanData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/loans/', loanData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffAccounts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/staff-accounts/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getStaffAccountsSummary(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/staff-accounts/summary/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getComplaints(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/complaints/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createComplaint(complaintData: any): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.post('banking/complaints/', complaintData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getCashAdvances(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/cash-advances/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getRefunds(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/refunds/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getAccounts(): Promise<{ success; data?: any; error?: string }> {
+    try {
+      const response = await api.get('accounts/');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
 
 };
 

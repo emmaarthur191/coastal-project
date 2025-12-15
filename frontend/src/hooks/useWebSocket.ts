@@ -36,11 +36,10 @@ export const useWebSocket = ({
     if (!user) return;
 
     try {
-      // Get JWT token from localStorage (fallback for httpOnly cookies)
-      const token = localStorage.getItem('accessToken');
-      const wsUrl = `${url}?token=${token}`;
-
-      wsRef.current = new WebSocket(wsUrl);
+      // SECURITY: WebSocket authentication via cookies (not URL query params)
+      // The backend middleware reads the 'access' cookie for authentication
+      // Do NOT pass tokens in URL - they get logged and exposed in browser history
+      wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
         console.log('WebSocket connected:', url);

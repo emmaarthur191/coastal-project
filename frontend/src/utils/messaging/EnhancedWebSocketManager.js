@@ -27,7 +27,8 @@ class EnhancedWebSocketManager {
 
     this.isConnecting = true;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const token = localStorage.getItem('accessToken');
+    // SECURITY: Do NOT pass tokens in URL query params - they get logged and exposed
+    // WebSocket auth should use HTTP-only cookies instead
 
     // Get WebSocket base URL from environment or fallback to localhost:8001
     const getWebSocketBaseUrl = () => {
@@ -60,10 +61,11 @@ class EnhancedWebSocketManager {
     };
 
     const wsBaseUrl = getWebSocketBaseUrl();
-    const wsUrl = `${protocol}//${wsBaseUrl}/ws/messaging/${this.threadId}/?token=${token}`;
+    // SECURITY: Auth via HTTP-only cookies, not URL params
+    const wsUrl = `${protocol}//${wsBaseUrl}/ws/messaging/${this.threadId}/`;
 
     try {
-      console.log('[WEBSOCKET] Connecting to:', wsUrl.replace(token, '[TOKEN]'));
+      console.log('[WEBSOCKET] Connecting to:', wsUrl);
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {

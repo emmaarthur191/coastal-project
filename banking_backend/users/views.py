@@ -88,9 +88,7 @@ class CreateStaffView(APIView):
                 response_data = serializer.data
                 response_data['staff_id'] = user.staff_id
                 response_data['sms_sent'] = sms_success
-                
-                if settings.DEBUG:
-                     response_data['debug_password'] = generated_password
+                # SECURITY: Never expose passwords in API responses, even in DEBUG mode
                 
                 return Response(response_data, status=status.HTTP_201_CREATED)
                 
@@ -194,9 +192,10 @@ class LoginView(APIView):
         
         refresh = RefreshToken.for_user(user)
         
+        # SECURITY: Do NOT expose tokens in response body - only set in HTTP-only cookies
+        # This prevents XSS attacks from stealing tokens
         response = Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            'message': 'Login successful',
             'user': UserSerializer(user).data
         })
         
@@ -356,9 +355,8 @@ class SendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Generate a 6-digit OTP (in production, use a more secure method)
-        import random
-        otp_code = str(random.randint(100000, 999999))
+        # Generate a 6-digit OTP using a cryptographically secure RNG
+        otp_code = str(secrets.SystemRandom().randint(100000, 999999))
         
         # Store OTP in session
         request.session['otp_code'] = otp_code
@@ -420,7 +418,9 @@ class VerifyOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if stored_otp != otp_code:
+        # SECURITY: Use constant-time comparison to prevent timing attacks
+        import hmac
+        if not hmac.compare_digest(stored_otp, otp_code):
             return Response(
                 {'error': 'Invalid OTP code.'},
                 status=status.HTTP_400_BAD_REQUEST
