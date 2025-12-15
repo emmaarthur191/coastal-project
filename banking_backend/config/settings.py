@@ -404,6 +404,7 @@ if not DEBUG:
 CORS_ALLOWED_ORIGINS = [
     # Production frontend on Render
     "https://coastal-web.onrender.com",
+    "https://coastal-project.onrender.com",
 ]
 
 # SECURITY: Only allow localhost origins in DEBUG mode
@@ -417,6 +418,27 @@ if DEBUG:
 # Add Env-Defined Origins for Production (override/extend)
 if env.list('CORS_ALLOWED_ORIGINS', default=[]):
     CORS_ALLOWED_ORIGINS += env.list('CORS_ALLOWED_ORIGINS')
+
+# =============================================================================
+# CSRF Trusted Origins (Required for Django 4.0+)
+# =============================================================================
+# Must explicitly list origins allowed to make unsafe requests (POST, PUT, DELETE)
+CSRF_TRUSTED_ORIGINS = [
+    "https://coastal-web.onrender.com",
+    "https://coastal-project.onrender.com",
+]
+
+# SECURITY: Only allow localhost in DEBUG mode
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+    ]
+
+# Add Env-Defined Trusted Origins for Production
+if env.list('CSRF_TRUSTED_ORIGINS', default=[]):
+    CSRF_TRUSTED_ORIGINS += env.list('CSRF_TRUSTED_ORIGINS')
 
 # Production Security Headers
 if not DEBUG:
