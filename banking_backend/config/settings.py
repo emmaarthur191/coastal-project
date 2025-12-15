@@ -306,8 +306,9 @@ else:
 
 # Flower (Celery monitoring) Configuration
 FLOWER_PORT = env.int('FLOWER_PORT', default=5555)
-# SECURITY: In production, FLOWER_BASIC_AUTH must be set via environment variable
-FLOWER_BASIC_AUTH = env('FLOWER_BASIC_AUTH', default='admin:changeme' if DEBUG else None)
+# SECURITY: FLOWER_BASIC_AUTH must ALWAYS be set via environment variable
+# Never use default passwords for monitoring tools
+FLOWER_BASIC_AUTH = env('FLOWER_BASIC_AUTH', default=None)
 
 # Sendexa SMS Configuration
 # SECURITY: All Sendexa credentials MUST be set via environment variables
@@ -398,14 +399,19 @@ if not DEBUG:
 # =============================================================================
 # CORS Configuration
 # =============================================================================
-# Allow requests from localhost (development) and production frontend
+# Production origins only - localhost added conditionally for development
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
     # Production frontend on Render
     "https://coastal-web.onrender.com",
-    "http://localhost:5173",  # For local Vite dev
 ]
+
+# SECURITY: Only allow localhost origins in DEBUG mode
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # For local Vite dev
+    ]
 
 # Add Env-Defined Origins for Production (override/extend)
 if env.list('CORS_ALLOWED_ORIGINS', default=[]):
@@ -428,7 +434,14 @@ if not DEBUG:
 
 # Content Security Policy (via django-csp)
 # Replaces X-Frame-Options
-CSP_SCRIPT_SRC_DEFAULTS = ("'self'", "'unsafe-inline'", "'unsafe-eval'")
+# SECURITY: unsafe-inline is required for many React frameworks
+# unsafe-eval is only allowed in DEBUG mode (dev tools, hot reload)
+if DEBUG:
+    CSP_SCRIPT_SRC_DEFAULTS = ("'self'", "'unsafe-inline'", "'unsafe-eval'")
+else:
+    # PRODUCTION: Remove unsafe-eval to prevent XSS eval() attacks
+    CSP_SCRIPT_SRC_DEFAULTS = ("'self'", "'unsafe-inline'")
+
 if env.list('CSP_SCRIPT_SRC', default=[]):
     CSP_SCRIPT_SRC_DEFAULTS += tuple(env.list('CSP_SCRIPT_SRC'))
 
@@ -437,9 +450,11 @@ CONTENT_SECURITY_POLICY = {
         "default-src": ["'self'"],
         "script-src": CSP_SCRIPT_SRC_DEFAULTS,
         "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"],
+        "img-src": ["'self'", "data:", "blob:"],
         "font-src": ["'self'", "data:"],
         "frame-ancestors": ["'self'"],
+        "connect-src": ["'self'", "wss:", "https:"],  # Allow WebSocket and API calls
+        "worker-src": ["'self'", "blob:"],  # For service workers
     }
 }
 

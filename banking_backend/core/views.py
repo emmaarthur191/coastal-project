@@ -1347,10 +1347,22 @@ class CashAdvanceViewSet(mixins.ListModelMixin,
     
     @action(detail=True, methods=['post'], permission_classes=[IsStaff])
     def approve(self, request, pk=None):
-        """Approve a cash advance request."""
+        """Approve a cash advance request.
+        
+        SECURITY: Only managers can approve, or staff within same branch.
+        """
         from .models import CashAdvance
         try:
-            advance = CashAdvance.objects.get(pk=pk)
+            advance = CashAdvance.objects.select_related('user').get(pk=pk)
+            
+            # SECURITY: Authorization check - managers can approve any, staff only their branch
+            if not request.user.is_superuser:
+                if hasattr(request.user, 'role') and request.user.role != 'manager':
+                    # Staff can only approve within their branch (if branch tracking exists)
+                    if hasattr(advance.user, 'branch') and hasattr(request.user, 'branch'):
+                        if advance.user.branch != request.user.branch:
+                            return Response({'error': 'Not authorized to approve this request'}, status=403)
+            
             if advance.status != 'pending':
                 return Response({'error': 'Can only approve pending requests'}, status=400)
             advance.status = 'approved'
@@ -1362,10 +1374,21 @@ class CashAdvanceViewSet(mixins.ListModelMixin,
     
     @action(detail=True, methods=['post'], permission_classes=[IsStaff])
     def disburse(self, request, pk=None):
-        """Disburse an approved cash advance."""
+        """Disburse an approved cash advance.
+        
+        SECURITY: Only managers can disburse, or staff within same branch.
+        """
         from .models import CashAdvance
         try:
-            advance = CashAdvance.objects.get(pk=pk)
+            advance = CashAdvance.objects.select_related('user').get(pk=pk)
+            
+            # SECURITY: Authorization check
+            if not request.user.is_superuser:
+                if hasattr(request.user, 'role') and request.user.role != 'manager':
+                    if hasattr(advance.user, 'branch') and hasattr(request.user, 'branch'):
+                        if advance.user.branch != request.user.branch:
+                            return Response({'error': 'Not authorized to disburse this advance'}, status=403)
+            
             if advance.status != 'approved':
                 return Response({'error': 'Can only disburse approved advances'}, status=400)
             advance.status = 'disbursed'
@@ -1376,11 +1399,22 @@ class CashAdvanceViewSet(mixins.ListModelMixin,
     
     @action(detail=True, methods=['post'], permission_classes=[IsStaff])
     def repay(self, request, pk=None):
-        """Mark a cash advance as repaid."""
+        """Mark a cash advance as repaid.
+        
+        SECURITY: Only managers can mark repaid, or staff within same branch.
+        """
         from .models import CashAdvance
         from django.utils import timezone
         try:
-            advance = CashAdvance.objects.get(pk=pk)
+            advance = CashAdvance.objects.select_related('user').get(pk=pk)
+            
+            # SECURITY: Authorization check
+            if not request.user.is_superuser:
+                if hasattr(request.user, 'role') and request.user.role != 'manager':
+                    if hasattr(advance.user, 'branch') and hasattr(request.user, 'branch'):
+                        if advance.user.branch != request.user.branch:
+                            return Response({'error': 'Not authorized to process this repayment'}, status=403)
+            
             if advance.status != 'disbursed':
                 return Response({'error': 'Can only repay disbursed advances'}, status=400)
             advance.status = 'repaid'
@@ -2324,8 +2358,9 @@ class AccountOpeningViewSet(mixins.ListModelMixin,
         if not phone_number:
             return Response({'error': 'Phone number is required'}, status=400)
         
-        # Generate 6-digit OTP
-        otp_code = str(random.randint(100000, 999999))
+        # SECURITY: Generate 6-digit OTP using cryptographically secure RNG
+        import secrets
+        otp_code = str(secrets.SystemRandom().randint(100000, 999999))
         
         # Store OTP in session with timestamp
         request.session['account_otp_code'] = otp_code
@@ -2333,17 +2368,22 @@ class AccountOpeningViewSet(mixins.ListModelMixin,
         request.session['account_otp_type'] = operation_type
         request.session['account_otp_timestamp'] = timezone.now().isoformat()
         
-        # In production, send OTP via SMS here (e.g., Sendexa)
-        # For now, log for testing
-        print(f"[ACCOUNT OTP] Code {otp_code} sent to {phone_number} for {operation_type}")
+        # In production, send OTP via SMS (Sendexa)
+        from users.services import SendexaService
+        message = f"Your Coastal Banking OTP is: {otp_code}. Valid for 5 minutes. Do not share."
+        SendexaService.send_sms(phone_number, message)
         
-        return Response({
+        response_data = {
             'success': True,
             'message': f'OTP sent to {phone_number}',
             'expires_in': 300,  # 5 minutes
-            # Remove in production - for testing only
-            'debug_otp': otp_code
-        })
+        }
+        # SECURITY: Only expose OTP in DEBUG mode for testing
+        from django.conf import settings
+        if settings.DEBUG:
+            response_data['debug_otp'] = otp_code
+        
+        return Response(response_data)
     
     @action(detail=False, methods=['post'], permission_classes=[IsStaff])
     def verify_and_submit(self, request):
@@ -2358,14 +2398,29 @@ class AccountOpeningViewSet(mixins.ListModelMixin,
         # Verify OTP from session
         stored_otp = request.session.get('account_otp_code')
         stored_phone = request.session.get('account_otp_phone')
+        stored_timestamp = request.session.get('account_otp_timestamp')
         
         if not stored_otp:
             return Response({'error': 'No OTP was sent. Please request a new one.'}, status=400)
         
+        # SECURITY: Check OTP expiry (5 minutes)
+        if stored_timestamp:
+            from datetime import datetime
+            try:
+                otp_time = datetime.fromisoformat(stored_timestamp)
+                elapsed = (timezone.now() - timezone.make_aware(otp_time.replace(tzinfo=None)) if otp_time.tzinfo is None else timezone.now() - otp_time).total_seconds()
+                if elapsed > 300:  # 5 minutes
+                    del request.session['account_otp_code']
+                    return Response({'error': 'OTP has expired. Please request a new one.'}, status=400)
+            except (ValueError, TypeError):
+                pass  # If timestamp is invalid, continue with other checks
+        
         if stored_phone != phone_number:
             return Response({'error': 'Phone number does not match.'}, status=400)
         
-        if stored_otp != otp_code:
+        # SECURITY: Use constant-time comparison to prevent timing attacks
+        import hmac
+        if not hmac.compare_digest(stored_otp, otp_code):
             return Response({'error': 'Invalid OTP code.'}, status=400)
         
         # OTP verified - clear session data
@@ -2666,19 +2721,32 @@ class MessageViewSet(mixins.ListModelMixin,
         if not file_obj:
             return Response({'error': 'No file provided'}, status=400)
         
+        # SECURITY: Validate file type
+        ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 
+                         'application/pdf', 'video/mp4', 'video/webm']
+        if file_obj.content_type not in ALLOWED_TYPES:
+            return Response({
+                'error': f'File type not allowed. Allowed: {", ".join(ALLOWED_TYPES)}'
+            }, status=400)
+        
+        # SECURITY: Validate file size (max 10MB)
+        MAX_SIZE = 10 * 1024 * 1024  # 10MB
+        if file_obj.size > MAX_SIZE:
+            return Response({'error': 'File too large. Maximum size is 10MB.'}, status=400)
+        
+        # SECURITY: Sanitize filename to prevent path traversal
+        import os
+        import re
+        safe_filename = re.sub(r'[^\w\-_\.]', '_', file_obj.name)
+        
         # In a real implementation with S3/Cloud storage, you'd upload there.
         # For now, we'll simulate a successful upload and return a mock URL.
-        # You would typically save this to a Media model or directly to the Message.
-        
-        # Generate a mock URL (Assuming local media serving is configured)
-        # Using a timestamp to simulate uniqueness
         import time
-        file_name = file_obj.name
-        file_url = f"/media/uploads/{int(time.time())}_{file_name}"
+        file_url = f"/media/uploads/{int(time.time())}_{safe_filename}"
         
         return Response({
             'url': file_url,
-            'name': file_name,
+            'name': safe_filename,
             'type': file_obj.content_type,
             'size': file_obj.size
         })
