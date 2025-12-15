@@ -152,8 +152,9 @@ function LoginPage() {
         const targetRoute = roleRoutes[userRole] || '/dashboard';
         console.log('[DEBUG] Calculated target route:', targetRoute);
 
-        // Navigate using window.location for clean state reset
-        window.location.href = targetRoute;
+        // Navigate using React Router to preserve state (User object from login response)
+        // This avoids a full page reload which would lose the state and force a checkAuth (which might fail if cookies aren't ready)
+        navigate(targetRoute);
       } else {
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
         passwordInputRef.current?.focus();
