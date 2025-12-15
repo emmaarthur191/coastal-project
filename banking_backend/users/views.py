@@ -259,11 +259,11 @@ class AuthCheckView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        # Manually try to authenticate using JWT
-        from rest_framework_simplejwt.authentication import JWTAuthentication
+        # Manually try to authenticate using JWT (Cookie or Header)
+        from users.authentication import JWTCookieAuthentication
         
         try:
-            jwt_auth = JWTAuthentication()
+            jwt_auth = JWTCookieAuthentication()
             result = jwt_auth.authenticate(request)
             if result:
                 user, token = result
