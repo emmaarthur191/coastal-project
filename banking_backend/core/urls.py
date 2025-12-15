@@ -23,6 +23,10 @@ from .views import (
 )
 
 from .report_download import ReportDownloadView
+from .chat_views import (
+    ChatRoomListView, ChatRoomCreateView, ChatRoomDetailView,
+    ChatMessageListView, ChatMessageCreateView, MarkMessagesReadView
+)
 
 
 app_name = 'core'
@@ -112,6 +116,14 @@ urlpatterns = [
 
     # Messaging preferences
     path('messaging/preferences/', UserPreferencesView.as_view(), name='user-preferences'),
+    
+    # Simple Chat API (WhatsApp-style)
+    path('chat/rooms/', ChatRoomListView.as_view(), name='chat-room-list'),
+    path('chat/rooms/create/', ChatRoomCreateView.as_view(), name='chat-room-create'),
+    path('chat/rooms/<int:pk>/', ChatRoomDetailView.as_view(), name='chat-room-detail'),
+    path('chat/rooms/<int:room_id>/messages/', ChatMessageListView.as_view(), name='chat-messages'),
+    path('chat/rooms/<int:room_id>/messages/send/', ChatMessageCreateView.as_view(), name='chat-send'),
+    path('chat/rooms/<int:room_id>/read/', MarkMessagesReadView.as_view(), name='chat-mark-read'),
     
     # Router URLs (must be last to allow specific paths to be matched first)
     path('', include(router.urls)),

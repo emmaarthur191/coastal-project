@@ -1301,3 +1301,71 @@ class AccountStatement(models.Model):
     
     def __str__(self):
         return f"Statement for {self.account.account_number} ({self.start_date} to {self.end_date})"
+
+
+# =============================================================================
+# Simple Chat Models (WhatsApp-style messaging)
+# =============================================================================
+
+class ChatRoom(models.Model):
+    """
+    Represents a chat room - can be direct (2 users) or group (multiple users).
+    """
+    name = models.CharField(max_length=100, blank=True, null=True)  # Only for groups
+    is_group = models.BooleanField(default=False)
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='chat_rooms'
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_rooms'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        if self.is_group:
+            return f"Group: {self.name}"
+        return f"Chat Room {self.id}"
+
+    def get_display_name(self, for_user=None):
+        """Get display name - group name or other member's name for DMs."""
+        if self.is_group:
+            return self.name or f"Group {self.id}"
+        if for_user:
+            other = self.members.exclude(id=for_user.id).first()
+            if other:
+                return f"{other.first_name} {other.last_name}".strip() or other.email
+        return f"Chat {self.id}"
+
+
+class ChatMessage(models.Model):
+    """
+    A single message in a chat room.
+    """
+    room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sent_chat_messages'
+    )
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.sender}: {self.content[:50]}"
+
