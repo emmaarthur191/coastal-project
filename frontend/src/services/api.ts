@@ -604,14 +604,43 @@ export const authService = {
   async login(email, password) {
     console.log('[DEBUG] authService.login called with:', email, '[PASSWORD HIDDEN]');
     try {
+      console.log('[DEBUG] Fetching CSRF token...');
+      // 1. Fetch CSRF token first (Ensure cookie is set)
+      let csrfToken = null;
+      try {
+        const csrfResponse = await fetch(`${API_BASE_URL}users/csrf/`, { credentials: 'include' });
+        if (csrfResponse.ok) {
+          const csrfData = await csrfResponse.json();
+          csrfToken = csrfData.csrfToken;
+        }
+      } catch (e) {
+        console.warn('Failed to fetch CSRF token endpoint, falling back to cookie:', e);
+      }
+
+      // Fallback: Read from cookie if endpoint return didn't work directly (though endpoint sets cookie too)
+      if (!csrfToken && typeof document !== 'undefined') {
+        // Try standard Django cookie name 'csrftoken'
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        if (match) csrfToken = match[1];
+      }
+
+      console.log('[DEBUG] CSRF Token obtained:', csrfToken ? 'Yes' : 'No');
+
       console.log('[DEBUG] Making login request to backend...');
-      // Use direct fetch for login to avoid CSRF token (JWT auth doesn't need it)
+      // 2. Perform Login with CSRF Headers
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+      }
+
       const response = await fetch(`${API_BASE_URL}users/auth/login/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // Important for sessions
       });
 
       console.log('[DEBUG] Login response status:', response.status);

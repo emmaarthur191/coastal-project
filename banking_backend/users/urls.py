@@ -3,8 +3,9 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     UserRegistrationView, LoginView, LogoutView, UserDetailView, 
     UserListView, AuthCheckView, MemberDashboardView, SendOTPView, VerifyOTPView,
+    UserListView, AuthCheckView, MemberDashboardView, SendOTPView, VerifyOTPView,
     LoginAttemptsView, UserSessionsView, MembersListView, StaffListView, StaffIdsView,
-    SessionTerminateView, CreateStaffView, ChangePasswordView
+    SessionTerminateView, CreateStaffView, ChangePasswordView, GetCSRFToken
 )
 
 urlpatterns = [
@@ -26,4 +27,5 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('sessions/', UserSessionsView.as_view(), name='user-sessions'),
     path('sessions/<int:pk>/terminate/', SessionTerminateView.as_view(), name='session-terminate'),
+    path('csrf/', GetCSRFToken.as_view(), name='csrf-token'),
 ]
