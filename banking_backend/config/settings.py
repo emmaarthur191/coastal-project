@@ -423,10 +423,20 @@ if env.list('CORS_ALLOWED_ORIGINS', default=[]):
 # CSRF Trusted Origins (Required for Django 4.0+)
 # =============================================================================
 # Must explicitly list origins allowed to make unsafe requests (POST, PUT, DELETE)
+# Use Render's RENDER_EXTERNAL_HOSTNAME for dynamic hostname support
+import os
+RENDER_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+
 CSRF_TRUSTED_ORIGINS = [
     "https://coastal-web.onrender.com",
     "https://coastal-project.onrender.com",
 ]
+
+# Add Render's dynamic hostname if available
+if RENDER_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
+    # Also add to CORS
+    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
 
 # SECURITY: Only allow localhost in DEBUG mode
 if DEBUG:
