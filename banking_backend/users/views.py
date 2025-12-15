@@ -93,7 +93,12 @@ class CreateStaffView(APIView):
                 return Response(response_data, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                # SECURITY FIX (CVE-COASTAL-007): prevent information leakage
+                # Log the actual error for admins
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Staff creation failed: {str(e)}")
+                return Response({"error": "Unable to create staff user check logs for details."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -129,7 +134,14 @@ class ChangePasswordView(APIView):
             
             # Update session/token if needed, but for JWT usually client just gets new token next time
             # Or we can invalidate old tokens (Blacklist) if strict security is needed.
-            # For now, just keeping it simple.
+            # SECURITY FIX (CVE-COASTAL-003): Invalidate all existing tokens
+            tokens = OutstandingToken.objects.filter(user=user)
+            for token in tokens:
+                BlacklistedToken.objects.get_or_create(token=token)
+            
+            # Also flush all other sessions if using session auth (optional but good practice)
+            # from django.contrib.sessions.models import Session
+            # ... logic to clear user sessions ...
             
             return Response(
                 {"message": "Password updated successfully."}, 
@@ -405,12 +417,33 @@ class VerifyOTPView(APIView):
         stored_otp = request.session.get('otp_code')
         stored_phone = request.session.get('otp_phone')
         stored_type = request.session.get('otp_type')
+        otp_created_at = request.session.get('otp_created_at') # New timestamp
+        failed_attempts = request.session.get('otp_failed_attempts', 0)
         
         if not stored_otp:
             return Response(
                 {'error': 'No OTP was sent. Please request a new one.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # SECURITY FIX (CVE-COASTAL-005): Rate limiting / Max attempts
+        if failed_attempts >= 5:
+            # Clear OTP to force new request
+            del request.session['otp_code']
+            return Response(
+                {'error': 'Too many failed attempts. Please request a new OTP.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        # SECURITY FIX (CVE-COASTAL-006): Expiration (10 minutes)
+        if otp_created_at:
+            import time
+            if time.time() > otp_created_at + 600: # 600 seconds = 10 mins
+                 del request.session['otp_code']
+                 return Response(
+                    {'error': 'OTP has expired. Please request a new one.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                 )
         
         if stored_phone != phone_number:
             return Response(
@@ -420,16 +453,21 @@ class VerifyOTPView(APIView):
         
         # SECURITY: Use constant-time comparison to prevent timing attacks
         import hmac
-        if not hmac.compare_digest(stored_otp, otp_code):
+        # stored_otp might be int or str, ensure str
+        if not hmac.compare_digest(str(stored_otp), str(otp_code)):
+            # Increment failed attempts
+            request.session['otp_failed_attempts'] = failed_attempts + 1
             return Response(
                 {'error': 'Invalid OTP code.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # OTP verified - clear session data
-        del request.session['otp_code']
-        del request.session['otp_phone']
-        del request.session['otp_type']
+        if 'otp_code' in request.session: del request.session['otp_code']
+        if 'otp_phone' in request.session: del request.session['otp_phone']
+        if 'otp_type' in request.session: del request.session['otp_type']
+        if 'otp_created_at' in request.session: del request.session['otp_created_at']
+        if 'otp_failed_attempts' in request.session: del request.session['otp_failed_attempts']
         
         # If this is 2FA setup, enable 2FA for the user
         if verification_type == '2fa_setup':
