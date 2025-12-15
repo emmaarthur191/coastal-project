@@ -12,7 +12,7 @@ const API_BASE_URL = '/api/';
  * Simple WhatsApp-style Chat Page
  * Features: Room list, real-time messaging, direct & group chats
  */
-export default function SimpleChatPage() {
+export default function MessagingPage() {
     const { user } = useAuth();
 
     // State
