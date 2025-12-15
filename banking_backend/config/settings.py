@@ -522,11 +522,13 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # CSRF trusted origins (for form submissions)
-CSRF_TRUSTED_ORIGINS = [
+# Extend existing CSRF_TRUSTED_ORIGINS instead of overwriting
+# Ensure all required origins are present, including the project domain
+CSRF_TRUSTED_ORIGINS += [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # Production frontend on Render
     "https://coastal-web.onrender.com",
+    "https://coastal-project.onrender.com",
     "http://localhost:5173",
 ]
 
