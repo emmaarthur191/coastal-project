@@ -41,14 +41,7 @@ const getApiBaseUrl = () => {
     });
   }
 
-  // Priority 1: Dynamic Inference for Render (Force Proxy)
-  // If we are on coastal-web.onrender.com, use RELATIVE path to leverage Render Rewrites
-  // This must take precedence over env vars to ensure we use the proxy for First-Party cookies
-  const hostname = window.location.hostname;
-  if (hostname.includes('onrender.com')) {
-    console.log('[Config] Using Render Proxy (Relative Path) for First-Party Cookies');
-    return '/api/';
-  }
+
 
   // Priority 2: Check VITE_PROD_API_URL (Explicit Production)
   if (prodUrl) {
@@ -63,8 +56,8 @@ const getApiBaseUrl = () => {
     return devUrl.endsWith('/') ? devUrl : devUrl + '/';
   }
 
-  console.log('[Config] Using production fallback (localhost must use env var)');
-  return 'https://coastal-backend-annc.onrender.com/api/';
+  console.log('[Config] Using production fallback (Expecting BFF Proxy)');
+  return '/api/';
 };
 
 // HTTPS enforcement removed - let the deployment environment handle this

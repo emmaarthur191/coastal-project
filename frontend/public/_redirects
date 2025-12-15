@@ -1,5 +1,0 @@
-# Proxy API requests to backend to allow First-Party Cookie behavior
-/api/*  https://coastal-backend-annc.onrender.com/api/:splat  200
-
-# React Router Fallback (SPA)
-/*  /index.html  200
