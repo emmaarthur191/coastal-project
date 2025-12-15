@@ -13,7 +13,7 @@ def verify_endpoints():
     
     # Create or get a test user
     username = 'mobile_test_user'
-    password = 'testpassword123'
+    password = os.environ.get('TEST_PASSWORD', 'testpassword123')
     email = 'mobile_test@example.com'
     
     user, created = User.objects.get_or_create(username=username, email=email, defaults={'role': 'staff'})

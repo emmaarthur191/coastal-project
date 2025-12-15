@@ -27,7 +27,7 @@ def verify_ids_and_expenses():
         staff_user = User.objects.create_user(
             username=f'newstaff{email_seq}',
             email=f'staff{email_seq}@test.com',
-            password='password123',
+            password=os.environ.get('TEST_PASSWORD', 'password123'),
             role='cashier'
         )
         print(f"Created Staff User: {staff_user.email}")
@@ -47,7 +47,7 @@ def verify_ids_and_expenses():
         client_user = User.objects.create_user(
             username=f'client{email_seq}',
             email=f'client{email_seq}@test.com',
-            password='password123',
+            password=os.environ.get('TEST_PASSWORD', 'password123'),
             role='customer'
         )
         account = AccountService.create_account(client_user, 'checking')
