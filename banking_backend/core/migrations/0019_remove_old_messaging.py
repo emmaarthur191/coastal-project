@@ -10,6 +10,16 @@ class Migration(migrations.Migration):
 
     operations = [
         # Delete old messaging tables (replaced by ChatRoom/ChatMessage)
+        # Order matters: delete dependent models first!
+        
+        # Message has FK to MessageThread, so delete it first
+        migrations.DeleteModel(
+            name='Message',
+        ),
+        # Now safe to delete MessageThread
+        migrations.DeleteModel(
+            name='MessageThread',
+        ),
         migrations.DeleteModel(
             name='BlockedUser',
         ),
@@ -17,9 +27,7 @@ class Migration(migrations.Migration):
             name='UserMessagePreferences',
         ),
         migrations.DeleteModel(
-            name='MessageThread',
-        ),
-        migrations.DeleteModel(
             name='BankingMessage',
         ),
     ]
+
