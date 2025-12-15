@@ -195,6 +195,7 @@ class TransactionViewSet(mixins.ListModelMixin,
         """Process a deposit or withdrawal from cashier dashboard."""
         from decimal import Decimal
         from users.models import User
+        from django.db import transaction
         
         # Get and validate inputs
         member_id = request.data.get('member_id')
@@ -218,48 +219,47 @@ class TransactionViewSet(mixins.ListModelMixin,
         except User.DoesNotExist:
             return Response({'error': 'Member not found'}, status=404)
         
-        # Get or create account
         try:
-            account, created = Account.objects.get_or_create(
-                user=member, 
-                account_type=account_type,
-                defaults={'balance': 0, 'is_active': True}
-            )
-        except Exception as e:
-            return Response({'error': f'Account error: {str(e)}'}, status=400)
-        
-        # Process transaction using ACID-compliant TransactionService
-        from .services import TransactionService
-        from .exceptions import InsufficientFundsError, InvalidTransactionError, BankingException
-        
-        try:
-            if tx_type == 'deposit':
-                tx = TransactionService.create_transaction(
-                    from_account=None,
-                    to_account=account,
-                    amount=amount,
-                    transaction_type='deposit',
-                    description=f'Deposit by {request.user.email}'
+            with transaction.atomic():
+                # Get or create account
+                # This creation is now part of the atomic block
+                account, created = Account.objects.get_or_create(
+                    user=member, 
+                    account_type=account_type,
+                    defaults={'balance': 0, 'is_active': True}
                 )
-            elif tx_type == 'withdrawal':
-                tx = TransactionService.create_transaction(
-                    from_account=account,
-                    to_account=None,
-                    amount=amount,
-                    transaction_type='withdrawal',
-                    description=f'Withdrawal by {request.user.email}'
-                )
-            else:
-                return Response({'error': 'Invalid transaction type'}, status=400)
-            
-            # Refresh account to get updated balance
-            account.refresh_from_db()
-            return Response({
-                'status': 'success',
-                'transaction_id': tx.id,
-                'new_balance': str(account.balance),
-                'message': f'{tx_type.capitalize()} of GHS {amount} successful'
-            })
+        
+                # Process transaction using ACID-compliant TransactionService
+                from .services import TransactionService
+                
+                if tx_type == 'deposit':
+                    tx = TransactionService.create_transaction(
+                        from_account=None,
+                        to_account=account,
+                        amount=amount,
+                        transaction_type='deposit',
+                        description=f'Deposit by {request.user.email}'
+                    )
+                elif tx_type == 'withdrawal':
+                    tx = TransactionService.create_transaction(
+                        from_account=account,
+                        to_account=None,
+                        amount=amount,
+                        transaction_type='withdrawal',
+                        description=f'Withdrawal by {request.user.email}'
+                    )
+                else:
+                    return Response({'error': 'Invalid transaction type'}, status=400)
+                
+                # Refresh account to get updated balance
+                account.refresh_from_db()
+                return Response({
+                    'status': 'success',
+                    'transaction_id': tx.id,
+                    'new_balance': str(account.balance),
+                    'message': f'{tx_type.capitalize()} of GHS {amount} successful'
+                })
+
         except InsufficientFundsError as e:
             return Response({'error': e.message, 'code': e.code}, status=400)
         except InvalidTransactionError as e:
@@ -267,6 +267,7 @@ class TransactionViewSet(mixins.ListModelMixin,
         except BankingException as e:
             return Response({'error': e.message, 'code': e.code}, status=500)
         except Exception as e:
+            logger.error(f"Transaction failed: {str(e)}")
             return Response({'error': f'Transaction failed: {str(e)}'}, status=500)
 
 
