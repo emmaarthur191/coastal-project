@@ -31,6 +31,10 @@ class JWTCookieAuthentication(JWTAuthentication):
         raw_token = request.COOKIES.get(access_token_cookie)
 
         if raw_token is None:
+            # DEBUG: Log that cookie is missing (helpful for diagnosing cross-site issues)
+            # import logging
+            # logger = logging.getLogger(__name__)
+            # logger.info(f"JWTCookieAuthentication: No cookie found. Cookies keys: {list(request.COOKIES.keys())}")
             return None
 
         # Enforce CSRF for cookie-based authentication (security best practice)

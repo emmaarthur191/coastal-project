@@ -67,19 +67,11 @@ const getApiBaseUrl = () => {
   }
 
   // Priority 4: Dynamic Inference for Render
-  // If we are on coastal-web.onrender.com, assume backend is coastal-backend.onrender.com
+  // If we are on coastal-web.onrender.com, use RELATIVE path to leverage Render Rewrites
   const hostname = window.location.hostname;
   if (hostname.includes('onrender.com')) {
-    const backendHostname = hostname.replace('coastal-web', 'coastal-backend').replace('web-', 'backend-');
-    // Fallback if regex didn't change anything (e.g. custom domain) 
-    // but specific to this project's likely naming:
-    if (backendHostname === hostname) {
-      // Try hardcoded fallback if standard replacement failed
-      return 'https://coastal-backend-annc.onrender.com/api/';
-    }
-    const inferredUrl = `https://${backendHostname}/api/`;
-    console.warn('[Config] Auto-inferring backend URL:', inferredUrl);
-    return inferredUrl;
+    console.log('[Config] Using Render Proxy (Relative Path) for First-Party Cookies');
+    return '/api/';
   }
 
   // Priority 5: Development / Localhost Fallback
@@ -355,6 +347,11 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
 
     // Build headers object - ensure processedConfig.headers is treated as Record
     const configHeaders = (processedConfig.headers || {}) as Record<string, string>;
+
+    // In-memory token storage for fallback when cookies are blocked
+    let inMemoryAccessToken: string | null = null;
+
+    // ... (existing helper function)
 
     const headers: Record<string, string> = {
       // Default to JSON only if not FormData
