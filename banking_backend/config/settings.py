@@ -128,6 +128,15 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(env('REDIS_HOST', default='localhost'), 6379)],
+        },
+    },
+}
+
 # Enforce SSL for Database in Production
 if not DEBUG:
     DATABASES['default']['OPTIONS'] = {'sslmode': 'require'}

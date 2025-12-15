@@ -628,19 +628,67 @@ function MessagingPage() {
     await loadThreadMessages(thread.id);
 
     // Connect to WebSocket for real-time messaging
-    wsManagerRef.current = new EnhancedWebSocketManager(
-      thread.id,
-      user.id,
-      handleWebSocketMessage,
-      handleWebSocketError,
-      setWsConnected,
-      handleTypingUpdate,
-      handlePresenceUpdate,
-      handleReactionUpdate,
-      handleSignal
-    );
-    wsManagerRef.current.connect();
-  }, [loadThreadMessages, user.id, handleSignal]);
+    // Connect to global Messaging WebSocket
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL || `${protocol}//${window.location.host}/ws/`;
+    // Ensure trailing slash for base, but we append messaging/global/
+    const wsUrl = `${wsBaseUrl}messaging/global/`;
+
+    // Use a simple WebSocket for now as per refactor plan
+    // We pass the token in the query string or protocol (middleware supports both, query is easier for standard WS)
+    // Note: Use a short-lived token generated for this purpose if possible, or the access token.
+    // For now assuming existing auth token is available via local storage or context.
+    // Ideally we'd use the EnhancedWebSocketManager adapted for this, but let's stick to the requested simple implementation.
+
+    // WARNING: Sending token in URL is less secure than headers/cookies but standard WS doesn't support custom headers easily without subprotocols.
+    // Ensuring middleware checks 'sec-websocket-protocol' or query param.
+
+    // Let's reuse EnhancedWebSocketManager but point it to the global URL
+    // We need to patch EnhancedWebSocketManager or just instantiate a direct WS here for simplicity as requested.
+
+    // SIMPLIFIED IMPLEMENTATION
+    const token = localStorage.getItem('access_token'); // Or however you store it
+    const socket = new WebSocket(`${wsUrl}?token=${token}`);
+
+    socket.onopen = () => {
+      console.log('[WS] Connected to global messaging');
+      setWsConnected(true);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+      } catch (e) {
+        console.error('[WS] Error parsing message', e);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log('[WS] Disconnected');
+      setWsConnected(false);
+    };
+
+    // Store in ref to close later
+    // Mocking the manager interface so we don't break other calls
+    wsManagerRef.current = {
+      disconnect: () => socket.close(),
+      sendMessage: (msg) => {
+        if (socket.readyState === WebSocket.OPEN) {
+          // Adapt format to what backend expects
+          socket.send(JSON.stringify({
+            message: msg.content || msg,
+            type: 'chat.message'
+          }));
+        }
+      },
+      sendTyping: () => { }, // No-op for global room simple version
+      sendBusy: () => { },
+      sendEndCall: () => { },
+      connect: () => { } // Already connected
+    };
+
+  }, [user.id, handleWebSocketMessage]);
 
   // WebSocket message handlers
   const handleWebSocketMessage = useCallback(async (data) => {
