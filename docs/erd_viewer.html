@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coastal Banking ERD</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+    <style>
+        body {
+            background-color: white;
+            padding: 20px;
+            font-family: sans-serif;
+        }
+
+        #diagram {
+            width: 100%;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Coastal Banking System - Complete Entity Relationship Diagram</h1>
+    <div class="mermaid" id="diagram">
+        erDiagram
+        %% USER MANAGEMENT
+        User ||--o{ Account : "has"
+        User ||--o{ Loan : "requests"
+        User ||--o{ UserActivity : "logs"
+        User ||--o{ AuditLog : "triggers"
+        User ||--o{ Device : "uses"
+        User ||--o{ CashDrawer : "operates (cashier)"
+        User ||--o{ AdminNotification : "receives"
+        User ||--o{ CashAdvance : "requests"
+        User ||--o{ Complaint : "files"
+        User ||--o{ Refund : "requests"
+        User ||--o{ ServiceRequest : "submits"
+        User ||--o{ Message : "sends"
+
+        User {
+        int id PK
+        string email
+        string role
+        string staff_id
+        boolean is_active
+        datetime date_joined
+        }
+
+        %% ACCOUNTS & TRANSACTIONS
+        Account ||--o{ Transaction : "outgoing"
+        Account ||--o{ Transaction : "incoming"
+        Account ||--o{ CheckDeposit : "deposits"
+        Account ||--o{ AccountClosureRequest : "requests closure"
+
+        Account {
+        int id PK
+        string account_number
+        string account_type
+        decimal balance
+        int user_id FK
+        }
+
+        Transaction {
+        int id PK
+        string type
+        decimal amount
+        string status
+        datetime timestamp
+        int from_account_id FK
+        int to_account_id FK
+        }
+
+        CheckDeposit {
+        int id PK
+        string check_number
+        decimal amount
+        string status
+        string image_url
+        int account_id FK
+        }
+
+        AccountClosureRequest {
+        int id PK
+        string reason
+        string status
+        int account_id FK
+        }
+
+        %% LOANS & PRODUCTS
+        Loan {
+        int id PK
+        decimal amount
+        decimal interest_rate
+        int term_months
+        decimal outstanding_balance
+        string status
+        int user_id FK
+        }
+
+        Product ||--o{ Promotion : "featured in"
+        Product {
+        int id PK
+        string name
+        string type
+        decimal interest_rate
+        }
+
+        Promotion {
+        int id PK
+        string name
+        datetime start_date
+        datetime end_date
+        }
+
+        %% CASHIER OPERATIONS
+        CashDrawer ||--o{ CashDrawerDenomination : "contains"
+
+        CashDrawer {
+        int id PK
+        string drawer_number
+        decimal opening_balance
+        decimal closing_balance
+        decimal variance
+        string status
+        int cashier_id FK
+        }
+
+        CashDrawerDenomination {
+        int id PK
+        decimal denomination
+        int count
+        int cash_drawer_id FK
+        }
+
+        CashAdvance {
+        int id PK
+        decimal amount
+        string reason
+        string status
+        int user_id FK
+        int approved_by_id FK
+        }
+
+        %% COMMUNICATION & SUPPORT
+        MessageThread ||--o{ Message : "contains"
+        MessageThread }|--|{ User : "participants"
+
+        MessageThread {
+        int id PK
+        string subject
+        string type
+        boolean is_archived
+        }
+
+        Message {
+        int id PK
+        string content
+        boolean is_read
+        int sender_id FK
+        int thread_id FK
+        }
+
+        Complaint {
+        int id PK
+        string subject
+        string priority
+        string category
+        string status
+        int user_id FK
+        int assigned_to_id FK
+        }
+
+        ServiceRequest {
+        int id PK
+        string type
+        string status
+        string delivery_method
+        int user_id FK
+        }
+
+        Refund {
+        int id PK
+        decimal amount
+        string reason
+        string status
+        int transaction_id FK
+        int user_id FK
+        }
+
+        FraudAlert {
+        int id PK
+        string message
+        string severity
+        boolean is_resolved
+        int user_id FK
+        }
+
+        %% REPORTING
+        ReportTemplate ||--o{ Report : "generates"
+
+        Report {
+        int id PK
+        string title
+        string format
+        string file_url
+        int generated_by_id FK
+        }
+    </div>
+</body>
+
+</html>
