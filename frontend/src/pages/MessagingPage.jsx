@@ -609,7 +609,46 @@ function MessagingPage() {
     const others = participants.filter(p => p.id !== user.id);
     setSelectedCallParticipants(others);
     setShowCallModal(true);
+    setShowCallModal(true);
   };
+
+  // WebSocket message handlers
+  const handleWebSocketMessage = useCallback(async (data) => {
+    console.log('[WEBSOCKET] Handling message:', data.type);
+
+    if (data.type === 'new_message' && data.message) {
+      console.log('[WEBSOCKET] New message received, ID:', data.message.id);
+
+      // Add new message to the list
+      setMessages(prev => [...prev, data.message]);
+
+      // Show notification if not from current user
+      if (data.message.sender_id !== user.id && notificationsEnabled && document.hidden) {
+        NotificationManager.showNotification(
+          `New message in ${selectedThread.subject}`,
+          data.message.sender_name + ': ' + (data.message.preview || 'New message'),
+          '/favicon.ico'
+        );
+      }
+
+      // Decrypt the new message
+      try {
+        const decrypted = await decryptSingleMessage(data.message);
+        setDecryptedMessages(prev => new Map(prev.set(data.message.id, decrypted)));
+      } catch (error) {
+        console.error('[WEBSOCKET] Failed to decrypt new message:', error);
+      }
+    } else if (data.type === 'message_read' && data.message_id && data.user_id !== user.id) {
+      // Update message read status from other devices
+      setMessages(prev => prev.map(msg =>
+        msg.id === data.message_id ? { ...msg, is_read: true } : msg
+      ));
+    }
+  }, [selectedThread, user, notificationsEnabled, decryptSingleMessage]);
+
+  const handleWebSocketError = useCallback((error) => {
+    console.error('[WEBSOCKET] Error:', error);
+  }, []);
 
   // Handle thread selection
   const handleThreadSelect = useCallback(async (thread) => {
@@ -690,43 +729,7 @@ function MessagingPage() {
 
   }, [user.id, handleWebSocketMessage]);
 
-  // WebSocket message handlers
-  const handleWebSocketMessage = useCallback(async (data) => {
-    console.log('[WEBSOCKET] Handling message:', data.type);
 
-    if (data.type === 'new_message' && data.message) {
-      console.log('[WEBSOCKET] New message received, ID:', data.message.id);
-
-      // Add new message to the list
-      setMessages(prev => [...prev, data.message]);
-
-      // Show notification if not from current user
-      if (data.message.sender_id !== user.id && notificationsEnabled && document.hidden) {
-        NotificationManager.showNotification(
-          `New message in ${selectedThread.subject}`,
-          data.message.sender_name + ': ' + (data.message.preview || 'New message'),
-          '/favicon.ico'
-        );
-      }
-
-      // Decrypt the new message
-      try {
-        const decrypted = await decryptSingleMessage(data.message);
-        setDecryptedMessages(prev => new Map(prev.set(data.message.id, decrypted)));
-      } catch (error) {
-        console.error('[WEBSOCKET] Failed to decrypt new message:', error);
-      }
-    } else if (data.type === 'message_read' && data.message_id && data.user_id !== user.id) {
-      // Update message read status from other devices
-      setMessages(prev => prev.map(msg =>
-        msg.id === data.message_id ? { ...msg, is_read: true } : msg
-      ));
-    }
-  }, [selectedThread, user, notificationsEnabled, decryptSingleMessage]);
-
-  const handleWebSocketError = useCallback((error) => {
-    console.error('[WEBSOCKET] Error:', error);
-  }, []);
 
   const handleTypingUpdate = useCallback((data) => {
     console.log('[TYPING] Update:', data);
