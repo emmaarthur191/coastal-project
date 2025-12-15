@@ -41,37 +41,19 @@ const getApiBaseUrl = () => {
     });
   }
 
-  // Priority 1: Check VITE_PROD_API_URL (Explicit Production)
-  if (prodUrl) {
-    // Safety check: specific override for production environment
-    // If we are on the live site but the env var points to localhost, IGNORE IT
-    const hostname = window.location.hostname;
-    if (hostname.includes('onrender.com') && prodUrl.includes('localhost')) {
-      console.warn('[Config] EXPLICTLY IGNORING localhost VITE_PROD_API_URL in production');
-    } else {
-      if (!isProd) console.log('[Config] Using VITE_PROD_API_URL');
-      return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
-    }
-  }
-
-  // Priority 2: Check VITE_API_BASE_URL (Docker/General)
-  if (baseUrl) {
-    console.log('[Config] Using VITE_API_BASE_URL');
-    return baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-  }
-
-  // Priority 3: Check VITE_API_URL (Legacy/Railway)
-  if (legacyUrl) {
-    console.log('[Config] Using VITE_API_URL');
-    return legacyUrl.endsWith('/') ? legacyUrl : legacyUrl + '/';
-  }
-
-  // Priority 4: Dynamic Inference for Render
+  // Priority 1: Dynamic Inference for Render (Force Proxy)
   // If we are on coastal-web.onrender.com, use RELATIVE path to leverage Render Rewrites
+  // This must take precedence over env vars to ensure we use the proxy for First-Party cookies
   const hostname = window.location.hostname;
   if (hostname.includes('onrender.com')) {
     console.log('[Config] Using Render Proxy (Relative Path) for First-Party Cookies');
     return '/api/';
+  }
+
+  // Priority 2: Check VITE_PROD_API_URL (Explicit Production)
+  if (prodUrl) {
+    if (!isProd) console.log('[Config] Using VITE_PROD_API_URL');
+    return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
   }
 
   // Priority 5: Development / Localhost Fallback
