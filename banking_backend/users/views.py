@@ -152,6 +152,7 @@ class ChangePasswordView(APIView):
 
 
 class LoginView(APIView):
+    authentication_classes = [] # Skip auth to allow login even if old token is invalid
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -272,6 +273,7 @@ from django.middleware.csrf import get_token
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class GetCSRFToken(APIView):
+    authentication_classes = [] # Skip auth to prevent 401s
     permission_classes = [AllowAny]
 
     def get(self, request):
