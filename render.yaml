@@ -33,23 +33,23 @@ services:
           name: coastal-redis
           property: connectionString
       - key: ADMIN_EMAIL
-        value: "snyper191@gmail.com"
+        sync: false
       - key: ADMIN_PASSWORD
-        value: "Emma1991!))!"
+        sync: false
       - key: MANAGER_EMAIL
-        value: "manager@coastal.com"
+        sync: false
       - key: MANAGER_PASSWORD
-        value: "Emma1991!))!"
+        sync: false
       - key: SENDEXA_API_URL
-        value: "https://api.sendexa.co/v1/sms/send"
+        sync: false
       - key: SENDEXA_API_KEY
-        value: "sms_76720964"
+        sync: false
       - key: SENDEXA_API_SECRET
-        value: "71547a4d2387fef4"
+        sync: false
       - key: SENDEXA_AUTH_TOKEN
-        value: "c21zXzc2NzIwOTY0OjcxNTQ3YTRkMjM4N2ZlZjQ="
+        sync: false
       - key: SENDEXA_SENDER_ID
-        value: "Coastal"
+        sync: false
       - key: SENTRY_DSN
         sync: false
       - key: PYTHON_VERSION
