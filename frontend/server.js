@@ -2,6 +2,7 @@ import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer } from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,23 +19,46 @@ app.use((req, res, next) => {
     next();
 });
 
-// Proxy API requests
-app.use('/api', createProxyMiddleware({
+// Proxy API requests (HTTP)
+const apiProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: true,
-    secure: false, // Don't verify self-signed certs (if any)
+    secure: false,
     pathRewrite: {
-        '^/api': '/api' // Keep /api prefix
+        '^/api': '/api'
     },
-    onProxyReq: (proxyReq, req, res) => {
-        // Log proxy requests for debugging
-        console.log(`[Proxy] ${req.method} ${req.path} -> ${BACKEND_URL}/api${req.path}`);
-    },
-    onError: (err, req, res) => {
-        console.error('[Proxy Error]', err);
-        res.status(500).send('Proxy Error');
+    on: {
+        proxyReq: (proxyReq, req, res) => {
+            console.log(`[Proxy API] ${req.method} ${req.path} -> ${BACKEND_URL}${req.path}`);
+        },
+        error: (err, req, res) => {
+            console.error('[Proxy API Error]', err);
+            if (res.writeHead) res.writeHead(500);
+            if (res.end) res.end('Proxy Error');
+        }
     }
-}));
+});
+app.use('/api', apiProxy);
+
+// Proxy WebSocket requests
+const wsProxy = createProxyMiddleware({
+    target: BACKEND_URL,
+    changeOrigin: true,
+    secure: false,
+    ws: true, // Enable WebSocket proxying
+    pathRewrite: {
+        '^/ws': '/ws'
+    },
+    on: {
+        proxyReqWs: (proxyReq, req, socket, options, head) => {
+            console.log(`[Proxy WS] WebSocket upgrade: ${req.url} -> ${BACKEND_URL}${req.url}`);
+        },
+        error: (err, req, res) => {
+            console.error('[Proxy WS Error]', err);
+        }
+    }
+});
+app.use('/ws', wsProxy);
 
 // Serve Static Files
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -44,7 +68,18 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(PORT, () => {
+// Create HTTP server and attach WebSocket upgrade handler
+const server = createServer(app);
+server.on('upgrade', (req, socket, head) => {
+    if (req.url.startsWith('/ws')) {
+        wsProxy.upgrade(req, socket, head);
+    } else {
+        socket.destroy();
+    }
+});
+
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Proxying /api to ${BACKEND_URL}`);
+    console.log(`Proxying /ws (WebSocket) to ${BACKEND_URL}`);
 });

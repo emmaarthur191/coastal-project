@@ -30,26 +30,14 @@ class EnhancedWebSocketManager {
     // SECURITY: Do NOT pass tokens in URL query params - they get logged and exposed
     // WebSocket auth should use HTTP-only cookies instead
 
-    // Get WebSocket base URL from environment or fallback to localhost:8001
+    // Get WebSocket base URL
+    // In PRODUCTION: Use window.location.host to route through our Express BFF Proxy
+    // This ensures WebSocket connections are First-Party, allowing cookies to be sent.
     const getWebSocketBaseUrl = () => {
-      // PROD SAFEGUARD: If we are in production and ANY env var tries to point to localhost, ignore it.
       if (import.meta.env.PROD) {
-        // Double check against localhost/127.0.0.1
-        const possibleUrls = [
-          import.meta.env.VITE_WS_BASE_URL,
-          import.meta.env.VITE_WS_URL,
-          import.meta.env.VITE_PROD_WS_URL
-        ];
-
-        // If we have a valid non-localhost URL in env, use it.
-        for (const url of possibleUrls) {
-          if (url && !url.includes('localhost') && !url.includes('127.0.0.1')) {
-            return url;
-          }
-        }
-
-        // Fallback to hardcoded production URL if env vars are missing or dangerous
-        return 'coastal-backend-annc.onrender.com';
+        // Use the current domain (BFF Proxy) for First-Party WebSocket
+        // The Express server proxies /ws/* to the backend
+        return window.location.host;
       }
 
       // DEVELOPMENT: Use env vars or default to localhost
