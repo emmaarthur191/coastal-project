@@ -24,6 +24,9 @@ const apiProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: true,
     secure: false,
+    cookieDomainRewrite: {
+        "*": "" // Rewrite all cookie domains to match the client's domain
+    },
     pathRewrite: {
         '^/api': '/api'
     },
