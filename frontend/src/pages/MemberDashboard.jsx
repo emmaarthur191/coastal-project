@@ -174,8 +174,9 @@ function MemberDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          // SECURITY: Auth handled by HTTP-only cookies (credentials: 'include')
         },
+        credentials: 'include',
         body: JSON.stringify(serviceRequestForm)
       });
       const data = await response.json();
