@@ -451,9 +451,13 @@ if env.list('CSRF_TRUSTED_ORIGINS', default=[]):
     CSRF_TRUSTED_ORIGINS += env.list('CSRF_TRUSTED_ORIGINS')
 
 # Production Security Headers
+# Production Security Headers
+# Always set SECURE_PROXY_SSL_HEADER on Render to prevent CSRF "Origin checking failed"
+# (Scheme mismatch: Django sees http, Origin is https)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_REDIRECT_EXEMPT = [r'^$', r'^api/health/simple/$', r'^api/performance/system-health/$']
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
