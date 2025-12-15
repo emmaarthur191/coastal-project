@@ -21,11 +21,11 @@ django_asgi_app = get_asgi_application()
 # Import routing and middleware after Django setup
 from .routing import websocket_urlpatterns
 from .channels_middleware import TokenAuthMiddleware
-from channels.security.websocket import WebsocketDenier
+from channels.security.websocket import AllowedHostsOriginValidator
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": WebsocketDenier(
+    "websocket": AllowedHostsOriginValidator(
         TokenAuthMiddleware(
             URLRouter(websocket_urlpatterns)
         )
