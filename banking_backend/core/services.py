@@ -48,7 +48,7 @@ class AccountService:
         Raises:
             OperationalError: If account creation fails due to a database issue.
         """
-        import random
+        import secrets
         from django.db import IntegrityError
         
         max_attempts = 10
@@ -56,11 +56,13 @@ class AccountService:
             try:
                 with transaction.atomic():
                     # Generate unique 13-digit account number starting with 2231
-                    account_number = '2231' + ''.join([str(random.randint(0, 9)) for _ in range(9)])
+                    # Use secrets.SystemRandom for cryptographically secure random numbers
+                    rng = secrets.SystemRandom()
+                    account_number = '2231' + ''.join([str(rng.randint(0, 9)) for _ in range(9)])
                     
                     # Check if exists (for extra safety before insert)
                     while Account.objects.filter(account_number=account_number).exists():
-                        account_number = '2231' + ''.join([str(random.randint(0, 9)) for _ in range(9)])
+                        account_number = '2231' + ''.join([str(rng.randint(0, 9)) for _ in range(9)])
                     
                     account = Account.objects.create(
                         user=user,
@@ -126,6 +128,10 @@ class TransactionService:
         updates balances, and creates a transaction record in a single
         database transaction.
 
+        DEADLOCK PREVENTION:
+        Accounts are locked in a consistent order (by ID ascending) to prevent
+        deadlocks when simultaneous reverse transactions occur.
+
         Args:
             from_account: The source account (for withdrawals/transfers).
             to_account: The destination account (for deposits/transfers).
@@ -143,19 +149,29 @@ class TransactionService:
         """
         logger.info(f"Creating transaction: type={transaction_type}, amount={amount}")
 
-        # Lock accounts for the duration of the transaction
-        locked_from_account = None
-        locked_to_account = None
-
+        # 1. Determine Locking Order to Prevent Deadlocks via "Resource Ordering"
+        # We must always acquire locks in the same order (e.g., smaller ID first)
+        accounts_to_lock = []
         if from_account:
-            locked_from_account = Account.objects.select_for_update().get(pk=from_account.pk)
-            if not locked_from_account.is_active:
-                raise AccountSuspendedError(message=f"Account {locked_from_account.account_number} is suspended.")
-        
+            accounts_to_lock.append(from_account)
         if to_account:
-            locked_to_account = Account.objects.select_for_update().get(pk=to_account.pk)
-            if not locked_to_account.is_active:
-                raise AccountSuspendedError(message=f"Account {locked_to_account.account_number} is suspended.")
+            accounts_to_lock.append(to_account)
+        
+        # Sort by primary key to ensure consistent locking order
+        accounts_to_lock.sort(key=lambda acc: acc.pk)
+
+        # 2. Acquire Locks
+        locked_accounts_map = {}
+        for acc in accounts_to_lock:
+            # select_for_update() locks the row
+            locked_acc = Account.objects.select_for_update().get(pk=acc.pk)
+            if not locked_acc.is_active:
+                 raise AccountSuspendedError(message=f"Account {locked_acc.account_number} is suspended.")
+            locked_accounts_map[acc.pk] = locked_acc
+
+        # 3. Retrieve Locked Instances
+        locked_from_account = locked_accounts_map.get(from_account.pk) if from_account else None
+        locked_to_account = locked_accounts_map.get(to_account.pk) if to_account else None
 
         # Validate the transaction
         TransactionService.validate_transaction(locked_from_account, locked_to_account, amount, transaction_type)
