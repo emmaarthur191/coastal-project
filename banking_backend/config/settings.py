@@ -529,6 +529,7 @@ CSRF_TRUSTED_ORIGINS += [
     "http://127.0.0.1:3000",
     "https://coastal-web.onrender.com",
     "https://coastal-project.onrender.com",
+    "https://*.onrender.com", # Allow ANY Render subdomain (including dynamic PR previews)
     "http://localhost:5173",
 ]
 
