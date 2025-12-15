@@ -30,10 +30,26 @@ class JWTAuthMiddleware(BaseMiddleware):
         super().__init__(inner)
 
     async def __call__(self, scope, receive, send):
-        # Get the token from query string
-        query_string = scope.get('query_string', b'').decode()
-        query_params = parse_qs(query_string)
-        token = query_params.get('token', [None])[0]
+        from django.conf import settings
+        
+        # 1. Try to get token from Cookies (Secure Method)
+        token = None
+        headers = dict(scope['headers'])
+        if b'cookie' in headers:
+            from http.cookies import SimpleCookie
+            cookies = SimpleCookie(headers[b'cookie'].decode())
+            cookie_name = settings.SIMPLE_JWT.get('AUTH_COOKIE', 'access_token')
+            if cookie_name in cookies:
+                token = cookies[cookie_name].value
+
+        # 2. Fallback: Query String (Legacy/Dev - Not recommended for Prod but kept for transition if needed)
+        # In strict production, we might want to disable this, but risk breaking existing clients relying on it.
+        if not token:
+            query_string = scope.get('query_string', b'').decode()
+            query_params = parse_qs(query_string)
+            token_list = query_params.get('token')
+            if token_list:
+                token = token_list[0]
 
         if token:
             scope['user'] = await get_user(token)

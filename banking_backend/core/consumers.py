@@ -12,6 +12,24 @@ User = get_user_model()
 class BankingMessageConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']
+        
+        # SECURITY FIX (CVE-COASTAL-001): Verify the authenticated user matches the URL user_id
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            # Reject unauthenticated connections
+            await self.close(code=4001)
+            return
+            
+        # Allow admins or the specific user
+        # Note: Depending on business rules, admins might need access (e.g., support)
+        # For strict privacy, only the user themselves.
+        # Assuming staff/admins might need access for debugging, but let's default to strict ownership for security.
+        # If user.role == 'admin': allow? Let's check strict ID match first.
+        if str(user.id) != str(self.user_id):
+            if not user.is_superuser: # Escape hatch for superusers only
+                await self.close(code=4003) # Forbidden
+                return
+
         self.room_group_name = f'messages_{self.user_id}'
 
         # Join room group
@@ -88,6 +106,17 @@ class BankingMessageConsumer(AsyncWebsocketConsumer):
 class FraudAlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']
+        
+        # SECURITY FIX (CVE-COASTAL-001): Verify ownership
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            await self.close(code=4001)
+            return
+
+        if str(user.id) != str(self.user_id) and not user.is_superuser:
+            await self.close(code=4003)
+            return
+
         self.room_group_name = f'fraud_alerts_{self.user_id}'
 
         # Join room group
@@ -119,6 +148,17 @@ class FraudAlertConsumer(AsyncWebsocketConsumer):
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']
+        
+        # SECURITY FIX (CVE-COASTAL-001): Verify ownership
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            await self.close(code=4001)
+            return
+
+        if str(user.id) != str(self.user_id) and not user.is_superuser:
+            await self.close(code=4003)
+            return
+
         self.room_group_name = f'notifications_{self.user_id}'
 
         # Join room group
