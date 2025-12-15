@@ -6,6 +6,9 @@ from channels.middleware import BaseMiddleware
 from django.contrib.auth import get_user_model
 from urllib.parse import parse_qs
 
+from django.conf import settings
+from django.http import parse_cookie
+
 @database_sync_to_async
 def get_user(token):
     try:
@@ -22,16 +25,25 @@ class TokenAuthMiddleware(BaseMiddleware):
         headers = dict(scope['headers'])
         token = None
         
-        # Try to get token from header
-        if b'sec-websocket-protocol' in headers:
+        # 1. Try to get from Cookie (Primary method for this app)
+        if b'cookie' in headers:
+            cookies = parse_cookie(headers[b'cookie'].decode())
+            cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access')
+            token = cookies.get(cookie_name)
+
+        # 2. Try to get token from header (Secondary)
+        if not token and b'sec-websocket-protocol' in headers:
             token = headers[b'sec-websocket-protocol'].decode().split(',')[0].strip()
             
-        # Fallback to query string
-        elif b'query_string' in scope:
+        # 3. Fallback to query string
+        elif not token and b'query_string' in scope:
             query_string = scope['query_string'].decode()
             query_params = parse_qs(query_string)
             if 'token' in query_params:
-                token = query_params['token'][0]
+                token_param = query_params['token'][0]
+                # Handle 'null' string from frontend bug
+                if token_param and token_param != 'null':
+                    token = token_param
 
         if token:
             scope['user'] = await get_user(token)
