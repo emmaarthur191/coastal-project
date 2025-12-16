@@ -2,11 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { BankingMessage } from './BankingMessage';
-export type PaginatedBankingMessageList = {
+import type { AccountOpeningRequest } from './AccountOpeningRequest';
+export type PaginatedAccountOpeningRequestList = {
     count: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<BankingMessage>;
+    results: Array<AccountOpeningRequest>;
 };
 

@@ -268,10 +268,122 @@ def system_health_check(self):
         logger.info(f"System health check completed. Issues found: {len(health_issues)}")
         return f"Health check completed. {len(health_issues)} issues found."
 
-    except Exception as exc:
         logger.error(f"Failed to perform system health check: {exc}")
         try:
             self.retry(countdown=300)
         except MaxRetriesException:
             logger.critical("Max retries exceeded for system health check")
+            raise
+
+
+# ============================================================================
+# ML FRAUD DETECTION TASKS
+# ============================================================================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=300)
+def retrain_fraud_detection_model(self):
+    """
+    Periodically retrain the ML fraud detection model.
+    Run weekly to incorporate new transaction patterns.
+    """
+    try:
+        from core.ml.fraud_detector import get_fraud_detector
+        
+        detector = get_fraud_detector()
+        result = detector.train()
+        
+        if result['success']:
+            logger.info(f"Fraud detection model retrained: {result['samples_used']} samples")
+        else:
+            logger.warning(f"Fraud detection model training failed: {result['message']}")
+        
+        return result
+        
+    except Exception as exc:
+        logger.error(f"Failed to retrain fraud detection model: {exc}")
+        try:
+            self.retry(countdown=3600)  # Retry in 1 hour
+        except MaxRetriesException:
+            logger.critical("Max retries exceeded for fraud model retraining")
+            raise
+
+
+@shared_task
+def analyze_transaction_for_fraud(transaction_id: int):
+    """
+    Analyze a specific transaction for fraud asynchronously.
+    Creates FraudAlert if anomaly detected.
+    """
+    try:
+        from core.ml.fraud_detector import analyze_transaction
+        
+        transaction = Transaction.objects.get(pk=transaction_id)
+        result = analyze_transaction(transaction)
+        
+        if result['is_anomaly']:
+            # Create fraud alert
+            FraudAlert.objects.create(
+                alert_type='ml_anomaly',
+                severity=result['risk_level'],
+                description=f"ML-detected anomaly: Risk score {result['risk_score']:.2%}. "
+                           f"Transaction amount: {transaction.amount}. "
+                           f"Features: {result['features']}",
+                transaction=transaction,
+            )
+            logger.warning(f"Fraud alert created for transaction {transaction_id}: {result['risk_level']}")
+        
+        return result
+        
+    except Transaction.DoesNotExist:
+        logger.error(f"Transaction {transaction_id} not found for fraud analysis")
+        return {'error': 'Transaction not found'}
+    except Exception as exc:
+        logger.error(f"Failed to analyze transaction {transaction_id}: {exc}")
+        return {'error': str(exc)}
+
+
+@shared_task(bind=True, max_retries=2)
+def batch_analyze_recent_transactions(self, hours: int = 24):
+    """
+    Batch analyze recent transactions for fraud.
+    Useful for catching fraud that might have been missed.
+    """
+    try:
+        from core.ml.fraud_detector import get_fraud_detector
+        from django.utils import timezone
+        
+        detector = get_fraud_detector()
+        
+        recent_transactions = Transaction.objects.filter(
+            timestamp__gte=timezone.now() - timedelta(hours=hours),
+            status='completed'
+        ).exclude(
+            pk__in=FraudAlert.objects.filter(
+                alert_type='ml_anomaly'
+            ).values_list('transaction_id', flat=True)
+        )
+        
+        anomalies_found = 0
+        for transaction in recent_transactions[:1000]:  # Limit batch size
+            result = detector.predict(transaction)
+            
+            if result['is_anomaly']:
+                FraudAlert.objects.get_or_create(
+                    transaction=transaction,
+                    alert_type='ml_anomaly',
+                    defaults={
+                        'severity': result['risk_level'],
+                        'description': f"Batch ML analysis: Risk {result['risk_score']:.2%}",
+                    }
+                )
+                anomalies_found += 1
+        
+        logger.info(f"Batch fraud analysis complete: {anomalies_found} anomalies found")
+        return {'transactions_analyzed': recent_transactions.count(), 'anomalies_found': anomalies_found}
+        
+    except Exception as exc:
+        logger.error(f"Failed batch fraud analysis: {exc}")
+        try:
+            self.retry(countdown=600)
+        except MaxRetriesException:
             raise

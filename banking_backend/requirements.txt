@@ -37,3 +37,10 @@ uvicorn[standard]
 django-user-agents
 ua-parser
 geoip2
+# Security Fuzzing & Property Testing
+hypothesis
+# ML Fraud Detection
+scikit-learn
+pandas
+numpy
+joblib
