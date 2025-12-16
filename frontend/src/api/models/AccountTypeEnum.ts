@@ -3,12 +3,12 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `savings` - Savings
- * * `checking` - Checking
- * * `business` - Business
+ * * `daily_susu` - Daily Susu
+ * * `shares` - Shares
+ * * `monthly_contribution` - Monthly Contribution
  */
 export enum AccountTypeEnum {
-    SAVINGS = 'savings',
-    CHECKING = 'checking',
-    BUSINESS = 'business',
+    DAILY_SUSU = 'daily_susu',
+    SHARES = 'shares',
+    MONTHLY_CONTRIBUTION = 'monthly_contribution',
 }
