@@ -23,7 +23,7 @@
     "amplitude-js": "^8.21.9",
     "autoprefixer": "^10.4.21",
     "axios": "^1.13.2",
-    "dompurify": "^3.2.7",
+    "dompurify": "^3.3.1",
     "emoji-picker-react": "^4.16.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.6",
