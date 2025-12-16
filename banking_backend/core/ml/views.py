@@ -79,27 +79,37 @@ class MLModelStatusView(APIView):
     def get(self, request):
         """Get model status and metrics."""
         from core.ml.fraud_detector import get_fraud_detector
+        from datetime import timedelta
         
         detector = get_fraud_detector()
         model_info = detector.get_model_info()
         
-        # Add recent detection stats
-        recent_alerts = FraudAlert.objects.filter(
-            alert_type='ml_anomaly',
-            created_at__gte=timezone.now() - timezone.timedelta(days=7)
+        # Add recent detection stats - filter ML alerts by message prefix
+        ml_alerts = FraudAlert.objects.filter(
+            message__startswith='[ML-',
+            created_at__gte=timezone.now() - timedelta(days=7)
+        )
+        
+        # Get all alerts for comparison
+        all_alerts = FraudAlert.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=7)
         )
         
         stats = {
             'model_info': model_info,
-            'recent_alerts': {
-                'total': recent_alerts.count(),
+            'ml_alerts': {
+                'total': ml_alerts.count(),
                 'by_severity': {
-                    'critical': recent_alerts.filter(severity='critical').count(),
-                    'high': recent_alerts.filter(severity='high').count(),
-                    'medium': recent_alerts.filter(severity='medium').count(),
-                    'low': recent_alerts.filter(severity='low').count(),
+                    'critical': ml_alerts.filter(severity='critical').count(),
+                    'high': ml_alerts.filter(severity='high').count(),
+                    'medium': ml_alerts.filter(severity='medium').count(),
+                    'low': ml_alerts.filter(severity='low').count(),
                 },
-                'resolved': recent_alerts.filter(is_resolved=True).count(),
+                'resolved': ml_alerts.filter(is_resolved=True).count(),
+            },
+            'all_alerts': {
+                'total': all_alerts.count(),
+                'resolved': all_alerts.filter(is_resolved=True).count(),
             }
         }
         

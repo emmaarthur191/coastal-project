@@ -267,7 +267,8 @@ def system_health_check(self):
 
         logger.info(f"System health check completed. Issues found: {len(health_issues)}")
         return f"Health check completed. {len(health_issues)} issues found."
-
+    
+    except Exception as exc:
         logger.error(f"Failed to perform system health check: {exc}")
         try:
             self.retry(countdown=300)
@@ -321,16 +322,23 @@ def analyze_transaction_for_fraud(transaction_id: int):
         result = analyze_transaction(transaction)
         
         if result['is_anomaly']:
-            # Create fraud alert
-            FraudAlert.objects.create(
-                alert_type='ml_anomaly',
-                severity=result['risk_level'],
-                description=f"ML-detected anomaly: Risk score {result['risk_score']:.2%}. "
-                           f"Transaction amount: {transaction.amount}. "
-                           f"Features: {result['features']}",
-                transaction=transaction,
-            )
-            logger.warning(f"Fraud alert created for transaction {transaction_id}: {result['risk_level']}")
+            # Get user from transaction account
+            user = None
+            if transaction.from_account:
+                user = transaction.from_account.user
+            elif transaction.to_account:
+                user = transaction.to_account.user
+            
+            if user:
+                # Create fraud alert using existing model fields
+                FraudAlert.objects.create(
+                    user=user,
+                    severity=result['risk_level'],
+                    message=f"[ML-ANOMALY] Risk score: {result['risk_score']:.2%}. "
+                           f"Transaction ID: {transaction.pk}, Amount: {transaction.amount}. "
+                           f"Type: {transaction.transaction_type}.",
+                )
+                logger.warning(f"Fraud alert created for transaction {transaction_id}: {result['risk_level']}")
         
         return result
         
@@ -357,10 +365,6 @@ def batch_analyze_recent_transactions(self, hours: int = 24):
         recent_transactions = Transaction.objects.filter(
             timestamp__gte=timezone.now() - timedelta(hours=hours),
             status='completed'
-        ).exclude(
-            pk__in=FraudAlert.objects.filter(
-                alert_type='ml_anomaly'
-            ).values_list('transaction_id', flat=True)
         )
         
         anomalies_found = 0
@@ -368,15 +372,29 @@ def batch_analyze_recent_transactions(self, hours: int = 24):
             result = detector.predict(transaction)
             
             if result['is_anomaly']:
-                FraudAlert.objects.get_or_create(
-                    transaction=transaction,
-                    alert_type='ml_anomaly',
-                    defaults={
-                        'severity': result['risk_level'],
-                        'description': f"Batch ML analysis: Risk {result['risk_score']:.2%}",
-                    }
-                )
-                anomalies_found += 1
+                # Get user from transaction
+                user = None
+                if transaction.from_account:
+                    user = transaction.from_account.user
+                elif transaction.to_account:
+                    user = transaction.to_account.user
+                
+                if user:
+                    # Check if similar alert already exists (avoid duplicates)
+                    existing = FraudAlert.objects.filter(
+                        user=user,
+                        message__contains=f"Transaction ID: {transaction.pk}",
+                        created_at__gte=timezone.now() - timedelta(hours=24)
+                    ).exists()
+                    
+                    if not existing:
+                        FraudAlert.objects.create(
+                            user=user,
+                            severity=result['risk_level'],
+                            message=f"[ML-BATCH] Risk score: {result['risk_score']:.2%}. "
+                                   f"Transaction ID: {transaction.pk}, Amount: {transaction.amount}.",
+                        )
+                        anomalies_found += 1
         
         logger.info(f"Batch fraud analysis complete: {anomalies_found} anomalies found")
         return {'transactions_analyzed': recent_transactions.count(), 'anomalies_found': anomalies_found}
