@@ -27,6 +27,9 @@ from .chat_views import (
     ChatRoomListView, ChatRoomCreateView, ChatRoomDetailView,
     ChatMessageListView, ChatMessageCreateView, MarkMessagesReadView
 )
+from .ml.views import (
+    MLFraudAnalysisView, MLModelStatusView, MLModelTrainView, MLBatchAnalysisView
+)
 
 
 app_name = 'core'
@@ -124,6 +127,12 @@ urlpatterns = [
     path('chat/rooms/<int:room_id>/messages/', ChatMessageListView.as_view(), name='chat-messages'),
     path('chat/rooms/<int:room_id>/messages/send/', ChatMessageCreateView.as_view(), name='chat-send'),
     path('chat/rooms/<int:room_id>/read/', MarkMessagesReadView.as_view(), name='chat-mark-read'),
+    
+    # ML Fraud Detection API
+    path('ml/fraud/analyze/', MLFraudAnalysisView.as_view(), name='ml-fraud-analyze'),
+    path('ml/fraud/model/status/', MLModelStatusView.as_view(), name='ml-model-status'),
+    path('ml/fraud/model/train/', MLModelTrainView.as_view(), name='ml-model-train'),
+    path('ml/fraud/batch-analyze/', MLBatchAnalysisView.as_view(), name='ml-batch-analyze'),
     
     # Router URLs (must be last to allow specific paths to be matched first)
     path('', include(router.urls)),

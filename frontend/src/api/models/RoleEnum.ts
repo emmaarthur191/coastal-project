@@ -4,11 +4,17 @@
 /* eslint-disable */
 /**
  * * `customer` - Customer
- * * `staff` - Staff
- * * `admin` - Admin
+ * * `cashier` - Cashier
+ * * `mobile_banker` - Mobile Banker
+ * * `manager` - Manager
+ * * `operations_manager` - Operations Manager
+ * * `admin` - Administrator
  */
 export enum RoleEnum {
     CUSTOMER = 'customer',
-    STAFF = 'staff',
+    CASHIER = 'cashier',
+    MOBILE_BANKER = 'mobile_banker',
+    MANAGER = 'manager',
+    OPERATIONS_MANAGER = 'operations_manager',
     ADMIN = 'admin',
 }

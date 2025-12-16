@@ -12,6 +12,19 @@ export type User = {
     email: string;
     first_name?: string;
     last_name?: string;
-    role?: RoleEnum;
+    readonly name: string;
+    readonly role: RoleEnum;
+    /**
+     * Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+     */
+    readonly is_active: boolean;
+    /**
+     * Designates whether the user can log into this admin site.
+     */
+    readonly is_staff: boolean;
+    /**
+     * Designates that this user has all permissions without explicitly assigning them.
+     */
+    readonly is_superuser: boolean;
 };
 

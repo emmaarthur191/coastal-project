@@ -49,13 +49,22 @@ jobs:
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
-    - name: Run tests
+    - name: Run tests with coverage
       run: |
         cd banking_backend
-        python -m pytest
+        python -m pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=80
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-        REDIS_URL: redis://localhost:6379/1
+        REDIS_URL: redis://localhost:6379/1\
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./banking_backend/coverage.xml
+        fail_ci_if_error: false
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   deploy:
     needs: test
