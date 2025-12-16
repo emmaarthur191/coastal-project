@@ -11,11 +11,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_URL || 'https://coastal-backend-annc.onrender.com';
 
-// Security Headers
+// Security Headers & CSP
 app.use((req, res, next) => {
+    // Basic Security Headers
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
+
+    // Strict Transport Security (HSTS)
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+    // Content Security Policy (CSP)
+    const cspDirectives = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        "img-src 'self' data: blob: https:",
+        "connect-src 'self' " + BACKEND_URL + " https://api2.amplitude.com https://*.sentry.io https://*.ingest.sentry.io",
+        "frame-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'"
+    ];
+    res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+
     next();
 });
 
@@ -47,7 +66,7 @@ const apiProxy = createProxyMiddleware({
 
             if (origin) {
                 proxyReq.setHeader('Origin', origin);
-                proxyReq.setHeader('Referer', origin); // Or keep original referer? Better to keep original referer actually.
+                proxyReq.setHeader('Referer', origin);
             }
 
             // Forward X-Forwarded headers for proper request context
@@ -85,8 +104,24 @@ const wsProxy = createProxyMiddleware({
 });
 app.use('/ws', wsProxy);
 
-// Serve Static Files
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve Static Files with Explicit MIME Types
+app.use(express.static(path.join(__dirname, 'dist'), {
+    maxAge: '1y',
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        }
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+    }
+}));
+
+// CRITICAL: Handle missing assets to prevent HTML fallback (MIME type error fix)
+app.use('/assets/*', (req, res) => {
+    console.warn(`[404] Missing asset requested: ${req.originalUrl}`);
+    res.status(404).send('Asset not found');
+});
 
 // SPA Fallback (Rewrite all other requests to index.html)
 app.get('*', (req, res) => {
