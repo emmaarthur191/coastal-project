@@ -295,12 +295,13 @@ class TransactionService:
                 return
             
             # Format message based on transaction type
+            account_name = account.get_account_type_display()
             if transaction_type == 'deposit':
-                message = f"Coastal Bank: GHS {amount:.2f} deposited to your account. Ref: {tx_id}. New balance: GHS {account.balance:.2f}"
+                message = f"Coastal Bank: GHS {amount:.2f} deposited to your {account_name} account ({account.account_number}). Ref: {tx_id}. New balance: GHS {account.balance:.2f}"
             elif transaction_type == 'withdrawal':
-                message = f"Coastal Bank: GHS {amount:.2f} withdrawn from your account. Ref: {tx_id}. New balance: GHS {account.balance:.2f}"
+                message = f"Coastal Bank: GHS {amount:.2f} withdrawn from your {account_name} account ({account.account_number}). Ref: {tx_id}. New balance: GHS {account.balance:.2f}"
             elif transaction_type == 'transfer':
-                message = f"Coastal Bank: GHS {amount:.2f} transferred. Ref: {tx_id}. New balance: GHS {account.balance:.2f}"
+                message = f"Coastal Bank: GHS {amount:.2f} transferred from your {account_name} account ({account.account_number}). Ref: {tx_id}. New balance: GHS {account.balance:.2f}"
             else:
                 message = f"Coastal Bank: Transaction of GHS {amount:.2f} processed. Ref: {tx_id}"
             
