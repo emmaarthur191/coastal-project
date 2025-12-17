@@ -1,192 +1,65 @@
-name: Deploy to Production
+name: Deploy to Render
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-        - staging
-        - production
-
-env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/banking-backend
-  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/banking-frontend
 
 jobs:
   test:
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
+    # Backend Tests
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.12'
-    - name: Install dependencies
+        
+    - name: Install Backend Dependencies
       run: |
-        cd banking_backend
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run tests
+        pip install -r banking_backend/requirements.txt
+        
+    - name: Run Backend Tests
       run: |
         cd banking_backend
         python manage.py test --verbosity=2 --keepdb
       env:
         SECRET_KEY: test-secret-key-for-ci
         DATABASE_URL: sqlite:///db.sqlite3
-    - name: Run frontend tests
+        
+    # Frontend Tests (Optional - verify buildable)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Frontend Dependencies
       run: |
         cd frontend
         npm ci
-        npm run test
 
-  build-and-push:
+    - name: Run Frontend Tests
+      run: |
+        cd frontend
+        npm run test -- --run
+
+  deploy:
+    name: Trigger Render Deploy
     needs: test
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    if: github.ref == 'refs/heads/main'
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata (backend)
-      id: meta-backend
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.BACKEND_IMAGE }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push backend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./banking_backend
-        push: true
-        tags: ${{ steps.meta-backend.outputs.tags }}
-        labels: ${{ steps.meta-backend.outputs.labels }}
-
-    - name: Extract metadata (frontend)
-      id: meta-frontend
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.FRONTEND_IMAGE }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: true
-        tags: ${{ steps.meta-frontend.outputs.tags }}
-        labels: ${{ steps.meta-frontend.outputs.labels }}
-
-  deploy-staging:
-    needs: build-and-push
-    if: github.event.inputs.environment == 'staging' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Configure kubectl
-      uses: azure/k8s-set-context@v3
-      with:
-        method: kubeconfig
-        kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
-
-    - name: Deploy to staging
+    - name: Trigger Deploy Hook
       run: |
-        kubectl apply -f k8s/namespace.yaml
-        kubectl apply -f k8s/configmap.yaml
-        kubectl apply -f k8s/secret.yaml
-        kubectl apply -f k8s/postgres.yaml
-        kubectl apply -f k8s/redis.yaml
-        kubectl apply -f k8s/backend.yaml
-        kubectl apply -f k8s/celery.yaml
-        kubectl apply -f k8s/frontend.yaml
-        kubectl apply -f k8s/ingress.yaml
-
-        # Wait for rollout
-        kubectl rollout status deployment/backend -n banking-app --timeout=600s
-        kubectl rollout status deployment/frontend -n banking-app --timeout=600s
-
-  deploy-production:
-    needs: build-and-push
-    if: github.event.inputs.environment == 'production'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Configure kubectl
-      uses: azure/k8s-set-context@v3
-      with:
-        method: kubeconfig
-        kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
-
-    - name: Blue-Green Deployment
-      run: |
-        # Determine active environment
-        ACTIVE_ENV=$(kubectl get service frontend-service -n banking-app -o jsonpath='{.spec.selector.color}' 2>/dev/null || echo "blue")
-
-        if [ "$ACTIVE_ENV" = "blue" ]; then
-          NEW_ENV="green"
+        if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          echo "Deployment triggered successfully."
         else
-          NEW_ENV="blue"
+          echo "WARNING: RENDER_DEPLOY_HOOK_URL secret not set. Skipping deployment."
+          echo "Please set this secret in Repository Settings > Secrets and variables > Actions."
+          exit 0 # Don't fail the build, just warn
         fi
-
-        echo "Deploying to $NEW_ENV environment"
-
-        # Update deployments with new color
-        sed -i "s/app: frontend/app: frontend-$NEW_ENV/g" k8s/frontend.yaml
-        sed -i "s/app: backend/app: backend-$NEW_ENV/g" k8s/backend.yaml
-
-        # Apply new deployments
-        kubectl apply -f k8s/backend.yaml
-        kubectl apply -f k8s/frontend.yaml
-
-        # Wait for new deployments to be ready
-        kubectl rollout status deployment/backend-$NEW_ENV -n banking-app --timeout=600s
-        kubectl rollout status deployment/frontend-$NEW_ENV -n banking-app --timeout=600s
-
-        # Switch traffic to new environment
-        kubectl patch service frontend-service -n banking-app -p "{\"spec\":{\"selector\":{\"app\":\"frontend-$NEW_ENV\"}}}"
-        kubectl patch service backend-service -n banking-app -p "{\"spec\":{\"selector\":{\"app\":\"backend-$NEW_ENV\"}}}"
-
-        # Clean up old deployments after verification
-        if [ "$ACTIVE_ENV" != "$NEW_ENV" ]; then
-          kubectl delete deployment backend-$ACTIVE_ENV -n banking-app --ignore-not-found=true
-          kubectl delete deployment frontend-$ACTIVE_ENV -n banking-app --ignore-not-found=true
-        fi
-
-  health-check:
-    needs: [deploy-staging, deploy-production]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Health check
-      run: |
-        # Add health check logic here
-        echo "Health check completed"
