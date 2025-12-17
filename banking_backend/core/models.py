@@ -6,9 +6,10 @@ from django.utils import timezone
 
 class Account(models.Model):
     ACCOUNT_TYPES = [
-        ('daily_susu', 'Daily Susu'),
+        ('daily_susu', 'Daily Savings'),
+        ('member_savings', 'Member Savings'),
+        ('youth_savings', 'Youth Savings'),
         ('shares', 'Shares'),
-        ('monthly_contribution', 'Monthly Contribution'),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='accounts')
