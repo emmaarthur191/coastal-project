@@ -212,27 +212,15 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
                 required
               />
 
-              <div className="flex flex-col">
-                <Input
-                  label="Phone Number *"
-                  type="tel"
-                  value={formData.phone || ''}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                  placeholder="+233 XX XXX XXXX"
-                  className="mb-2"
-                />
-                <Button
-                  type="button"
-                  variant={otpSent ? "secondary" : "primary"}
-                  onClick={handleSendOTP}
-                  disabled={otpSent && otpExpiresIn > 0}
-                  size="sm"
-                  className="self-end"
-                >
-                  {otpSent && otpExpiresIn > 0 ? `Resend in ${otpExpiresIn}s` : 'Send OTP'}
-                </Button>
-              </div>
+              <Input
+                label="Phone Number *"
+                type="tel"
+                value={formData.phone || ''}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                required
+                placeholder="+233 XX XXX XXXX"
+                className="mb-2"
+              />
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-gray-700 ml-1">Role *</label>

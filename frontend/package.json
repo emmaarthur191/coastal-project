@@ -13,6 +13,11 @@
     "postbuild": "echo Build completed with local assets only"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/camera": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/geolocation": "^8.0.0",
     "@headlessui/react": "^2.2.9",
     "@sentry/browser": "^10.26.0",
     "@sentry/react": "^10.26.0",
