@@ -326,7 +326,7 @@ FLOWER_BASIC_AUTH = env('FLOWER_BASIC_AUTH', default=None)
 SENDEXA_API_KEY = env('SENDEXA_API_KEY', default='')
 SENDEXA_API_SECRET = env('SENDEXA_API_SECRET', default='')
 SENDEXA_AUTH_TOKEN = env('SENDEXA_AUTH_TOKEN', default='')
-SENDEXA_SENDER_ID = env('SENDEXA_SENDER_ID', default='Coastal')
+SENDEXA_SENDER_ID = env('SENDEXA_SENDER_ID', default='CACCU')
 SENDEXA_API_URL = env('SENDEXA_API_URL', default='https://api.sendexa.com/v1/sms/send')
 
 
