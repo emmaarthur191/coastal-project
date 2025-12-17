@@ -37,6 +37,9 @@ jobs:
       run: |
         cd banking_backend
         python manage.py test --verbosity=2 --keepdb
+      env:
+        SECRET_KEY: test-secret-key-for-ci
+        DATABASE_URL: sqlite:///db.sqlite3
     - name: Run frontend tests
       run: |
         cd frontend
