@@ -1,0 +1,4 @@
+# Coastal Banking Desktop Client - Dependencies
+pywebview>=4.0
+pyinstaller>=6.0
+pythonnet>=3.0  # Required for EdgeChromium on Windows
