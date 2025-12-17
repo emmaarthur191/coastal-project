@@ -50,7 +50,7 @@ class AccountViewSet(mixins.ListModelMixin,
         return [IsStaffOrCustomer()]
 
     def perform_create(self, serializer):
-        account_type = serializer.validated_data.get('account_type', 'checking')
+        account_type = serializer.validated_data.get('account_type', 'daily_susu')
         account = AccountService.create_account(self.request.user, account_type)
         serializer.instance = account
 
@@ -499,7 +499,7 @@ class CalculateServiceChargeView(APIView):
         from .models import ServiceCharge
         from decimal import Decimal
         
-        account_type = request.data.get('account_type', 'savings')
+        account_type = request.data.get('account_type', 'member_savings')
         transaction_amount = Decimal(str(request.data.get('transaction_amount', 0)))
         transaction_count = int(request.data.get('transaction_count', 1))
         

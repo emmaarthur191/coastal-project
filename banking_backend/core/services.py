@@ -34,7 +34,7 @@ class AccountService:
     """
 
     @staticmethod
-    def create_account(user, account_type: str = 'checking') -> Account:
+    def create_account(user, account_type: str = 'daily_susu') -> Account:
         """
         Create a new account for a user with a unique 13-digit account number.
 
