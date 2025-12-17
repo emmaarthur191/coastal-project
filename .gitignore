@@ -291,3 +291,7 @@ CoastalBanking.apk
 # Android/Capacitor build artifacts
 frontend/android/
 frontend/capacitor.config.ts
+
+# Temporary Files
+~$*
+*.tmp
