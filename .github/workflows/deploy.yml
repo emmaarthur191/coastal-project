@@ -60,6 +60,5 @@ jobs:
           echo "Deployment triggered successfully."
         else
           echo "WARNING: RENDER_DEPLOY_HOOK_URL secret not set. Skipping deployment."
-          echo "Please set this secret in Repository Settings > Secrets and variables > Actions."
-          exit 0 # Don't fail the build, just warn
+          exit 0
         fi
