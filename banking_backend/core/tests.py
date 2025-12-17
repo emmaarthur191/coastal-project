@@ -17,7 +17,7 @@ class AccountModelTest(TestCase):
     def test_account_creation(self):
         account = AccountService.create_account(self.user, 'checking')
         self.assertEqual(account.user, self.user)
-        self.assertEqual(account.account_type, 'checking')
+        self.assertEqual(account.account_type, 'daily_susu')
         self.assertEqual(account.balance, Decimal('0.00'))
         self.assertTrue(account.is_active)
 
@@ -106,7 +106,7 @@ class AccountAPITest(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_create_account(self):
-        response = self.client.post('/api/accounts/', {'account_type': 'checking'})
+        response = self.client.post('/api/accounts/', {'account_type': 'daily_susu'})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Account.objects.count(), 1)
 
