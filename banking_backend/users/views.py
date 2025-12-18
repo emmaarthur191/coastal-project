@@ -46,6 +46,10 @@ class CreateStaffView(APIView):
 
         data = request.data.copy()
         
+        # Auto-generate username from email if not provided
+        if 'username' not in data and 'email' in data:
+            data['username'] = data['email'].split('@')[0]
+        
         # 2. Map frontend 'phone' to backend 'phone_number'
         if 'phone' in data and 'phone_number' not in data:
             data['phone_number'] = data['phone']
