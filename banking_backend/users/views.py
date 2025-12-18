@@ -400,8 +400,9 @@ class SendOTPView(APIView):
             print(f"[OTP Error] Failed to send SMS: {response}")
             # In dev, we might still want to return success for testing flow
             # but in prod, this should probably error
+            # Return specific error even in production to help debug provider issues (e.g. missing API key)
             if not settings.DEBUG:
-                return Response({'error': 'Failed to send SMS.'}, status=500)
+                return Response({'error': f'Failed to send SMS: {response}'}, status=status.HTTP_502_BAD_GATEWAY)
         
         return Response({
             'success': True,
