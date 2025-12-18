@@ -310,9 +310,12 @@ async function getCsrfToken(): Promise<string | null> {
   let token = getCsrfCookie();
   if (token) return token;
 
-  // 2. Fetch from backend if missing
+  // 2. Fetch from backend if missing using the specific endpoint
   try {
-    const response = await fetch(`${API_BASE_URL}users/csrf/`, { credentials: 'include' });
+    const response = await fetch(`${API_BASE_URL}users/csrf/`, {
+      method: 'GET',
+      credentials: 'include'
+    });
     if (response.ok) {
       const data = await response.json();
       return data.csrfToken || null;
