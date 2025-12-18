@@ -37,7 +37,8 @@ class CreateStaffView(APIView):
 
     def post(self, request):
         # 1. Check Permissions (ensure caller is manager/admin)
-        if request.user.role not in ['admin', 'manager', 'operations_manager']:
+        # Allow superusers and staff members implicitly to prevent lockout if role isn't set
+        if not (request.user.role in ['admin', 'manager', 'operations_manager'] or request.user.is_superuser or request.user.is_staff):
             return Response(
                 {"error": "You do not have permission to create staff users."}, 
                 status=status.HTTP_403_FORBIDDEN
