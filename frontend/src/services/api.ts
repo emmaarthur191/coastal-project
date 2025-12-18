@@ -127,20 +127,7 @@ function setStoredTokens(access, refresh) {
   logger.warn('setStoredTokens is deprecated. Tokens are now managed by backend httpOnly cookies.');
 }
 
-// CSRF token management
-function getCsrfToken() {
-  // Try to get CSRF token from cookie
-  if (typeof window !== 'undefined') {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'csrftoken') {
-        return value;
-      }
-    }
-  }
-  return null;
-}
+
 
 function getStoredTokens() {
   // Tokens are now stored in httpOnly cookies by the backend
