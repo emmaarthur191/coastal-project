@@ -97,9 +97,9 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
   };
 
   const validateSSNIT = (ssnit: string): string | null => {
-    const cleanSSNIT = ssnit.replace(/[\s-]/g, '');
+    const cleanSSNIT = ssnit.replace(/[\s-]/g, '').toUpperCase();
     if (!cleanSSNIT) return "SSNIT number is required";
-    if (!/^\d{12}$/.test(cleanSSNIT)) return "SSNIT number must be 12 digits (format: AAA-NN-NNNNN)";
+    if (!/^[A-Z][0-9]{12}$/.test(cleanSSNIT)) return "SSNIT number must be in legacy format (e.g., C123456789012)";
     return null;
   };
 
