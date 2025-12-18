@@ -364,7 +364,13 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
             <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📱 Phone Verification</h4>
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               {!otpSent ? (
-                <Button type="button" onClick={handleSendOTP}>
+                <Button type="button" onClick={() => {
+                  if (!formData.phone) {
+                    alert('Please enter a phone number first.');
+                    return;
+                  }
+                  handleSendOTP();
+                }}>
                   Send OTP Code
                 </Button>
               ) : !phoneVerified ? (
