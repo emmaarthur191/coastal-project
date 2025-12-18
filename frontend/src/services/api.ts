@@ -32,20 +32,20 @@ const getApiBaseUrl = () => {
 
   // Safe logging that won't expose sensitive info if we had any
   if (!isProd) {
-    console.log('[Config] Environment Detection:', {
-      isProd,
-      hasDevUrl: !!devUrl,
-      hasProdUrl: !!prodUrl,
-      hasBaseUrl: !!baseUrl,
-      hostname: window.location.hostname
-    });
+    // console.log('[Config] Environment Detection:', {
+    //   isProd,
+    //   hasDevUrl: !!devUrl,
+    //   hasProdUrl: !!prodUrl,
+    //   hasBaseUrl: !!baseUrl,
+    //   hostname: window.location.hostname
+    // });
   }
 
 
 
   // Priority 2: Check VITE_PROD_API_URL (Explicit Production)
   if (prodUrl) {
-    if (!isProd) console.log('[Config] Using VITE_PROD_API_URL');
+    if (!isProd) { /* Debug log removed */ }
     return prodUrl.endsWith('/') ? prodUrl : prodUrl + '/';
   }
 

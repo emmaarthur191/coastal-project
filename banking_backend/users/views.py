@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,8 @@ from .services import SendexaService
 from django.utils.crypto import get_random_string
 import string
 import secrets
+
+logger = logging.getLogger(__name__)
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -397,7 +400,7 @@ class SendOTPView(APIView):
         success, response = SendexaService.send_sms(phone_number, message)
         
         if not success:
-            print(f"[OTP Error] Failed to send SMS: {response}")
+            logger.error(f"[OTP Error] Failed to send SMS: {response}")
             # In dev, we might still want to return success for testing flow
             # but in prod, this should probably error
             # Return specific error even in production to help debug provider issues (e.g. missing API key)

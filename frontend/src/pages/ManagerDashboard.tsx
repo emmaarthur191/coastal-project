@@ -24,7 +24,7 @@ import SecuritySection from '../components/manager/SecuritySection';
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 
 function ManagerDashboard() {
-  console.log('ManagerDashboard: Component is rendering!');
+
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 

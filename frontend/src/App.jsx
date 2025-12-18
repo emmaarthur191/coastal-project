@@ -42,14 +42,14 @@ const ProtectedRoute = ({ children }) => {
 
   // CRITICAL: Wait for auth check to complete before redirecting
   if (loading) {
-    console.log('[DEBUG] ProtectedRoute: Still loading auth state...');
+
     return <PageLoading />;
   }
 
-  console.log('[DEBUG] ProtectedRoute: loading=', loading, 'isAuthenticated=', isAuthenticated);
+
 
   if (!isAuthenticated) {
-    console.log('[DEBUG] ProtectedRoute: Not authenticated, redirecting to /login');
+
     return <Navigate to="/login" replace />;
   }
 
