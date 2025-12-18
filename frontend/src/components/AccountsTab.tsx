@@ -24,7 +24,7 @@ interface AccountSummary {
 }
 
 const AccountsTab: React.FC = () => {
-  console.log('AccountsTab: Component rendered');
+
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [summary, setSummary] = useState<AccountSummary | null>(null);
@@ -58,12 +58,12 @@ const AccountsTab: React.FC = () => {
 
   const loadSummary = async () => {
     try {
-      console.log('AccountsTab: Calling getStaffAccountsSummary...');
+
       const response = await authService.getStaffAccountsSummary();
-      console.log('AccountsTab: getStaffAccountsSummary response:', response);
+
       if (response.success) {
         setSummary(response.data);
-        console.log('AccountsTab: Summary loaded');
+
       } else {
         console.warn('AccountsTab: Failed to load summary:', response.error);
       }
@@ -97,7 +97,7 @@ const AccountsTab: React.FC = () => {
   };
 
   if (loading) {
-    console.log('AccountsTab: Rendering loading state');
+
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px', background: 'blue', color: 'white', padding: '20px' }}>
         <div>LOADING ACCOUNTS... Please wait</div>
@@ -106,7 +106,7 @@ const AccountsTab: React.FC = () => {
   }
 
   if (error) {
-    console.log('AccountsTab: Rendering error state:', error);
+
     return (
       <div style={{ background: 'red', color: 'white', padding: '20px', border: '5px solid black' }}>
         <h2>ACCOUNTS TAB ERROR</h2>
@@ -279,10 +279,10 @@ const AccountsTab: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${account.status === 'Active'
-                          ? 'bg-green-100 text-green-800'
-                          : account.status === 'Inactive'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                        ? 'bg-green-100 text-green-800'
+                        : account.status === 'Inactive'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
                         }`}>
                         {account.status}
                       </span>

@@ -42,7 +42,7 @@ export const useWebSocket = ({
       wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected:', url);
+
         setIsConnected(true);
         reconnectCountRef.current = 0;
         onOpen?.();
@@ -59,7 +59,7 @@ export const useWebSocket = ({
       };
 
       wsRef.current.onclose = () => {
-        console.log('WebSocket disconnected:', url);
+
         setIsConnected(false);
         onClose?.();
 
