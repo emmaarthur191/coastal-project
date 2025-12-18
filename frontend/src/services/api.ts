@@ -303,6 +303,39 @@ const isRetryableError = (error: any) => {
   return false;
 };
 
+// CSRF token management
+function getCsrfCookie() {
+  if (typeof window !== 'undefined') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrftoken') {
+        return value;
+      }
+    }
+  }
+  return null;
+}
+
+// Async function to ensure we have a token
+async function getCsrfToken(): Promise<string | null> {
+  // 1. Try cookie first
+  let token = getCsrfCookie();
+  if (token) return token;
+
+  // 2. Fetch from backend if missing
+  try {
+    const response = await fetch(`${API_BASE_URL}users/csrf/`, { credentials: 'include' });
+    if (response.ok) {
+      const data = await response.json();
+      return data.csrfToken || null;
+    }
+  } catch (e) {
+    logger.warn('Failed to fetch CSRF token', e);
+  }
+  return null;
+}
+
 // Enhanced API call function with retry logic and interceptors
 async function apiCall(method: string, url: string, data: any = null, config: RequestInit = {}, retryCount = 0): Promise<{ data: any }> {
   const startTime = Date.now();
@@ -328,11 +361,17 @@ async function apiCall(method: string, url: string, data: any = null, config: Re
 
     // ... (existing helper function)
 
+    // Fetch CSRF token asynchronously
+    let csrfToken = null;
+    if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+      csrfToken = await getCsrfToken();
+    }
+
     const headers: Record<string, string> = {
       // Default to JSON only if not FormData
       ...(data instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       // Include CSRF token for state-changing operations
-      ...((method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') && { 'X-CSRFToken': getCsrfToken() }),
+      ...(csrfToken && { 'X-CSRFToken': csrfToken }),
       // Authorization is handled by HttpOnly cookies automatically
       ...configHeaders,
     };
