@@ -75,6 +75,7 @@ function ManagerDashboard() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpExpiresIn, setOtpExpiresIn] = useState(0);
+  const [otpLoading, setOtpLoading] = useState(false); // Prevent double-clicks
   const [expenses, setExpenses] = useState([]);
   const [newExpense, setNewExpense] = useState({
     category: '', amount: '', description: '', date_incurred: new Date().toISOString().split('T')[0]
@@ -130,6 +131,12 @@ function ManagerDashboard() {
   const handleLogout = async () => { await logout(); navigate('/login'); };
 
   const handleSendOTP = async () => {
+    // Prevent double-clicks
+    if (otpLoading) {
+      console.log('[OTP] Request already in progress, ignoring');
+      return;
+    }
+
     // Validate phone number exists and is not just whitespace
     const phoneNumber = formData.phone?.trim();
     if (!phoneNumber) {
@@ -137,31 +144,40 @@ function ManagerDashboard() {
       return;
     }
 
-    // Log what we're sending for debugging
+    // Set loading state to prevent duplicate requests
+    setOtpLoading(true);
     console.log('[OTP] Sending OTP to phone:', phoneNumber);
 
-    const response = await authService.sendOTP({
-      phone_number: phoneNumber,
-      verification_type: 'user_creation'
-    });
+    try {
+      const response = await authService.sendOTP({
+        phone_number: phoneNumber,
+        verification_type: 'user_creation'
+      });
 
-    console.log('[OTP] Response:', response);
+      console.log('[OTP] Response:', response);
 
-    if (response.success) {
-      setOtpSent(true); setOtpExpiresIn(300);
-      if (response.data.test_mode && response.data.otp_code) {
-        alert(`TEST MODE OTP: ${response.data.otp_code}`);
+      if (response.success) {
+        setOtpSent(true);
+        setOtpExpiresIn(300);
+        if (response.data.test_mode && response.data.otp_code) {
+          alert(`TEST MODE OTP: ${response.data.otp_code}`);
+        } else {
+          alert('OTP sent to your phone number.');
+        }
+        const timer = setInterval(() => {
+          setOtpExpiresIn(prev => {
+            if (prev <= 1) { clearInterval(timer); setOtpSent(false); return 0; }
+            return prev - 1;
+          });
+        }, 1000);
       } else {
-        alert('OTP sent to your phone number.');
+        alert('Failed to send OTP: ' + response.error);
       }
-      const timer = setInterval(() => {
-        setOtpExpiresIn(prev => {
-          if (prev <= 1) { clearInterval(timer); setOtpSent(false); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      alert('Failed to send OTP: ' + response.error);
+    } catch (error) {
+      console.error('[OTP] Error:', error);
+      alert('Failed to send OTP. Please try again.');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -238,6 +254,7 @@ function ManagerDashboard() {
           phoneVerified={phoneVerified} setPhoneVerified={setPhoneVerified}
           otpSent={otpSent} setOtpSent={setOtpSent}
           otpExpiresIn={otpExpiresIn} setOtpExpiresIn={setOtpExpiresIn}
+          otpLoading={otpLoading}
           handleSendOTP={handleSendOTP} handleVerifyOTP={handleVerifyOTP}
           handleCreateUser={handleCreateUser}
           staffMembers={staffMembers} fetchStaffMembers={fetchStaffMembers}
