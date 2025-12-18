@@ -470,7 +470,7 @@ if DEBUG:
 # (Scheme mismatch: Django sees http, Origin is https)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_SAMESITE = 'Lax'  # 'Lax' allows cross-origin with top-level navigation; 'Strict' blocks cookies on cross-origin POST
 SESSION_COOKIE_SAMESITE = 'Lax' # 'Strict' can break OAuth redirection flows if any used
 
 if not DEBUG:

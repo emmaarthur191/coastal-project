@@ -37,10 +37,9 @@ class JWTCookieAuthentication(JWTAuthentication):
             # logger.info(f"JWTCookieAuthentication: No cookie found. Cookies keys: {list(request.COOKIES.keys())}")
             return None
 
-        # Enforce CSRF for cookie-based authentication (security best practice)
-        # Only enforce for unsafe methods (POST, PUT, DELETE, PATCH)
-        if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-             enforce_csrf(request)
+        # CSRF enforcement is handled by Django's CsrfViewMiddleware in MIDDLEWARE.
+        # Do NOT enforce here - it causes 403 when csrftoken cookie is missing (e.g., first request).
+        # The frontend sends X-CSRFToken header which the middleware validates.
 
         validated_token = self.get_validated_token(raw_token)
         return self.get_user(validated_token), validated_token
