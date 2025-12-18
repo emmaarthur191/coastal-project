@@ -21,15 +21,15 @@ class SendexaService:
         # User provided configuration for Sendexa.co
         url = getattr(settings, 'SENDEXA_API_URL', 'https://api.sendexa.co/v1/sms/send')
         api_key = getattr(settings, 'SENDEXA_API_KEY', '')
-        sender_id = getattr(settings, 'SENDEXA_SENDER_ID', 'Coastal')
+        api_secret = getattr(settings, 'SENDEXA_API_SECRET', '')
+        sender_id = getattr(settings, 'SENDEXA_SENDER_ID', 'CACCU')
         
-        # Prepare headers - Example uses Bearer YOUR_API_KEY
+        # Prepare headers - Sendexa requires Basic Auth, NOT Bearer
         headers = {
-            'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
         
-        # Prepare payload - Example uses "to": ["number"], "sender": "Name", "message": "Content"
+        # Prepare payload
         payload = {
             'to': [phone_number],
             'sender': sender_id,
@@ -40,15 +40,14 @@ class SendexaService:
             # In development, just log unless force_send is on
             if settings.DEBUG:
                 logger.info(f"[SENDEXA MOCK] Would send to {phone_number}: {message}")
-                logger.info(f"[SENDEXA MOCK] Headers: {headers}")
-                logger.info(f"[SENDEXA MOCK] Payload: {payload}")
-                
-                # Uncomment to actually send in dev
-                # response = requests.post(url, json=payload, headers=headers)
-                # return SendexaService._handle_response(response)
                 return True, "Mock SMS sent successfully"
             
-            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            # Use Basic Auth: auth=(username, password) -> (api_key, api_secret)
+            response = requests.post(url, json=payload, headers=headers, auth=(api_key, api_secret), timeout=15)
+            # Log raw response for debugging if 502 persists (removed after verify)
+            if response.status_code not in [200, 201]:
+                 logger.error(f"Sendexa Failed: {response.text}")
+
             return SendexaService._handle_response(response)
             
         except requests.RequestException as e:
