@@ -2,7 +2,7 @@ import logging
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from django.utils import timezone
@@ -33,7 +33,7 @@ class CreateStaffView(APIView):
     # In production, use IsAdminUser. For dev/testing flow, IsAuthenticated might be easier if using Postman
     # But for real security: permission_classes = [IsAdminUser] 
     # We will use IsAuthenticated and check role manually or rely on custom permission
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated, IsAdminUser] 
 
     def post(self, request):
         # 1. Check Permissions (ensure caller is manager/admin)
