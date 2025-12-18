@@ -107,6 +107,9 @@ def generate_staff_id(sender, instance, created, **kwargs):
     Uses retry logic to handle race conditions and ensure uniqueness.
     Format: CA-MMYY-NN (e.g., CA-1224-01)
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if not instance.staff_id and instance.role in ['cashier', 'mobile_banker', 'manager', 'operations_manager', 'admin']:
         import datetime
         from django.db import IntegrityError
@@ -116,6 +119,8 @@ def generate_staff_id(sender, instance, created, **kwargs):
         month = now.strftime('%m')
         year = now.strftime('%y')  # Last 2 digits
         prefix = f"CA-{month}{year}"
+        
+        logger.info(f"Generating staff ID for {instance.email} with prefix {prefix}")
         
         max_attempts = 10
         for attempt in range(max_attempts):
@@ -144,13 +149,20 @@ def generate_staff_id(sender, instance, created, **kwargs):
                         instance.staff_id = f"{prefix}-{new_seq:02d}"
                     
                     instance.save(update_fields=['staff_id'])
+                    logger.info(f"Generated staff ID {instance.staff_id} for {instance.email}")
                     return  # Success, exit the retry loop
                     
             except IntegrityError:
                 # Duplicate key, retry with next sequence
+                logger.warning(f"IntegrityError on staff ID attempt {attempt+1} for {instance.email}")
                 if attempt == max_attempts - 1:
                     # Last attempt, use UUID fallback
                     import uuid
                     instance.staff_id = f"{prefix}-{uuid.uuid4().hex[:6].upper()}"
                     instance.save(update_fields=['staff_id'])
+                    logger.warning(f"Used UUID fallback for staff ID: {instance.staff_id}")
                 continue
+            except Exception as e:
+                logger.error(f"Failed to generate staff ID for {instance.email}: {e}")
+                return  # Don't crash user creation
+
