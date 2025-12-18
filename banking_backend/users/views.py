@@ -33,7 +33,7 @@ class CreateStaffView(APIView):
     # In production, use IsAdminUser. For dev/testing flow, IsAuthenticated might be easier if using Postman
     # But for real security: permission_classes = [IsAdminUser] 
     # We will use IsAuthenticated and check role manually or rely on custom permission
-    permission_classes = [IsAuthenticated, IsAdminUser] 
+    permission_classes = [IsAuthenticated] 
 
     def post(self, request):
         # 1. Check Permissions (ensure caller is manager/admin)
