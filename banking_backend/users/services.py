@@ -71,8 +71,11 @@ class SendexaService:
         }
         
         # Prepare payload
+        # Prepare payload
+        # User requested to keep the +233 format
+        # Sending as string with + prefix
         payload = {
-            'to': [normalized_phone],
+            'to': normalized_phone, 
             'sender': sender_id,
             'message': message
         }
@@ -83,11 +86,13 @@ class SendexaService:
                 logger.info(f"[SENDEXA MOCK] Would send to {normalized_phone}: {message}")
                 return True, "Mock SMS sent successfully"
             
-            logger.info(f"Sendexa: Sending SMS to {normalized_phone} with sender '{sender_id}'")
+            logger.info(f"Sendexa Request: URL={url} Payload={payload} AuthHeader=Basic ...{auth_token[-4:] if auth_token else 'NONE'}")
+            
             response = requests.post(url, json=payload, headers=headers, timeout=15)
             
             # Log response for debugging
-            logger.info(f"Sendexa Response: {response.status_code} - {response.text}")
+            logger.info(f"Sendexa Response: Status={response.status_code} Body={response.text}")
+            logger.info(f"Sendexa Response Headers: {response.headers}")
 
             return SendexaService._handle_response(response)
             
