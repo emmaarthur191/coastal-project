@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
       // Retry logic for network errors
       if (error.message && (error.message.includes('fetch') || error.message.includes('Network'))) {
-        console.log('Network error detected during auth check, retrying in 2s...');
+        // console.log('Network error detected during auth check, retrying in 2s...');
         // Simple retry after 2 seconds - recurses once then stops if fails again logic could be added
         // For now, we just schedule a re-check which acts as a retry
         setTimeout(() => checkAuth(), 2000);
