@@ -223,11 +223,11 @@ class TransactionViewSet(mixins.ListModelMixin,
             with transaction.atomic():
                 # Get or create account
                 # This creation is now part of the atomic block
-                account, created = Account.objects.get_or_create(
-                    user=member, 
-                    account_type=account_type,
-                    defaults={'balance': 0, 'is_active': True}
-                )
+                # Get or create account using proper service for unique account_number generation
+                account = Account.objects.filter(user=member, account_type=account_type).first()
+                if not account:
+                    # Use AccountService to properly generate account_number
+                    account = AccountService.create_account(member, account_type)
         
                 # Process transaction using ACID-compliant TransactionService
                 from .services import TransactionService
