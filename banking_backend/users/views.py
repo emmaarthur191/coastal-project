@@ -711,12 +711,5 @@ class SessionTerminateView(APIView):
             return Response({'detail': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
-class GetCSRFToken(APIView):
-    permission_classes = [AllowAny]
 
-    def get(self, request):
-        from django.middleware.csrf import get_token
-        # get_token(request) ensures the token is generated and set in the cookie
-        csrf_token = get_token(request)
-        return Response({'csrfToken': csrf_token})
 

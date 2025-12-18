@@ -444,8 +444,16 @@ CSRF_TRUSTED_ORIGINS = [
 # Add Render's dynamic hostname if available
 if RENDER_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
-    # Also add to CORS
     CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
+
+# Add Env-Defined Trusted Origins for Production
+# Handle comma-separated list from string env var to match user request
+if os.getenv('CSRF_TRUSTED_ORIGINS'):
+    origins = os.getenv('CSRF_TRUSTED_ORIGINS').split(',')
+    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in origins if o.strip()])
+elif env.list('CSRF_TRUSTED_ORIGINS', default=[]):
+    # Fallback to django-environ list parsing
+    CSRF_TRUSTED_ORIGINS += env.list('CSRF_TRUSTED_ORIGINS')
 
 # SECURITY: Only allow localhost in DEBUG mode
 if DEBUG:
@@ -453,17 +461,17 @@ if DEBUG:
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
     ]
 
-# Add Env-Defined Trusted Origins for Production
-if env.list('CSRF_TRUSTED_ORIGINS', default=[]):
-    CSRF_TRUSTED_ORIGINS += env.list('CSRF_TRUSTED_ORIGINS')
-
-# Production Security Headers
 # Production Security Headers
 # Always set SECURE_PROXY_SSL_HEADER on Render to prevent CSRF "Origin checking failed"
 # (Scheme mismatch: Django sees http, Origin is https)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_COOKIE_SAMESITE = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Lax' # 'Strict' can break OAuth redirection flows if any used
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
