@@ -53,6 +53,7 @@ interface EnhancedUserManagementFormProps {
   setOtpSent: React.Dispatch<React.SetStateAction<boolean>>;
   otpExpiresIn: number;
   setOtpExpiresIn: React.Dispatch<React.SetStateAction<number>>;
+  otpLoading?: boolean;
   handleSendOTP: () => void;
   handleVerifyOTP: () => void;
   handleCreateUser: (e: React.FormEvent) => void;
@@ -75,7 +76,8 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
   handleVerifyOTP,
   handleCreateUser,
   staffMembers,
-  fetchStaffMembers
+  fetchStaffMembers,
+  otpLoading = false
 }) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -364,14 +366,18 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
             <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📱 Phone Verification</h4>
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               {!otpSent ? (
-                <Button type="button" onClick={() => {
-                  if (!formData.phone) {
-                    alert('Please enter a phone number first.');
-                    return;
-                  }
-                  handleSendOTP();
-                }}>
-                  Send OTP Code
+                <Button
+                  type="button"
+                  disabled={otpLoading}
+                  onClick={() => {
+                    if (!formData.phone) {
+                      alert('Please enter a phone number first.');
+                      return;
+                    }
+                    handleSendOTP();
+                  }}
+                >
+                  {otpLoading ? 'Sending...' : 'Send OTP Code'}
                 </Button>
               ) : !phoneVerified ? (
                 <div className="space-y-4">

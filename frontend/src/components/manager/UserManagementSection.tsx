@@ -20,6 +20,7 @@ interface UserManagementSectionProps {
   setOtpSent: React.Dispatch<React.SetStateAction<boolean>>;
   otpExpiresIn: number;
   setOtpExpiresIn: React.Dispatch<React.SetStateAction<number>>;
+  otpLoading: boolean;
   handleSendOTP: () => void;
   handleVerifyOTP: () => void;
   handleCreateUser: (e: React.FormEvent) => void;
