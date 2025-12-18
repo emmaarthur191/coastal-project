@@ -130,23 +130,56 @@ function ManagerDashboard() {
   const handleLogout = async () => { await logout(); navigate('/login'); };
 
   const handleSendOTP = async () => {
-    if (!formData.phone) { alert('Please enter a phone number first'); return; }
-    const response = await authService.sendOTP({ phone_number: formData.phone, verification_type: 'user_creation' });
+    // Validate phone number exists and is not just whitespace
+    const phoneNumber = formData.phone?.trim();
+    if (!phoneNumber) {
+      alert('Please enter a phone number first');
+      return;
+    }
+
+    // Log what we're sending for debugging
+    console.log('[OTP] Sending OTP to phone:', phoneNumber);
+
+    const response = await authService.sendOTP({
+      phone_number: phoneNumber,
+      verification_type: 'user_creation'
+    });
+
+    console.log('[OTP] Response:', response);
+
     if (response.success) {
       setOtpSent(true); setOtpExpiresIn(300);
-      if (response.data.test_mode && response.data.otp_code) { alert(`TEST MODE OTP: ${response.data.otp_code}`); }
-      else { alert('OTP sent to your phone number.'); }
+      if (response.data.test_mode && response.data.otp_code) {
+        alert(`TEST MODE OTP: ${response.data.otp_code}`);
+      } else {
+        alert('OTP sent to your phone number.');
+      }
       const timer = setInterval(() => {
-        setOtpExpiresIn(prev => { if (prev <= 1) { clearInterval(timer); setOtpSent(false); return 0; } return prev - 1; });
+        setOtpExpiresIn(prev => {
+          if (prev <= 1) { clearInterval(timer); setOtpSent(false); return 0; }
+          return prev - 1;
+        });
       }, 1000);
-    } else { alert('Failed to send OTP: ' + response.error); }
+    } else {
+      alert('Failed to send OTP: ' + response.error);
+    }
   };
 
   const handleVerifyOTP = async () => {
     if (!otpCode) { alert('Please enter the OTP code'); return; }
-    const response = await authService.verifyOTP({ phone_number: formData.phone, otp_code: otpCode, verification_type: 'user_creation' });
-    if (response.success) { setPhoneVerified(true); setOtpSent(false); alert('Phone number verified successfully!'); }
-    else { alert('Failed to verify OTP: ' + response.error); }
+    const phoneNumber = formData.phone?.trim();
+    const response = await authService.verifyOTP({
+      phone_number: phoneNumber,
+      otp_code: otpCode,
+      verification_type: 'user_creation'
+    });
+    if (response.success) {
+      setPhoneVerified(true);
+      setOtpSent(false);
+      alert('Phone number verified successfully!');
+    } else {
+      alert('Failed to verify OTP: ' + response.error);
+    }
   };
 
   const handleCreateUser = async (e: any) => {
