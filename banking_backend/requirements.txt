@@ -1,6 +1,6 @@
-Django==5.1
+Django==6.0
 djangorestframework
-django-cors-headers==4.4.0
+django-cors-headers==4.9.0
 drf-spectacular
 djangorestframework-simplejwt
 psycopg2-binary
