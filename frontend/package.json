@@ -51,7 +51,7 @@
     "@types/node": "^24.7.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
-    "jsdom": "^24.1.1",
+    "jsdom": "^27.3.0",
     "mkdirp": "^3.0.1",
     "openapi-typescript-codegen": "^0.29.0",
     "rimraf": "^6.1.2",
