@@ -1,0 +1,122 @@
+
+> build
+> node ./node_modules/vite/bin/vite.js build
+
+[36mvite v7.2.4 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m???[39m 2523 modules transformed.
+node.exe :
+[31m???[39m Build
+failed in 3.47s
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe"
+"C:\Program
+Files\nodejs/node_mo
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo
+           : NotSpe
+  cified: ([31m??
+ ?[39m Build fai
+led in 3.47s:Str
+ing) [], RemoteE
+xception
+    + FullyQualified
+   ErrorId : Native
+  CommandError
+
+[31merror during
+build:
+[31msrc/api/services
+/ApiService.ts
+(68:9): "request" is
+not exported by "src/
+api/core/request.ts",
+ imported by "src/api
+/services/ApiService.
+ts".[31m
+file: [36mE:/coastal
+/frontend/src/api/ser
+vices/ApiService.ts:6
+8:9[31m
+[33m
+66: import type {
+CancelablePromise }
+from '../core/Cancela
+blePromise';
+67: import { OpenAPI
+} from
+'../core/OpenAPI';
+68: import { request
+as __request } from
+'../core/request';
+             ^
+69: export class
+ApiService {
+70:     /**
+[31m
+    at
+getRollupError (file:
+///E:/coastal/fronten
+d/node_modules/rollup
+/dist/es/shared/parse
+Ast.js:401:41)
+    at error (file://
+/E:/coastal/frontend/
+node_modules/rollup/d
+ist/es/shared/parseAs
+t.js:397:42)
+    at Module.error (
+file:///E:/coastal/fr
+ontend/node_modules/r
+ollup/dist/es/shared/
+node-entry.js:16956:1
+6)
+    at
+Module.traceVariable
+(file:///E:/coastal/f
+rontend/node_modules/
+rollup/dist/es/shared
+/node-entry.js:17412:
+29)
+    at ModuleScope.fi
+ndVariable (file:///E
+:/coastal/frontend/no
+de_modules/rollup/dis
+t/es/shared/node-entr
+y.js:15076:39)
+    at ChildScope.fin
+dVariable (file:///E:
+/coastal/frontend/nod
+e_modules/rollup/dist
+/es/shared/node-entry
+.js:5649:38)
+    at ClassBodyScope
+.findVariable (file:/
+//E:/coastal/frontend
+/node_modules/rollup/
+dist/es/shared/node-e
+ntry.js:5649:38)
+    at ChildScope.fin
+dVariable (file:///E:
+/coastal/frontend/nod
+e_modules/rollup/dist
+/es/shared/node-entry
+.js:5649:38)
+    at FunctionScope.
+findVariable (file://
+/E:/coastal/frontend/
+node_modules/rollup/d
+ist/es/shared/node-en
+try.js:5649:38)
+    at FunctionBodySc
+ope.findVariable (fil
+e:///E:/coastal/front
+end/node_modules/roll
+up/dist/es/shared/nod
+e-entry.js:5649:38)[
+39m
