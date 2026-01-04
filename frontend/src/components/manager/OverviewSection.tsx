@@ -18,9 +18,10 @@ interface DashboardData {
 
 interface OverviewSectionProps {
   dashboardData: DashboardData | null;
+  onReviewAccountOpening?: () => void;
 }
 
-const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData }) => {
+const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onReviewAccountOpening }) => {
   return (
     <div className="flex flex-col gap-6">
       {/* Metrics Row */}
@@ -123,7 +124,10 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData }) => {
                 </div>
 
                 <div className="ml-2 flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="text-xs bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 hover:bg-slate-50 text-slate-600 dark:text-white px-2 py-1 rounded shadow-sm">
+                  <button
+                    onClick={() => onReviewAccountOpening?.()}
+                    className="text-xs bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 hover:bg-slate-50 text-slate-600 dark:text-white px-2 py-1 rounded shadow-sm"
+                  >
                     Review
                   </button>
                 </div>

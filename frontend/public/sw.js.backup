@@ -26,7 +26,7 @@ const CACHEABLE_APIS = [
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...');
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -46,7 +46,7 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...');
-  
+
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -108,21 +108,21 @@ function isStaticAsset(url) {
 async function handleAPIRequest(request) {
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.log('Network failed, trying cache for API request:', request.url);
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Return offline response for login
     if (request.url.includes('/auth/')) {
       return new Response(
@@ -137,7 +137,7 @@ async function handleAPIRequest(request) {
         }
       );
     }
-    
+
     throw error;
   }
 }
@@ -151,11 +151,11 @@ async function handleNavigationRequest(request) {
     console.log('Network failed, serving offline page for navigation');
     const cache = await caches.open(CACHE_NAME);
     const cachedResponse = await cache.match('/');
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Return a basic offline page
     return new Response(`
       <!DOCTYPE html>
@@ -229,19 +229,19 @@ async function handleNavigationRequest(request) {
 // Cache-first strategy for static assets
 async function handleStaticAsset(request) {
   const cachedResponse = await caches.match(request);
-  
+
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.error('Failed to fetch static asset:', request.url, error);
@@ -256,11 +256,11 @@ async function handleDefaultRequest(request) {
     return networkResponse;
   } catch (error) {
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     throw error;
   }
 }
@@ -277,11 +277,11 @@ async function syncLoginAttempts() {
   try {
     const cache = await caches.open(CACHE_NAME);
     const requests = await cache.keys();
-    
-    const loginRequests = requests.filter(request => 
+
+    const loginRequests = requests.filter(request =>
       request.url.includes('/api/auth/login') && request.method === 'POST'
     );
-    
+
     for (const request of loginRequests) {
       try {
         await fetch(request);
@@ -320,7 +320,7 @@ self.addEventListener('push', (event) => {
       }
     ]
   };
-  
+
   event.waitUntil(
     self.registration.showNotification('Coastal Credit Union', options)
   );
@@ -329,7 +329,7 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   if (event.action === 'view') {
     event.waitUntil(
       clients.openWindow('/dashboard')
@@ -342,7 +342,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   if (event.data && event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: CACHE_NAME });
   }
@@ -362,7 +362,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'REPORT_PERFORMANCE') {
     const { url, duration } = event.data;
     console.log(`Performance: ${url} loaded in ${duration}ms`);
-    
+
     // Send performance data to analytics (if configured)
     // analytics.track('performance', { url, duration });
   }

@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { AccountTypeEnum } from './AccountTypeEnum';
+import type { AccountOpeningRequestAccountTypeEnum } from './AccountOpeningRequestAccountTypeEnum';
 import type { CardTypeEnum } from './CardTypeEnum';
 import type { IdTypeEnum } from './IdTypeEnum';
 import type { StatusE5aEnum } from './StatusE5aEnum';
@@ -11,7 +11,7 @@ import type { StatusE5aEnum } from './StatusE5aEnum';
  */
 export type AccountOpeningRequest = {
     readonly id: number;
-    account_type?: AccountTypeEnum;
+    account_type?: AccountOpeningRequestAccountTypeEnum;
     card_type?: CardTypeEnum;
     id_type?: IdTypeEnum;
     id_number?: string;

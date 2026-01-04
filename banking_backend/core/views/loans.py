@@ -1,0 +1,101 @@
+"""Loan-related views for Coastal Banking.
+
+This module contains views for managing loan applications and approvals.
+"""
+
+import logging
+
+from rest_framework import mixins, status
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
+
+from django_filters.rest_framework import DjangoFilterBackend
+
+from core.models import Loan
+from core.permissions import IsCustomer, IsStaff
+from core.serializers import LoanSerializer
+from core.services import LoanService
+
+logger = logging.getLogger(__name__)
+
+
+class LoanViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet
+):
+    queryset = Loan.objects.all()
+    serializer_class = LoanSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ["status"]
+    ordering_fields = ["created_at", "amount"]
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        """Filter loans so customers only see their own applications."""
+        user = self.request.user
+        if user.role == "customer":
+            return self.queryset.filter(user=user)
+        return self.queryset
+
+    def get_permissions(self):
+        """Map loan-related actions to their required permission classes."""
+        if self.action in ["update", "partial_update", "approve", "pending"]:
+            return [IsStaff()]
+        return [IsCustomer()]
+
+    def perform_create(self, serializer):
+        """Set the applicant (user) when creating a new loan."""
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def approve(self, request, pk=None):
+        """Approve a loan application and initiate disbursement."""
+        loan = self.get_object()
+        user = request.user
+
+        if loan.status != "pending":
+            return Response({"error": "Loan is not pending approval."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Maker-Checker Enforcement
+        if loan.user == request.user:
+            return Response(
+                {"error": "Maker-Checker Violation: You cannot approve your own loan."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            with transaction.atomic():
+                LoanService.approve_loan(loan, approved_by=request.user)
+
+            return Response(
+                {"status": "success", "message": "Loan approved and disbursed.", "data": LoanSerializer(loan).data}
+            )
+        except Exception as e:
+            logger.error(f"Loan approval failed for loan {loan.id}: {e}")
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Failed to approve loan",
+                    "code": "LOAN_APPROVAL_FAILED",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=["get"])
+    def pending(self, request):
+        """Get all pending loan applications filtered by role authority."""
+        user = request.user
+        queryset = self.get_queryset().filter(status="pending")
+
+        # Filter based on role if staff
+        if user.is_staff:
+            if user.role == "operations_manager":
+                # Operations Manager sees < 1000
+                queryset = queryset.filter(amount__lt=1000)
+            elif user.role == "manager":
+                # Manager sees >= 1000
+                queryset = queryset.filter(amount__gte=1000)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

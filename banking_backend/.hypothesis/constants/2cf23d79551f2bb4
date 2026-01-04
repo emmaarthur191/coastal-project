@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0010_message_auth_tag_message_encrypted_content_and_more.py
+# hypothesis_version: 6.148.7
+
+[255, 'auth_tag', 'content', 'core', 'encrypted_content', 'iv', 'message', 'message_type', 'text']

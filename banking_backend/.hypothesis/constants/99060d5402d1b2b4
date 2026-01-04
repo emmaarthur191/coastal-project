@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0007_add_account_closure_request.py
+# hypothesis_version: 6.148.7
+
+['-created_at', 'Account Inactive', 'Approved', 'Completed', 'Compliance Issue', 'Customer Request', 'Fraud Suspected', 'ID', 'Other', 'Pending Review', 'Rejected', 'account', 'account_inactive', 'approved', 'closed_at', 'closure_reason', 'closure_requests', 'completed', 'compliance', 'core', 'core.account', 'created_at', 'customer_request', 'final_balance', 'fraud_suspected', 'id', 'notes', 'ordering', 'other', 'other_reason', 'otp_verified', 'pending', 'phone_number', 'processed_by', 'rejected', 'rejection_reason', 'status', 'submitted_by', 'updated_at', 'verbose_name', 'verbose_name_plural']

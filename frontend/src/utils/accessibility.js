@@ -16,7 +16,7 @@ class AccessibilityTester {
    */
   async runAllTests() {
     console.log(' Starting Accessibility Testing...');
-    
+
     // Core WCAG 2.1 AA tests
     await this.testColorContrast();
     await this.testKeyboardNavigation();
@@ -28,7 +28,7 @@ class AccessibilityTester {
     await this.testMotionPreferences();
     await this.testTouchTargets();
     await this.testResponsiveDesign();
-    
+
     this.generateReport();
   }
 
@@ -37,7 +37,7 @@ class AccessibilityTester {
    */
   async testColorContrast() {
     console.log(' Testing color contrast ratios...');
-    
+
     const elements = document.querySelectorAll('*');
     const colorTests = [
       { selector: '.text-primary', expected: '#0066CC', contrast: 4.5 },
@@ -53,10 +53,10 @@ class AccessibilityTester {
       const styles = window.getComputedStyle(element);
       const backgroundColor = test.bg || styles.backgroundColor;
       const textColor = test.text || styles.color;
-      
+
       const contrast = this.calculateContrast(backgroundColor, textColor);
       const meetsAA = contrast >= 4.5;
-      
+
       this.results.push({
         test: 'Color Contrast',
         element: test.selector,
@@ -77,7 +77,7 @@ class AccessibilityTester {
    */
   async testKeyboardNavigation() {
     console.log('⌨ Testing keyboard navigation...');
-    
+
     const focusableElements = document.querySelectorAll(
       'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
@@ -103,7 +103,7 @@ class AccessibilityTester {
     // Test keyboard shortcuts
     const shortcuts = ['Enter', 'Space', 'Escape', 'ArrowDown', 'ArrowUp'];
     const shortcutTest = this.testKeyboardShortcuts(shortcuts);
-    
+
     this.results.push({
       test: 'Keyboard Navigation',
       focusableElements: focusableElements.length,
@@ -119,7 +119,7 @@ class AccessibilityTester {
    */
   async testScreenReaderCompatibility() {
     console.log(' Testing screen reader compatibility...');
-    
+
     const elements = document.querySelectorAll('img, svg, [aria-label], [aria-labelledby]');
     const imageAltTests = [];
     const ariaTests = [];
@@ -128,7 +128,7 @@ class AccessibilityTester {
     document.querySelectorAll('img').forEach((img, index) => {
       const hasAlt = img.hasAttribute('alt');
       const altText = img.getAttribute('alt');
-      
+
       imageAltTests.push({
         index,
         hasAlt,
@@ -146,7 +146,7 @@ class AccessibilityTester {
     ariaElements.forEach((element, index) => {
       const hasLabel = element.hasAttribute('aria-label') || element.hasAttribute('aria-labelledby');
       const label = element.getAttribute('aria-label') || element.getAttribute('aria-labelledby');
-      
+
       ariaTests.push({
         element: element.tagName.toLowerCase(),
         hasLabel,
@@ -173,7 +173,7 @@ class AccessibilityTester {
    */
   async testFocusManagement() {
     console.log(' Testing focus management...');
-    
+
     const focusableElements = document.querySelectorAll(
       'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
@@ -212,7 +212,7 @@ class AccessibilityTester {
    */
   async testSemanticHTML() {
     console.log(' Testing semantic HTML...');
-    
+
     const semanticElements = {
       'h1, h2, h3, h4, h5, h6': document.querySelectorAll('h1, h2, h3, h4, h5, h6'),
       'main': document.querySelectorAll('main'),
@@ -245,7 +245,7 @@ class AccessibilityTester {
    */
   async testARIA() {
     console.log(' Testing ARIA implementation...');
-    
+
     const ariaElements = document.querySelectorAll('[role], [aria-*]');
     const invalidRoles = [];
     const missingLabels = [];
@@ -254,7 +254,7 @@ class AccessibilityTester {
       const role = element.getAttribute('role');
       const ariaLabel = element.getAttribute('aria-label');
       const ariaLabelledby = element.getAttribute('aria-labelledby');
-      
+
       // Check for invalid ARIA roles
       if (role && !this.isValidARIARole(role)) {
         invalidRoles.push(role);
@@ -289,7 +289,7 @@ class AccessibilityTester {
    */
   async testFormAccessibility() {
     console.log(' Testing form accessibility...');
-    
+
     const forms = document.querySelectorAll('form');
     const formTests = [];
 
@@ -330,13 +330,13 @@ class AccessibilityTester {
    */
   async testMotionPreferences() {
     console.log(' Testing motion preferences...');
-    
+
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const animationElements = document.querySelectorAll('[class*="animate"], [style*="animation"]');
-    
+
     // Check if CSS respects prefers-reduced-motion
     const hasReducedMotionCSS = this.checkReducedMotionCSS();
-    
+
     this.results.push({
       test: 'Motion Preferences',
       respectsPreference: hasReducedMotionCSS,
@@ -355,11 +355,11 @@ class AccessibilityTester {
    */
   async testTouchTargets() {
     console.log(' Testing touch targets...');
-    
+
     const interactiveElements = document.querySelectorAll(
       'a, button, input[type="checkbox"], input[type="radio"], input[type="range"], select'
     );
-    
+
     const smallTargets = [];
     const minSize = 44; // 44px minimum
 
@@ -367,7 +367,7 @@ class AccessibilityTester {
       const rect = element.getBoundingClientRect();
       const width = rect.width;
       const height = rect.height;
-      
+
       if (width < minSize || height < minSize) {
         smallTargets.push({
           element: element.tagName.toLowerCase(),
@@ -395,15 +395,15 @@ class AccessibilityTester {
    */
   async testResponsiveDesign() {
     console.log(' Testing responsive design...');
-    
+
     const viewport = document.querySelector('meta[name="viewport"]');
     const hasViewport = !!viewport;
     const viewportContent = viewport ? viewport.getAttribute('content') || '' : '';
-    
+
     const hasResponsiveCSS = this.checkResponsiveCSS();
-    const textScalable = viewportContent.includes('user-scalable=yes') || 
+    const textScalable = viewportContent.includes('user-scalable=yes') ||
                         !viewportContent.includes('maximum-scale');
-    
+
     this.results.push({
       test: 'Responsive Design',
       hasViewport,
@@ -417,7 +417,7 @@ class AccessibilityTester {
   /**
    * Utility methods
    */
-  
+
   calculateContrast(color1, color2) {
     const getLuminance = (color) => {
       const rgb = this.parseColor(color);
@@ -432,7 +432,7 @@ class AccessibilityTester {
     const l2 = getLuminance(color2);
     const brightest = Math.max(l1, l2);
     const darkest = Math.min(l1, l2);
-    
+
     return (brightest + 0.05) / (darkest + 0.05);
   }
 
@@ -442,13 +442,13 @@ class AccessibilityTester {
     document.body.appendChild(div);
     const computed = window.getComputedStyle(div).color;
     document.body.removeChild(div);
-    
+
     const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     return match ? match.slice(1, 4).map(Number) : [0, 0, 0];
   }
 
   isElementFocusable(element) {
-    return !element.disabled && 
+    return !element.disabled &&
            !element.getAttribute('hidden') &&
            !element.getAttribute('aria-hidden') &&
            (element.offsetWidth > 0 || element.offsetHeight > 0);
@@ -456,7 +456,7 @@ class AccessibilityTester {
 
   hasVisibleFocusIndicator(element) {
     const style = window.getComputedStyle(element, ':focus');
-    return style.outline !== 'none' || 
+    return style.outline !== 'none' ||
            style.boxShadow !== 'none' ||
            style.border !== 'none';
   }
@@ -491,16 +491,16 @@ class AccessibilityTester {
     // Check for proper nesting
     let previousLevel = 0;
     const levels = [];
-    
-    for (let heading of headings) {
+
+    for (const heading of headings) {
       const level = parseInt(heading.tagName.charAt(1));
       levels.push(level);
-      
+
       if (level > previousLevel + 1) {
-        return { 
-          valid: false, 
-          issue: `Heading level ${level} follows level ${previousLevel}`, 
-          details: levels.join(', ') 
+        return {
+          valid: false,
+          issue: `Heading level ${level} follows level ${previousLevel}`,
+          details: levels.join(', ')
         };
       }
       previousLevel = level;
@@ -512,7 +512,7 @@ class AccessibilityTester {
   checkLandmarkRoles() {
     const landmarks = {};
     const selectors = ['main', 'nav', 'aside', 'section', 'header', 'footer'];
-    
+
     selectors.forEach(selector => {
       const count = document.querySelectorAll(selector).length;
       if (count > 0) {
@@ -525,17 +525,17 @@ class AccessibilityTester {
 
   isValidARIARole(role) {
     const validRoles = [
-      'alert', 'alertdialog', 'application', 'article', 'banner', 'button', 
-      'cell', 'checkbox', 'columnheader', 'combobox', 'complementary', 
-      'contentinfo', 'definition', 'dialog', 'directory', 'document', 
-      'feed', 'figure', 'form', 'grid', 'gridcell', 'group', 'heading', 
-      'img', 'link', 'list', 'listbox', 'listitem', 'log', 'main', 
-      'marquee', 'math', 'menu', 'menubar', 'menuitem', 'menuitemcheckbox', 
-      'menuitemradio', 'navigation', 'none', 'note', 'option', 'presentation', 
-      'progressbar', 'radio', 'radiogroup', 'region', 'row', 'rowgroup', 
-      'rowheader', 'scrollbar', 'search', 'searchbox', 'separator', 'slider', 
-      'spinbutton', 'status', 'switch', 'tab', 'table', 'tablist', 'tabpanel', 
-      'term', 'textbox', 'timer', 'toolbar', 'tooltip', 'tree', 'treegrid', 
+      'alert', 'alertdialog', 'application', 'article', 'banner', 'button',
+      'cell', 'checkbox', 'columnheader', 'combobox', 'complementary',
+      'contentinfo', 'definition', 'dialog', 'directory', 'document',
+      'feed', 'figure', 'form', 'grid', 'gridcell', 'group', 'heading',
+      'img', 'link', 'list', 'listbox', 'listitem', 'log', 'main',
+      'marquee', 'math', 'menu', 'menubar', 'menuitem', 'menuitemcheckbox',
+      'menuitemradio', 'navigation', 'none', 'note', 'option', 'presentation',
+      'progressbar', 'radio', 'radiogroup', 'region', 'row', 'rowgroup',
+      'rowheader', 'scrollbar', 'search', 'searchbox', 'separator', 'slider',
+      'spinbutton', 'status', 'switch', 'tab', 'table', 'tablist', 'tabpanel',
+      'term', 'textbox', 'timer', 'toolbar', 'tooltip', 'tree', 'treegrid',
       'treeitem'
     ];
     return validRoles.includes(role);
@@ -544,16 +544,16 @@ class AccessibilityTester {
   checkInputLabelPairs(form) {
     const inputs = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
     const labels = form.querySelectorAll('label');
-    
+
     let paired = 0;
     inputs.forEach(input => {
       const id = input.getAttribute('id');
-      const hasLabel = labels.some(label => 
-        label.getAttribute('for') === id || 
+      const hasLabel = labels.some(label =>
+        label.getAttribute('for') === id ||
         label.contains(input)
       );
       const hasAriaLabel = input.hasAttribute('aria-label') || input.hasAttribute('aria-labelledby');
-      
+
       if (hasLabel || hasAriaLabel) {
         paired++;
       }
@@ -571,7 +571,7 @@ class AccessibilityTester {
         return '';
       }
     }).join(' ');
-    
+
     return styles.includes('@media (prefers-reduced-motion: reduce)') ||
            styles.includes('@media (prefers-reduced-motion:reduce)');
   }
@@ -585,7 +585,7 @@ class AccessibilityTester {
         return '';
       }
     }).join(' ');
-    
+
     return styles.includes('@media') && styles.includes('max-width');
   }
 
@@ -593,7 +593,7 @@ class AccessibilityTester {
     const focusableElements = modal.querySelectorAll(
       'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     return {
       passed: focusableElements.length > 0,
       details: `${focusableElements.length} focusable elements in modal`
@@ -604,7 +604,7 @@ class AccessibilityTester {
     const role = element.getAttribute('role');
     const ariaLabel = element.getAttribute('aria-label');
     const ariaLabelledby = element.getAttribute('aria-labelledby');
-    
+
     return role || ariaLabel || ariaLabelledby || 'Unknown';
   }
 
@@ -613,43 +613,43 @@ class AccessibilityTester {
    */
   generateReport() {
     console.log('\n ACCESSIBILITY TEST RESULTS\n' + '='.repeat(50));
-    
+
     // Summary
     const passedTests = this.results.filter(r => r.passed).length;
     const totalTests = this.results.length;
-    
+
     console.log(` Passed: ${passedTests}/${totalTests} tests`);
     console.log(` Errors: ${this.errors.length}`);
     console.log(` Warnings: ${this.warnings.length}`);
     console.log(` Violations: ${this.violations.length}`);
-    
+
     // Detailed results
     console.log('\n DETAILED RESULTS:');
     this.results.forEach((result, index) => {
       const status = result.passed ? '' : '';
       console.log(`${status} ${result.test}: ${result.details}`);
     });
-    
+
     // Issues
     if (this.errors.length > 0) {
       console.log('\n ERRORS:');
       this.errors.forEach(error => console.log(`• ${error}`));
     }
-    
+
     if (this.warnings.length > 0) {
       console.log('\n WARNINGS:');
       this.warnings.forEach(warning => console.log(`• ${warning}`));
     }
-    
+
     if (this.violations.length > 0) {
       console.log('\n VIOLATIONS:');
       this.violations.forEach(violation => console.log(`• ${violation}`));
     }
-    
+
     // WCAG 2.1 AA Score
     const complianceScore = Math.round((passedTests / totalTests) * 100);
     console.log(`\n WCAG 2.1 AA COMPLIANCE: ${complianceScore}%`);
-    
+
     if (complianceScore >= 95) {
       console.log(' Excellent! Meets WCAG 2.1 AA standards');
     } else if (complianceScore >= 80) {
@@ -657,7 +657,7 @@ class AccessibilityTester {
     } else {
       console.log(' Needs improvement to meet WCAG 2.1 AA standards');
     }
-    
+
     // Recommendations
     console.log('\n RECOMMENDATIONS:');
     if (this.errors.length > 0) {
@@ -671,7 +671,7 @@ class AccessibilityTester {
       console.log('• Test with actual assistive technologies (screen readers, keyboard only)');
       console.log('• Conduct user testing with people with disabilities');
     }
-    
+
     // Save results
     this.saveResults();
   }
@@ -690,10 +690,10 @@ class AccessibilityTester {
         total: this.results.length
       }
     };
-    
+
     // Log the report for now - in production, send to analytics/monitoring
     console.log(' Accessibility Report:', report);
-    
+
     // Store in localStorage for debugging
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('accessibilityReport', JSON.stringify(report, null, 2));

@@ -1,7 +1,19 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
-export const ThemeToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
+/**
+ * Props for the ThemeToggle component.
+ */
+interface ThemeToggleProps {
+    /** Additional CSS classes to apply to the toggle container. */
+    className?: string;
+}
+
+/**
+ * A switch component that allows users to toggle between Light and Dark themes.
+ * Uses the Global Theme Context to persist preferences.
+ */
+export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     const { theme, toggleTheme } = useTheme();
 
     return (

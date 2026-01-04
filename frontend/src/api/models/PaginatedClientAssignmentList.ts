@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { ClientAssignment } from './ClientAssignment';
 export type PaginatedClientAssignmentList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<ClientAssignment>;
+    results?: Array<ClientAssignment>;
 };
 

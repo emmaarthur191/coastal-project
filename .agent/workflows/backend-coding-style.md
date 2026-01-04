@@ -45,18 +45,18 @@ def process(self, request):
     """Clear docstring explaining the action."""
     from decimal import Decimal
     from users.models import User
-    
+
     # Get and validate inputs
     data = request.data.get('field')
     if not data:
         return Response({'error': 'field is required'}, status=400)
-    
+
     # Get related objects
     try:
         obj = Model.objects.get(id=data)
     except Model.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
-    
+
     # Process operation
     try:
         # business logic here

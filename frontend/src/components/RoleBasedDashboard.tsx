@@ -2,7 +2,10 @@ import React, { lazy, Suspense, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PageLoading from './PageLoading';
 
-// Lazy load dashboards by role
+/**
+ * Lazy-loaded dashboard components mapped by role.
+ * Using code-splitting to reduce the initial bundle size.
+ */
 const dashboards = {
   member: lazy(() => import('../pages/MemberDashboard')),
   cashier: lazy(() => import('../pages/CashierDashboard')),
@@ -12,6 +15,17 @@ const dashboards = {
   default: lazy(() => import('../pages/Dashboard')),
 };
 
+/**
+ * A dynamic dashboard router that automatically selects and renders the appropriate
+ * dashboard view based on the current user's role.
+ *
+ * It utilizes:
+ * - React.lazy for efficient component loading.
+ * - Suspense for displaying a loading state (PageLoading) during transitions.
+ * - useMemo to prevent unnecessary re-calculating the dashboard component on every render.
+ *
+ * @returns The rendered dashboard component wrapped in a Suspense boundary.
+ */
 const RoleBasedDashboard: React.FC = () => {
   const { user } = useAuth();
 
@@ -19,7 +33,7 @@ const RoleBasedDashboard: React.FC = () => {
     if (!user?.role) return dashboards.default;
 
     // Map user roles to dashboard components
-    const roleMapping: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
+    const roleMapping: Record<string, React.LazyExoticComponent<React.ComponentType<object>>> = {
       'member': dashboards.member,
       'cashier': dashboards.cashier,
       'manager': dashboards.manager,

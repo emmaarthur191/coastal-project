@@ -1,12 +1,26 @@
 import React, { ButtonHTMLAttributes, ElementType } from 'react';
 
+/**
+ * Props for the Button component.
+ */
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+    /** The visual style variant of the button. Defaults to 'primary'. */
     variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost';
+    /** The size of the button. Defaults to 'md'. */
     size?: 'sm' | 'md' | 'lg';
+    /** Optional icon to display before the button text. */
     icon?: ElementType;
+    /** Additional CSS classes to apply to the button. */
     className?: string; // Explicitly allow className
 }
 
+/**
+ * A highly customizable, accessible button component with multiple variants and sizes.
+ * Supports glassmorphism effects and micro-animations.
+ *
+ * @param props - The properties to configure the button.
+ * @returns A styled HTML button element.
+ */
 export const Button: React.FC<ButtonProps> = ({
     children,
     onClick,

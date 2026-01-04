@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\signals.py
+# hypothesis_version: 6.148.7
+
+[500, '%m', '%y', ',', '-', 'HTTP_USER_AGENT', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR', 'admin', 'attempted_email', 'cashier', 'email', 'failed_login', 'login', 'logout', 'manager', 'method', 'mobile_banker', 'operations_manager', 'request', 'staff_id', 'user', 'username']

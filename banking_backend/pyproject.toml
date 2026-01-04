@@ -1,0 +1,165 @@
+# =============================================================================
+# Coastal Banking Backend - Python Project Configuration
+# =============================================================================
+# Configuration for Python tools following PEP 517/518 standards.
+# This file centralizes all tool configurations for consistency.
+# =============================================================================
+
+[project]
+name = "coastal-banking-backend"
+version = "1.0.0"
+description = "Django REST Framework backend for Coastal Banking application"
+requires-python = ">=3.10"
+
+# =============================================================================
+# Ruff Linter & Formatter Configuration
+# https://docs.astral.sh/ruff/configuration/
+# =============================================================================
+
+[tool.ruff]
+# Same as Black default
+line-length = 120
+indent-width = 4
+
+# Target Python version for syntax checking
+target-version = "py310"
+
+# Exclude common directories that shouldn't be linted
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "migrations",
+    "staticfiles",
+    "media",
+    "*.pyc",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+# Enable recommended rule sets
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (Python version upgrades)
+    "B",      # flake8-bugbear (common bugs and design problems)
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T10",    # flake8-debugger
+    "DJ",     # flake8-django
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "RUF",    # Ruff-specific rules
+    "D",      # pydocstyle (docstrings)
+]
+
+# Ignore specific rules that may conflict with Django patterns
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "E402",   # Module level import not at top (Django scripts need django.setup() first)
+    "DJ001",  # Avoid using null=True on string-based fields (Django convention)
+    "B904",   # raise without from inside except (acceptable for custom exceptions)
+    "RUF005", # Consider iterable unpacking instead of concatenation (stylistic)
+    "RUF012", # Mutable class attributes should be annotated with typing.ClassVar
+    "RUF013", # PEP 484 prohibits implicit Optional (existing code pattern)
+    "N806",   # Variable in function should be lowercase (Django User model pattern)
+    "N818",   # Exception name should end with Error suffix (BankingException is ok)
+    "SIM102", # Use a single `if` statement instead of nested `if` statements (readability)
+    "SIM103", # Return condition directly instead of if-else-return (readability)
+    "SIM105", # Use contextlib.suppress instead of try-except-pass (stylistic)
+    "SIM108", # Use ternary operator instead of if-else-block (readability preference)
+    "SIM401", # Use dict.get instead of if-else-block (readability preference)
+    "DTZ005", # datetime.now() without tz argument (project uses naive datetimes)
+    "DTZ006", # datetime.fromtimestamp() without tz argument (same reason)
+    "DTZ007", # datetime.strptime() without %z (acceptable for date-only parsing)
+    "DTZ011", # date.today() used (acceptable for date-only comparisons)
+    "UP031",  # Use format specifiers instead of % formatting (existing code pattern)
+]
+
+# Allow autofix for all enabled rules (when --fix is used)
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# Test files can use assert and have longer lines
+"tests/**/*.py" = ["S101", "E501"]
+"**/tests.py" = ["S101", "E501"]
+"**/test_*.py" = ["S101", "E501"]
+# Settings file often has complex configurations
+"config/settings.py" = ["E501"]
+# Admin files often have complex field lists
+"**/admin.py" = ["E501"]
+# Standalone scripts that require django.setup() before imports
+"verify_*.py" = ["E402"]
+"fix_*.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+# Django apps should be recognized as first-party
+known-first-party = ["core", "users", "config"]
+section-order = ["future", "standard-library", "django", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+django = ["django", "rest_framework"]
+
+[tool.ruff.format]
+# Use double quotes for strings (PEP 8 recommendation)
+quote-style = "double"
+
+# Indent with spaces (PEP 8)
+indent-style = "space"
+
+# Use Unix-style line endings
+line-ending = "lf"
+
+# =============================================================================
+# Pytest Configuration
+# https://docs.pytest.org/en/stable/reference/customize.html
+# =============================================================================
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "-ra",
+    "-q",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "security: marks tests as security-focused tests",
+]
+
+# =============================================================================
+# Coverage Configuration
+# https://coverage.readthedocs.io/en/latest/config.html
+# =============================================================================
+
+[tool.coverage.run]
+source = ["core", "users"]
+branch = true
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/admin.py",
+    "manage.py",
+    "conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+fail_under = 80
+show_missing = true

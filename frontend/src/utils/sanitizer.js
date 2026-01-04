@@ -13,7 +13,7 @@ export const sanitizeHTML = (dirty, options = {}) => {
 
   // Default options for banking application
   const defaultOptions = {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'],
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'b', 'i'],
     ALLOWED_ATTR: [],
     ALLOW_DATA_ATTR: false,
     ...options
@@ -32,12 +32,12 @@ export const sanitizeText = (text) => {
     return '';
   }
 
-  // Escape HTML entities
+  // Escape HTML entities correctly
   return text
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;');
 };

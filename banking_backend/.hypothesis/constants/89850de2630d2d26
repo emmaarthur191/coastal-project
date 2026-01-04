@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0017_servicecharge.py
+# hypothesis_version: 6.148.7
+
+[100, 'Amount or Percentage', 'Fixed Amount', 'ID', 'Percentage', 'ServiceCharge', 'applicable_to', 'charge_type', 'core', 'created_at', 'description', 'fixed', 'id', 'is_active', 'name', 'percentage', 'rate', 'updated_at']

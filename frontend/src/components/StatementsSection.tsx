@@ -1,0 +1,85 @@
+import React from 'react';
+
+function StatementsSection({ formData, setFormData, handleGenerateStatement }) {
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '16px',
+      padding: '30px',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      border: '1px solid #e2e8f0'
+    }}>
+      <h3 style={{
+        margin: '0 0 24px 0',
+        color: '#1e293b',
+        fontSize: '20px',
+        fontWeight: '600',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px'
+      }}>
+         Generate Client Statements
+      </h3>
+      <form onSubmit={(e) => { e.preventDefault(); handleGenerateStatement(); }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '600' }}>User ID</label>
+          <input
+            type="text"
+            value={formData.user_id || ''}
+            onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+            style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+            required
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '600' }}>Format</label>
+          <select
+            value={formData.format || 'pdf'}
+            onChange={(e) => setFormData({...formData, format: e.target.value})}
+            style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+          >
+            <option value="pdf">PDF</option>
+            <option value="csv">CSV</option>
+            <option value="xlsx">Excel</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '600' }}>Date From</label>
+          <input
+            type="date"
+            value={formData.date_from || ''}
+            onChange={(e) => setFormData({...formData, date_from: e.target.value})}
+            style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+            required
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '600' }}>Date To</label>
+          <input
+            type="date"
+            value={formData.date_to || ''}
+            onChange={(e) => setFormData({...formData, date_to: e.target.value})}
+            style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+            required
+          />
+        </div>
+        <div style={{ gridColumn: 'span 2' }}>
+          <button type="submit" style={{
+            width: '100%',
+            padding: '12px',
+            background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}>
+            Generate Statement
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export default StatementsSection;

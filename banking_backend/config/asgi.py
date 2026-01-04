@@ -1,5 +1,4 @@
-"""
-ASGI config for banking_backend project.
+"""ASGI config for banking_backend project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -9,25 +8,25 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 
 import os
 
-from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+from channels.routing import ProtocolTypeRouter, URLRouter
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
 # Import routing and middleware after Django setup
-from .routing import websocket_urlpatterns
-from .channels_middleware import TokenAuthMiddleware
 from channels.security.websocket import AllowedHostsOriginValidator
 
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        TokenAuthMiddleware(
-            URLRouter(websocket_urlpatterns)
-        )
-    ),
-})
+from .channels_middleware import TokenAuthMiddleware
+from .routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter(
+    {
+        "http": django_asgi_app,
+        "websocket": AllowedHostsOriginValidator(TokenAuthMiddleware(URLRouter(websocket_urlpatterns))),
+    }
+)

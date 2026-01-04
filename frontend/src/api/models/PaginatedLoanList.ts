@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { Loan } from './Loan';
 export type PaginatedLoanList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<Loan>;
+    results?: Array<Loan>;
 };
 

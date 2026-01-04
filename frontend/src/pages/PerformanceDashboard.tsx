@@ -201,7 +201,7 @@ function PerformanceDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {metrics.map((metric, index) => (
                 <div key={index} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden">
-                  <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10 
+                  <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10
                        ${metric.status === 'good' ? 'bg-emerald-500' : metric.status === 'warning' ? 'bg-amber-500' : 'bg-red-500'}
                    `}></div>
 

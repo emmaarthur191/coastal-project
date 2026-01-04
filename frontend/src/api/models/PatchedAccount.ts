@@ -2,12 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { AccountTypeEnum } from './AccountTypeEnum';
+import type { AccountAccountTypeEnum } from './AccountAccountTypeEnum';
 export type PatchedAccount = {
     readonly id?: number;
     readonly user?: number;
     account_number?: string;
-    account_type?: AccountTypeEnum;
+    account_type?: AccountAccountTypeEnum;
     readonly account_type_display?: string;
     balance?: string;
     readonly calculated_balance?: string;

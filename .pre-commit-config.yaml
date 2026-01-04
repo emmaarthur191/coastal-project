@@ -1,0 +1,59 @@
+repos:
+  # Ruff - Python linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix, --config, banking_backend/pyproject.toml]
+        files: ^banking_backend/
+      - id: ruff-format
+        args: [--config, banking_backend/pyproject.toml]
+        files: ^banking_backend/
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(frontend/node_modules/|\.min\.|frontend/dist/)
+      - id: end-of-file-fixer
+        exclude: ^(frontend/node_modules/|\.min\.|frontend/dist/)
+      - id: check-yaml
+        args: ['--allow-multiple-documents']  # Allow k8s multi-doc YAML
+        exclude: ^(frontend/node_modules/)
+      - id: check-json
+        exclude: ^(frontend/|security_audit.*\.json)  # Exclude frontend and audit files
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+      - id: detect-private-key
+        exclude: ^(frontend/node_modules/)
+
+  # ESLint for Frontend TypeScript/JavaScript
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint (Frontend)
+        entry: npm run --prefix frontend lint
+        language: system
+        files: ^frontend/src/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        stages: [commit]
+
+  # Django System Check
+  - repo: local
+    hooks:
+      - id: django-check
+        name: Django System Check
+        entry: python banking_backend/manage.py check --fail-level WARNING
+        language: system
+        files: ^banking_backend/.*\.py$
+        pass_filenames: false
+        stages: [commit]
+
+# CI settings
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+  autoupdate_commit_msg: |
+    [pre-commit.ci] pre-commit autoupdate

@@ -61,7 +61,7 @@ erDiagram
 
     %% CASHIER OPERATIONS
     CashDrawer ||--o{ CashDrawerDenomination : "contains"
-    
+
     CashDrawer {
         int id PK
         string drawer_number
@@ -88,7 +88,7 @@ erDiagram
     %% COMMUNICATION
     MessageThread ||--o{ Message : "contains"
     MessageThread }|--|{ User : "participants"
-    
+
     MessageThread {
         int id PK
         string subject
@@ -113,13 +113,13 @@ erDiagram
 
     %% PRODUCTS & REQUESTS
     Product ||--o{ Promotion : "featured in"
-    
+
     Product {
         int id PK
         string name
         string type
     }
-    
+
     ServiceRequest {
         int id PK
         string type "statement, card"
@@ -136,7 +136,7 @@ erDiagram
 
     %% REPORTS
     ReportTemplate ||--o{ Report : "generates"
-    
+
     Report {
         int id PK
         string title
