@@ -26,14 +26,12 @@ const ProtectedMemberRoute: React.FC<ProtectedMemberRouteProps> = ({ children })
 
   // CRITICAL: Wait for auth loading to complete before making decisions
   if (loading) {
-    // eslint-disable-next-line no-console
     console.warn('[DEBUG] ProtectedMemberRoute: Still loading auth state...');
     return <PageLoading />;
   }
 
   // Not authenticated - redirect to login
   if (!isAuthenticated || !user) {
-    // eslint-disable-next-line no-console
     console.warn('[DEBUG] ProtectedMemberRoute: Not authenticated, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
@@ -41,14 +39,12 @@ const ProtectedMemberRoute: React.FC<ProtectedMemberRouteProps> = ({ children })
   // Check if we're in test mode - allow all authenticated users
   const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
   if (isTestMode) {
-    // eslint-disable-next-line no-console
     console.warn('[DEBUG] Test mode enabled - allowing member dashboard access for all authenticated users');
     return children;
   }
 
   // Only allow customers to access member routes
   if (user.role !== 'customer') {
-    // eslint-disable-next-line no-console
     console.warn('[DEBUG] ProtectedMemberRoute: User role is', user.role, 'redirecting...');
 
     // Redirect based on role

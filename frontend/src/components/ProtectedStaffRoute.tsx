@@ -54,7 +54,6 @@ const ProtectedStaffRoute: React.FC<ProtectedStaffRouteProps> = ({
 
     // Redirect to login if not authenticated
     if (!isAuthenticated || !user) {
-        // eslint-disable-next-line no-console
         console.warn('ProtectedStaffRoute: Auth failed or no user - network issue? Redirecting to login.');
         return <Navigate to="/login" replace />;
     }

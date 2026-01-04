@@ -2,7 +2,7 @@
 import TransactionForm from '../components/TransactionForm';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
-import { api } from '../services/api.ts';
+import { api, authService } from '../services/api.ts';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
@@ -250,7 +250,7 @@ const CashierDashboard: React.FC = () => {
   const fetchRefunds = async () => { setRefundsLoading(true); try { const r = await api.get('banking/refunds/'); setRefunds(r.data || []); } catch (e) { console.error(e); } finally { setRefundsLoading(false); } };
   const fetchComplaints = async () => { setComplaintsLoading(true); try { const r = await api.get('banking/complaints/'); setComplaints(r.data || []); } catch (e) { console.error(e); } finally { setComplaintsLoading(false); } };
   // @ts-ignore
-  const fetchFraudAlerts = async () => { setFraudLoading(true); try { const r = await api.get('fraud/alerts/', { params: { status: 'all' } }); setFraudAlerts(Array.isArray(r.data) ? r.data : (r.data?.results || [])); } catch (e) { console.error(e); } finally { setFraudLoading(false); } };
+  const fetchFraudAlerts = async () => { setFraudLoading(true); try { const r = await authService.getFraudAlerts({ status: 'all' }); setFraudAlerts(Array.isArray(r.data) ? r.data : (r.data?.results || [])); } catch (e) { console.error(e); } finally { setFraudLoading(false); } };
   const fetchFraudStats = async () => { try { const r = await api.get('fraud/alerts/dashboard_stats/'); setFraudStats(r.data || {}); } catch (e) { console.error(e); } };
   const fetchPerformanceData = async () => {
     setPerformanceLoading(true);
