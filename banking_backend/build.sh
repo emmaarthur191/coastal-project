@@ -15,21 +15,17 @@ python manage.py collectstatic --noinput
 
 echo "=== Running database migrations ==="
 # =========================================================================
-# FIX: Database Schema Repair Strategy
-# Problem: Migration 0020 contains both AddField(initial_balance) AND 
-# CreateModel(Message). The core_message table exists but initial_balance
-# column doesn't. We can't simply fake 0020 because that skips AddField too.
-#
-# Solution:
-# 1. Run repair_db.py to add initial_balance column via raw SQL
-# 2. Fake 0020 (Message tables already exist, initial_balance now exists)
-# 3. Run all remaining migrations normally
+# FIX: Sync Django migration history with production database schema
+# Problem: Production DB has schema changes from 0020 and 0021 applied
+# but Django's django_migrations table doesn't know about them.
+# Solution: Fake 0020 and 0021, then run remaining migrations normally.
 # =========================================================================
 echo "=== Step 1: Run database repair script ==="
 python repair_db.py || echo "Repair script completed (errors non-fatal)"
 
-echo "=== Step 2: Fake migration 0020 (if not already applied) ==="
+echo "=== Step 2: Fake migrations 0020 and 0021 (already in DB) ==="
 python manage.py migrate core 0020_add_initial_balance_and_quantize --fake --noinput || echo "0020 may already be applied"
+python manage.py migrate core 0021_add_maker_checker_fields --fake --noinput || echo "0021 may already be applied"
 
 echo "=== Step 3: Run all remaining migrations ==="
 python manage.py migrate --noinput
