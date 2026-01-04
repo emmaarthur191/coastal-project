@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class SystemHealthView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     def get(self, request):
         """Return a detailed system health report including database connectivity and service status."""
@@ -47,6 +48,7 @@ class HealthCheckView(APIView):
     """Simple health check endpoint for load balancers."""
 
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     def get(self, request):
         """Return a simple HTTP 200 OK status for basic health checks."""

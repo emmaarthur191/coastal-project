@@ -7,6 +7,7 @@ cash advances, and check deposits.
 import logging
 from decimal import Decimal
 
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from rest_framework import mixins
 from rest_framework.decorators import action
@@ -17,9 +18,19 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import CashAdvance, CashDrawer
+from core.models import (
+    Account,
+    CashAdvance,
+    CashDrawer,
+    CashDrawerDenomination,
+    CheckDeposit,
+)
 from core.permissions import IsStaff
-from core.serializers import CashAdvanceSerializer, CashDrawerSerializer
+from core.serializers import (
+    CashAdvanceSerializer,
+    CashDrawerSerializer,
+    CheckDepositSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +91,6 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def disburse(self, request, pk=None):
         """Disburse an approved cash advance."""
-        from .models import CashAdvance
-
         try:
             advance = CashAdvance.objects.select_related("user").get(pk=pk)
 
@@ -102,8 +111,6 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def repay(self, request, pk=None):
         """Mark a cash advance as repaid."""
-        from .models import CashAdvance
-
         try:
             advance = CashAdvance.objects.select_related("user").get(pk=pk)
 
@@ -147,8 +154,6 @@ class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins
     @action(detail=True, methods=["post"])
     def close(self, request, pk=None):
         """Close a cash drawer."""
-        from .models import CashDrawer, CashDrawerDenomination
-
         try:
             drawer = CashDrawer.objects.get(pk=pk, cashier=request.user)
             if drawer.status != "open":
@@ -180,8 +185,6 @@ class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def reconcile(self, request, pk=None):
         """Reconcile a closed cash drawer."""
-        from .models import CashDrawer
-
         try:
             drawer = CashDrawer.objects.get(pk=pk)
             if drawer.status != "closed":
@@ -205,24 +208,18 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
 
     def get_queryset(self):
         """Return check deposits based on user role (staff see all, customers see own)."""
-        from .models import CheckDeposit
-
         if self.request.user.role in ["staff", "cashier", "manager", "admin", "superuser"]:
             return CheckDeposit.objects.all()
         return CheckDeposit.objects.filter(account__user=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer class for check deposits."""
-        from .serializers import CheckDepositSerializer
-
         return CheckDepositSerializer
 
     @action(detail=False, methods=["post"])
     def process_check_deposit(self, request):
         """Process a check deposit from the cashier dashboard."""
         import uuid
-
-        from .models import Account, CheckDeposit
 
         try:
             member_id = request.data.get("member_id")
@@ -265,10 +262,6 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def approve(self, request, pk=None):
         """Approve a check deposit and credit the account."""
-        from django.core.exceptions import PermissionDenied
-
-        from .models import CheckDeposit
-
         try:
             check = CheckDeposit.objects.select_related("submitted_by").get(pk=pk)
 
@@ -293,8 +286,6 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def reject(self, request, pk=None):
         """Reject a check deposit."""
-        from .models import CheckDeposit
-
         try:
             check = CheckDeposit.objects.get(pk=pk)
             if check.status != "pending":

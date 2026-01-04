@@ -15,7 +15,9 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from core.models import Product, Promotion
 from core.permissions import IsStaff
+from core.serializers import ProductSerializer, PromotionSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +34,11 @@ class ProductViewSet(
     ordering = ["product_type", "name"]
 
     def get_queryset(self):
-        """Return the list of currently active bank products."""
-        from core.models import Product
-
-        return Product.objects.filter(is_active=True)
+        """Return the list of all products."""
+        return Product.objects.all()
 
     def get_serializer_class(self):
-        """Return the serializer class for product management."""
-        from core.serializers import ProductSerializer
-
+        """Return the serializer class for products."""
         return ProductSerializer
 
     def get_permissions(self):
@@ -61,14 +59,10 @@ class PromotionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
 
     def get_queryset(self):
         """Return the list of all promotional offers."""
-        from core.models import Promotion
-
         return Promotion.objects.all()
 
     def get_serializer_class(self):
         """Return the serializer class for promotions."""
-        from core.serializers import PromotionSerializer
-
         return PromotionSerializer
 
     def get_permissions(self):
@@ -80,8 +74,6 @@ class PromotionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
     @action(detail=False, methods=["get"])
     def active(self, request):
         """Get currently active promotions."""
-        from .models import Promotion
-
         today = timezone.now().date()
         active_promos = Promotion.objects.filter(is_active=True, start_date__lte=today, end_date__gte=today)
         serializer = self.get_serializer_class()(active_promos, many=True)
@@ -90,8 +82,6 @@ class PromotionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
     @action(detail=True, methods=["post"])
     def enroll(self, request, pk=None):
         """Enroll customer in a promotion."""
-        from .models import Promotion
-
         try:
             promotion = Promotion.objects.get(pk=pk)
             if not promotion.is_currently_active:

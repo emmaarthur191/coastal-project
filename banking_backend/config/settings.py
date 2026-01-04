@@ -253,7 +253,7 @@ REST_FRAMEWORK = {
         "anon": "100/hour",  # Anonymous users: 100 requests per hour
         "user": "1000/hour",  # Authenticated users: 1000 requests per hour
         # Authentication endpoint limits (critical security)
-        "login": "5/5m",  # Login: 5 attempts per 5 minutes (brute-force protection)
+        "login": "5/m",  # Login: 5 attempts per minute (brute-force protection)
         "otp_verify": "3/5m",  # OTP verification: 3 attempts per 5 minutes
         "otp_request": "3/hour",  # OTP request: 3 per hour (SMS spam prevention)
         "password_reset": "3/hour",  # Password reset: 3 per hour (enumeration prevention)
