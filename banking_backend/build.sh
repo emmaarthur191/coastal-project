@@ -16,13 +16,9 @@ python manage.py collectstatic --noinput
 echo "=== Running database migrations ==="
 # Try normal migration first, if it fails due to existing tables/columns, fake ALL core migrations
 # Run database migrations - Fail build if migration fails
-echo "=== REPAIRING MIGRATION STATE (One-time Fix) ==="
-# Force Django to think we are at 0019, then allow it to apply 0020+ really
-python manage.py migrate core 0019 --fake --noinput
-python manage.py migrate core --noinput
-
-echo "=== Running remaining migrations ==="
-python manage.py migrate --noinput
+# Run database migrations using --fake-initial to handle existing tables
+echo "=== Running database migrations (--fake-initial) ==="
+python manage.py migrate --fake-initial --noinput
 
 echo "=== Creating initial users ==="
 python manage.py create_initial_users
