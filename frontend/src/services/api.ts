@@ -1668,18 +1668,6 @@ export const apiService = {
   },
 
   /**
-   * Approves a loan by ID.
-   */
-  async approveLoan(loanId: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post(`banking/loans/${loanId}/approve/`);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to approve loan' };
-    }
-  },
-
-  /**
    * Generates a payslip.
    */
   async generatePayslip(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
