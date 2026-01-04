@@ -230,10 +230,17 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
                 opening_request.save()
 
                 # Automated Account Creation upon approval
-                AccountService.create_account(
+                new_account = AccountService.create_account(
                     user=opening_request.submitted_by,
                     account_type=opening_request.account_type,
                     initial_balance=opening_request.initial_deposit,
+                )
+
+                # Send welcome message with account number to the account owner
+                self._send_account_welcome_message(
+                    user=opening_request.submitted_by,
+                    account=new_account,
+                    approved_by=request.user,
                 )
 
             return Response(
@@ -253,6 +260,43 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    def _send_account_welcome_message(self, user, account, approved_by):
+        """Send a welcome message with account number to the new account owner."""
+        from core.models import BankingMessage
+
+        try:
+            # Create welcome message
+            account_type_display = dict(Account.ACCOUNT_TYPES).get(account.account_type, account.account_type)
+            
+            welcome_message = f"""🎉 Welcome to Coastal Credit Union!
+
+Your {account_type_display} account has been successfully created.
+
+📋 Account Details:
+━━━━━━━━━━━━━━━━━━━━━
+Account Number: {account.account_number}
+Account Type: {account_type_display}
+Opening Balance: GHS {account.balance:,.2f}
+━━━━━━━━━━━━━━━━━━━━━
+
+You can now use this account for deposits, withdrawals, and transfers.
+
+Thank you for choosing Coastal Credit Union!
+
+Best regards,
+Coastal Credit Union Team"""
+
+            BankingMessage.objects.create(
+                user=user,
+                subject=f"Welcome! Your {account_type_display} Account is Ready",
+                body=welcome_message,
+                is_read=False,
+            )
+            logger.info(f"Sent welcome message to {user.email} for account {account.account_number}")
+        except Exception as e:
+            # Don't fail account creation if message sending fails
+            logger.error(f"Failed to send welcome message to {user.email}: {e}")
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
