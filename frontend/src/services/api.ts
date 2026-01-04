@@ -1612,7 +1612,7 @@ export const apiService = {
    */
   async getStaffAccounts(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('banking/accounts/');
+      const response = await api.get('banking/staff-accounts/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch accounts' };
@@ -1624,7 +1624,7 @@ export const apiService = {
    */
   async getStaffAccountsSummary(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('banking/accounts/summary/');
+      const response = await api.get('accounts/summary/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch account summary' };
@@ -1648,7 +1648,7 @@ export const apiService = {
    */
   async getCashFlow(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('banking/cash-flow/');
+      const response = await api.get('operations/cash-flow/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch cash flow' };
@@ -1660,7 +1660,7 @@ export const apiService = {
    */
   async getExpenses(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('banking/expenses/');
+      const response = await api.get('operations/expenses/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch expenses' };
