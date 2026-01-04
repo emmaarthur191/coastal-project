@@ -1,0 +1,80 @@
+import React from 'react';
+
+function DashboardHeader({ user, handleLogout, activeView, setActiveView }) {
+  const views = [
+    { id: 'overview', name: 'Overview', icon: '', color: 'from-blue-500 to-blue-600' },
+    { id: 'users', name: 'User Management', icon: '', color: 'from-purple-500 to-purple-600' },
+    { id: 'transactions', name: 'Transactions', icon: '', color: 'from-emerald-500 to-emerald-600' },
+    { id: 'loans', name: 'Loan Approvals', icon: '', color: 'from-amber-500 to-amber-600' },
+    { id: 'charges', name: 'Service Charges', icon: '', color: 'from-cyan-500 to-cyan-600' },
+    { id: 'payslip', name: 'Payslip', icon: '', color: 'from-indigo-500 to-indigo-600' },
+    { id: 'cashflow', name: 'Cash Flow', icon: '', color: 'from-green-500 to-green-600' },
+    { id: 'interest', name: 'Interest Calc', icon: '', color: 'from-teal-500 to-teal-600' },
+    { id: 'commission', name: 'Commission', icon: '', color: 'from-pink-500 to-pink-600' },
+    { id: 'statements', name: 'Statements', icon: '', color: 'from-violet-500 to-violet-600' },
+    { id: 'expenses', name: 'Expenses', icon: '', color: 'from-red-500 to-red-600' }
+  ];
+
+  return (
+    <div className="bg-white rounded-3xl shadow-card p-6 sm:p-8 mb-6 border border-neutral-100 animate-slide-down">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-card">
+            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
+              Branch Manager Dashboard
+            </h1>
+            <p className="text-neutral-600 text-sm sm:text-base mt-1">
+              Welcome, <span className="font-semibold text-gradient-primary">{user?.name}</span> • Coastal Auto Tech CU
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full text-sm font-semibold shadow-soft flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            BRANCH MANAGER
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm font-semibold shadow-soft hover:shadow-card transition-all duration-200 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* View Selector */}
+      <div className="flex gap-2 flex-wrap">
+        {views.map((view) => (
+          <button
+            key={view.id}
+            onClick={() => setActiveView(view.id)}
+            className={`
+              px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2
+              ${activeView === view.id
+                ? `bg-gradient-to-r ${view.color} text-white shadow-card hover:shadow-card-hover`
+                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 border border-neutral-200'
+              }
+            `}
+          >
+            <span className="text-base">{view.icon}</span>
+            <span className="hidden sm:inline">{view.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default DashboardHeader;

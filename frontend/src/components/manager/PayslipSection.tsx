@@ -3,11 +3,39 @@ import GlassCard from '../ui/modern/GlassCard';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
+interface StaffMember {
+  id: number | string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  staff_id?: string;
+  ssnit_number?: string;
+}
+
+interface PayslipFormData {
+  staff_id?: string;
+  base_pay?: string;
+  allowances?: string;
+}
+
+interface PrintData {
+  staffName: string;
+  staffId: string;
+  ssnitNumber: string;
+  staffEmail: string;
+  basePay: number;
+  allowances: number;
+  ssnit: number;
+  total: number;
+  date: string;
+  payPeriod: string;
+}
+
 interface PayslipSectionProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: PayslipFormData;
+  setFormData: React.Dispatch<React.SetStateAction<PayslipFormData>>;
   handleGeneratePayslip: () => void;
-  staffMembers?: any[];
+  staffMembers?: StaffMember[];
 }
 
 const PayslipSection: React.FC<PayslipSectionProps> = ({
@@ -19,12 +47,12 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
   const [ssnitAmount, setSsnitAmount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
 
-  // Calculation Logic: Payslip = Base Pay + Allowances + 13.5% SSNIT
+  // Calculation Logic: Payslip = Base Pay + Allowances + 5.5% SSNIT
   useEffect(() => {
-    const basePay = parseFloat(formData.base_pay) || 0;
-    const allowances = parseFloat(formData.allowances) || 0;
+    const basePay = parseFloat(formData.base_pay || '0') || 0;
+    const allowances = parseFloat(formData.allowances || '0') || 0;
 
-    const ssnit = basePay * 0.135;
+    const ssnit = basePay * 0.055;
     setSsnitAmount(ssnit);
     setTotalAmount(basePay + allowances - ssnit);
   }, [formData.base_pay, formData.allowances]);
@@ -42,26 +70,29 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
 
   // --- PRINT LOGIC ---
   const [isGenerated, setIsGenerated] = useState(false);
-  const [printData, setPrintData] = useState<any>(null);
+  const [printData, setPrintData] = useState<PrintData | null>(null);
 
   const onGenerateClick = () => {
     handleGeneratePayslip();
     // Simulate getting data for print since the API call void prop doesn't return data here
-    const basePay = parseFloat(formData.base_pay) || 0;
+    const basePay = parseFloat(formData.base_pay || '0') || 0;
     const allowances = parseFloat(formData.allowances) || 0;
-    const ssnit = basePay * 0.135;
+    const ssnit = basePay * 0.055;
     const total = basePay + allowances - ssnit;
 
     const staffMember = staffMembers.find(s => s.id.toString() === formData.staff_id?.toString());
 
     setPrintData({
       staffName: staffMember ? `${staffMember.first_name} ${staffMember.last_name}` : 'Unknown Staff',
+      staffId: staffMember?.staff_id || 'N/A',
+      ssnitNumber: staffMember?.ssnit_number || 'N/A',
       staffEmail: staffMember?.email || '',
       basePay,
       allowances,
       ssnit,
       total,
-      date: new Date().toLocaleDateString()
+      date: new Date().toLocaleDateString(),
+      payPeriod: `${new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`
     });
     setIsGenerated(true);
   };
@@ -101,12 +132,13 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
           <div className="font-sans border-4 border-black p-10 max-w-[800px] mx-auto">
             {/* Header */}
             <div className="text-center border-b-2 border-black pb-5 mb-8">
-              <h1 className="text-3xl font-black m-0 uppercase">Coastal Community Union</h1>
+              <h1 className="text-3xl font-black m-0 uppercase">Coastal Auto Tech Credit Union</h1>
               <p className="text-base text-gray-600 mt-1">Official Payslip Document</p>
+              <p className="text-sm text-gray-500 mt-1">P.O. Box 123, Accra, Ghana</p>
             </div>
 
             {/* Staff Details */}
-            <div className="grid grid-cols-2 gap-5 mb-10">
+            <div className="grid grid-cols-2 gap-5 mb-6">
               <div>
                 <strong className="block text-sm text-gray-600 uppercase">Employee Name</strong>
                 <div className="text-xl font-bold">{printData.staffName}</div>
@@ -114,6 +146,21 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
               <div className="text-right">
                 <strong className="block text-sm text-gray-600 uppercase">Date Issued</strong>
                 <div className="text-xl font-bold">{printData.date}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-5 mb-10 bg-gray-50 p-4 rounded-lg">
+              <div>
+                <strong className="block text-sm text-gray-600 uppercase">Staff ID</strong>
+                <div className="text-lg font-bold">{printData.staffId}</div>
+              </div>
+              <div>
+                <strong className="block text-sm text-gray-600 uppercase">SSNIT Number</strong>
+                <div className="text-lg font-bold">{printData.ssnitNumber}</div>
+              </div>
+              <div>
+                <strong className="block text-sm text-gray-600 uppercase">Pay Period</strong>
+                <div className="text-lg font-bold">{printData.payPeriod}</div>
               </div>
             </div>
 
@@ -135,12 +182,12 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
                   <td className="p-4 text-right font-bold">{formatCurrency(printData.allowances)}</td>
                 </tr>
                 <tr className="border-b-2 border-black">
-                  <td className="p-4">SSNIT Contribution (13.5%)</td>
+                  <td className="p-4">SSNIT Contribution (5.5%)</td>
                   <td className="p-4 text-right font-bold text-gray-600">{formatCurrency(printData.ssnit)}</td>
                 </tr>
                 <tr className="bg-gray-100">
-                  <td className="p-5 text-xl font-black">Starting Total Pay</td>
-                  <td className="p-5 text-right text-2xl font-black">{formatCurrency(printData.total)}</td>
+                  <td className="p-5 text-xl font-black">NET PAY</td>
+                  <td className="p-5 text-right text-2xl font-black text-emerald-600">{formatCurrency(printData.total)}</td>
                 </tr>
               </tbody>
             </table>
@@ -179,10 +226,11 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
                 name="staff_id"
                 value={formData.staff_id || ''}
                 onChange={handleChange}
+                aria-label="Select Staff Member"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
               >
                 <option value="">-- Select Staff --</option>
-                {staffMembers.map((staff: any) => (
+                {staffMembers.map((staff) => (
                   <option key={staff.id} value={staff.id}>
                     {staff.first_name} {staff.last_name} ({staff.email})
                   </option>
@@ -251,7 +299,7 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
             <div className="flex justify-between items-center p-3 rounded-lg border-b-2 border-dashed border-gray-200 pb-6">
               <div>
                 <span className="text-gray-500 font-medium block">SSNIT Contribution</span>
-                <span className="text-xs text-blue-500 font-bold">(13.5% of Base Pay)</span>
+                <span className="text-xs text-blue-500 font-bold">(5.5% of Base Pay)</span>
               </div>
               <span className="text-lg font-bold text-blue-600">
                 {formatCurrency(ssnitAmount)}

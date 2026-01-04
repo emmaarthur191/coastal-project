@@ -1,7 +1,3 @@
-
-import os
-from django.utils import timezone  # Will rely on string replacement, this import is just for show in script context if run within django, but we run standalone
-
 path = r"e:\coastal\banking_backend\core\models.py"
 with open(path, "rb") as f:
     content = f.read()
@@ -13,7 +9,7 @@ if loc != -1:
     end_point = loc + len(target_bytes)
     # Truncate after this
     base_content = content[:end_point]
-    
+
     # New content
     new_code = """
 
@@ -27,7 +23,7 @@ class Expense(models.Model):
         ('Marketing', 'Marketing'),
         ('Other', 'Other'),
     ]
-    
+
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('paid', 'Paid'),
@@ -47,7 +43,7 @@ class Expense(models.Model):
         return f"{self.category}: {self.amount} on {self.date}"
 """
     with open(path, "wb") as f:
-        f.write(base_content + new_code.encode('utf-8'))
+        f.write(base_content + new_code.encode("utf-8"))
     print("Fixed.")
 else:
     print("Target not found.")

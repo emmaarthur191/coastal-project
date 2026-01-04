@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { ChatRoom } from './ChatRoom';
 export type PaginatedChatRoomList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<ChatRoom>;
+    results?: Array<ChatRoom>;
 };
 

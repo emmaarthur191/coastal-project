@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { AccountClosureRequest } from './AccountClosureRequest';
 export type PaginatedAccountClosureRequestList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<AccountClosureRequest>;
+    results?: Array<AccountClosureRequest>;
 };
 

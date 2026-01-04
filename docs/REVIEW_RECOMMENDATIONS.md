@@ -48,7 +48,7 @@ const credential = await navigator.credentials.create({
   publicKey: registrationOptions
 });
 
-// Authentication  
+// Authentication
 const assertion = await navigator.credentials.get({
   publicKey: authenticationOptions
 });
@@ -103,7 +103,7 @@ class MLFraudDetector:
             random_state=42
         )
         self.lstm_model = self._build_lstm()
-    
+
     def _build_lstm(self):
         """LSTM Autoencoder for sequential anomaly detection"""
         model = tf.keras.Sequential([
@@ -114,7 +114,7 @@ class MLFraudDetector:
         ])
         model.compile(optimizer='adam', loss='mse')
         return model
-    
+
     def extract_features(self, transaction):
         """Feature engineering for ML models"""
         return [
@@ -124,14 +124,14 @@ class MLFraudDetector:
             self._daily_transaction_count(transaction),
             self._velocity_score(transaction)
         ]
-    
+
     def predict(self, transaction) -> dict:
         features = self.extract_features(transaction)
-        
+
         # Ensemble prediction
         iso_score = self.isolation_forest.decision_function([features])[0]
         lstm_score = self.lstm_model.predict([features], verbose=0)[0]
-        
+
         return {
             'is_anomaly': iso_score < -0.5 or lstm_score > 0.8,
             'risk_score': (abs(iso_score) + lstm_score) / 2,
@@ -237,9 +237,9 @@ import sys
 def fuzz_transaction_input(data):
     """Fuzz test transaction creation endpoint"""
     from core.serializers import TransactionSerializer
-    
+
     fdp = atheris.FuzzedDataProvider(data)
-    
+
     try:
         serializer = TransactionSerializer(data={
             'amount': fdp.ConsumeFloatInRange(-1e10, 1e10),
@@ -270,9 +270,9 @@ def test_deposit_never_reduces_balance(amount, account_type):
     """Property: A deposit should never reduce account balance"""
     account = Account.objects.create(account_type=account_type)
     initial_balance = account.balance
-    
+
     TransactionService.deposit(account, amount)
-    
+
     assert account.balance >= initial_balance
 ```
 
@@ -450,13 +450,13 @@ spec:
   run: |
     cd banking_backend
     pytest --cov=. --cov-report=xml --cov-fail-under=90
-    
+
 - name: Upload coverage to Codecov
   uses: codecov/codecov-action@v4
   with:
     files: ./banking_backend/coverage.xml
     fail_ci_if_error: true
-    
+
 - name: Coverage Gate
   run: |
     COVERAGE=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); print(float(tree.find('.//coverage').get('line-rate')) * 100)")

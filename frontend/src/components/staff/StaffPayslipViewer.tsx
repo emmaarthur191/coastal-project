@@ -40,7 +40,7 @@ const StaffPayslipViewer: React.FC = () => {
         try {
             const response = await api.get(`operations/payslips/${id}/download/`, {
                 responseType: 'blob'
-            });
+            } as any);
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;

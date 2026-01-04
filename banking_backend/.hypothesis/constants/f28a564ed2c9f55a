@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\accounts.py
+# hypothesis_version: 6.148.7
+
+[100, 400, 100000, 999999, '-created_at', 'account_number', 'account_type', 'active_accounts', 'approved', 'balance', 'by_type', 'count', 'create', 'created_at', 'customer', 'daily_susu', 'data', 'date_of_birth', 'email', 'error', 'first_name', 'full_name', 'get', 'ghana_card', 'id', 'id_number', 'id_type', 'is_active', 'last_name', 'message', 'otp', 'partial_update', 'pending', 'phone', 'phone_number', 'post', 'reason', 'rejected', 'results', 'retrieve', 'search', 'status', 'success', 'total', 'total_accounts', 'total_balance', 'true', 'update', 'user']

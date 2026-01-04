@@ -243,7 +243,7 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                                                 </td>
                                                 <td className="p-3 text-right">
                                                     <Button
-                                                        variant="outline"
+                                                        variant="secondary"
                                                         size="sm"
                                                         onClick={() => {
                                                             setSelectedAssignment(assignment);

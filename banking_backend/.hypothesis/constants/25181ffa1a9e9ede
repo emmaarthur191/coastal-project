@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\permissions.py
+# hypothesis_version: 6.148.7
+
+['admin', 'cashier', 'customer', 'manager', 'mobile_banker', 'operations_manager', 'owner', 'staff', 'user']

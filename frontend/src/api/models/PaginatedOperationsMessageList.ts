@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { OperationsMessage } from './OperationsMessage';
 export type PaginatedOperationsMessageList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<OperationsMessage>;
+    results?: Array<OperationsMessage>;
 };
 
