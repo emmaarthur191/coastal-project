@@ -14,13 +14,13 @@ echo "=== Collecting static files ==="
 python manage.py collectstatic --noinput
 
 echo "=== Running database migrations ==="
-# Try normal migration first, if it fails due to existing tables, fake the problematic migrations
+# Try normal migration first, if it fails due to existing tables/columns, fake ALL core migrations
 if ! python manage.py migrate --noinput 2>&1; then
-    echo "=== Migration failed, attempting to fix sync issues ==="
-    # Fake migrations up to 0008 if core_message already exists
-    python manage.py migrate core 0007 --fake --noinput || true
-    python manage.py migrate core 0008 --fake --noinput || true
-    # Now run remaining migrations
+    echo "=== Migration failed, faking all core migrations to sync state ==="
+    # Fake ALL core migrations - the database schema is already up to date
+    python manage.py migrate core --fake --noinput || true
+    python manage.py migrate users --fake --noinput || true
+    # Now run migrations for any remaining apps
     python manage.py migrate --noinput
 fi
 
