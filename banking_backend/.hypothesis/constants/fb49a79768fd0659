@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\cashier.py
+# hypothesis_version: 6.148.7
+
+[400, 403, 404, 500, '-created_at', '-opened_at', 'Account not found', 'Check is not pending', 'Drawer closed', 'Drawer is not open', 'Drawer reconciled', 'No reason provided', 'Unknown', 'account_type', 'admin', 'amount', 'approved', 'back_image', 'bank_name', 'branch', 'cashier', 'closed', 'closing_balance', 'count', 'created_at', 'daily_susu', 'denomination', 'disbursed', 'error', 'front_image', 'id', 'manager', 'member_id', 'message', 'notes', 'open', 'opened_at', 'pending', 'post', 'reason', 'reconciled', 'rejected', 'repaid', 'role', 'staff', 'status', 'success', 'superuser', 'transaction_id', 'user', 'variance']

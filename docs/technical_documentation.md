@@ -53,7 +53,7 @@ The database schema is organized around the **User** and **Account** central ent
         -   `1:N` -> `UserActivity` (Login logs)
         -   `1:N` -> `AuditLog` (Action logs)
         -   `1:N` -> `Device` (Authorized devices)
-    
+
 2.  **Financial Operations**
     -   `Account` belongs to `User`.
         -   `1:N` -> `Transaction` (as `sender` or `receiver`).

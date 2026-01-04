@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { Complaint } from './Complaint';
 export type PaginatedComplaintList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<Complaint>;
+    results?: Array<Complaint>;
 };
 

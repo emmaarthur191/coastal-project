@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { CashDrawer } from './CashDrawer';
 export type PaginatedCashDrawerList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<CashDrawer>;
+    results?: Array<CashDrawer>;
 };
 

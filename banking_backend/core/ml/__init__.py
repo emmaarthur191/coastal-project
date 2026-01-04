@@ -1,16 +1,16 @@
-"""
-ML Package for Coastal Banking
+"""ML Package for Coastal Banking
 
 Contains machine learning models for fraud detection and analytics.
 """
+
 from .fraud_detector import (
     MLFraudDetector,
-    get_fraud_detector,
     analyze_transaction,
+    get_fraud_detector,
 )
 
 __all__ = [
-    'MLFraudDetector',
-    'get_fraud_detector',
-    'analyze_transaction',
+    "MLFraudDetector",
+    "analyze_transaction",
+    "get_fraud_detector",
 ]

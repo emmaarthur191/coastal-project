@@ -22,6 +22,7 @@ import ExpensesSection from '../components/manager/ExpensesSection';
 import AccountsTab from '../components/AccountsTab';
 import SecuritySection from '../components/manager/SecuritySection';
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
+import AccountOpeningsSection from '../components/manager/AccountOpeningsSection';
 
 function ManagerDashboard() {
 
@@ -35,6 +36,7 @@ function ManagerDashboard() {
   const menuItems = React.useMemo(() => [
     { id: 'overview', name: 'Overview', icon: '📊' },
     { id: 'accounts', name: 'Accounts', icon: '🏦' },
+    { id: 'account-openings', name: 'Account Requests', icon: '📂' },
     { id: 'messaging', name: 'Messaging', icon: '💬' },
     { id: 'products-services', name: 'Products & Services', icon: '🎁' },
     { id: 'users', name: 'Staff Users', icon: '👥' },
@@ -84,24 +86,25 @@ function ManagerDashboard() {
   const [staffIdFilters, setStaffIdFilters] = useState({});
 
   // --- EFFECTS ---
+  const fetchDashboardData = async () => {
+    try {
+      const response = await authService.getOperationalMetrics();
+      if (response.success) {
+        setDashboardData({
+          branch_metrics: [
+            { label: 'System Uptime', value: response.data.system_uptime, change: '+0.1%', trend: 'up', icon: '⏱️' },
+            { label: 'Transactions', value: response.data.transactions_today?.toLocaleString() || '0', change: `+${response.data.transaction_change || 0}%`, trend: 'up', icon: '💳' },
+            { label: 'API Speed', value: `${response.data.api_response_time}ms`, change: '-5ms', trend: 'up', icon: '⚡' },
+            { label: 'Failed TXs', value: response.data.failed_transactions?.toString() || '0', change: `+${response.data.failed_change || 0}`, trend: 'down', icon: '❌' }
+          ],
+          staff_performance: response.data.staff_performance || [],
+          pending_approvals: response.data.pending_approvals || []
+        });
+      } else { console.error('Failed to fetch dashboard data:', response.error); }
+    } catch (error) { console.error('Error fetching dashboard data:', error); } finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await authService.getOperationalMetrics();
-        if (response.success) {
-          setDashboardData({
-            branch_metrics: [
-              { label: 'System Uptime', value: response.data.system_uptime, change: '+0.1%', trend: 'up', icon: '⏱️' },
-              { label: 'Transactions', value: response.data.transactions_today?.toLocaleString() || '0', change: `+${response.data.transaction_change || 0}%`, trend: 'up', icon: '💳' },
-              { label: 'API Speed', value: `${response.data.api_response_time}ms`, change: '-5ms', trend: 'up', icon: '⚡' },
-              { label: 'Failed TXs', value: response.data.failed_transactions?.toString() || '0', change: `+${response.data.failed_change || 0}`, trend: 'down', icon: '❌' }
-            ],
-            staff_performance: response.data.staff_performance || [],
-            pending_approvals: response.data.pending_approvals || []
-          });
-        } else { console.error('Failed to fetch dashboard data:', response.error); }
-      } catch (error) { console.error('Error fetching dashboard data:', error); } finally { setLoading(false); }
-    };
     fetchDashboardData();
   }, []);
 
@@ -235,11 +238,17 @@ function ManagerDashboard() {
     );
   }
 
+  // Handler to navigate to account openings section
+  const handleReviewAccountOpening = () => {
+    setActiveView('account-openings');
+  };
+
   // --- RENDER CONTENT ---
   const renderContent = () => {
     switch (activeView) {
-      case 'overview': return <OverviewSection dashboardData={dashboardData} />;
+      case 'overview': return <OverviewSection dashboardData={dashboardData} onReviewAccountOpening={handleReviewAccountOpening} />;
       case 'accounts': return <AccountsTab />;
+      case 'account-openings': return <AccountOpeningsSection onRefreshDashboard={fetchDashboardData} />;
       case 'messaging': return (
         <MessagingSection onOpenMessaging={() => {
           if (!hasMessagingAccess) { alert('Access denied.'); return; }

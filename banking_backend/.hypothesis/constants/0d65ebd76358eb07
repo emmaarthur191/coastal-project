@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\authentication.py
+# hypothesis_version: 6.148.7
+
+['AUTH_COOKIE', 'CSRF Failed: %s', 'access_token']

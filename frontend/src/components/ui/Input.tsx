@@ -1,13 +1,25 @@
 import React, { forwardRef, InputHTMLAttributes } from 'react';
 
+/**
+ * Props for the Input component.
+ */
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+    /** The label text displayed above the input. */
     label?: string;
+    /** Error message to display below the input. Triggers error styling. */
     error?: string;
+    /** Additional CSS classes to apply to the container div. */
     className?: string;
-    as?: any; // Allow 'select' or other components
+    /** The component type to render (e.g., 'input', 'select', or a custom component). Defaults to 'input'. */
+    as?: React.ElementType;
+    /** Children elements, primarily used when 'as' is 'select' to render options. */
     children?: React.ReactNode;
 }
 
+/**
+ * A versatile input component that supports labels, validation errors, and custom rendering (e.g., as a textarea or select).
+ * Built with accessible focus states and glassmorphism styling.
+ */
 export const Input = forwardRef<HTMLInputElement, InputProps>(({
     label,
     error,

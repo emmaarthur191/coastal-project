@@ -5,12 +5,10 @@
 import type { Account } from '../models/Account';
 import type { AccountClosureRequest } from '../models/AccountClosureRequest';
 import type { AccountOpeningRequest } from '../models/AccountOpeningRequest';
-import type { AccountStatement } from '../models/AccountStatement';
 import type { BlockedUser } from '../models/BlockedUser';
 import type { CashAdvance } from '../models/CashAdvance';
 import type { CashDrawer } from '../models/CashDrawer';
 import type { ChatRoom } from '../models/ChatRoom';
-import type { CheckDeposit } from '../models/CheckDeposit';
 import type { ClientAssignment } from '../models/ClientAssignment';
 import type { Complaint } from '../models/Complaint';
 import type { Device } from '../models/Device';
@@ -21,13 +19,10 @@ import type { MessageThread } from '../models/MessageThread';
 import type { OperationsMessage } from '../models/OperationsMessage';
 import type { PaginatedAccountClosureRequestList } from '../models/PaginatedAccountClosureRequestList';
 import type { PaginatedAccountList } from '../models/PaginatedAccountList';
-import type { PaginatedAccountOpeningRequestList } from '../models/PaginatedAccountOpeningRequestList';
-import type { PaginatedAccountStatementList } from '../models/PaginatedAccountStatementList';
 import type { PaginatedCashAdvanceList } from '../models/PaginatedCashAdvanceList';
 import type { PaginatedCashDrawerList } from '../models/PaginatedCashDrawerList';
 import type { PaginatedChatMessageList } from '../models/PaginatedChatMessageList';
 import type { PaginatedChatRoomList } from '../models/PaginatedChatRoomList';
-import type { PaginatedCheckDepositList } from '../models/PaginatedCheckDepositList';
 import type { PaginatedClientAssignmentList } from '../models/PaginatedClientAssignmentList';
 import type { PaginatedComplaintList } from '../models/PaginatedComplaintList';
 import type { PaginatedDeviceList } from '../models/PaginatedDeviceList';
@@ -36,7 +31,6 @@ import type { PaginatedLoanList } from '../models/PaginatedLoanList';
 import type { PaginatedMessageList } from '../models/PaginatedMessageList';
 import type { PaginatedMessageThreadList } from '../models/PaginatedMessageThreadList';
 import type { PaginatedOperationsMessageList } from '../models/PaginatedOperationsMessageList';
-import type { PaginatedPayslipList } from '../models/PaginatedPayslipList';
 import type { PaginatedProductList } from '../models/PaginatedProductList';
 import type { PaginatedPromotionList } from '../models/PaginatedPromotionList';
 import type { PaginatedRefundList } from '../models/PaginatedRefundList';
@@ -47,21 +41,16 @@ import type { PaginatedServiceRequestList } from '../models/PaginatedServiceRequ
 import type { PaginatedTransactionList } from '../models/PaginatedTransactionList';
 import type { PaginatedUserList } from '../models/PaginatedUserList';
 import type { PaginatedVisitScheduleList } from '../models/PaginatedVisitScheduleList';
-import type { PatchedAccount } from '../models/PatchedAccount';
-import type { PatchedAccountStatement } from '../models/PatchedAccountStatement';
 import type { PatchedClientAssignment } from '../models/PatchedClientAssignment';
 import type { PatchedComplaint } from '../models/PatchedComplaint';
 import type { PatchedFraudAlert } from '../models/PatchedFraudAlert';
 import type { PatchedLoan } from '../models/PatchedLoan';
-import type { PatchedOperationsMessage } from '../models/PatchedOperationsMessage';
-import type { PatchedPayslip } from '../models/PatchedPayslip';
+import type { PatchedMessageThread } from '../models/PatchedMessageThread';
 import type { PatchedProduct } from '../models/PatchedProduct';
 import type { PatchedRefund } from '../models/PatchedRefund';
 import type { PatchedReportSchedule } from '../models/PatchedReportSchedule';
 import type { PatchedServiceRequest } from '../models/PatchedServiceRequest';
 import type { PatchedUser } from '../models/PatchedUser';
-import type { PatchedVisitSchedule } from '../models/PatchedVisitSchedule';
-import type { Payslip } from '../models/Payslip';
 import type { Product } from '../models/Product';
 import type { Promotion } from '../models/Promotion';
 import type { Refund } from '../models/Refund';
@@ -79,105 +68,7 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class ApiService {
     /**
-     * @param accountType * `daily_susu` - Daily Susu
-     * * `shares` - Shares
-     * * `monthly_contribution` - Monthly Contribution
-     * @param isActive
-     * @param ordering Which field to use when ordering the results.
-     * @param page A page number within the paginated result set.
-     * @returns PaginatedAccountList
-     * @throws ApiError
-     */
-    public static apiAccountsList(
-        accountType?: 'daily_susu' | 'monthly_contribution' | 'shares',
-        isActive?: boolean,
-        ordering?: string,
-        page?: number,
-    ): CancelablePromise<PaginatedAccountList> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/accounts/',
-            query: {
-                'account_type': accountType,
-                'is_active': isActive,
-                'ordering': ordering,
-                'page': page,
-            },
-        });
-    }
-    /**
-     * @param requestBody
-     * @returns Account
-     * @throws ApiError
-     */
-    public static apiAccountsCreate(
-        requestBody: Account,
-    ): CancelablePromise<Account> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/accounts/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id A unique integer value identifying this account.
-     * @returns Account
-     * @throws ApiError
-     */
-    public static apiAccountsRetrieve(
-        id: number,
-    ): CancelablePromise<Account> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/accounts/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * @param id A unique integer value identifying this account.
-     * @param requestBody
-     * @returns Account
-     * @throws ApiError
-     */
-    public static apiAccountsUpdate(
-        id: number,
-        requestBody: Account,
-    ): CancelablePromise<Account> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/accounts/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * @param id A unique integer value identifying this account.
-     * @param requestBody
-     * @returns Account
-     * @throws ApiError
-     */
-    public static apiAccountsPartialUpdate(
-        id: number,
-        requestBody?: PatchedAccount,
-    ): CancelablePromise<Account> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/accounts/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Stub view for audit dashboard.
+     * Retrieve audit logs and summary events for the specified time range.
      * @returns any No response body
      * @throws ApiError
      */
@@ -189,13 +80,7 @@ export class ApiService {
     }
     /**
      * ViewSet for handling account closure requests.
-     * @param closureReason * `customer_request` - Customer Request
-     * * `account_inactive` - Account Inactive
-     * * `fraud_suspected` - Fraud Suspected
-     * * `compliance` - Compliance Issue
-     * * `other` - Other
      * @param ordering Which field to use when ordering the results.
-     * @param otpVerified
      * @param page A page number within the paginated result set.
      * @param status * `pending` - Pending Review
      * * `approved` - Approved
@@ -205,9 +90,7 @@ export class ApiService {
      * @throws ApiError
      */
     public static apiBankingAccountClosuresList(
-        closureReason?: 'account_inactive' | 'compliance' | 'customer_request' | 'fraud_suspected' | 'other',
         ordering?: string,
-        otpVerified?: boolean,
         page?: number,
         status?: 'approved' | 'completed' | 'pending' | 'rejected',
     ): CancelablePromise<PaginatedAccountClosureRequestList> {
@@ -215,9 +98,7 @@ export class ApiService {
             method: 'GET',
             url: '/api/banking/account-closures/',
             query: {
-                'closure_reason': closureReason,
                 'ordering': ordering,
-                'otp_verified': otpVerified,
                 'page': page,
                 'status': status,
             },
@@ -291,118 +172,6 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/account-closures/{id}/reject/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for handling account opening requests.
-     * @param accountType * `daily_susu` - Daily Susu
-     * * `shares` - Shares
-     * * `monthly_contribution` - Monthly Contribution
-     * @param cardType * `standard` - Standard Card
-     * * `gold` - Gold Card
-     * * `platinum` - Platinum Card
-     * * `none` - No Card Required
-     * @param ordering Which field to use when ordering the results.
-     * @param page A page number within the paginated result set.
-     * @param status * `pending` - Pending Review
-     * * `approved` - Approved
-     * * `rejected` - Rejected
-     * * `completed` - Completed
-     * @returns PaginatedAccountOpeningRequestList
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsList(
-        accountType?: 'daily_susu' | 'monthly_contribution' | 'shares',
-        cardType?: 'gold' | 'none' | 'platinum' | 'standard',
-        ordering?: string,
-        page?: number,
-        status?: 'approved' | 'completed' | 'pending' | 'rejected',
-    ): CancelablePromise<PaginatedAccountOpeningRequestList> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/account-openings/',
-            query: {
-                'account_type': accountType,
-                'card_type': cardType,
-                'ordering': ordering,
-                'page': page,
-                'status': status,
-            },
-        });
-    }
-    /**
-     * ViewSet for handling account opening requests.
-     * @param requestBody
-     * @returns AccountOpeningRequest
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsCreate(
-        requestBody: AccountOpeningRequest,
-    ): CancelablePromise<AccountOpeningRequest> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/account-openings/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for handling account opening requests.
-     * @param id A unique integer value identifying this Account Opening Request.
-     * @returns AccountOpeningRequest
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsRetrieve(
-        id: number,
-    ): CancelablePromise<AccountOpeningRequest> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/account-openings/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * Approve an account opening request.
-     * @param id A unique integer value identifying this Account Opening Request.
-     * @param requestBody
-     * @returns AccountOpeningRequest
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsApproveCreate(
-        id: number,
-        requestBody: AccountOpeningRequest,
-    ): CancelablePromise<AccountOpeningRequest> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/account-openings/{id}/approve/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Reject an account opening request.
-     * @param id A unique integer value identifying this Account Opening Request.
-     * @param requestBody
-     * @returns AccountOpeningRequest
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsRejectCreate(
-        id: number,
-        requestBody: AccountOpeningRequest,
-    ): CancelablePromise<AccountOpeningRequest> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/account-openings/{id}/reject/',
             path: {
                 'id': id,
             },
@@ -497,8 +266,6 @@ export class ApiService {
     }
     /**
      * Approve a cash advance request.
-     *
-     * SECURITY: Only managers can approve, or staff within same branch.
      * @param id
      * @param requestBody
      * @returns CashAdvance
@@ -520,8 +287,6 @@ export class ApiService {
     }
     /**
      * Disburse an approved cash advance.
-     *
-     * SECURITY: Only managers can disburse, or staff within same branch.
      * @param id
      * @param requestBody
      * @returns CashAdvance
@@ -543,8 +308,6 @@ export class ApiService {
     }
     /**
      * Mark a cash advance as repaid.
-     *
-     * SECURITY: Only managers can mark repaid, or staff within same branch.
      * @param id
      * @param requestBody
      * @returns CashAdvance
@@ -852,35 +615,23 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for device registration for push notifications.
-     * @param id
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiBankingDevicesDestroy(
-        id: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/banking/devices/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
      * Sync endpoint to check connection status.
+     * @param requestBody
      * @returns Device
      * @throws ApiError
      */
-    public static apiBankingDevicesSyncDataRetrieve(): CancelablePromise<Device> {
+    public static apiBankingDevicesSyncDataCreate(
+        requestBody: Device,
+    ): CancelablePromise<Device> {
         return __request(OpenAPI, {
-            method: 'GET',
+            method: 'POST',
             url: '/api/banking/devices/sync_data/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
-     * View to generate account statements.
+     * Handle manual account statement generation requests for staff.
      * @returns any No response body
      * @throws ApiError
      */
@@ -989,6 +740,7 @@ export class ApiService {
         });
     }
     /**
+     * Approve a loan application and initiate disbursement.
      * @param id A unique integer value identifying this loan.
      * @param requestBody
      * @returns Loan
@@ -1073,7 +825,66 @@ export class ApiService {
         });
     }
     /**
-     * Archive a thread.
+     * ViewSet for message threads with full messaging functionality.
+     * @param id
+     * @param requestBody
+     * @returns MessageThread
+     * @throws ApiError
+     */
+    public static apiBankingMessageThreadsUpdate(
+        id: string,
+        requestBody: MessageThread,
+    ): CancelablePromise<MessageThread> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/banking/message-threads/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for message threads with full messaging functionality.
+     * @param id
+     * @param requestBody
+     * @returns MessageThread
+     * @throws ApiError
+     */
+    public static apiBankingMessageThreadsPartialUpdate(
+        id: string,
+        requestBody?: PatchedMessageThread,
+    ): CancelablePromise<MessageThread> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/banking/message-threads/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for message threads with full messaging functionality.
+     * @param id
+     * @returns void
+     * @throws ApiError
+     */
+    public static apiBankingMessageThreadsDestroy(
+        id: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/banking/message-threads/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * Archive a thread to hide it from the active inbox.
      * @param id
      * @param requestBody
      * @returns MessageThread
@@ -1154,30 +965,47 @@ export class ApiService {
     }
     /**
      * ViewSet for new messaging system messages.
-     * @param requestBody
+     * @param formData
      * @returns Message
      * @throws ApiError
      */
     public static apiBankingMessagesCreate(
-        requestBody: Message,
+        formData: Message,
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/messages/',
-            body: requestBody,
-            mediaType: 'application/json',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**
      * ViewSet for new messaging system messages.
      * @param id
-     * @param requestBody
+     * @returns Message
+     * @throws ApiError
+     */
+    public static apiBankingMessagesRetrieve(
+        id: string,
+    ): CancelablePromise<Message> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/messages/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * Add an emoji reaction to a message.
+     * @param id
+     * @param formData
      * @returns Message
      * @throws ApiError
      */
     public static apiBankingMessagesAddReactionCreate(
         id: string,
-        requestBody: Message,
+        formData: Message,
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -1185,20 +1013,20 @@ export class ApiService {
             path: {
                 'id': id,
             },
-            body: requestBody,
-            mediaType: 'application/json',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**
-     * ViewSet for new messaging system messages.
+     * Remove a previously added emoji reaction from a message.
      * @param id
-     * @param requestBody
+     * @param formData
      * @returns Message
      * @throws ApiError
      */
     public static apiBankingMessagesRemoveReactionCreate(
         id: string,
-        requestBody: Message,
+        formData: Message,
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -1206,24 +1034,24 @@ export class ApiService {
             path: {
                 'id': id,
             },
-            body: requestBody,
-            mediaType: 'application/json',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**
-     * Upload media for a message.
-     * @param requestBody
+     * Placeholder for media upload.
+     * @param formData
      * @returns Message
      * @throws ApiError
      */
     public static apiBankingMessagesUploadMediaCreate(
-        requestBody: Message,
+        formData: Message,
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/messages/upload_media/',
-            body: requestBody,
-            mediaType: 'application/json',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**
@@ -1379,9 +1207,10 @@ export class ApiService {
     }
     /**
      * List all accounts with user details for staff dashboard.
-     * @param accountType * `daily_susu` - Daily Susu
+     * @param accountType * `daily_susu` - Daily Savings
+     * * `member_savings` - Member Savings
+     * * `youth_savings` - Youth Savings
      * * `shares` - Shares
-     * * `monthly_contribution` - Monthly Contribution
      * @param isActive
      * @param ordering Which field to use when ordering the results.
      * @param page A page number within the paginated result set.
@@ -1389,7 +1218,7 @@ export class ApiService {
      * @throws ApiError
      */
     public static apiBankingStaffAccountsList(
-        accountType?: 'daily_susu' | 'monthly_contribution' | 'shares',
+        accountType?: 'daily_susu' | 'member_savings' | 'shares' | 'youth_savings',
         isActive?: boolean,
         ordering?: string,
         page?: number,
@@ -1402,23 +1231,6 @@ export class ApiService {
                 'is_active': isActive,
                 'ordering': ordering,
                 'page': page,
-            },
-        });
-    }
-    /**
-     * ViewSet for staff to view and manage customer accounts.
-     * @param id A unique integer value identifying this account.
-     * @returns Account
-     * @throws ApiError
-     */
-    public static apiBankingStaffAccountsRetrieve(
-        id: number,
-    ): CancelablePromise<Account> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/staff-accounts/{id}/',
-            path: {
-                'id': id,
             },
         });
     }
@@ -1542,49 +1354,35 @@ export class ApiService {
     }
     /**
      * ViewSet for managing check deposits.
-     * @param ordering Which field to use when ordering the results.
-     * @param page A page number within the paginated result set.
-     * @returns PaginatedCheckDepositList
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiCheckDepositsList(
-        ordering?: string,
-        page?: number,
-    ): CancelablePromise<PaginatedCheckDepositList> {
+    public static apiCheckDepositsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/check-deposits/',
-            query: {
-                'ordering': ordering,
-                'page': page,
-            },
         });
     }
     /**
      * ViewSet for managing check deposits.
-     * @param requestBody
-     * @returns CheckDeposit
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiCheckDepositsCreate(
-        requestBody: CheckDeposit,
-    ): CancelablePromise<CheckDeposit> {
+    public static apiCheckDepositsCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/',
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
      * ViewSet for managing check deposits.
      * @param id
-     * @returns CheckDeposit
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiCheckDepositsRetrieve(
+    public static apiCheckDepositsRetrieve2(
         id: string,
-    ): CancelablePromise<CheckDeposit> {
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/check-deposits/{id}/',
@@ -1596,59 +1394,46 @@ export class ApiService {
     /**
      * Approve a check deposit and credit the account.
      * @param id
-     * @param requestBody
-     * @returns CheckDeposit
+     * @returns any No response body
      * @throws ApiError
      */
     public static apiCheckDepositsApproveCreate(
         id: string,
-        requestBody: CheckDeposit,
-    ): CancelablePromise<CheckDeposit> {
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/{id}/approve/',
             path: {
                 'id': id,
             },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
      * Reject a check deposit.
      * @param id
-     * @param requestBody
-     * @returns CheckDeposit
+     * @returns any No response body
      * @throws ApiError
      */
     public static apiCheckDepositsRejectCreate(
         id: string,
-        requestBody: CheckDeposit,
-    ): CancelablePromise<CheckDeposit> {
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/{id}/reject/',
             path: {
                 'id': id,
             },
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
      * Process a check deposit from the cashier dashboard.
-     * @param requestBody
-     * @returns CheckDeposit
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiCheckDepositsProcessCheckDepositCreate(
-        requestBody: CheckDeposit,
-    ): CancelablePromise<CheckDeposit> {
+    public static apiCheckDepositsProcessCheckDepositCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/process_check_deposit/',
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
@@ -1970,6 +1755,7 @@ export class ApiService {
         });
     }
     /**
+     * Approve a loan application and initiate disbursement.
      * @param id A unique integer value identifying this loan.
      * @param requestBody
      * @returns Loan
@@ -2028,23 +1814,6 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for managing blocked users.
-     * @param id
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiMessagingBlockedUsersDestroy(
-        id: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/messaging/blocked-users/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
      * Unblock a user by their ID.
      * @param requestBody
      * @returns BlockedUser
@@ -2083,46 +1852,69 @@ export class ApiService {
         });
     }
     /**
+     * Analyze a transaction for potential fraud.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiMlFraudAnalyzeCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/ml/fraud/analyze/',
+        });
+    }
+    /**
+     * Trigger batch fraud analysis.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiMlFraudBatchAnalyzeCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/ml/fraud/batch-analyze/',
+        });
+    }
+    /**
+     * Get model status and metrics.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiMlFraudModelStatusRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/ml/fraud/model/status/',
+        });
+    }
+    /**
+     * Trigger model retraining.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiMlFraudModelTrainCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/ml/fraud/model/train/',
+        });
+    }
+    /**
      * ViewSet for managing client assignments to mobile bankers.
      *
      * Mobile bankers can view their assigned clients.
      * Managers can manage all assignments.
-     * @param isActive
-     * @param mobileBanker
      * @param ordering Which field to use when ordering the results.
      * @param page A page number within the paginated result set.
-     * @param priority * `low` - Low
-     * * `medium` - Medium
-     * * `high` - High
-     * * `urgent` - Urgent
-     * @param status * `pending` - Pending Visit
-     * * `due_payment` - Due Payment
-     * * `overdue_payment` - Overdue Payment
-     * * `loan_application` - Loan Application
-     * * `account_opening` - Account Opening
-     * * `follow_up` - Follow Up
-     * * `completed` - Completed
      * @returns PaginatedClientAssignmentList
      * @throws ApiError
      */
     public static apiOperationsAssignmentsList(
-        isActive?: boolean,
-        mobileBanker?: number,
         ordering?: string,
         page?: number,
-        priority?: 'high' | 'low' | 'medium' | 'urgent',
-        status?: 'account_opening' | 'completed' | 'due_payment' | 'follow_up' | 'loan_application' | 'overdue_payment' | 'pending',
     ): CancelablePromise<PaginatedClientAssignmentList> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/assignments/',
             query: {
-                'is_active': isActive,
-                'mobile_banker': mobileBanker,
                 'ordering': ordering,
                 'page': page,
-                'priority': priority,
-                'status': status,
             },
         });
     }
@@ -2150,12 +1942,12 @@ export class ApiService {
      *
      * Mobile bankers can view their assigned clients.
      * Managers can manage all assignments.
-     * @param id A unique integer value identifying this Client Assignment.
+     * @param id
      * @returns ClientAssignment
      * @throws ApiError
      */
     public static apiOperationsAssignmentsRetrieve(
-        id: number,
+        id: string,
     ): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -2170,13 +1962,13 @@ export class ApiService {
      *
      * Mobile bankers can view their assigned clients.
      * Managers can manage all assignments.
-     * @param id A unique integer value identifying this Client Assignment.
+     * @param id
      * @param requestBody
      * @returns ClientAssignment
      * @throws ApiError
      */
     public static apiOperationsAssignmentsUpdate(
-        id: number,
+        id: string,
         requestBody: ClientAssignment,
     ): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
@@ -2194,13 +1986,13 @@ export class ApiService {
      *
      * Mobile bankers can view their assigned clients.
      * Managers can manage all assignments.
-     * @param id A unique integer value identifying this Client Assignment.
+     * @param id
      * @param requestBody
      * @returns ClientAssignment
      * @throws ApiError
      */
     public static apiOperationsAssignmentsPartialUpdate(
-        id: number,
+        id: string,
         requestBody?: PatchedClientAssignment,
     ): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
@@ -2214,34 +2006,14 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for managing client assignments to mobile bankers.
-     *
-     * Mobile bankers can view their assigned clients.
-     * Managers can manage all assignments.
-     * @param id A unique integer value identifying this Client Assignment.
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiOperationsAssignmentsDestroy(
-        id: number,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/operations/assignments/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * Mark an assignment as completed.
-     * @param id A unique integer value identifying this Client Assignment.
+     * Mark a client assignment or visit as completed.
+     * @param id
      * @param requestBody
      * @returns ClientAssignment
      * @throws ApiError
      */
     public static apiOperationsAssignmentsCompleteCreate(
-        id: number,
+        id: string,
         requestBody: ClientAssignment,
     ): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
@@ -2255,14 +2027,14 @@ export class ApiService {
         });
     }
     /**
-     * Update assignment status.
-     * @param id A unique integer value identifying this Client Assignment.
+     * Update the status of a specific client assignment.
+     * @param id
      * @param requestBody
      * @returns ClientAssignment
      * @throws ApiError
      */
     public static apiOperationsAssignmentsUpdateStatusCreate(
-        id: number,
+        id: string,
         requestBody: ClientAssignment,
     ): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
@@ -2287,7 +2059,7 @@ export class ApiService {
         });
     }
     /**
-     * View to return branch activity metrics from real transaction data.
+     * Return aggregated branch transaction activity for the current day.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2298,7 +2070,7 @@ export class ApiService {
         });
     }
     /**
-     * View for calculating staff commissions.
+     * Calculate the commission for a given agent based on transaction amount.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2309,7 +2081,7 @@ export class ApiService {
         });
     }
     /**
-     * View for calculating loan or savings interest.
+     * Calculate simple interest for a principal amount over a given duration.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2320,7 +2092,7 @@ export class ApiService {
         });
     }
     /**
-     * Calculate service charge for a specific scenario.
+     * Calculate the applicable service charge for a specific transaction type and amount.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2331,7 +2103,7 @@ export class ApiService {
         });
     }
     /**
-     * View for retrieving cash flow metrics.
+     * Calculate and return cash flow metrics for the current month including inflows and outflows.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2342,7 +2114,7 @@ export class ApiService {
         });
     }
     /**
-     * View for retrieving operational expense metrics.
+     * Retrieve a list of operational expenses.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2353,7 +2125,7 @@ export class ApiService {
         });
     }
     /**
-     * View to generate staff payslips.
+     * Generate a payslip for a specified staff member.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2408,83 +2180,7 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for operations messages.
-     * @param id
-     * @returns OperationsMessage
-     * @throws ApiError
-     */
-    public static apiOperationsMessagesRetrieve(
-        id: string,
-    ): CancelablePromise<OperationsMessage> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/operations/messages/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * ViewSet for operations messages.
-     * @param id
-     * @param requestBody
-     * @returns OperationsMessage
-     * @throws ApiError
-     */
-    public static apiOperationsMessagesUpdate(
-        id: string,
-        requestBody: OperationsMessage,
-    ): CancelablePromise<OperationsMessage> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/operations/messages/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for operations messages.
-     * @param id
-     * @param requestBody
-     * @returns OperationsMessage
-     * @throws ApiError
-     */
-    public static apiOperationsMessagesPartialUpdate(
-        id: string,
-        requestBody?: PatchedOperationsMessage,
-    ): CancelablePromise<OperationsMessage> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/messages/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for operations messages.
-     * @param id
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiOperationsMessagesDestroy(
-        id: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/operations/messages/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * View for operations metrics used by ManagerDashboard.
+     * Calculate comprehensive operational metrics for the manager dashboard.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2507,122 +2203,26 @@ export class ApiService {
     }
     /**
      * ViewSet for managing staff payslips with PDF generation.
-     * @param isPaid
-     * @param month
-     * @param ordering Which field to use when ordering the results.
-     * @param page A page number within the paginated result set.
-     * @param staff
-     * @param year
-     * @returns PaginatedPayslipList
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsPayslipsList(
-        isPaid?: boolean,
-        month?: number,
-        ordering?: string,
-        page?: number,
-        staff?: number,
-        year?: number,
-    ): CancelablePromise<PaginatedPayslipList> {
+    public static apiOperationsPayslipsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/',
-            query: {
-                'is_paid': isPaid,
-                'month': month,
-                'ordering': ordering,
-                'page': page,
-                'staff': staff,
-                'year': year,
-            },
         });
     }
     /**
      * ViewSet for managing staff payslips with PDF generation.
-     * @param requestBody
-     * @returns Payslip
+     * @param id
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsPayslipsCreate(
-        requestBody: Payslip,
-    ): CancelablePromise<Payslip> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/payslips/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing staff payslips with PDF generation.
-     * @param id A unique integer value identifying this Payslip.
-     * @returns Payslip
-     * @throws ApiError
-     */
-    public static apiOperationsPayslipsRetrieve(
-        id: number,
-    ): CancelablePromise<Payslip> {
+    public static apiOperationsPayslipsRetrieve2(
+        id: string,
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/operations/payslips/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * ViewSet for managing staff payslips with PDF generation.
-     * @param id A unique integer value identifying this Payslip.
-     * @param requestBody
-     * @returns Payslip
-     * @throws ApiError
-     */
-    public static apiOperationsPayslipsUpdate(
-        id: number,
-        requestBody: Payslip,
-    ): CancelablePromise<Payslip> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/operations/payslips/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing staff payslips with PDF generation.
-     * @param id A unique integer value identifying this Payslip.
-     * @param requestBody
-     * @returns Payslip
-     * @throws ApiError
-     */
-    public static apiOperationsPayslipsPartialUpdate(
-        id: number,
-        requestBody?: PatchedPayslip,
-    ): CancelablePromise<Payslip> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/payslips/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for managing staff payslips with PDF generation.
-     * @param id A unique integer value identifying this Payslip.
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiOperationsPayslipsDestroy(
-        id: number,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
             url: '/api/operations/payslips/{id}/',
             path: {
                 'id': id,
@@ -2631,13 +2231,13 @@ export class ApiService {
     }
     /**
      * Download payslip PDF.
-     * @param id A unique integer value identifying this Payslip.
-     * @returns Payslip
+     * @param id
+     * @returns any No response body
      * @throws ApiError
      */
     public static apiOperationsPayslipsDownloadRetrieve(
-        id: number,
-    ): CancelablePromise<Payslip> {
+        id: string,
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/{id}/download/',
@@ -2648,55 +2248,34 @@ export class ApiService {
     }
     /**
      * Mark payslip as paid.
-     * @param id A unique integer value identifying this Payslip.
-     * @param requestBody
-     * @returns Payslip
+     * @param id
+     * @returns any No response body
      * @throws ApiError
      */
     public static apiOperationsPayslipsMarkPaidCreate(
-        id: number,
-        requestBody: Payslip,
-    ): CancelablePromise<Payslip> {
+        id: string,
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/operations/payslips/{id}/mark_paid/',
             path: {
                 'id': id,
             },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Generate a new payslip with PDF.
-     * @param requestBody
-     * @returns Payslip
-     * @throws ApiError
-     */
-    public static apiOperationsPayslipsGenerateCreate(
-        requestBody: Payslip,
-    ): CancelablePromise<Payslip> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/payslips/generate/',
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
      * Get current user's payslips.
-     * @returns Payslip
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsPayslipsMyPayslipsRetrieve(): CancelablePromise<Payslip> {
+    public static apiOperationsPayslipsMyPayslipsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/my_payslips/',
         });
     }
     /**
-     * ViewSet for Mobile Banker operations.
-     * Handles RPC-style actions: process_deposit, process_withdrawal, schedule_visit.
+     * Process a deposit from mobile banker (permission check handled by viewset).
      * @returns any No response body
      * @throws ApiError
      */
@@ -2707,8 +2286,7 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for Mobile Banker operations.
-     * Handles RPC-style actions: process_deposit, process_withdrawal, schedule_visit.
+     * Process a withdrawal from mobile banker (permission check handled by viewset).
      * @returns any No response body
      * @throws ApiError
      */
@@ -2719,8 +2297,7 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for Mobile Banker operations.
-     * Handles RPC-style actions: process_deposit, process_withdrawal, schedule_visit.
+     * Create a new visit schedule for a client (RPC-style action).
      * @returns any No response body
      * @throws ApiError
      */
@@ -2742,7 +2319,7 @@ export class ApiService {
         });
     }
     /**
-     * Create a new service charge.
+     * Create or update a service charge configuration.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2754,118 +2331,26 @@ export class ApiService {
     }
     /**
      * ViewSet for auto-generated account statements.
-     * @param account
-     * @param ordering Which field to use when ordering the results.
-     * @param page A page number within the paginated result set.
-     * @param status * `pending` - Pending
-     * * `generated` - Generated
-     * * `failed` - Failed
-     * @returns PaginatedAccountStatementList
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsStatementsList(
-        account?: number,
-        ordering?: string,
-        page?: number,
-        status?: 'failed' | 'generated' | 'pending',
-    ): CancelablePromise<PaginatedAccountStatementList> {
+    public static apiOperationsStatementsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/statements/',
-            query: {
-                'account': account,
-                'ordering': ordering,
-                'page': page,
-                'status': status,
-            },
         });
     }
     /**
      * ViewSet for auto-generated account statements.
-     * @param requestBody
-     * @returns AccountStatement
+     * @param id
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsStatementsCreate(
-        requestBody: AccountStatement,
-    ): CancelablePromise<AccountStatement> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/operations/statements/',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for auto-generated account statements.
-     * @param id A unique integer value identifying this Account Statement.
-     * @returns AccountStatement
-     * @throws ApiError
-     */
-    public static apiOperationsStatementsRetrieve(
-        id: number,
-    ): CancelablePromise<AccountStatement> {
+    public static apiOperationsStatementsRetrieve2(
+        id: string,
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/operations/statements/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * ViewSet for auto-generated account statements.
-     * @param id A unique integer value identifying this Account Statement.
-     * @param requestBody
-     * @returns AccountStatement
-     * @throws ApiError
-     */
-    public static apiOperationsStatementsUpdate(
-        id: number,
-        requestBody: AccountStatement,
-    ): CancelablePromise<AccountStatement> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/operations/statements/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for auto-generated account statements.
-     * @param id A unique integer value identifying this Account Statement.
-     * @param requestBody
-     * @returns AccountStatement
-     * @throws ApiError
-     */
-    public static apiOperationsStatementsPartialUpdate(
-        id: number,
-        requestBody?: PatchedAccountStatement,
-    ): CancelablePromise<AccountStatement> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/statements/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for auto-generated account statements.
-     * @param id A unique integer value identifying this Account Statement.
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiOperationsStatementsDestroy(
-        id: number,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
             url: '/api/operations/statements/{id}/',
             path: {
                 'id': id,
@@ -2874,13 +2359,13 @@ export class ApiService {
     }
     /**
      * Download statement PDF.
-     * @param id A unique integer value identifying this Account Statement.
-     * @returns AccountStatement
+     * @param id
+     * @returns any No response body
      * @throws ApiError
      */
     public static apiOperationsStatementsDownloadRetrieve(
-        id: number,
-    ): CancelablePromise<AccountStatement> {
+        id: string,
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/statements/{id}/download/',
@@ -2890,23 +2375,18 @@ export class ApiService {
         });
     }
     /**
-     * Request a new statement (auto-generates based on account activity).
-     * @param requestBody
-     * @returns AccountStatement
+     * Request a new statement.
+     * @returns any No response body
      * @throws ApiError
      */
-    public static apiOperationsStatementsRequestStatementCreate(
-        requestBody: AccountStatement,
-    ): CancelablePromise<AccountStatement> {
+    public static apiOperationsStatementsRequestStatementCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/operations/statements/request_statement/',
-            body: requestBody,
-            mediaType: 'application/json',
         });
     }
     /**
-     * View to return real system alerts from database.
+     * Summarize system alerts, including admin notifications and security events.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2950,83 +2430,7 @@ export class ApiService {
         });
     }
     /**
-     * ViewSet for mobile banker visit schedules.
-     * @param id
-     * @returns VisitSchedule
-     * @throws ApiError
-     */
-    public static apiOperationsVisitSchedulesRetrieve(
-        id: string,
-    ): CancelablePromise<VisitSchedule> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/operations/visit_schedules/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * ViewSet for mobile banker visit schedules.
-     * @param id
-     * @param requestBody
-     * @returns VisitSchedule
-     * @throws ApiError
-     */
-    public static apiOperationsVisitSchedulesUpdate(
-        id: string,
-        requestBody: VisitSchedule,
-    ): CancelablePromise<VisitSchedule> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/operations/visit_schedules/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for mobile banker visit schedules.
-     * @param id
-     * @param requestBody
-     * @returns VisitSchedule
-     * @throws ApiError
-     */
-    public static apiOperationsVisitSchedulesPartialUpdate(
-        id: string,
-        requestBody?: PatchedVisitSchedule,
-    ): CancelablePromise<VisitSchedule> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/operations/visit_schedules/{id}/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * ViewSet for mobile banker visit schedules.
-     * @param id
-     * @returns void
-     * @throws ApiError
-     */
-    public static apiOperationsVisitSchedulesDestroy(
-        id: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/operations/visit_schedules/{id}/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * View to return workflow status metrics.
+     * Calculate and return real-time workflow efficiency and processing metrics.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3037,7 +2441,7 @@ export class ApiService {
         });
     }
     /**
-     * Stub view for performance dashboard data.
+     * Return system-level performance health and resource utilization metrics (Stub).
      * @returns any No response body
      * @throws ApiError
      */
@@ -3048,7 +2452,7 @@ export class ApiService {
         });
     }
     /**
-     * Stub view for performance metrics.
+     * Return detailed performance metrics over time (Stub).
      * @returns any No response body
      * @throws ApiError
      */
@@ -3059,6 +2463,7 @@ export class ApiService {
         });
     }
     /**
+     * Return a detailed system health report including database connectivity and service status.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3330,7 +2735,7 @@ export class ApiService {
         });
     }
     /**
-     * Stub view for report analytics.
+     * Retrieve aggregated report analytics data.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3817,7 +3222,7 @@ export class ApiService {
         });
     }
     /**
-     * Stub view for service request statistics.
+     * Retrieve aggregated statistics for service requests.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3918,7 +3323,7 @@ export class ApiService {
         });
     }
     /**
-     * Endpoint for authenticated users to change their password.
+     * Handle password change requests for the authenticated user, validating old password and updating security tokens.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3929,7 +3334,7 @@ export class ApiService {
         });
     }
     /**
-     * Check if the user is authenticated.
+     * Implicitly check if the user is authenticated via JWT cookies without triggering a 401 response.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3950,7 +3355,7 @@ export class ApiService {
         });
     }
     /**
-     * List recent login attempts (successful and failed).
+     * Retrieve a log of recent login and failed login activities for security auditing.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3961,6 +3366,7 @@ export class ApiService {
         });
     }
     /**
+     * Handle user logout, invalidating JWT tokens and clearing authentication cookies.
      * @returns any No response body
      * @throws ApiError
      */
@@ -3988,6 +3394,7 @@ export class ApiService {
         });
     }
     /**
+     * ViewSet for new member/customer self-registration.
      * @param requestBody
      * @returns UserRegistration
      * @throws ApiError
@@ -4003,8 +3410,7 @@ export class ApiService {
         });
     }
     /**
-     * Admin-only endpoint to create staff users.
-     * Auto-generates password and sends via SMS.
+     * Handle administrative creation of staff users, including auto-password generation and SMS notification.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4015,6 +3421,7 @@ export class ApiService {
         });
     }
     /**
+     * Return a fresh CSRF token for frontend security.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4025,6 +3432,7 @@ export class ApiService {
         });
     }
     /**
+     * Admin-only view to list all registered users.
      * @param page A page number within the paginated result set.
      * @returns PaginatedUserList
      * @throws ApiError
@@ -4081,7 +3489,7 @@ export class ApiService {
         });
     }
     /**
-     * Get dashboard data for the authenticated member/customer.
+     * Retrieve a summary of account balances and recent transactions for the member dashboard.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4092,7 +3500,7 @@ export class ApiService {
         });
     }
     /**
-     * List customer members for cashier lookup. Staff only.
+     * Retrieve a list of registered members (customers) for staff-level lookups.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4103,7 +3511,7 @@ export class ApiService {
         });
     }
     /**
-     * Send OTP for 2FA setup or verification.
+     * Generate and send a 6-digit OTP to the provided phone number for security verification.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4114,7 +3522,7 @@ export class ApiService {
         });
     }
     /**
-     * List active user sessions (simulated via recent activity).
+     * Identifies and returns active user sessions based on recent login activity within the last 24 hours.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4125,7 +3533,7 @@ export class ApiService {
         });
     }
     /**
-     * Terminate a user session (simulated).
+     * Terminate a specific user session, invalidating all associated JWT tokens.
      * @param id
      * @returns any No response body
      * @throws ApiError
@@ -4142,7 +3550,7 @@ export class ApiService {
         });
     }
     /**
-     * List staff users for messaging.
+     * Retrieve a list of staff users for selection in internal messaging.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4153,7 +3561,7 @@ export class ApiService {
         });
     }
     /**
-     * List staff with ID information for Manager Dashboard.
+     * Retrieve a list of staff members with their formal staff ID strings and status.
      * @returns any No response body
      * @throws ApiError
      */
@@ -4164,7 +3572,7 @@ export class ApiService {
         });
     }
     /**
-     * Verify OTP for 2FA setup or other purposes.
+     * Verify the provided OTP against the stored session value and return verification status.
      * @returns any No response body
      * @throws ApiError
      */

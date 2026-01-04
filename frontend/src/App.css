@@ -1,1 +1,13 @@
 ﻿/* Custom component styles */
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-2000 {
+  animation-delay: 2s;
+}

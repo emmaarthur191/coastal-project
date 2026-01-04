@@ -8,6 +8,10 @@ interface User {
   first_name?: string;
   last_name?: string;
   role?: string;
+  needs_verification?: boolean;
+  phone?: string;
+  two_factor_phone?: string;
+  otp_verified?: boolean;
 }
 
 interface AuthResponse {
@@ -15,15 +19,26 @@ interface AuthResponse {
   user?: User;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+  getDashboardRoute: () => string;
   loading: boolean;
   isAuthenticated: boolean;
+
+  isManager: boolean;
+  isCashier: boolean;
+  isMobileBanker: boolean;
+  isOperationsManager: boolean;
+  isMember: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Export for backward compatibility with useAuth.js and other imports
+export { AuthContext };
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -77,13 +92,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Derived role states
+  const isManager = user?.role === 'manager';
+  const isCashier = user?.role === 'cashier';
+  const isMobileBanker = user?.role === 'mobile_banker';
+  const isOperationsManager = user?.role === 'operations_manager';
+  const isMember = user?.role === 'customer' || user?.role === 'member';
+
+  const getDashboardRoute = () => {
+    if (isManager) return '/manager-dashboard';
+    if (isCashier) return '/cashier-dashboard';
+    if (isMobileBanker) return '/mobile-banker-dashboard';
+    if (isOperationsManager) return '/operations-dashboard';
+    return '/dashboard';
+  };
+
   const value: AuthContextType = {
     user,
     login,
     logout,
+    checkAuth,
+    getDashboardRoute,
     loading,
     isAuthenticated: !!user,
+    isManager,
+    isCashier,
+    isMobileBanker,
+    isOperationsManager,
+    isMember,
   };
+
 
   return (
     <AuthContext.Provider value={value}>

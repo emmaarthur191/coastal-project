@@ -104,7 +104,7 @@ function Reports() {
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const handleGenerateReport = async (templateId: string) => {
         const result = await authService.generateReport({ template: templateId });
         if (result.success) {

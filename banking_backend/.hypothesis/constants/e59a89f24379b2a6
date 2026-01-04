@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\messaging.py
+# hypothesis_version: 6.148.7
+
+[400, 404, 501, '-created_at', '-updated_at', 'Device registered', 'Device updated', 'Emoji is required', 'Preferences updated', 'Reaction added', 'Reaction removed', 'Thread archived', 'User unblocked', 'connected', 'content', 'create', 'created_at', 'customer', 'device_id', 'device_name', 'device_type', 'email_notifications', 'emoji', 'error', 'id', 'is_active', 'is_archived', 'is_read', 'message', 'not_implemented', 'participants', 'post', 'priority', 'push_notifications', 'recipient', 'sender', 'sender.get_full_name', 'sender_name', 'sms_notifications', 'status', 'subject', 'success', 'timestamp', 'title', 'token', 'unknown', 'updated_at', 'user_id', 'user_id is required']

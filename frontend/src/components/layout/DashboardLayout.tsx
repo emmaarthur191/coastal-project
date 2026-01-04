@@ -5,7 +5,7 @@ import logo from '../../assets/logo.png';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useTheme } from '../../context/ThemeContext';
 
-/* Icons (using generic Material Icons or text fallback if Lucide not installed, 
+/* Icons (using generic Material Icons or text fallback if Lucide not installed,
    assuming project uses emojis based on previous code. Replacing emojis with cleaner text/icons later) */
 
 interface DashboardLayoutProps {

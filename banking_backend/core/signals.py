@@ -1,18 +1,45 @@
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from .models import Transaction, Expense
+import logging
 
-@receiver(post_save, sender=Transaction)
-def create_expense_from_payment(sender, instance, created, **kwargs):
-    """Automatically create an Expense record when a Payment transaction is completed."""
-    if instance.transaction_type == 'payment' and instance.status == 'completed':
-        # Check if expense already exists to prevent duplicates
-        if not Expense.objects.filter(transaction=instance).exists():
-            Expense.objects.create(
-                transaction=instance,
-                category='Operational',  # Default category
-                description=instance.description or 'Payment Expense',
-                amount=instance.amount,
-                date=instance.timestamp.date(),
-                status='paid'
-            )
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
+
+from users.models import AuditLog, User
+
+from .models import Account, Loan
+
+logger = logging.getLogger(__name__)
+
+
+@receiver(post_save, sender=Account)
+@receiver(post_save, sender=Loan)
+@receiver(post_save, sender=User)
+def audit_log_save(sender, instance, created, **kwargs):
+    """Automatically log creation and updates of critical models."""
+    action = "create" if created else "update"
+    model_name = sender.__name__
+
+    # Avoid recursion if logging the logger (though AuditLog is in users.models)
+    if model_name == "AuditLog":
+        return
+
+    # For updates, we could ideally diff the instance, but for now we'll log the repr
+    AuditLog.objects.create(
+        action=action,
+        model_name=model_name,
+        object_id=str(instance.id),
+        object_repr=str(instance),
+        changes={"automated": True},
+    )
+
+
+@receiver(post_delete, sender=Account)
+@receiver(post_delete, sender=Loan)
+def audit_log_delete(sender, instance, **kwargs):
+    """Automatically log deletion of critical models."""
+    AuditLog.objects.create(
+        action="delete",
+        model_name=sender.__name__,
+        object_id=str(instance.id),
+        object_repr=str(instance),
+        changes={"automated": True},
+    )

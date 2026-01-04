@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { ChatMessage } from './ChatMessage';
 export type PaginatedChatMessageList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<ChatMessage>;
+    results?: Array<ChatMessage>;
 };
 

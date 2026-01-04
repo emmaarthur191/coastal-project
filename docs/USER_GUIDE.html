@@ -1,0 +1,961 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coastal Banking - User Guide</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 40px 60px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            min-height: 100vh;
+        }
+        h1 {
+            color: var(--primary-dark);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: var(--primary);
+            margin-top: 2.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            color: var(--text);
+            margin-top: 1.5rem;
+            font-weight: 600;
+        }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background-color: #f1f5f9; }
+
+        /* Code */
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #d946ef;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--primary);
+            margin: 20px 0;
+            padding-left: 20px;
+            color: var(--secondary);
+            font-style: italic;
+        }
+
+        /* Header Info */
+        .doc-meta {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--primary);
+        }
+        .doc-meta p { margin: 5px 0; }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; padding: 0; margin: 0; max-width: 100%; }
+            a { text-decoration: none; color: black; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>﻿# Coastal Banking System - User Guide</p>
+<p><strong>Version</strong>: 1.1<br />
+<strong>Last Updated</strong>: December 16, 2025
+<strong>For</strong>: All User Roles (Customer, Cashier, Mobile Banker, Manager, Operations Manager, Admin)</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-getting-started">Getting Started</a></li>
+<li><a href="#2-customer-portal">Customer Portal</a></li>
+<li><a href="#3-cashier-operations">Cashier Operations</a></li>
+<li><a href="#4-mobile-banker-portal">Mobile Banker Portal</a></li>
+<li><a href="#5-operations-manager-dashboard">Operations Manager Dashboard</a></li>
+<li><a href="#6-manager-dashboard">Manager Dashboard</a></li>
+<li><a href="#7-administrator-functions">Administrator Functions</a></li>
+<li><a href="#8-security-features">Security Features</a></li>
+<li><a href="#9-troubleshooting">Troubleshooting</a></li>
+<li><a href="#10-faqs">FAQs</a></li>
+</ol>
+<hr />
+<h2 id="1-getting-started">1. Getting Started</h2>
+<h3 id="11-accessing-the-system">1.1 Accessing the System</h3>
+<p><strong>Production URL</strong>: <code>https://coastal-project.onrender.com</code></p>
+<p><strong>Supported Browsers</strong>:
+- Google Chrome (recommended)
+- Mozilla Firefox
+- Microsoft Edge
+- Safari</p>
+<h3 id="12-login-process">1.2 Login Process</h3>
+<ol>
+<li>Navigate to the login page</li>
+<li>Enter your <strong>email address</strong> (not username)</li>
+<li>Enter your <strong>password</strong></li>
+<li>Click <strong>Sign In</strong></li>
+<li>If OTP is enabled, enter the code sent to your phone</li>
+</ol>
+<h3 id="13-first-time-login">1.3 First-Time Login</h3>
+<p>For staff members (Cashier, Mobile Banker, Manager, Operations Manager, Admin):
+1. You will receive a temporary password via email
+2. After first login, you'll be prompted to change your password
+3. Create a strong password with:
+   - At least 8 characters
+   - One uppercase letter
+   - One lowercase letter
+   - One number
+   - One special character</p>
+<h3 id="14-forgot-password">1.4 Forgot Password</h3>
+<ol>
+<li>Click <strong>Forgot Password?</strong> on login page</li>
+<li>Enter your registered email</li>
+<li>Check your email for reset link</li>
+<li>Click the link and create a new password</li>
+</ol>
+<hr />
+<h2 id="2-customer-portal">2. Customer Portal</h2>
+<h3 id="21-dashboard-overview">2.1 Dashboard Overview</h3>
+<p>After login, customers see:
+- <strong>Account Summary</strong>: All your accounts with balances
+- <strong>Recent Transactions</strong>: Last 10 transactions
+- <strong>Quick Actions</strong>: Deposit, Withdraw, Transfer buttons
+- <strong>Notifications</strong>: Important alerts and messages</p>
+<h3 id="22-viewing-accounts">2.2 Viewing Accounts</h3>
+<ol>
+<li>Click <strong>Accounts</strong> in the sidebar</li>
+<li>View all your accounts:</li>
+<li><strong>Daily Susu</strong>: Daily savings account</li>
+<li><strong>Shares</strong>: Investment shares</li>
+<li>
+<p><strong>Monthly Contribution</strong>: Fixed monthly savings</p>
+</li>
+<li>
+<p>Click on any account to see:</p>
+</li>
+<li>Current balance</li>
+<li>Transaction history</li>
+<li>Account number</li>
+<li>Account status</li>
+</ol>
+<h3 id="23-making-transactions">2.3 Making Transactions</h3>
+<h4 id="deposit">Deposit</h4>
+<ol>
+<li>Click <strong>Deposit</strong> or navigate to Transactions  Deposit</li>
+<li>Select the account to deposit into</li>
+<li>Enter the amount</li>
+<li>Add an optional description</li>
+<li>Click <strong>Submit</strong></li>
+<li>Await cashier approval</li>
+</ol>
+<h4 id="withdrawal">Withdrawal</h4>
+<ol>
+<li>Click <strong>Withdraw</strong> or navigate to Transactions  Withdraw</li>
+<li>Select the account to withdraw from</li>
+<li>Enter the amount (cannot exceed balance)</li>
+<li>Add optional description</li>
+<li>Click <strong>Submit</strong></li>
+<li>Visit branch to collect cash</li>
+</ol>
+<h4 id="transfer-between-accounts">Transfer Between Accounts</h4>
+<ol>
+<li>Navigate to Transactions  Transfer</li>
+<li>Select <strong>From Account</strong></li>
+<li>Select <strong>To Account</strong></li>
+<li>Enter amount</li>
+<li>Click <strong>Transfer</strong></li>
+<li>Confirm the transfer</li>
+</ol>
+<h3 id="24-loan-applications">2.4 Loan Applications</h3>
+<ol>
+<li>Navigate to <strong>Loans</strong>  <strong>Apply for Loan</strong></li>
+<li>Fill in:</li>
+<li>Loan amount</li>
+<li>Purpose</li>
+<li>Preferred term (months)</li>
+<li>Upload supporting documents (if required)</li>
+<li>Click <strong>Submit Application</strong></li>
+<li>Track status in <strong>My Loans</strong></li>
+</ol>
+<p><strong>Loan Statuses</strong>:
+| Status | Meaning |
+|--------|---------|
+| Pending | Awaiting review |
+| Approved | Approved, awaiting disbursement |
+| Active | Loan is active with payments due |
+| Paid Off | Fully repaid |
+| Rejected | Application denied |</p>
+<h3 id="25-service-requests">2.5 Service Requests</h3>
+<p>Request services from the bank:
+1. Navigate to <strong>Services</strong>  <strong>New Request</strong>
+2. Select request type:
+   - Account Statement
+   - Cheque Book
+   - Card Replacement
+   - Address Change
+3. Fill in details
+4. Submit request
+5. Track in <strong>My Requests</strong></p>
+<h3 id="26-messaging">2.6 Messaging</h3>
+<p>Contact the bank:
+1. Navigate to <strong>Messages</strong>
+2. Click <strong>New Message</strong>
+3. Select recipient (Customer Service, Manager)
+4. Type your message
+5. Click <strong>Send</strong></p>
+<p>Real-time chat is available during business hours.</p>
+<hr />
+<h2 id="3-cashier-operations">3. Cashier Operations</h2>
+<h3 id="31-dashboard-overview">3.1 Dashboard Overview</h3>
+<p>Cashiers see:
+- <strong>Cash Drawer Status</strong>: Current balance
+- <strong>Today's Transactions</strong>: Summary
+- <strong>Pending Requests</strong>: Items requiring action
+- <strong>Quick Actions</strong>: Process deposit/withdrawal</p>
+<h3 id="32-cash-drawer-management">3.2 Cash Drawer Management</h3>
+<h4 id="opening-the-drawer">Opening the Drawer</h4>
+<ol>
+<li>Navigate to <strong>Cash Drawer</strong>  <strong>Open Drawer</strong></li>
+<li>Enter opening balance</li>
+<li>Count denominations:</li>
+<li>Enter count for each denomination (200, 100, 50, etc.)</li>
+<li>Click <strong>Open Drawer</strong></li>
+</ol>
+<h4 id="closing-the-drawer">Closing the Drawer</h4>
+<ol>
+<li>Navigate to <strong>Cash Drawer</strong>  <strong>Close Drawer</strong></li>
+<li>Count physical cash</li>
+<li>Enter closing denominations</li>
+<li>System calculates expected vs. actual</li>
+<li>Explain any discrepancy</li>
+<li>Click <strong>Close Drawer</strong></li>
+</ol>
+<h3 id="33-processing-deposits">3.3 Processing Deposits</h3>
+<ol>
+<li>Navigate to <strong>Transactions</strong>  <strong>Process Deposit</strong></li>
+<li>Search for customer by:</li>
+<li>Account number</li>
+<li>Email</li>
+<li>Phone number</li>
+<li>Select the account</li>
+<li>Enter deposit amount</li>
+<li>Select denominations received</li>
+<li>Click <strong>Process Deposit</strong></li>
+<li>Print receipt for customer</li>
+</ol>
+<h3 id="34-processing-withdrawals">3.4 Processing Withdrawals</h3>
+<ol>
+<li>Navigate to <strong>Transactions</strong>  <strong>Process Withdrawal</strong></li>
+<li>Search for customer</li>
+<li>Select the account</li>
+<li>Enter withdrawal amount</li>
+<li>Verify customer identity (ID check)</li>
+<li>Select denominations to give</li>
+<li>Click <strong>Process Withdrawal</strong></li>
+<li>Have customer sign receipt</li>
+<li>Print receipt</li>
+</ol>
+<h3 id="35-check-deposits">3.5 Check Deposits</h3>
+<ol>
+<li>Navigate to <strong>Transactions</strong>  <strong>Check Deposit</strong></li>
+<li>Enter check details:</li>
+<li>Check number</li>
+<li>Bank name</li>
+<li>Amount</li>
+<li>Scan/photograph check</li>
+<li>Submit for processing</li>
+<li>Check enters pending status (1-3 business days)</li>
+</ol>
+<h3 id="36-handling-complaints">3.6 Handling Complaints</h3>
+<ol>
+<li>Navigate to <strong>Complaints</strong>  <strong>New Complaint</strong></li>
+<li>Select customer</li>
+<li>Enter complaint details</li>
+<li>Assign priority (Low, Medium, High)</li>
+<li>Submit for manager review</li>
+</ol>
+<hr />
+<h2 id="4-mobile-banker-portal">4. Mobile Banker Portal</h2>
+<h3 id="41-dashboard-overview">4.1 Dashboard Overview</h3>
+<p><strong>Route</strong>: <code>/mobile-banker-dashboard</code></p>
+<p>The Mobile Banker dashboard provides field operations tools:
+- <strong>Metrics Panel</strong>: Scheduled visits, completed today, collections due, new applications
+- <strong>Main Content Area</strong>: Tab-based navigation
+- <strong>Field Toolbox</strong>: Quick action buttons</p>
+<h3 id="42-available-tabs">4.2 Available Tabs</h3>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Icon</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Registration</strong></td>
+<td></td>
+<td>Register new clients in the field</td>
+</tr>
+<tr>
+<td><strong>My Clients</strong></td>
+<td></td>
+<td>View assigned clients list</td>
+</tr>
+<tr>
+<td><strong>Visits</strong></td>
+<td></td>
+<td>Schedule and track client visits</td>
+</tr>
+<tr>
+<td><strong>Messaging</strong></td>
+<td></td>
+<td>Secure staff communication</td>
+</tr>
+<tr>
+<td><strong>My Payslips</strong></td>
+<td></td>
+<td>View personal salary slips</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-quick-actions-field-toolbox">4.3 Quick Actions (Field Toolbox)</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Icon</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Deposit</strong></td>
+<td></td>
+<td>Process field deposit</td>
+</tr>
+<tr>
+<td><strong>Withdraw</strong></td>
+<td></td>
+<td>Process field withdrawal</td>
+</tr>
+<tr>
+<td><strong>New Loan</strong></td>
+<td></td>
+<td>Start loan application</td>
+</tr>
+<tr>
+<td><strong>Collect</strong></td>
+<td></td>
+<td>Collect loan/savings payment</td>
+</tr>
+<tr>
+<td><strong>KYC Doc</strong></td>
+<td></td>
+<td>Capture customer documents</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-client-registration">4.4 Client Registration</h3>
+<ol>
+<li>Navigate to <strong>Registration</strong> tab</li>
+<li>Fill in customer details:</li>
+<li>Full name</li>
+<li>Phone number</li>
+<li>Address</li>
+<li>ID type and number</li>
+<li>Take photo of ID</li>
+<li>Submit registration</li>
+<li>Await manager approval</li>
+</ol>
+<h3 id="45-managing-clients">4.5 Managing Clients</h3>
+<ol>
+<li>Navigate to <strong>My Clients</strong> tab</li>
+<li>View all assigned clients</li>
+<li>Click on client for details:</li>
+<li>Account information</li>
+<li>Transaction history</li>
+<li>Visit history</li>
+</ol>
+<h3 id="46-field-collections">4.6 Field Collections</h3>
+<h4 id="recording-a-deposit">Recording a Deposit</h4>
+<ol>
+<li>Click <strong>Deposit</strong> in Field Toolbox</li>
+<li>Enter member ID or account number</li>
+<li>Select deposit type (Daily Susu, Shares, etc.)</li>
+<li>Enter amount</li>
+<li>Click <strong>Submit</strong></li>
+<li>Receive confirmation with reference number</li>
+</ol>
+<h4 id="recording-a-withdrawal">Recording a Withdrawal</h4>
+<ol>
+<li>Click <strong>Withdraw</strong> in Field Toolbox</li>
+<li>Enter member ID or account number</li>
+<li>Enter amount</li>
+<li>Click <strong>Submit</strong></li>
+<li>Receive confirmation</li>
+</ol>
+<h3 id="47-visit-scheduling">4.7 Visit Scheduling</h3>
+<ol>
+<li>Navigate to <strong>Visits</strong> tab</li>
+<li>View scheduled visits</li>
+<li>Click <strong>Add Stop</strong> to schedule new visit</li>
+<li>Fill in:</li>
+<li>Client name</li>
+<li>Location</li>
+<li>Date and time</li>
+<li>Purpose</li>
+<li>Click <strong>Schedule</strong></li>
+</ol>
+<h3 id="48-backend-api-endpoints-used">4.8 Backend API Endpoints Used</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operations/mobile-banker-metrics/</code></td>
+<td>Dashboard metrics</td>
+</tr>
+<tr>
+<td><code>operations/visit_schedules/</code></td>
+<td>Visit management</td>
+</tr>
+<tr>
+<td><code>operations/assignments/my_clients/</code></td>
+<td>Assigned clients</td>
+</tr>
+<tr>
+<td><code>operations/messages/</code></td>
+<td>Staff messaging</td>
+</tr>
+<tr>
+<td><code>operations/process_deposit/</code></td>
+<td>Field deposits</td>
+</tr>
+<tr>
+<td><code>operations/process_withdrawal/</code></td>
+<td>Field withdrawals</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-operations-manager-dashboard">5. Operations Manager Dashboard</h2>
+<h3 id="51-dashboard-overview">5.1 Dashboard Overview</h3>
+<p><strong>Route</strong>: <code>/operations-dashboard</code></p>
+<p>The Operations Manager has comprehensive access to system operations:
+- <strong>Overview Panel</strong>: Key metrics and workflow status
+- <strong>13 Feature Tabs</strong>: Full operational control
+- <strong>Security Monitoring</strong>: Audit and fraud detection</p>
+<h3 id="52-available-tabs">5.2 Available Tabs</h3>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Icon</th>
+<th>Description</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Overview</strong></td>
+<td></td>
+<td>Metrics, workflows, branch activity</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Accounts</strong></td>
+<td></td>
+<td>Account management</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Client Registration</strong></td>
+<td></td>
+<td>New customer onboarding</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Loan Approvals</strong></td>
+<td></td>
+<td>Approve/reject loan applications</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Staff IDs</strong></td>
+<td></td>
+<td>Manage staff identifiers</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Mobile Bankers</strong></td>
+<td></td>
+<td>Assign clients, view performance</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Branches</strong></td>
+<td></td>
+<td>Branch activity details</td>
+<td>Coming Soon</td>
+</tr>
+<tr>
+<td><strong>Reports</strong></td>
+<td></td>
+<td>Generate and download reports</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Alerts</strong></td>
+<td></td>
+<td>System alerts and warnings</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Charges</strong></td>
+<td></td>
+<td>Service charge configuration</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Products &amp; Services</strong></td>
+<td></td>
+<td>Manage products/promotions</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Messaging</strong></td>
+<td></td>
+<td>Secure staff communication</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td></td>
+<td>Audit logs, fraud alerts, sessions</td>
+<td>Active</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-overview-tab">5.3 Overview Tab</h3>
+<p>Displays:
+- <strong>Key Metrics</strong>: Total transactions, accounts, loans
+- <strong>Workflow Status</strong>: Pending items by category
+- <strong>Branch Activity</strong>: Performance by branch</p>
+<h3 id="54-staff-management">5.4 Staff Management</h3>
+<h4 id="managing-staff-ids">Managing Staff IDs</h4>
+<ol>
+<li>Navigate to <strong>Staff IDs</strong> tab</li>
+<li>View all staff members</li>
+<li>Filter by role (Cashier, Mobile Banker, Manager)</li>
+<li>Click on staff to view/edit details</li>
+</ol>
+<h4 id="mobile-banker-management">Mobile Banker Management</h4>
+<ol>
+<li>Navigate to <strong>Mobile Bankers</strong> tab</li>
+<li>View all mobile bankers</li>
+<li>Assign clients to bankers</li>
+<li>Transfer clients between bankers</li>
+<li>View performance metrics</li>
+</ol>
+<h3 id="55-reports">5.5 Reports</h3>
+<ol>
+<li>Navigate to <strong>Reports</strong> tab</li>
+<li>Select report type:</li>
+<li>Daily Transaction Summary</li>
+<li>Monthly Financial Report</li>
+<li>Loan Portfolio Report</li>
+<li>User Activity Report</li>
+<li>Select date range</li>
+<li>Click <strong>Generate</strong></li>
+<li>Download as PDF or CSV</li>
+</ol>
+<h3 id="56-system-alerts">5.6 System Alerts</h3>
+<ol>
+<li>Navigate to <strong>Alerts</strong> tab</li>
+<li>View alerts by type:</li>
+<li>Warning</li>
+<li>Error</li>
+<li>ℹ Info</li>
+<li>Success</li>
+<li>Each alert shows:</li>
+<li>Message</li>
+<li>Severity</li>
+<li>Timestamp</li>
+<li>Alert ID</li>
+</ol>
+<h3 id="57-service-charges">5.7 Service Charges</h3>
+<ol>
+<li>Navigate to <strong>Charges</strong> tab</li>
+<li>View existing service charges</li>
+<li>Add new charge:</li>
+<li>Name</li>
+<li>Description</li>
+<li>Type (percentage/fixed)</li>
+<li>Rate</li>
+<li>Applicable products</li>
+<li>Calculate charges for transactions</li>
+</ol>
+<h3 id="58-security-monitoring">5.8 Security Monitoring</h3>
+<ol>
+<li>Navigate to <strong>Security</strong> tab</li>
+<li>View sections:</li>
+<li><strong>Audit Logs</strong>: All system changes</li>
+<li><strong>Login Attempts</strong>: Success/failed logins</li>
+<li><strong>Fraud Alerts</strong>: ML-detected + rule-based alerts</li>
+<li><strong>Active Sessions</strong>: Currently logged-in users</li>
+</ol>
+<h3 id="59-backend-api-endpoints-used">5.9 Backend API Endpoints Used</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operations/metrics/</code></td>
+<td>Operational metrics</td>
+</tr>
+<tr>
+<td><code>operations/branch-activity/</code></td>
+<td>Branch performance</td>
+</tr>
+<tr>
+<td><code>operations/system-alerts/</code></td>
+<td>System alerts</td>
+</tr>
+<tr>
+<td><code>operations/workflow-status/</code></td>
+<td>Workflow tracking</td>
+</tr>
+<tr>
+<td><code>operations/service-charges/</code></td>
+<td>Charge configuration</td>
+</tr>
+<tr>
+<td><code>operations/generate-report/</code></td>
+<td>Report generation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-manager-dashboard">6. Manager Dashboard</h2>
+<h3 id="61-dashboard-overview">6.1 Dashboard Overview</h3>
+<p><strong>Route</strong>: <code>/manager-dashboard</code></p>
+<p>The Manager Dashboard includes all Operations Manager features plus:
+- User management
+- Full approval authority
+- System configuration</p>
+<h3 id="62-user-management">6.2 User Management</h3>
+<h4 id="creating-staff-accounts">Creating Staff Accounts</h4>
+<ol>
+<li>Navigate to <strong>Users</strong>  <strong>Create Staff</strong></li>
+<li>Fill in details:</li>
+<li>Full name</li>
+<li>Email</li>
+<li>Phone number</li>
+<li>Role (Cashier, Mobile Banker, Operations Manager)</li>
+<li>Click <strong>Create Account</strong></li>
+<li>Staff receives temporary password via email</li>
+</ol>
+<h4 id="managing-users">Managing Users</h4>
+<ol>
+<li>Navigate to <strong>Users</strong>  <strong>All Users</strong></li>
+<li>Search/filter users</li>
+<li>Click on user to:</li>
+<li>View details</li>
+<li>Edit permissions</li>
+<li>Reset password</li>
+<li>Deactivate account</li>
+</ol>
+<h3 id="63-loan-approvals">6.3 Loan Approvals</h3>
+<ol>
+<li>Navigate to <strong>Approvals</strong>  <strong>Pending Loans</strong></li>
+<li>Review loan applications:</li>
+<li>Customer history</li>
+<li>Credit score</li>
+<li>Supporting documents</li>
+<li>Click <strong>Approve</strong> or <strong>Reject</strong></li>
+<li>Add approval notes</li>
+<li>Customer is notified</li>
+</ol>
+<h3 id="64-security-monitoring">6.4 Security Monitoring</h3>
+<ol>
+<li>Navigate to <strong>Security</strong> tab</li>
+<li>View sections:</li>
+<li><strong>Audit Logs</strong>: All system changes</li>
+<li><strong>Login Attempts</strong>: Success/failed logins</li>
+<li><strong>Fraud Alerts</strong>: Suspicious activities (ML + Rule-based)</li>
+<li><strong>Active Sessions</strong>: Currently logged-in users</li>
+</ol>
+<h4 id="reviewing-fraud-alerts">Reviewing Fraud Alerts</h4>
+<ol>
+<li>Click on <strong>Fraud Alerts</strong></li>
+<li>View alert details:</li>
+<li>ML Risk Score (for ML-detected alerts prefixed with <code>[ML-ANOMALY]</code>)</li>
+<li>Transaction details</li>
+<li>User information</li>
+<li>Actions:</li>
+<li>Mark as resolved</li>
+<li>Escalate to admin</li>
+<li>Contact customer</li>
+</ol>
+<hr />
+<h2 id="7-administrator-functions">7. Administrator Functions</h2>
+<h3 id="71-system-configuration">7.1 System Configuration</h3>
+<p>Administrators have access to:
+- All Manager functions
+- System settings
+- ML model management
+- Backup/restore</p>
+<h3 id="72-ml-fraud-detection-management">7.2 ML Fraud Detection Management</h3>
+<h4 id="viewing-model-status">Viewing Model Status</h4>
+<ol>
+<li>Navigate to <strong>System</strong>  <strong>ML Fraud Detection</strong></li>
+<li>View:</li>
+<li>Model training date</li>
+<li>Number of samples used</li>
+<li>Recent detection statistics</li>
+<li>Alert breakdown by severity</li>
+</ol>
+<h4 id="retraining-the-model">Retraining the Model</h4>
+<ol>
+<li>Navigate to <strong>System</strong>  <strong>ML Fraud Detection</strong></li>
+<li>Click <strong>Retrain Model</strong></li>
+<li>Training runs in background</li>
+<li>Check status in Celery task queue</li>
+</ol>
+<h4 id="running-batch-analysis">Running Batch Analysis</h4>
+<ol>
+<li>Navigate to <strong>System</strong>  <strong>ML Fraud Detection</strong></li>
+<li>Click <strong>Batch Analyze</strong></li>
+<li>Select time range (e.g., last 24 hours)</li>
+<li>Click <strong>Start Analysis</strong></li>
+<li>View results in Fraud Alerts</li>
+</ol>
+<h3 id="73-audit-compliance">7.3 Audit &amp; Compliance</h3>
+<ol>
+<li>Navigate to <strong>System</strong>  <strong>Audit Dashboard</strong></li>
+<li>View complete audit trail:</li>
+<li>All model changes (create, update, delete)</li>
+<li>User actions</li>
+<li>System events</li>
+<li>Export for compliance reporting</li>
+</ol>
+<hr />
+<h2 id="8-security-features">8. Security Features</h2>
+<h3 id="81-account-protection">8.1 Account Protection</h3>
+<p><strong>Password Requirements</strong>:
+- Minimum 8 characters
+- Mix of uppercase/lowercase
+- At least one number
+- At least one special character</p>
+<p><strong>Account Lockout</strong>:
+- After 5 failed login attempts
+- Account locked for 30 minutes
+- Contact admin to unlock immediately</p>
+<h3 id="82-session-security">8.2 Session Security</h3>
+<ul>
+<li>Sessions expire after 15 minutes of inactivity</li>
+<li>Single session per user (new login logs out other sessions)</li>
+<li>Secure, httpOnly cookies used for authentication</li>
+</ul>
+<h3 id="83-two-factor-authentication-otp">8.3 Two-Factor Authentication (OTP)</h3>
+<p>If enabled:
+1. Enter username/password
+2. Receive OTP via SMS
+3. Enter OTP within 5 minutes
+4. Access granted</p>
+<h3 id="84-transaction-limits">8.4 Transaction Limits</h3>
+<table>
+<thead>
+<tr>
+<th>User Type</th>
+<th>Daily Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer</td>
+<td>10,000</td>
+</tr>
+<tr>
+<td>Cashier</td>
+<td>50,000</td>
+</tr>
+<tr>
+<td>Manager</td>
+<td>500,000</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td>Unlimited</td>
+</tr>
+</tbody>
+</table>
+<p>Limits can be adjusted by administrators.</p>
+<hr />
+<h2 id="9-troubleshooting">9. Troubleshooting</h2>
+<h3 id="91-login-issues">9.1 Login Issues</h3>
+<p><strong>Problem</strong>: "Invalid credentials" error
+- <strong>Solution</strong>: Check email (not username) and password
+- <strong>Solution</strong>: Check Caps Lock is off
+- <strong>Solution</strong>: Try password reset</p>
+<p><strong>Problem</strong>: "Account locked" message
+- <strong>Solution</strong>: Wait 30 minutes or contact admin
+- <strong>Solution</strong>: Check if email is correct</p>
+<p><strong>Problem</strong>: OTP not received
+- <strong>Solution</strong>: Check phone number on file
+- <strong>Solution</strong>: Wait 60 seconds and request new OTP
+- <strong>Solution</strong>: Contact admin</p>
+<h3 id="92-transaction-issues">9.2 Transaction Issues</h3>
+<p><strong>Problem</strong>: "Insufficient balance" error
+- <strong>Solution</strong>: Check available balance (pending transactions reduce available amount)</p>
+<p><strong>Problem</strong>: "Daily limit exceeded"
+- <strong>Solution</strong>: Wait until next day
+- <strong>Solution</strong>: Contact manager to increase limit</p>
+<p><strong>Problem</strong>: Transaction stuck on "Pending"
+- <strong>Solution</strong>: Refresh page
+- <strong>Solution</strong>: Check internet connection
+- <strong>Solution</strong>: Contact cashier/support</p>
+<h3 id="93-pageloading-issues">9.3 Page/Loading Issues</h3>
+<p><strong>Problem</strong>: Page not loading
+- <strong>Solution</strong>: Clear browser cache
+- <strong>Solution</strong>: Try different browser
+- <strong>Solution</strong>: Check internet connection</p>
+<p><strong>Problem</strong>: "Session Expired" error
+- <strong>Solution</strong>: Log in again
+- <strong>Solution</strong>: Avoid leaving page idle too long</p>
+<hr />
+<h2 id="10-faqs">10. FAQs</h2>
+<h3 id="general">General</h3>
+<p><strong>Q: How do I change my password?</strong>
+A: Go to Profile  Security  Change Password</p>
+<p><strong>Q: How do I update my phone number?</strong>
+A: Go to Profile  Personal Info  Edit</p>
+<p><strong>Q: Can I access the system on mobile?</strong>
+A: Yes, the system is mobile-responsive and works on all devices.</p>
+<h3 id="accounts">Accounts</h3>
+<p><strong>Q: How do I open a new account?</strong>
+A: Visit a branch or contact your mobile banker. Account opening requires identity verification.</p>
+<p><strong>Q: What's the difference between account types?</strong>
+A:
+- Daily Susu: Daily deposits, higher interest
+- Shares: Investment account with dividends
+- Monthly Contribution: Fixed monthly deposits</p>
+<h3 id="transactions">Transactions</h3>
+<p><strong>Q: Why is my transaction pending?</strong>
+A: Some transactions require cashier processing or system verification.</p>
+<p><strong>Q: Can I cancel a pending transaction?</strong>
+A: Contact customer service within 30 minutes of submission.</p>
+<h3 id="loans">Loans</h3>
+<p><strong>Q: How long does loan approval take?</strong>
+A: Typically 1-3 business days depending on amount and documentation.</p>
+<p><strong>Q: What documents do I need for a loan?</strong>
+A: ID, proof of income, bank statements (last 3 months).</p>
+<h3 id="security">Security</h3>
+<p><strong>Q: I received a fraud alert. What should I do?</strong>
+A: Contact customer service immediately. Do not perform transactions until confirmed.</p>
+<p><strong>Q: How do I report suspicious activity?</strong>
+A: Use the in-app messaging to contact security team or call the hotline.</p>
+<hr />
+<h2 id="support-contacts">Support Contacts</h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Contact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>General Support</td>
+<td>support@coastalbank.com</td>
+</tr>
+<tr>
+<td>Security Concerns</td>
+<td>security@coastalbank.com</td>
+</tr>
+<tr>
+<td>Technical Issues</td>
+<td>tech@coastalbank.com</td>
+</tr>
+<tr>
+<td>Phone Hotline</td>
+<td>+233 XX XXX XXXX</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Business Hours</strong>: Monday - Friday, 8:00 AM - 5:00 PM GMT</p>
+<hr />
+<p><em>Coastal Banking User Guide v1.1 - December 2024</em></p>
+    </div>
+</body>
+</html>

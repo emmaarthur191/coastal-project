@@ -22,7 +22,7 @@ def get_icon_path():
     else:
         # Running as script
         base_path = os.path.dirname(os.path.abspath(__file__))
-    
+
     icon_path = os.path.join(base_path, 'assets', 'icon.ico')
     return icon_path if os.path.exists(icon_path) else None
 
@@ -41,7 +41,7 @@ def main():
         easy_drag=False,
         text_select=True,
     )
-    
+
     # Start the application
     # Use EdgeChromium on Windows for best compatibility
     webview.start(
