@@ -10,17 +10,21 @@ from decimal import Decimal
 
 from django.db.models import Avg, F, Sum
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import (
     Account,
+    AccountOpeningRequest,
     Complaint,
+    Expense,
     FraudAlert,
     Loan,
     Refund,
     ServiceRequest,
+    SystemHealth,
     Transaction,
 )
 from core.permissions import IsStaff
@@ -100,8 +104,6 @@ class ExpensesView(APIView):
 
     def get(self, request):
         """Retrieve a list of operational expenses."""
-        from .models import Expense
-
         expenses = Expense.objects.all().order_by("-date")
 
         data = []
@@ -247,17 +249,16 @@ class OperationsMetricsView(APIView):
         """Calculate comprehensive operational metrics for the manager dashboard."""
         from users.models import User
 
-        from .models import AccountOpeningRequest, SystemHealth
-
         today = timezone.now().date()
 
         try:
             # Calculate metrics
             total_transactions_today = Transaction.objects.filter(timestamp__date=today).count()
 
-            total_volume_today = Transaction.objects.filter(timestamp__date=today, status="completed").aggregate(
+            total_volume_today_agg = Transaction.objects.filter(timestamp__date=today, status="completed").aggregate(
                 total=Sum("amount")
-            )["total"] or Decimal("0")
+            )
+            total_volume_today = total_volume_today_agg["total"] or Decimal("0")
 
             pending_transactions = Transaction.objects.filter(status="pending").count()
             active_accounts = Account.objects.filter(is_active=True).count()
@@ -286,7 +287,7 @@ class OperationsMetricsView(APIView):
                 transaction_change = (
                     (total_transactions_today - transactions_yesterday) / transactions_yesterday
                 ) * 100
-                transaction_change = round(transaction_change, 1)
+                transaction_change = round(float(transaction_change), 1)
             else:
                 transaction_change = 0 if total_transactions_today == 0 else 100
 
@@ -296,36 +297,38 @@ class OperationsMetricsView(APIView):
             failed_change = failed_today - failed_yesterday
 
             # API Response Time
-            avg_resp_time = SystemHealth.objects.filter(checked_at__date=today, status="healthy").aggregate(
+            avg_resp_time_agg = SystemHealth.objects.filter(checked_at__date=today, status="healthy").aggregate(
                 avg=Avg("response_time_ms")
-            )["avg"]
+            )
+            avg_resp_time = avg_resp_time_agg["avg"]
 
-            api_response_time = int(avg_resp_time) if avg_resp_time else 125
+            api_response_time = int(avg_resp_time) if avg_resp_time is not None else 125
 
             # Pending Approvals
             pending_items = []
 
-            # Pending Loans
-            loans = Loan.objects.filter(status="pending").order_by("-created_at")[:5]
+            # Pending Loans - select_related('user') is important for performance and stability
+            loans = Loan.objects.filter(status="pending").select_related("user").order_by("-created_at")[:10]
             for loan in loans:
+                user_name = loan.user.get_full_name() if loan.user else "Unknown User"
                 pending_items.append(
                     {
                         "id": str(loan.id),
                         "type": "Loan Application",
-                        "description": f"{loan.user.get_full_name()} - {float(loan.amount)}",
+                        "description": f"{user_name} - {float(loan.amount)}",
                         "date": loan.created_at.isoformat(),
                         "status": "pending",
                     }
                 )
 
             # Pending Account Openings
-            accounts = AccountOpeningRequest.objects.filter(status="pending").order_by("-created_at")[:5]
+            accounts = AccountOpeningRequest.objects.filter(status="pending").order_by("-created_at")[:10]
             for acc in accounts:
                 pending_items.append(
                     {
                         "id": str(acc.id),
                         "type": "Account Opening",
-                        "description": f"{acc.first_name} {acc.last_name} ({acc.account_type})",
+                        "description": f"{acc.first_name} {acc.last_name} ({acc.account_type})".strip(),
                         "date": acc.created_at.isoformat(),
                         "status": "pending",
                     }
@@ -335,7 +338,7 @@ class OperationsMetricsView(APIView):
             import random
 
             staff_perf_list = []
-            top_staff = User.objects.filter(role__in=["cashier", "manager"], is_active=True)[:5]
+            top_staff = User.objects.filter(role__in=["cashier", "manager"], is_active=True).order_by("?")[:5]
             for s in top_staff:
                 staff_perf_list.append(
                     {
@@ -348,47 +351,37 @@ class OperationsMetricsView(APIView):
 
             return Response(
                 {
-                    # Frontend compatibility fields
                     "system_uptime": "99.9%",
                     "transactions_today": total_transactions_today,
                     "transaction_change": transaction_change,
                     "api_response_time": api_response_time,
                     "failed_transactions": failed_today,
                     "failed_change": failed_change,
-                    # List Data
-                    "pending_approvals": pending_items,
+                    "pending_approvals": sorted(pending_items, key=lambda x: x["date"], reverse=True),
                     "staff_performance": staff_perf_list,
-                    # Detailed metrics
                     "transactions": {
                         "today": total_transactions_today,
                         "volume_today": str(total_volume_today),
                         "pending": pending_transactions,
                     },
-                    "accounts": {
-                        "active": active_accounts,
-                    },
-                    "alerts": {
-                        "active": active_alerts,
-                    },
-                    "service_requests": {
-                        "pending": pending_service_requests,
-                    },
-                    "refunds": {
-                        "pending": pending_refunds,
-                    },
-                    "complaints": {
-                        "open": open_complaints,
-                    },
-                    "staff": {
-                        "active": active_staff,
-                    },
+                    "accounts": {"active": active_accounts},
+                    "alerts": {"active": active_alerts},
+                    "service_requests": {"pending": pending_service_requests},
+                    "refunds": {"pending": pending_refunds},
+                    "complaints": {"open": open_complaints},
+                    "staff": {"active": active_staff},
                     "daily_trend": daily_transactions,
                 }
             )
         except Exception as e:
-            logger.error(f"Error calculating operations metrics: {e}")
+            logger.exception(f"Detailed error in OperationsMetricsView: {e!s}")
             return Response(
-                {"status": "error", "message": "Failed to calculate operations metrics", "code": "METRICS_ERROR"},
+                {
+                    "status": "error",
+                    "message": "Failed to calculate operations metrics",
+                    "details": str(e) if settings.DEBUG else None,
+                    "code": "METRICS_ERROR",
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

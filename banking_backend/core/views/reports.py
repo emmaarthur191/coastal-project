@@ -24,8 +24,23 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import Loan, Transaction
+from core.models import (
+    Account,
+    AccountStatement,
+    Loan,
+    Payslip,
+    Report,
+    ReportSchedule,
+    ReportTemplate,
+    Transaction,
+)
 from core.permissions import IsStaff
+from core.serializers import (
+    AccountStatementSerializer,
+    ReportScheduleSerializer,
+    ReportSerializer,
+    ReportTemplateSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,14 +164,10 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
 
     def get_queryset(self):
         """Filter reports so customers only see their own generated files."""
-        from core.models import Report
-
         return Report.objects.all()
 
     def get_serializer_class(self):
         """Return the serializer for report metadata."""
-        from core.serializers import ReportSerializer
-
         return ReportSerializer
 
     def perform_create(self, serializer):
@@ -166,7 +177,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
     @action(detail=False, methods=["post"])
     def generate(self, request):
         """Generate a report from a template."""
-        from core.models import Account, Report, ReportTemplate
+        from core.models import Account, ReportTemplate
         from core.pdf_services import generate_generic_report_pdf
 
         template_id = request.data.get("template_id")
@@ -290,14 +301,10 @@ class ReportTemplateViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
 
     def get_queryset(self):
         """Return the list of active report templates."""
-        from core.models import ReportTemplate
-
         return ReportTemplate.objects.filter(is_active=True)
 
     def get_serializer_class(self):
         """Return the serializer for report templates."""
-        from core.serializers import ReportTemplateSerializer
-
         return ReportTemplateSerializer
 
     def get_permissions(self):
@@ -320,14 +327,10 @@ class ReportScheduleViewSet(
 
     def get_queryset(self):
         """Return the list of report schedules."""
-        from core.models import ReportSchedule
-
         return ReportSchedule.objects.all()
 
     def get_serializer_class(self):
         """Return the serializer for report schedules."""
-        from core.serializers import ReportScheduleSerializer
-
         return ReportScheduleSerializer
 
     def perform_create(self, serializer):
@@ -345,8 +348,6 @@ class ReportScheduleViewSet(
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def toggle_active(self, request, pk=None):
         """Toggle schedule active state."""
-        from core.models import ReportSchedule
-
         try:
             schedule = ReportSchedule.objects.get(pk=pk)
             schedule.is_active = not schedule.is_active
@@ -532,8 +533,6 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
         """Download payslip PDF."""
         from django.http import FileResponse
 
-        from .models import Payslip
-
         try:
             payslip = Payslip.objects.get(pk=pk)
             if payslip.pdf_file:
@@ -551,8 +550,6 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
     @action(detail=True, methods=["post"])
     def mark_paid(self, request, pk=None):
         """Mark payslip as paid."""
-        from .models import Payslip
-
         try:
             payslip = Payslip.objects.get(pk=pk)
             payslip.status = "paid"
@@ -576,16 +573,12 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
 
     def get_queryset(self):
         """Return account statements accessible to the current user."""
-        from .models import AccountStatement
-
         if self.request.user.role in ["staff", "cashier", "manager", "admin", "superuser"]:
             return AccountStatement.objects.all()
         return AccountStatement.objects.filter(account__user=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer for account statements."""
-        from .serializers import AccountStatementSerializer
-
         return AccountStatementSerializer
 
     @action(detail=False, methods=["post"])
@@ -593,7 +586,6 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
         """Request a new statement."""
         from django.db import models
 
-        from core.models import Account, AccountStatement
         from core.pdf_services import generate_statement_pdf
 
         account_id = request.data.get("account_id")
