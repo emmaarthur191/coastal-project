@@ -1236,7 +1236,7 @@ export const apiService = {
 
   async calculateCommission(data: Record<string, unknown> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('banking/commissions/calculate/', data);
+      const response = await api.post('operations/calculate-commission/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Commission calculation failed';
@@ -1246,7 +1246,7 @@ export const apiService = {
 
   async calculateInterest(data: Record<string, unknown> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('banking/interest/calculate/', data);
+      const response = await api.post('operations/calculate-interest/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Interest calculation failed';
@@ -1604,6 +1604,102 @@ export const apiService = {
       return { success: true, data: response.data as MobileMessage[] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch messages' };
+    }
+  },
+
+  /**
+   * Fetches all accounts for staff viewing (Manager/Admin).
+   */
+  async getStaffAccounts(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.get('banking/accounts/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch accounts' };
+    }
+  },
+
+  /**
+   * Fetches account summary statistics for staff dashboards.
+   */
+  async getStaffAccountsSummary(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.get('banking/accounts/summary/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch account summary' };
+    }
+  },
+
+  /**
+   * Fetches all staff members for manager dashboards.
+   */
+  async getAllStaff(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.get('users/staff/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch staff members' };
+    }
+  },
+
+  /**
+   * Fetches cash flow data for manager dashboards.
+   */
+  async getCashFlow(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.get('banking/cash-flow/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch cash flow' };
+    }
+  },
+
+  /**
+   * Fetches expense data for manager dashboards.
+   */
+  async getExpenses(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.get('banking/expenses/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch expenses' };
+    }
+  },
+
+  /**
+   * Approves a loan by ID.
+   */
+  async approveLoan(loanId: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post(`banking/loans/${loanId}/approve/`);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to approve loan' };
+    }
+  },
+
+  /**
+   * Generates a payslip.
+   */
+  async generatePayslip(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post('users/payslips/generate/', formData);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to generate payslip' };
+    }
+  },
+
+  /**
+   * Generates an account statement.
+   */
+  async generateStatement(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post('banking/statements/generate/', formData);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to generate statement' };
     }
   },
 
