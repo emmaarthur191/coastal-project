@@ -1242,7 +1242,7 @@ export class ApiService {
     public static apiBankingStaffAccountsSummaryRetrieve(): CancelablePromise<Account> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/banking/staff-accounts/summary/',
+            url: '/api/accounts/summary/',
         });
     }
     /**

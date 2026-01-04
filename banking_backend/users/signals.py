@@ -107,7 +107,7 @@ def generate_staff_id(sender, instance, created, **kwargs):
     """Generate Staff ID for staff members if they don't have one.
 
     Uses retry logic to handle race conditions and ensure uniqueness.
-    Format: CA-MMYY-NN (e.g., CA-1224-01)
+    Format: CA + 4 sequential digits (e.g., CA0001, CA0002, ...)
     """
     import logging
 
@@ -120,14 +120,9 @@ def generate_staff_id(sender, instance, created, **kwargs):
         "operations_manager",
         "admin",
     ]:
-        import datetime
-
         from django.db import IntegrityError, transaction
 
-        now = datetime.datetime.now()
-        month = now.strftime("%m")
-        year = now.strftime("%y")  # Last 2 digits
-        prefix = f"CA-{month}{year}"
+        prefix = "CA"
 
         logger.info(f"Generating staff ID for {instance.email} with prefix {prefix}")
 
@@ -137,25 +132,30 @@ def generate_staff_id(sender, instance, created, **kwargs):
                 with transaction.atomic():
                     # Lock the query to prevent race conditions
                     User = sender
+                    # Find the highest existing staff_id with CA prefix
                     latest_user = (
-                        User.objects.select_for_update().filter(staff_id__startswith=prefix).order_by("staff_id").last()
+                        User.objects.select_for_update()
+                        .filter(staff_id__startswith=prefix, staff_id__regex=r'^CA\d{4}$')
+                        .order_by("staff_id")
+                        .last()
                     )
 
                     if latest_user and latest_user.staff_id:
                         try:
-                            current_seq = int(latest_user.staff_id.split("-")[-1])
+                            # Extract the numeric portion (last 4 digits)
+                            current_seq = int(latest_user.staff_id[2:])  # Skip "CA"
                             new_seq = current_seq + 1
                         except ValueError:
                             new_seq = 1
                     else:
                         new_seq = 1
 
-                    # Ensure sequence doesn't exceed 2 digits, roll to next format if needed
-                    if new_seq > 99:
-                        # Add extra digit for overflow
-                        instance.staff_id = f"{prefix}-{new_seq:03d}"
+                    # Format: CA + 4 digits (0001-9999)
+                    if new_seq > 9999:
+                        # If we exceed 4 digits, extend to 5
+                        instance.staff_id = f"{prefix}{new_seq:05d}"
                     else:
-                        instance.staff_id = f"{prefix}-{new_seq:02d}"
+                        instance.staff_id = f"{prefix}{new_seq:04d}"
 
                     instance.save(update_fields=["staff_id"])
                     logger.info(f"Generated staff ID {instance.staff_id} for {instance.email}")
@@ -168,10 +168,11 @@ def generate_staff_id(sender, instance, created, **kwargs):
                     # Last attempt, use UUID fallback
                     import uuid
 
-                    instance.staff_id = f"{prefix}-{uuid.uuid4().hex[:6].upper()}"
+                    instance.staff_id = f"{prefix}{uuid.uuid4().hex[:4].upper()}"
                     instance.save(update_fields=["staff_id"])
                     logger.warning(f"Used UUID fallback for staff ID: {instance.staff_id}")
                 continue
             except Exception as e:
                 logger.error(f"Failed to generate staff ID for {instance.email}: {e}")
                 return  # Don't crash user creation
+
