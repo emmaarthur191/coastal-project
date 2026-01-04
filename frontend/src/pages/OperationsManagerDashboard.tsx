@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api.ts';
+import { authService, OperationsMetrics, BranchActivity, SystemAlert, WorkflowStatus, ServiceCharge } from '../services/api.ts';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -20,12 +20,7 @@ import ProductsServicesManagement from '../components/manager/ProductsServicesMa
 import SecuritySection from '../components/manager/SecuritySection';
 
 // --- Types ---
-interface WorkflowStatus {
-  loan_disbursements: { completed: number; pending: number };
-  account_onboarding: { completed: number; pending: number };
-  kyc_verification: { completed: number; pending: number };
-  service_charges: { completed: number; pending: number };
-}
+// Local WorkflowStatus interface removed in favor of imported one
 
 type ActiveView = 'overview' | 'accounts' | 'client-registration' | 'loan-approvals' | 'staff-ids' | 'mobile-banker-management' | 'branches' | 'reports' | 'alerts' | 'charges' | 'messaging' | 'products-services' | 'security';
 
@@ -39,11 +34,11 @@ function OperationsManagerDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [dashboardData, setDashboardData] = useState<{
-    metrics: Record<string, any> | null;
-    branchActivity: any[];
-    systemAlerts: any[];
-    workflowStatus: WorkflowStatus | {};
-    serviceCharges: any[];
+    metrics: OperationsMetrics | null;
+    branchActivity: BranchActivity[];
+    systemAlerts: SystemAlert[];
+    workflowStatus: WorkflowStatus | Record<string, never>; // Allow empty object for initial state if needed
+    serviceCharges: ServiceCharge[];
   }>({
     metrics: null,
     branchActivity: [],
@@ -55,8 +50,10 @@ function OperationsManagerDashboard() {
   const [newCharge, setNewCharge] = useState({
     name: '', description: '', charge_type: 'percentage', rate: '', applicable_to: []
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [serviceChargeCalculation, setServiceChargeCalculation] = useState<any>(null);
-  const [reportData, setReportData] = useState(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [reportData, setReportData] = useState<unknown>(null);
   const [staffIds, setStaffIds] = useState([]);
   const [staffIdFilters, setStaffIdFilters] = useState({});
 
@@ -68,7 +65,7 @@ function OperationsManagerDashboard() {
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const reportDataPayload = { type: reportType, date_from: lastWeek, date_to: today };
 
-    const result = await authService.generateReport(reportDataPayload);
+    const result = await authService.generateOperationsReport(reportDataPayload);
     if (result.success) {
       alert(`Report '${reportType}' generated!`);
       setReportData(result.data);
@@ -90,10 +87,10 @@ function OperationsManagerDashboard() {
         ]);
 
         setDashboardData({
-          metrics: metricsRes.success ? metricsRes.data : {},
+          metrics: metricsRes.success && metricsRes.data ? metricsRes.data : null,
           branchActivity: branchRes.success && Array.isArray(branchRes.data) ? branchRes.data : [],
           systemAlerts: alertsRes.success && Array.isArray(alertsRes.data) ? alertsRes.data : [],
-          workflowStatus: workflowRes.success ? workflowRes.data : {},
+          workflowStatus: workflowRes.success && workflowRes.data ? workflowRes.data : {},
           serviceCharges: chargesRes.success && Array.isArray(chargesRes.data) ? chargesRes.data : [],
         });
       } catch (error) {
@@ -193,6 +190,7 @@ function OperationsManagerDashboard() {
             <h2 className="text-2xl font-bold mb-6 text-secondary-900">System Alerts</h2>
             {systemAlerts && systemAlerts.length > 0 ? (
               <div className="space-y-4">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {systemAlerts.map((alert: any, index: number) => (
                   <div key={alert.id || index} className={`p-4 rounded-lg border-l-4 ${alert.type === 'warning' ? 'bg-warning-50 border-l-warning-500' :
                     alert.type === 'error' ? 'bg-error-50 border-l-error-500' :
@@ -235,7 +233,10 @@ function OperationsManagerDashboard() {
               authService={authService}
               refetchCharges={async () => {
                 const chargesRes = await authService.getServiceCharges();
-                if (chargesRes.success) setDashboardData(d => ({ ...d, serviceCharges: chargesRes.data }));
+                if (chargesRes.success && chargesRes.data) {
+                  const newCharges = chargesRes.data;
+                  setDashboardData(d => ({ ...d, serviceCharges: newCharges }));
+                }
               }}
             />
           </Card>
