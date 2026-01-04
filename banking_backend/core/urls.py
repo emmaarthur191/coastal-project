@@ -128,6 +128,8 @@ router.register(r"operations/statements", AccountStatementViewSet, basename="sta
 
 
 urlpatterns = [
+    # Account summary endpoint (maps to StaffAccountsViewSet.summary)
+    path("accounts/summary/", StaffAccountsViewSet.as_view({"get": "summary"}), name="accounts-summary"),
     path("performance/system-health/", SystemHealthView.as_view(), name="system-health"),
     path("performance/dashboard-data/", PerformanceDashboardView.as_view(), name="performance-dashboard"),
     path("performance/metrics/", PerformanceMetricsView.as_view(), name="performance-metrics"),

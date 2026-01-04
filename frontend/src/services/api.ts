@@ -1150,7 +1150,7 @@ export const apiService = {
 
   async getMessageThreads(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('banking/messages/threads/');
+      const response = await api.get('banking/message-threads/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Message threads fetch failed';
@@ -1160,7 +1160,7 @@ export const apiService = {
 
   async createMessageThread(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('banking/messages/threads/', data);
+      const response = await api.post('banking/message-threads/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Message thread creation failed';
@@ -1170,7 +1170,7 @@ export const apiService = {
 
   async getThreadMessages(threadId: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get(`banking/messages/threads/${threadId}/messages/`);
+      const response = await api.get(`banking/message-threads/${threadId}/messages/`);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Thread messages fetch failed';
@@ -1216,7 +1216,7 @@ export const apiService = {
 
   async createServiceCharge(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('banking/service-charges/', data);
+      const response = await api.post('operations/service-charges/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Service charge creation failed';
@@ -1226,7 +1226,7 @@ export const apiService = {
 
   async calculateServiceCharge(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('banking/service-charges/calculate/', data);
+      const response = await api.post('operations/calculate-service-charge/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Service charge calculation failed';
@@ -1463,7 +1463,7 @@ export const apiService = {
 
   async getHealthChecks(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('system/health/');
+      const response = await api.get('performance/system-health/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Health check failed';
@@ -1672,7 +1672,7 @@ export const apiService = {
    */
   async generatePayslip(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('users/payslips/generate/', formData);
+      const response = await api.post('operations/generate-payslip/', formData);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to generate payslip' };
@@ -1684,7 +1684,7 @@ export const apiService = {
    */
   async generateStatement(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post('banking/statements/generate/', formData);
+      const response = await api.post('banking/generate-statement/', formData);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to generate statement' };
