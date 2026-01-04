@@ -1,8 +1,8 @@
 import os
+import threading
 from urllib.parse import urlparse
 
 import environ
-import threading
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,9 +46,10 @@ if SENTRY_DSN and not env.bool("DEBUG", default=False):
         release=env("APP_VERSION", default="1.0.0"),
         # Before send hook to add correlation ID
         before_send=lambda event, hint: (
-            event.get("tags", {}).update({
-                "correlation_id": getattr(getattr(threading, "local", lambda: None)(), "correlation_id", "NO_ID")
-            }) or event
+            event.get("tags", {}).update(
+                {"correlation_id": getattr(getattr(threading, "local", lambda: None)(), "correlation_id", "NO_ID")}
+            )
+            or event
         ),
     )
 
@@ -254,7 +255,7 @@ REST_FRAMEWORK = {
         "user": "1000/hour",  # Authenticated users: 1000 requests per hour
         # Authentication endpoint limits (critical security)
         "login": "5/m",  # Login: 5 attempts per minute (brute-force protection)
-        "otp_verify": "3/5m",  # OTP verification: 3 attempts per 5 minutes
+        "otp_verify": "36/h",  # OTP verification: 36 attempts per hour (approx 3 per 5 mins)
         "otp_request": "3/hour",  # OTP request: 3 per hour (SMS spam prevention)
         "password_reset": "3/hour",  # Password reset: 3 per hour (enumeration prevention)
         "registration": "3/hour",  # Registration: 3 per hour (spam account prevention)
