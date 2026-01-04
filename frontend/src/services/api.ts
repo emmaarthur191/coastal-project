@@ -1093,7 +1093,7 @@ export const apiService = {
     try {
       const response = await api.get('analytics/performance/');
       return { success: true, data: response.data };
-    } catch (error: unknown) {
+    } catch {
       // Mock data if API fails to avoid breaking UI in dev/demo
       return {
         success: true,
@@ -1167,6 +1167,16 @@ export const apiService = {
   },
 
   // Authentication & Management Methods (Restored)
+  async checkAuth(): Promise<{ authenticated: boolean; user?: User }> {
+    try {
+      const response = await api.get<{ authenticated: boolean; user?: User }>('users/auth/check/');
+      return response.data;
+    } catch {
+      // Don't log 401/403 errors as they are expected when not logged in
+      return { authenticated: false };
+    }
+  },
+
   async login(email: string, password: string): Promise<{ success: boolean; user?: User; token?: string; error?: string }> {
     try {
       const response = await api.post<{ user: User; token: string }>('users/auth/login/', { email, password });

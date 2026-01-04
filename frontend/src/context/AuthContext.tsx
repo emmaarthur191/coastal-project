@@ -62,6 +62,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuth = async (): Promise<void> => {
     try {
+      if (typeof authService.checkAuth !== 'function') {
+        console.error('checkAuth is not a function - checking exports');
+        return;
+      }
       const data: AuthResponse = await authService.checkAuth();
       if (data.authenticated && data.user) {
         setUser(data.user);
