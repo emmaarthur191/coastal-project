@@ -80,8 +80,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const data = await authService.login(username, password);
-      setUser(data.user);
-      return { success: true };
+
+      if (!data.success) {
+        return { success: false, error: data.error };
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        return { success: true };
+      } else {
+        return { success: false, error: 'Login successful but no user data received' };
+      }
     } catch (error: any) {
       return { success: false, error: error.message };
     }

@@ -54,7 +54,7 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: "3.11.4"
-    healthCheckPath: /api/performance/system-health/
+    healthCheckPath: /api/health/simple/
     autoDeploy: true
 
   # =============================================================================

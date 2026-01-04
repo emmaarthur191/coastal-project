@@ -92,10 +92,10 @@ const SecuritySection: React.FC = () => {
         loadData();
     }, []);
 
-    // Auto-refresh every 5 seconds (near real-time)
+    // Auto-refresh every 30 seconds (standard monitor rate)
     useEffect(() => {
         if (!autoRefresh) return;
-        const interval = setInterval(loadData, 5000);
+        const interval = setInterval(loadData, 30000);
         return () => clearInterval(interval);
     }, [autoRefresh]);
 
