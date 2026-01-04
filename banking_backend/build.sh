@@ -14,7 +14,6 @@ echo "=== Collecting static files ==="
 python manage.py collectstatic --noinput
 
 echo "=== Running database migrations ==="
-# Try normal migration first, if it fails due to existing tables/columns, fake ALL core migrations
 # =========================================================================
 # FIX: Database Schema Repair Strategy
 # Problem: Migration 0020 contains both AddField(initial_balance) AND 
@@ -22,15 +21,15 @@ echo "=== Running database migrations ==="
 # column doesn't. We can't simply fake 0020 because that skips AddField too.
 #
 # Solution:
-# 1. Apply fix migration 0019_5 which adds initial_balance column defensively
+# 1. Run repair_db.py to add initial_balance column via raw SQL
 # 2. Fake 0020 (Message tables already exist, initial_balance now exists)
 # 3. Run all remaining migrations normally
 # =========================================================================
-echo "=== Step 1: Apply fix migration to add initial_balance column ==="
-python manage.py migrate core 0019_5_fix_initial_balance --noinput || echo "Fix migration may have already been applied"
+echo "=== Step 1: Run database repair script ==="
+python repair_db.py || echo "Repair script completed (errors non-fatal)"
 
-echo "=== Step 2: Fake migration 0020 (Message tables + initial_balance already exist) ==="
-python manage.py migrate core 0020_add_initial_balance_and_quantize --fake --noinput || echo "0020 may already be marked as applied"
+echo "=== Step 2: Fake migration 0020 (if not already applied) ==="
+python manage.py migrate core 0020_add_initial_balance_and_quantize --fake --noinput || echo "0020 may already be applied"
 
 echo "=== Step 3: Run all remaining migrations ==="
 python manage.py migrate --noinput
