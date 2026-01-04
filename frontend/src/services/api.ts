@@ -53,25 +53,21 @@ const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
 const logger = {
   info: (...args: unknown[]) => {
     if (import.meta.env.DEV || (typeof window !== 'undefined' && (window as Window & { DEBUG_API?: boolean }).DEBUG_API)) {
-      // eslint-disable-next-line no-console
       console.warn('[API INFO]', ...args);
     }
   },
   warn: (message: string, data?: unknown) => {
     if (isDev) {
-      // eslint-disable-next-line no-console
       console.warn(`[API Warning] ${message}`, data || '');
     }
   },
   error: (message: string, error?: unknown) => {
     if (isDev) {
-      // eslint-disable-next-line no-console
       console.error(`[API Error] ${message}`, error || '');
     }
   },
   debug: (...args: unknown[]) => {
     if (typeof window !== 'undefined' && (window as Window & { DEBUG_API?: boolean }).DEBUG_API) {
-      // eslint-disable-next-line no-console
       console.warn('[API DEBUG]', ...args);
     }
   }
@@ -688,6 +684,115 @@ export const api = {
   delete: <T = unknown>(url: string, config: RequestConfig = { method: 'DELETE', url: '' }): Promise<{ data: T }> => apiCall<T>('DELETE', url, undefined, config),
 };
 
+export interface WorkflowStatus {
+  loan_disbursements: { completed: number; pending: number };
+  account_onboarding: { completed: number; pending: number };
+  kyc_verification: { completed: number; pending: number };
+  service_charges: { completed: number; pending: number };
+  total_active?: number;
+  pending_approval?: number;
+  in_progress?: number;
+  completed_today?: number;
+  efficiency_rate?: number;
+  avg_processing_time?: string;
+}
+
+export interface BranchActivity {
+  branch: string;
+  transactions: number;
+  deposits: number;
+  withdrawals: number;
+  status: string;
+}
+
+export interface SystemAlert {
+  id: string | number;
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  time: string;
+  resolved: boolean;
+}
+
+export interface OperationsMetrics {
+  system_uptime: string;
+  transactions_today: number;
+  transaction_change: number;
+  api_response_time: number;
+  failed_transactions: number;
+  failed_change: number;
+  pending_approvals: Array<{
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    status: string;
+  }>;
+  staff_performance: Array<{
+    name: string;
+    role: string;
+    transactions: number;
+    efficiency: string;
+  }>;
+  transactions: {
+    today: number;
+    volume_today: string;
+    pending: number;
+  };
+  accounts: { active: number };
+  alerts: { active: number };
+  service_requests: { pending: number };
+  refunds: { pending: number };
+  complaints: { open: number };
+  staff: { active: number };
+  daily_trend: Array<{ date: string; count: number }>;
+}
+
+export interface ServiceCharge {
+  id: number;
+  name: string;
+  description: string;
+  charge_type: 'percentage' | 'fixed';
+  rate: string;
+  applicable_to: string[];
+  is_active: boolean;
+  created_at: string;
+}
+
+// Mobile Banker Types
+export interface MobileBankerMetric {
+  scheduled_visits: number;
+  completed_today: number;
+  collections_due: number;
+  new_applications: number;
+}
+
+export interface MobileMessage {
+  id: number;
+  sender: string;
+  subject: string;
+  message: string;
+  received_at: string;
+  is_read: boolean;
+}
+
+export interface VisitSchedule {
+  id: number;
+  client_name: string;
+  visit_date: string;
+  purpose: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  location?: string;
+}
+
+export interface AssignedClient {
+  id: number;
+  name: string;
+  account_number: string;
+  phone: string;
+  address?: string;
+  balance?: string;
+}
+
 export const apiService = {
   async getMemberDashboardData(): Promise<MemberDashboardData> {
     try {
@@ -946,11 +1051,15 @@ export const apiService = {
     }
   },
 
-  async getFraudAlerts(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getFraudAlerts(filters: Record<string, any> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.get('fraud/alerts/');
-      const data = response.data as { results?: unknown[] };
-      return { success: true, data: data.results || [] };
+      const queryParams = new URLSearchParams(filters).toString();
+      const url = `fraud/alerts/${queryParams ? '?' + queryParams : ''}`;
+      const response = await api.get(url);
+      const data = response.data as { results?: unknown[] } | unknown[];
+      // Handle both paginated and list responses
+      const results = Array.isArray(data) ? data : (data as { results: unknown[] }).results || [];
+      return { success: true, data: results };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Fraud alerts fetch failed';
       logger.error('Error fetching fraud alerts:', error);
@@ -1392,6 +1501,112 @@ export const apiService = {
       return { success: false, error: msg };
     }
   },
+  async getServiceCharges(): Promise<{ success: boolean; data?: ServiceCharge[]; error?: string }> {
+    try {
+      const response = await api.get('operations/service-charges/');
+      return { success: true, data: response.data as ServiceCharge[] };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Service charges fetch failed';
+      return { success: false, error: msg };
+    }
+  },
+
+  async getStaffIds(filters: Record<string, any> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      // Manually construct query string since apiCall/fetch might not handle 'params' correctly
+      const queryParams = new URLSearchParams(filters).toString();
+      const url = `users/staff-ids/${queryParams ? '?' + queryParams : ''}`;
+      const response = await api.get(url);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Staff IDs fetch failed';
+      return { success: false, error: msg };
+    }
+  },
+
+  // Operations Manager Dashboard Methods
+  async getOperationalMetrics(): Promise<{ success: boolean; data?: OperationsMetrics; error?: string }> {
+    try {
+      const response = await api.get('operations/metrics/');
+      return { success: true, data: response.data as OperationsMetrics };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch metrics' };
+    }
+  },
+
+  async getBranchActivity(): Promise<{ success: boolean; data?: BranchActivity[]; error?: string }> {
+    try {
+      const response = await api.get('operations/branch-activity/');
+      return { success: true, data: response.data as BranchActivity[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch branch activity' };
+    }
+  },
+
+  async getSystemAlerts(): Promise<{ success: boolean; data?: SystemAlert[]; error?: string }> {
+    try {
+      const response = await api.get('operations/system-alerts/');
+      return { success: true, data: response.data as SystemAlert[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch system alerts' };
+    }
+  },
+
+  async getWorkflowStatus(): Promise<{ success: boolean; data?: WorkflowStatus; error?: string }> {
+    try {
+      const response = await api.get('operations/workflow-status/');
+      return { success: true, data: response.data as WorkflowStatus };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch workflow status' };
+    }
+  },
+
+  async generateOperationsReport(payload: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post('operations/generate-report/', payload);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to generate report' };
+    }
+  },
+
+  // Mobile Banker Dashboard Methods
+  async getMobileBankerMetrics(): Promise<{ success: boolean; data?: MobileBankerMetric; error?: string }> {
+    try {
+      const response = await api.get('operations/mobile-banker-metrics/');
+      return { success: true, data: response.data as MobileBankerMetric };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch metrics' };
+    }
+  },
+
+  async getVisits(): Promise<{ success: boolean; data?: VisitSchedule[]; error?: string }> {
+    try {
+      const response = await api.get('operations/visit_schedules/');
+      return { success: true, data: response.data as VisitSchedule[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch visits' };
+    }
+  },
+
+  async getAssignments(): Promise<{ success: boolean; data?: AssignedClient[]; error?: string }> {
+    try {
+      const response = await api.get('operations/assignments/my_clients/');
+      return { success: true, data: response.data as AssignedClient[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch assignments' };
+    }
+  },
+
+  async getMobileMessages(): Promise<{ success: boolean; data?: MobileMessage[]; error?: string }> {
+    try {
+      const response = await api.get('operations/messages/');
+      return { success: true, data: response.data as MobileMessage[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch messages' };
+    }
+  },
+
 };
 
 export const authService = apiService;
