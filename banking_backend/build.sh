@@ -15,14 +15,8 @@ python manage.py collectstatic --noinput
 
 echo "=== Running database migrations ==="
 # Try normal migration first, if it fails due to existing tables/columns, fake ALL core migrations
-if ! python manage.py migrate --noinput 2>&1; then
-    echo "=== Migration failed, faking all core migrations to sync state ==="
-    # Fake ALL core migrations - the database schema is already up to date
-    python manage.py migrate core --fake --noinput || true
-    python manage.py migrate users --fake --noinput || true
-    # Now run migrations for any remaining apps
-    python manage.py migrate --noinput
-fi
+# Run database migrations - Fail build if migration fails
+python manage.py migrate --noinput
 
 echo "=== Creating initial users ==="
 python manage.py create_initial_users
