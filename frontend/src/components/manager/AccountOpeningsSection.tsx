@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import GlassCard from '../ui/modern/GlassCard';
-import { ApiService } from '../../api/services/ApiService';
+import { AccountOpeningsService } from '../../api/services/AccountOpeningsService';
 import type { AccountOpeningRequest } from '../../api/models/AccountOpeningRequest';
 
 interface AccountOpeningsSectionProps {
@@ -19,11 +19,16 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
         try {
             setLoading(true);
             setError(null);
-            const response = await ApiService.apiBankingAccountOpeningsList(
-                undefined,
-                undefined,
-                filter === 'all' ? undefined : filter as 'approved' | 'completed' | 'pending' | 'rejected'
+
+            const statusFilter = filter === 'all' ? undefined : (filter as 'approved' | 'completed' | 'pending' | 'rejected');
+
+            const response = await AccountOpeningsService.apiBankingAccountOpeningsList(
+                undefined, // accountType
+                undefined, // ordering
+                undefined, // page
+                statusFilter
             );
+
             setRequests(response.results || []);
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Failed to load account opening requests';
@@ -46,16 +51,17 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
         try {
             setActionLoading(true);
             setError(null);
-            await ApiService.apiBankingAccountOpeningsApproveCreate(request.id!, request);
+
+            await AccountOpeningsService.apiBankingAccountOpeningsApproveCreate(request.id!, request);
+
             // alert('Account opening approved successfully!'); // Removed alert
             await fetchRequests();
             onRefreshDashboard?.();
             setSelectedRequest(null);
         } catch (error: unknown) {
             console.error('Failed to approve:', error);
-            const err = error as { body?: { detail?: string; error?: string } };
-            const message = err.body?.detail || err.body?.error || (error instanceof Error ? error.message : 'Failed to approve account opening');
-            setError(message);
+            const msg = error instanceof Error ? error.message : 'Failed to approve account opening';
+            setError(msg);
         } finally {
             setActionLoading(false);
         }
@@ -68,19 +74,20 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
         try {
             setActionLoading(true);
             setError(null);
-            await ApiService.apiBankingAccountOpeningsRejectCreate(request.id!, {
+
+            await AccountOpeningsService.apiBankingAccountOpeningsRejectCreate(request.id!, {
                 ...request,
                 rejection_reason: reason
             });
+
             // alert('Account opening rejected'); // Removed alert
             await fetchRequests();
             onRefreshDashboard?.();
             setSelectedRequest(null);
         } catch (error: unknown) {
             console.error('Failed to reject:', error);
-            const err = error as { body?: { detail?: string; error?: string } };
-            const message = err.body?.detail || err.body?.error || (error instanceof Error ? error.message : 'Failed to reject account opening');
-            setError(message);
+            const msg = error instanceof Error ? error.message : 'Failed to reject account opening';
+            setError(msg);
         } finally {
             setActionLoading(false);
         }

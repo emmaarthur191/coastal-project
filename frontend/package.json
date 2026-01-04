@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "api:sync": "npx openapi-typescript-codegen --input http://localhost:8000/api/schema/ --output src/api --client axios",
+    "api:sync": "npx openapi-typescript-codegen --input ../banking_backend/schema.yml --output src/api --client axios",
     "dev": "npm run api:sync && npx vite",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "node ./node_modules/vite/bin/vite.js preview",

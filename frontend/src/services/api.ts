@@ -1246,27 +1246,6 @@ export const apiService = {
     }
   },
 
-  async getAccountOpenings(filters: Record<string, string> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const queryString = new URLSearchParams(filters).toString();
-      const response = await api.get(`accounts/openings/?${queryString}`);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to fetch account openings';
-      return { success: false, error: msg };
-    }
-  },
-
-  async approveAccount(limitId: string | number, action: string, reason = ''): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post(`accounts/openings/${limitId}/approve/`, { action, reason });
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Approval failed';
-      return { success: false, error: msg };
-    }
-  },
-
   async getManagerOverview(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.get('accounts/manager/overview/');
