@@ -517,7 +517,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
     def get_serializer_class(self):
         """Return the serializer for staff payslips."""
-        from .serializers import PayslipSerializer
+        from core.serializers import PayslipSerializer
 
         return PayslipSerializer
 
