@@ -1306,12 +1306,17 @@ export const apiService = {
 
   async logout(): Promise<{ success: boolean; error?: string }> {
     try {
+      // Call backend to invalidate session and clear httpOnly cookies
       await api.post('users/auth/logout/', {});
-      return { success: true };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Logout failed';
-      return { success: false, error: msg };
+    } catch {
+      // Logout is always considered successful client-side
+      // Even if the API call fails, the user should be logged out locally
+      // The backend cookies will expire eventually, and we're clearing client state
+      logger.warn('Logout API call failed, but proceeding with client-side logout');
     }
+    // Always return success - the key is clearing local state
+    // Cookie invalidation happens via the response's Set-Cookie headers
+    return { success: true };
   },
 
   async register(userData: Record<string, unknown>): Promise<{ success: boolean; user?: User; error?: string }> {
