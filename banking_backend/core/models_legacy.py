@@ -378,6 +378,12 @@ class AccountOpeningRequest(models.Model):
     # Account Details
     account_type = models.CharField(max_length=25, choices=ACCOUNT_TYPES, default="daily_susu")
     card_type = models.CharField(max_length=20, choices=CARD_TYPES, default="standard")
+    initial_deposit = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Initial deposit amount (optional, can be 0)",
+    )
 
     # ID Information
     id_type = models.CharField(max_length=20, choices=ID_TYPES, default="ghana_card")
