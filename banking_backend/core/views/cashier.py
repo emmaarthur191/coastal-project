@@ -187,6 +187,14 @@ class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins
         """Reconcile a closed cash drawer."""
         try:
             drawer = CashDrawer.objects.get(pk=pk)
+
+            # SECURITY: Only the drawer owner or managers can reconcile
+            if drawer.cashier != request.user and request.user.role not in ["manager", "admin", "superuser"]:
+                return Response(
+                    {"error": "Not authorized to reconcile this drawer"},
+                    status=403,
+                )
+
             if drawer.status != "closed":
                 return Response({"error": "Drawer must be closed before reconciliation"}, status=400)
             drawer.status = "reconciled"

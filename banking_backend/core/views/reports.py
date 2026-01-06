@@ -56,6 +56,14 @@ class GenerateReportView(APIView):
         date_from = request.data.get("date_from", "")
         date_to = request.data.get("date_to", "")
 
+        # SECURITY: Configurable limit with enforced maximum to prevent resource exhaustion
+        MAX_RECORDS = 500
+        DEFAULT_LIMIT = 100
+        try:
+            limit = min(int(request.data.get("limit", DEFAULT_LIMIT)), MAX_RECORDS)
+        except (ValueError, TypeError):
+            limit = DEFAULT_LIMIT
+
         report_id = f'RPT-{timezone.now().strftime("%Y%m%d%H%M%S")}'
 
         # Parse date filters
@@ -74,7 +82,7 @@ class GenerateReportView(APIView):
                 queryset = queryset.filter(timestamp__date__lte=end_date)
 
             report_data_list = list(
-                queryset.order_by("-timestamp")[:100].values(
+                queryset.order_by("-timestamp")[:limit].values(
                     "id", "transaction_type", "amount", "status", "timestamp", "description"
                 )
             )
@@ -93,7 +101,7 @@ class GenerateReportView(APIView):
             if start_date:
                 queryset = queryset.filter(created_at__date__gte=start_date)
             report_data_list = list(
-                queryset.order_by("-created_at")[:100].values("id", "amount", "status", "created_at", "interest_rate")
+                queryset.order_by("-created_at")[:limit].values("id", "amount", "status", "created_at", "interest_rate")
             )
             report_data_list = [
                 {
@@ -535,6 +543,18 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
         try:
             payslip = Payslip.objects.get(pk=pk)
+
+            # SECURITY: Verify ownership - only payslip owner or managers can download
+            if payslip.staff != request.user and request.user.role not in ["manager", "admin", "superuser"]:
+                return Response(
+                    {
+                        "status": "error",
+                        "message": "Not authorized to access this payslip",
+                        "code": "PERMISSION_DENIED",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
             if payslip.pdf_file:
                 return FileResponse(payslip.pdf_file, as_attachment=True)
             return Response(
@@ -550,6 +570,13 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
     @action(detail=True, methods=["post"])
     def mark_paid(self, request, pk=None):
         """Mark payslip as paid."""
+        # SECURITY: Only managers/admins can mark payslips as paid
+        if request.user.role not in ["manager", "admin", "superuser"]:
+            return Response(
+                {"status": "error", "message": "Only managers can mark payslips as paid", "code": "PERMISSION_DENIED"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         try:
             payslip = Payslip.objects.get(pk=pk)
             payslip.status = "paid"
