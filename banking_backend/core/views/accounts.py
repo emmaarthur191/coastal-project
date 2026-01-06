@@ -262,41 +262,39 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
             )
 
     def _send_account_welcome_message(self, user, account, approved_by):
-        """Send a welcome message with account number to the new account owner."""
-        from core.models import BankingMessage
+        """Send SMS welcome message with account number to the new account owner."""
+        from users.services import SendexaService
 
         try:
-            # Create welcome message
+            # Get user's phone number
+            phone = getattr(user, "phone_number", None) or getattr(user, "phone", None)
+            
+            if not phone:
+                logger.info(f"No phone number for {user.email}, skipping welcome SMS")
+                return
+
+            # Format account type display name
             account_type_display = dict(Account.ACCOUNT_TYPES).get(account.account_type, account.account_type)
             
-            welcome_message = f"""🎉 Welcome to Coastal Credit Union!
-
-Your {account_type_display} account has been successfully created.
-
-📋 Account Details:
-━━━━━━━━━━━━━━━━━━━━━
-Account Number: {account.account_number}
-Account Type: {account_type_display}
-Opening Balance: GHS {account.balance:,.2f}
-━━━━━━━━━━━━━━━━━━━━━
-
-You can now use this account for deposits, withdrawals, and transfers.
-
-Thank you for choosing Coastal Credit Union!
-
-Best regards,
-Coastal Credit Union Team"""
-
-            BankingMessage.objects.create(
-                user=user,
-                subject=f"Welcome! Your {account_type_display} Account is Ready",
-                body=welcome_message,
-                is_read=False,
+            # Create SMS message
+            message = (
+                f"Welcome to Coastal Credit Union! "
+                f"Your {account_type_display} account is ready. "
+                f"Account No: {account.account_number}. "
+                f"Balance: GHS {account.balance:,.2f}. "
+                f"Thank you for choosing Coastal!"
             )
-            logger.info(f"Sent welcome message to {user.email} for account {account.account_number}")
+            
+            # Send SMS via Sendexa
+            success, result = SendexaService.send_sms(phone, message)
+            if success:
+                logger.info(f"Welcome SMS sent to {user.email} for account {account.account_number}")
+            else:
+                logger.warning(f"Welcome SMS failed for {user.email}: {result}")
+                
         except Exception as e:
-            # Don't fail account creation if message sending fails
-            logger.error(f"Failed to send welcome message to {user.email}: {e}")
+            # Don't fail account creation if SMS sending fails
+            logger.error(f"Failed to send welcome SMS to {user.email}: {e}")
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
