@@ -44,7 +44,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
     }, [filter, fetchRequests]);
 
     const handleApprove = async (request: AccountOpeningRequest) => {
-        if (!confirm(`Approve account opening for ${request.first_name} ${request.last_name}?`)) {
+        if (!confirm(`Approve account opening for ${request.first_name || ''} ${request.last_name || 'Unknown'}?`)) {
             return;
         }
 
@@ -121,7 +121,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                         <div>
                             <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-3">Personal Information</h4>
                             <div className="space-y-2 text-sm">
-                                <p><span className="text-slate-500">Name:</span> {selectedRequest.first_name} {(selectedRequest as { middle_name?: string }).middle_name || ''} {selectedRequest.last_name}</p>
+                                <p><span className="text-slate-500">Name:</span> {selectedRequest?.first_name || ''} {(selectedRequest as { middle_name?: string })?.middle_name || ''} {selectedRequest?.last_name || 'Unknown'}</p>
                                 <p><span className="text-slate-500">Date of Birth:</span> {selectedRequest.date_of_birth}</p>
                                 <p><span className="text-slate-500">Gender:</span> {(selectedRequest as { gender?: string }).gender || 'N/A'}</p>
                             </div>
@@ -240,7 +240,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                             #{request.id}
                                         </td>
                                         <td className="py-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                            {request.first_name} {request.last_name}
+                                            {request.first_name || ''} {request.last_name || 'Unknown'}
                                         </td>
                                         <td className="py-3 text-sm text-slate-600 dark:text-slate-400">
                                             {request.account_type}
