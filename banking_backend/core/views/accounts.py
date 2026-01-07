@@ -236,11 +236,10 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
                     initial_balance=opening_request.initial_deposit,
                 )
 
-                # Send welcome message with account number to the account owner
+                # Send welcome message with account number to the CUSTOMER (not the staff)
                 self._send_account_welcome_message(
-                    user=opening_request.submitted_by,
+                    opening_request=opening_request,
                     account=new_account,
-                    approved_by=request.user,
                 )
 
             return Response(
@@ -261,16 +260,17 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _send_account_welcome_message(self, user, account, approved_by):
-        """Send SMS welcome message with account number to the new account owner."""
+    def _send_account_welcome_message(self, opening_request, account):
+        """Send SMS welcome message with account number to the CUSTOMER."""
         from users.services import SendexaService
 
         try:
-            # Get user's phone number
-            phone = getattr(user, "phone_number", None) or getattr(user, "phone", None)
+            # Get CUSTOMER's phone number from the opening request (not the staff user)
+            phone = opening_request.phone or opening_request.alternate_phone
+            customer_name = f"{opening_request.first_name} {opening_request.last_name}"
             
             if not phone:
-                logger.info(f"No phone number for {user.email}, skipping welcome SMS")
+                logger.info(f"No phone number for customer {customer_name}, skipping welcome SMS")
                 return
 
             # Format account type display name
@@ -278,7 +278,7 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
             
             # Create SMS message
             message = (
-                f"Welcome to Coastal Credit Union! "
+                f"Dear {opening_request.first_name}, welcome to Coastal Credit Union! "
                 f"Your {account_type_display} account is ready. "
                 f"Account No: {account.account_number}. "
                 f"Balance: GHS {account.balance:,.2f}. "
@@ -288,13 +288,13 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
             # Send SMS via Sendexa
             success, result = SendexaService.send_sms(phone, message)
             if success:
-                logger.info(f"Welcome SMS sent to {user.email} for account {account.account_number}")
+                logger.info(f"Welcome SMS sent to {customer_name} ({phone}) for account {account.account_number}")
             else:
-                logger.warning(f"Welcome SMS failed for {user.email}: {result}")
+                logger.warning(f"Welcome SMS failed for {customer_name}: {result}")
                 
         except Exception as e:
             # Don't fail account creation if SMS sending fails
-            logger.error(f"Failed to send welcome SMS to {user.email}: {e}")
+            logger.error(f"Failed to send welcome SMS: {e}")
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):

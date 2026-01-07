@@ -351,15 +351,20 @@ const SecuritySection: React.FC = () => {
                             {activeSessions.length === 0 ? (
                                 <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No active sessions</td></tr>
                             ) : (
-                                activeSessions.map((session) => (
+                                activeSessions.filter(session => session != null).map((session) => (
                                     <tr key={session.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '12px 16px', fontWeight: '600' }}>{session.user_name || session.user}</td>
+                                        <td style={{ padding: '12px 16px', fontWeight: '600' }}>
+                                            {session.user_name ||
+                                                (session.user?.first_name && session.user?.last_name
+                                                    ? `${session.user.first_name} ${session.user.last_name}`
+                                                    : session.user?.email || session.user || 'Unknown')}
+                                        </td>
                                         <td style={{ padding: '12px 16px' }}>
                                             <div style={{ fontWeight: '500', fontSize: '13px' }}>{session.location || 'Unknown'}</div>
-                                            <div style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '11px' }}>{session.ip_address}</div>
+                                            <div style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '11px' }}>{session.ip_address || 'N/A'}</div>
                                         </td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{session.device || session.user_agent}</td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{new Date(session.created_at || session.last_active || session.started_at).toLocaleString()}</td>
+                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{session.device || session.user_agent || 'Unknown'}</td>
+                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '13px' }}>{session.created_at || session.last_active || session.started_at ? new Date(session.created_at || session.last_active || session.started_at).toLocaleString() : 'N/A'}</td>
                                         <td style={{ padding: '12px 16px' }}>
                                             <button
                                                 onClick={() => terminateSession(session.id)}
