@@ -75,12 +75,12 @@ const AccountsTab: React.FC = () => {
 
   const filteredAccounts = accounts.filter(account => {
     const matchesSearch = searchTerm === '' ||
-      account.account_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.owner.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.owner.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.owner.email.toLowerCase().includes(searchTerm.toLowerCase());
+      account.account_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (account.owner?.first_name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (account.owner?.last_name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (account.owner?.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || account.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesStatus = statusFilter === 'all' || account.status?.toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
@@ -264,7 +264,7 @@ const AccountsTab: React.FC = () => {
                         {account.account_number}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {account.owner.first_name} {account.owner.last_name} • {account.owner.email}
+                        {account.owner?.first_name ?? ''} {account.owner?.last_name ?? ''} • {account.owner?.email ?? 'No email'}
                       </div>
                     </div>
                   </div>
