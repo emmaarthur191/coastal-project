@@ -60,7 +60,7 @@ jobs:
         REDIS_URL: redis://localhost:6379/1
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         files: ./banking_backend/coverage.xml
         fail_ci_if_error: false
