@@ -1,19 +1,14 @@
 #!/usr/bin/env python
 """
-Smart Migration Script for Production Database Sync
+Smart Migration Script v4 - Exhaustive Production Schema Sync
 
-This script solves the common problem of migration history being out of sync
-with the actual database schema. It:
-1. Checks if core tables already exist in the database
-2. If tables exist: Fakes all migrations, then adds any missing tables/columns
-3. If tables don't exist: Runs migrations normally
-
-Usage:
-    python smart_migrate.py
+This script ensures the production database has all required tables and columns,
+even if the migration history is corrupted or out of sync.
 """
 
 import os
 import sys
+from decimal import Decimal
 
 import django
 
@@ -94,15 +89,16 @@ def create_table_if_not_exists(table_name: str, create_sql: str) -> bool:
 
 def sync_missing_tables():
     """Create any tables that should exist but don't."""
-    print("\n→ Creating missing tables...")
+    print("\n→ Creating missing tables (Messaging, Junctions, Logs)...")
 
     # ==========================================================================
-    # BankingMessage table (from core.0028)
+    # CORE MODELS (MESSAGING & FRAUD)
     # ==========================================================================
+
+    # BankingMessage
     create_table_if_not_exists(
         "core_bankingmessage",
-        """
-        CREATE TABLE "core_bankingmessage" (
+        """CREATE TABLE "core_bankingmessage" (
             "id" BIGSERIAL PRIMARY KEY,
             "subject" VARCHAR(255) NOT NULL,
             "body" TEXT NOT NULL,
@@ -112,17 +108,13 @@ def sync_missing_tables():
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "parent_message_id" BIGINT NULL REFERENCES "core_bankingmessage" ("id") ON DELETE CASCADE,
             "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
-        )
-        """,
+        )""",
     )
 
-    # ==========================================================================
-    # MessageThread table (from core.0028)
-    # ==========================================================================
+    # MessageThread
     create_table_if_not_exists(
         "core_messagethread",
-        """
-        CREATE TABLE "core_messagethread" (
+        """CREATE TABLE "core_messagethread" (
             "id" BIGSERIAL PRIMARY KEY,
             "subject" VARCHAR(255) NOT NULL,
             "thread_type" VARCHAR(20) NOT NULL DEFAULT 'staff_to_staff',
@@ -132,17 +124,24 @@ def sync_missing_tables():
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "created_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
-        )
-        """,
+        )""",
     )
 
-    # ==========================================================================
-    # Message table (from core.0028)
-    # ==========================================================================
+    # Junction: MessageThread <-> User
+    create_table_if_not_exists(
+        "core_messagethread_participants",
+        """CREATE TABLE "core_messagethread_participants" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "messagethread_id" BIGINT NOT NULL REFERENCES "core_messagethread" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("messagethread_id", "user_id")
+        )""",
+    )
+
+    # Message
     create_table_if_not_exists(
         "core_message",
-        """
-        CREATE TABLE "core_message" (
+        """CREATE TABLE "core_message" (
             "id" BIGSERIAL PRIMARY KEY,
             "content" TEXT NULL,
             "encrypted_content" TEXT NULL,
@@ -157,17 +156,115 @@ def sync_missing_tables():
             "reactions" JSONB NOT NULL DEFAULT '{}',
             "sender_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
             "thread_id" BIGINT NOT NULL REFERENCES "core_messagethread" ("id") ON DELETE CASCADE
-        )
-        """,
+        )""",
+    )
+
+    # Junction: Message <-> User (read_by)
+    create_table_if_not_exists(
+        "core_message_read_by",
+        """CREATE TABLE "core_message_read_by" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "message_id" BIGINT NOT NULL REFERENCES "core_message" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("message_id", "user_id")
+        )""",
+    )
+
+    # BlockedUser
+    create_table_if_not_exists(
+        "core_blockeduser",
+        """CREATE TABLE "core_blockeduser" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "reason" TEXT NOT NULL DEFAULT '',
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "blocked_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "blocker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("blocker_id", "blocked_id")
+        )""",
+    )
+
+    # FraudRule
+    create_table_if_not_exists(
+        "core_fraudrule",
+        """CREATE TABLE "core_fraudrule" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "name" VARCHAR(100) NOT NULL UNIQUE,
+            "description" TEXT NOT NULL DEFAULT '',
+            "rule_type" VARCHAR(50) NOT NULL DEFAULT 'threshold',
+            "threshold_value" NUMERIC(15,2) NULL,
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        )""",
     )
 
     # ==========================================================================
-    # UserMessagePreference table (from core.0028)
+    # USER APP MODELS (LOGS & NOTIFICATIONS)
     # ==========================================================================
+
+    # UserActivity
+    create_table_if_not_exists(
+        "users_useractivity",
+        """CREATE TABLE "users_useractivity" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "activity_type" VARCHAR(100) NOT NULL,
+            "description" TEXT NOT NULL,
+            "ip_address" INET NULL,
+            "user_agent" TEXT NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # AuditLog
+    create_table_if_not_exists(
+        "users_auditlog",
+        """CREATE TABLE "users_auditlog" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "action" VARCHAR(100) NOT NULL,
+            "resource_type" VARCHAR(100) NOT NULL,
+            "resource_id" VARCHAR(100) NULL,
+            "changes" JSONB NOT NULL DEFAULT '{}',
+            "ip_address" INET NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "user_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
+        )""",
+    )
+
+    # AdminNotification
+    create_table_if_not_exists(
+        "users_adminnotification",
+        """CREATE TABLE "users_adminnotification" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "title" VARCHAR(255) NOT NULL,
+            "message" TEXT NOT NULL,
+            "notification_type" VARCHAR(50) NOT NULL DEFAULT 'system',
+            "priority" VARCHAR(20) NOT NULL DEFAULT 'medium',
+            "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
+            "read_at" TIMESTAMP WITH TIME ZONE NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        )""",
+    )
+
+    # Junction: AdminNotification <-> User
+    create_table_if_not_exists(
+        "users_adminnotification_target_users",
+        """CREATE TABLE "users_adminnotification_target_users" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "adminnotification_id" BIGINT NOT NULL REFERENCES "users_adminnotification" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("adminnotification_id", "user_id")
+        )""",
+    )
+
+    # ==========================================================================
+    # LEGACY / MISSING CORE TABLES
+    # ==========================================================================
+
+    # UserMessagePreference
     create_table_if_not_exists(
         "user_message_preference",
-        """
-        CREATE TABLE "user_message_preference" (
+        """CREATE TABLE "user_message_preference" (
             "id" BIGSERIAL PRIMARY KEY,
             "sound_enabled" BOOLEAN NOT NULL DEFAULT TRUE,
             "notification_sound" VARCHAR(50) NOT NULL DEFAULT 'default',
@@ -182,44 +279,209 @@ def sync_missing_tables():
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "user_id" BIGINT NOT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE CASCADE
-        )
-        """,
+        )""",
     )
 
-    # ==========================================================================
-    # BlockedUser table (from core.0028)
-    # ==========================================================================
+    # Product
     create_table_if_not_exists(
-        "core_blockeduser",
-        """
-        CREATE TABLE "core_blockeduser" (
+        "core_product",
+        """CREATE TABLE "core_product" (
             "id" BIGSERIAL PRIMARY KEY,
-            "reason" TEXT NOT NULL DEFAULT '',
-            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "blocked_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
-            "blocker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
-            UNIQUE ("blocker_id", "blocked_id")
-        )
-        """,
-    )
-
-    # ==========================================================================
-    # FraudRule table (from core.0033)
-    # ==========================================================================
-    create_table_if_not_exists(
-        "core_fraudrule",
-        """
-        CREATE TABLE "core_fraudrule" (
-            "id" BIGSERIAL PRIMARY KEY,
-            "name" VARCHAR(100) NOT NULL UNIQUE,
-            "description" TEXT NOT NULL DEFAULT '',
-            "rule_type" VARCHAR(50) NOT NULL DEFAULT 'threshold',
-            "threshold_value" NUMERIC(15,2) NULL,
+            "name" VARCHAR(100) NOT NULL,
+            "product_type" VARCHAR(20) NOT NULL,
+            "description" TEXT NOT NULL,
+            "interest_rate" NUMERIC(5,2) NULL,
+            "minimum_balance" NUMERIC(12,2) DEFAULT 0.00 NOT NULL,
+            "maximum_balance" NUMERIC(12,2) NULL,
+            "features" JSONB NOT NULL DEFAULT '[]',
+            "terms_and_conditions" TEXT NOT NULL DEFAULT '',
             "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-        )
-        """,
+        )""",
+    )
+
+    # Promotion
+    create_table_if_not_exists(
+        "core_promotion",
+        """CREATE TABLE "core_promotion" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "name" VARCHAR(100) NOT NULL,
+            "description" TEXT NOT NULL,
+            "discount_percentage" NUMERIC(5,2) NULL,
+            "bonus_amount" NUMERIC(12,2) NULL,
+            "start_date" DATE NOT NULL,
+            "end_date" DATE NOT NULL,
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "terms_and_conditions" TEXT NOT NULL DEFAULT '',
+            "max_enrollments" INTEGER NULL,
+            "current_enrollments" INTEGER NOT NULL DEFAULT 0,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        )""",
+    )
+
+    # Junction: Promotion <-> Product
+    create_table_if_not_exists(
+        "core_promotion_eligible_products",
+        """CREATE TABLE "core_promotion_eligible_products" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "promotion_id" BIGINT NOT NULL REFERENCES "core_promotion" ("id") ON DELETE CASCADE,
+            "product_id" BIGINT NOT NULL REFERENCES "core_product" ("id") ON DELETE CASCADE,
+            UNIQUE ("promotion_id", "product_id")
+        )""",
+    )
+
+    # ServiceCharge
+    create_table_if_not_exists(
+        "core_servicecharge",
+        """CREATE TABLE "core_servicecharge" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "name" VARCHAR(100) NOT NULL,
+            "charge_type" VARCHAR(20) NOT NULL,
+            "amount" NUMERIC(12,2) NOT NULL,
+            "frequency" VARCHAR(20) NOT NULL DEFAULT 'one_time',
+            "description" TEXT NOT NULL DEFAULT '',
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        )""",
+    )
+
+    # ChatRoom
+    create_table_if_not_exists(
+        "core_chatroom",
+        """CREATE TABLE "core_chatroom" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "name" VARCHAR(100) NULL,
+            "is_group" BOOLEAN NOT NULL DEFAULT FALSE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "created_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
+        )""",
+    )
+
+    # Junction: ChatRoom <-> User
+    create_table_if_not_exists(
+        "core_chatroom_members",
+        """CREATE TABLE "core_chatroom_members" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "chatroom_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("chatroom_id", "user_id")
+        )""",
+    )
+
+    # ChatMessage
+    create_table_if_not_exists(
+        "core_chatmessage",
+        """CREATE TABLE "core_chatmessage" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "content" TEXT NOT NULL,
+            "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "room_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
+            "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # VisitSchedule
+    create_table_if_not_exists(
+        "visit_schedule",
+        """CREATE TABLE "visit_schedule" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "client_name" VARCHAR(255) NOT NULL,
+            "location" VARCHAR(255) NOT NULL,
+            "scheduled_time" TIMESTAMP WITH TIME ZONE NOT NULL,
+            "status" VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+            "notes" TEXT NOT NULL DEFAULT '',
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "mobile_banker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # OperationsMessage
+    create_table_if_not_exists(
+        "operations_message",
+        """CREATE TABLE "operations_message" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "title" VARCHAR(255) NOT NULL,
+            "message" TEXT NOT NULL,
+            "priority" VARCHAR(10) NOT NULL DEFAULT 'medium',
+            "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "recipient_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # ClientAssignment
+    create_table_if_not_exists(
+        "client_assignment",
+        """CREATE TABLE "client_assignment" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "client_name" VARCHAR(200) NOT NULL DEFAULT '',
+            "location" VARCHAR(255) NOT NULL DEFAULT '',
+            "status" VARCHAR(50) NOT NULL DEFAULT 'pending',
+            "amount_due" NUMERIC(15,2) NULL,
+            "next_visit" TIMESTAMP WITH TIME ZONE NULL,
+            "priority" VARCHAR(20) NOT NULL DEFAULT 'medium',
+            "notes" TEXT NOT NULL DEFAULT '',
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "client_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "mobile_banker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("mobile_banker_id", "client_id")
+        )""",
+    )
+
+    # ClientRegistration
+    create_table_if_not_exists(
+        "client_registration",
+        """CREATE TABLE "client_registration" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "registration_id" VARCHAR(20) NOT NULL UNIQUE,
+            "first_name" VARCHAR(100) NOT NULL,
+            "last_name" VARCHAR(100) NOT NULL,
+            "date_of_birth" DATE NULL,
+            "email" VARCHAR(254) NOT NULL DEFAULT '',
+            "phone_number" VARCHAR(20) NOT NULL,
+            "id_type" VARCHAR(20) NOT NULL DEFAULT 'ghana_card',
+            "id_number" VARCHAR(50) NOT NULL DEFAULT '',
+            "occupation" VARCHAR(100) NOT NULL DEFAULT '',
+            "work_address" TEXT NOT NULL DEFAULT '',
+            "position" VARCHAR(100) NOT NULL DEFAULT '',
+            "account_type" VARCHAR(25) NOT NULL DEFAULT 'daily_susu',
+            "digital_address" VARCHAR(50) NOT NULL DEFAULT '',
+            "location" VARCHAR(255) NOT NULL DEFAULT '',
+            "next_of_kin_data" JSONB NULL,
+            "id_document" VARCHAR(100) NULL,
+            "passport_picture" VARCHAR(100) NULL,
+            "status" VARCHAR(25) NOT NULL DEFAULT 'pending_verification',
+            "notes" TEXT NOT NULL DEFAULT '',
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "created_user_id" BIGINT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "submitted_by_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # IdempotencyKey
+    create_table_if_not_exists(
+        "core_idempotencykey",
+        """CREATE TABLE "core_idempotencykey" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "guid" UUID NOT NULL UNIQUE,
+            "method" VARCHAR(10) NOT NULL,
+            "path" VARCHAR(255) NOT NULL,
+            "request_body_hash" VARCHAR(64) NOT NULL,
+            "response_status" INTEGER NULL,
+            "response_body" TEXT NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "locked_at" TIMESTAMP WITH TIME ZONE NULL,
+            "user_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
+        )""",
     )
 
     print("  Table creation complete!\n")
@@ -229,137 +491,50 @@ def sync_missing_columns():
     """Add any columns that exist in models but not in the database."""
     print("→ Syncing missing columns...")
 
-    # ==========================================================================
-    # Users App - Missing columns from various migrations
-    # ==========================================================================
+    # Users
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
 
-    # ==========================================================================
-    # Core App - Account columns
-    # ==========================================================================
+    # Accounts & Registration
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-
-    # ==========================================================================
-    # Core App - AccountOpeningRequest columns
-    # ==========================================================================
     add_column_if_not_exists("core_accountopeningrequest", "initial_deposit", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "credential_dispatch_method", "VARCHAR(20) DEFAULT 'pickup' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "credential_delivery_address", "TEXT NULL")
     add_column_if_not_exists("core_accountopeningrequest", "digital_address", "VARCHAR(100) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "employer_name", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "location", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_data", "JSONB DEFAULT '{}' NOT NULL")
     add_column_if_not_exists("core_accountopeningrequest", "occupation", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "position", "VARCHAR(100) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "work_address", "TEXT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_data", "JSONB DEFAULT '{}' NOT NULL")
 
-    # ==========================================================================
-    # Core App - Loan columns (from core.0030)
-    # ==========================================================================
-    add_column_if_not_exists("core_loan", "city", "VARCHAR(100) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "date_of_birth", "DATE NULL")
-    add_column_if_not_exists("core_loan", "digital_address", "VARCHAR(100) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "employment_status", "VARCHAR(50) DEFAULT 'employed' NOT NULL")
+    # Loans
     add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "id_type", "VARCHAR(50) DEFAULT 'ghana_card' NOT NULL")
     add_column_if_not_exists("core_loan", "monthly_income", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_loan", "town", "VARCHAR(100) DEFAULT '' NOT NULL")
-    # Guarantor fields
-    add_column_if_not_exists("core_loan", "guarantor_1_name", "VARCHAR(255) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_address", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_id_type", "VARCHAR(50) DEFAULT 'ghana_card' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_name", "VARCHAR(255) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_address", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_id_type", "VARCHAR(50) DEFAULT 'ghana_card' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
-    # Next of Kin fields
-    add_column_if_not_exists("core_loan", "next_of_kin_1_name", "VARCHAR(255) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_1_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_1_address", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_1_relationship", "VARCHAR(100) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_name", "VARCHAR(255) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_address", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_relationship", "VARCHAR(100) DEFAULT '' NOT NULL")
-
-    # ==========================================================================
-    # Core App - FraudAlert columns
-    # ==========================================================================
-    add_column_if_not_exists("core_fraudalert", "transaction_id", "BIGINT NULL")
-    add_column_if_not_exists("core_fraudalert", "alert_type", "VARCHAR(50) DEFAULT 'suspicious_activity' NOT NULL")
-    add_column_if_not_exists("core_fraudalert", "risk_score", "NUMERIC(5,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_fraudalert", "metadata", "JSONB DEFAULT '{}' NOT NULL")
-
-    # ==========================================================================
-    # Core App - Message columns
-    # ==========================================================================
-    add_column_if_not_exists("core_message", "encrypted_content", "TEXT NULL")
-    add_column_if_not_exists("core_message", "iv", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_message", "auth_tag", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_message", "message_type", "VARCHAR(50) DEFAULT 'text' NOT NULL")
-    add_column_if_not_exists("core_message", "reactions", "JSONB DEFAULT '{}' NOT NULL")
-
-    # ==========================================================================
-    # Core App - FraudRule columns
-    # ==========================================================================
-    add_column_if_not_exists("core_fraudrule", "rule_type", "VARCHAR(50) DEFAULT 'threshold' NOT NULL")
-    add_column_if_not_exists("core_fraudrule", "threshold_value", "NUMERIC(15,2) NULL")
-    add_column_if_not_exists("core_fraudrule", "is_active", "BOOLEAN DEFAULT TRUE NOT NULL")
 
     print("  Column sync complete!\n")
 
 
 def main():
     print("=" * 60)
-    print("  Smart Migration Script v2")
+    print("  Smart Migration Script v4 (Exhaustive Sync)")
     print("=" * 60)
 
-    # Key tables that indicate the database has the schema
     core_tables = ["core_account", "core_transaction", "users_user", "core_loan"]
-
-    # Check if database already has schema
     existing_tables = [t for t in core_tables if table_exists(t)]
 
     if len(existing_tables) >= 3:
-        # Database has schema - production database with sync issues
         print(f"\n✓ Detected existing database schema ({len(existing_tables)}/{len(core_tables)} core tables)")
-        print("  Tables found:", ", ".join(existing_tables))
-        print("\n→ Strategy: FAKE migrations, then sync schema\n")
+        print("\n→ Strategy: FAKE migrations, then sync exhaustive schema\n")
 
-        # Step 1: Fake all migrations
         print("Step 1: Faking migrations...")
         try:
             call_command("migrate", "--fake", "--noinput", verbosity=1)
-            print("  ✓ All migrations marked as applied (faked)\n")
         except Exception as e:
             print(f"  ! Warning during fake: {e}")
-            for app in ["contenttypes", "auth", "users", "core", "admin", "sessions", "token_blacklist"]:
-                try:
-                    call_command("migrate", app, "--fake", "--noinput", verbosity=0)
-                    print(f"    ✓ {app}")
-                except Exception as app_e:
-                    print(f"    ! {app}: {app_e}")
 
-        # Step 2: Create missing tables
-        print("\nStep 2: Creating missing tables...")
+        print("\nStep 2: Creating missing tables & junctions...")
         sync_missing_tables()
 
-        # Step 3: Add missing columns
-        print("Step 3: Adding missing columns...")
+        print("Step 3: Syncing missing columns...")
         sync_missing_columns()
-
     else:
-        # Fresh database - run migrations normally
-        print(f"\n→ Fresh database detected ({len(existing_tables)} core tables found)")
-        print("  Strategy: RUN migrations normally\n")
-
-        print("Running migrations...")
+        print("\n→ Fresh database detected. Running migrations normally...")
         call_command("migrate", "--noinput", verbosity=1)
-        print("\n✓ All migrations applied successfully")
 
     print("=" * 60)
     print("  Migration sync complete!")
