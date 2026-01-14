@@ -8,6 +8,7 @@ import datetime
 import logging
 from decimal import Decimal
 
+from django.conf import settings
 from django.db.models import Avg, F, Sum
 from django.utils import timezone
 from django.utils.decorators import method_decorator
