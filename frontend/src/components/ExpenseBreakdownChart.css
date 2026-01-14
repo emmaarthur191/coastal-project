@@ -1,0 +1,8 @@
+/* ExpenseBreakdownChart Component Styles */
+
+.legend-color-indicator {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+}

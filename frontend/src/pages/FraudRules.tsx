@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { api, API_BASE_URL } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { api, API_BASE_URL, PaginatedResponse } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FraudRule, FraudRuleRequest } from '../api/models/FraudRule';
+import { FraudRule, FraudRuleRequest, RuleTypeEnum, SeverityEnum } from '../api';
 import { useWebSocket } from '../hooks/useWebSocket';
-import VirtualizedList from '../components/VirtualizedList';
+import './FraudRules.css';
 
 // Get WebSocket base URL from environment
 const getWsBaseUrl = () => {
@@ -28,8 +28,8 @@ const FraudRules: React.FC = React.memo(() => {
   const [formData, setFormData] = useState<FraudRuleRequest>({
     name: '',
     description: '',
-    rule_type: '',
-    severity: 'medium',
+    rule_type: RuleTypeEnum.TRANSACTION_AMOUNT,
+    severity: SeverityEnum.MEDIUM,
     field: '',
     operator: '',
     value: '',
@@ -40,28 +40,17 @@ const FraudRules: React.FC = React.memo(() => {
     escalation_threshold: 0
   });
 
-  // WebSocket for real-time fraud alerts
-  const { isConnected } = useWebSocket({
-    url: `${getWsBaseUrl()}fraud-alerts/${user?.id || ''}`,
-    onMessage: useCallback((message) => {
-      if (message.type === 'fraud_alert_update') {
-        console.log('Real-time fraud alert:', message.alert);
-        // Refresh rules to show updated trigger counts
-        fetchRules();
-        fetchActiveRules();
-      }
-    }, []),
-  });
-
-  useEffect(() => {
-    fetchRules();
-    fetchActiveRules();
-  }, []);
-
   const fetchRules = useCallback(async () => {
     try {
-      const response = await api.get('fraud/rules/');
-      setRules(response.data);
+      const response = await api.get<PaginatedResponse<FraudRule>>('/fraud/rules/');
+      const data = response.data;
+      if (data && 'results' in data && Array.isArray(data.results)) {
+        setRules(data.results);
+      } else if (Array.isArray(data)) {
+        setRules(data);
+      } else {
+        setRules([]);
+      }
     } catch (error) {
       console.error('Error fetching rules:', error);
     } finally {
@@ -71,16 +60,41 @@ const FraudRules: React.FC = React.memo(() => {
 
   const fetchActiveRules = useCallback(async () => {
     try {
-      const response = await api.get('fraud/rules/active_rules/');
-      setActiveRules(response.data);
+      const response = await api.get<PaginatedResponse<FraudRule> | FraudRule[]>('/fraud/rules/active_rules/');
+      const data = response.data;
+      if (data && 'results' in data && Array.isArray(data.results)) {
+        setActiveRules(data.results);
+      } else if (Array.isArray(data)) {
+        setActiveRules(data);
+      } else {
+        setActiveRules([]);
+      }
     } catch (error) {
       console.error('Error fetching active rules:', error);
     }
   }, []);
 
+  // WebSocket for real-time fraud alerts
+  const { isConnected } = useWebSocket({
+    url: `${getWsBaseUrl()}fraud-alerts/${user?.id || ''}`,
+    onMessage: useCallback((message) => {
+      if (message.type === 'fraud_alert_update') {
+        console.warn('Real-time fraud alert:', message.alert);
+        // Refresh rules to show updated trigger counts
+        fetchRules();
+        fetchActiveRules();
+      }
+    }, [fetchRules, fetchActiveRules]),
+  });
+
+  useEffect(() => {
+    fetchRules();
+    fetchActiveRules();
+  }, [fetchRules, fetchActiveRules]);
+
   const handleCreateRule = async () => {
     try {
-      const response = await api.post('fraud/rules/', formData);
+      const response = await api.post<FraudRule>('/fraud/rules/', formData);
       setRules([...rules, response.data]);
       setShowCreateDialog(false);
       resetForm();
@@ -93,7 +107,7 @@ const FraudRules: React.FC = React.memo(() => {
   const handleUpdateRule = async () => {
     if (!editingRule?.id) return;
     try {
-      const response = await api.put(`fraud/rules/${editingRule.id}/`, formData);
+      const response = await api.put<FraudRule>(`/fraud/rules/${editingRule.id}/`, formData);
       setRules(rules.map(rule => rule.id === editingRule.id ? response.data : rule));
       setEditingRule(null);
       resetForm();
@@ -103,9 +117,9 @@ const FraudRules: React.FC = React.memo(() => {
     }
   };
 
-  const handleToggleActive = async (ruleId: number) => {
+  const handleToggleActive = async (ruleId: number | string) => {
     try {
-      await api.post(`fraud/rules/${ruleId}/toggle_active/`, {});
+      await api.post(`/fraud/rules/${ruleId}/toggle_active/`, {});
       fetchRules();
       fetchActiveRules();
     } catch (error) {
@@ -117,8 +131,8 @@ const FraudRules: React.FC = React.memo(() => {
     setFormData({
       name: '',
       description: '',
-      rule_type: '',
-      severity: 'medium',
+      rule_type: RuleTypeEnum.TRANSACTION_AMOUNT,
+      severity: SeverityEnum.MEDIUM,
       field: '',
       operator: '',
       value: '',
@@ -130,7 +144,7 @@ const FraudRules: React.FC = React.memo(() => {
     });
   };
 
-  const openEditDialog = (rule) => {
+  const openEditDialog = (rule: FraudRule) => {
     setEditingRule(rule);
     setFormData({
       name: rule.name,
@@ -148,686 +162,334 @@ const FraudRules: React.FC = React.memo(() => {
     });
   };
 
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-blue-500';
-      default: return 'bg-gray-500';
-    }
-  };
 
-  const getRuleTypeIcon = (ruleType) => {
-    switch (ruleType) {
-      case 'amount_threshold': return '💰';
-      case 'velocity_check': return '⚡';
-      case 'unusual_pattern': return '🔍';
-      case 'location_anomaly': return '📍';
-      case 'time_based': return '⏰';
-      case 'account_behavior': return '👤';
-      default: return '⚙️';
+
+  const getRuleTypeIcon = (type: RuleTypeEnum) => {
+    switch (type) {
+      case RuleTypeEnum.TRANSACTION_AMOUNT: return '💰';
+      case RuleTypeEnum.VELOCITY: return '⚡';
+      case RuleTypeEnum.GEOGRAPHIC: return '🌍';
+      case RuleTypeEnum.TIME_BASED: return '🕒';
+      case RuleTypeEnum.ACCOUNT_ACTIVITY: return '👤';
+      default: return '🛡️';
     }
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return (
+      <div className="loading-container">
+        <div className="coastal-spinner"></div>
+        <div className="loading-text">Loading Fraud Detection Rules...</div>
+      </div>
+    );
   }
 
   return (
-    <div
-      style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}
-      role="main"
-      aria-labelledby="fraud-rules-heading"
-    >
-      <div style={{ marginBottom: '24px' }}>
-        <h1
-          id="fraud-rules-heading"
-          style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}
-        >
-          Fraud Detection Rules
-        </h1>
-        <p style={{ color: '#64748b' }}>Configure and manage fraud detection rules</p>
+    <div className="fraud-rules-page">
+      {/* Header */}
+      <div className="fraud-header">
+        <div className="header-title-row">
+          <h1 className="fraud-title">
+            Fraud Detection Rules
+          </h1>
+          <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
+            <span className="status-dot"></span>
+            {isConnected ? 'Live Monitoring Active' : 'Real-time Updates Offline'}
+          </div>
+        </div>
+        <p className="fraud-description">
+          Configure real-time monitoring rules to detect and prevent fraudulent transactions.
+        </p>
       </div>
 
-      {/* Active Rules Summary */}
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '24px',
-        marginBottom: '24px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        border: '1px solid #e2e8f0'
-      }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+      {/* Stats Summary */}
+      <div className="stats-summary">
+        <h2 className="stats-title">
           🛡️ Active Rules Summary
         </h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{activeRules.length}</div>
-            <div style={{ fontSize: '14px', color: '#64748b' }}>Active Rules</div>
+        <div className="stats-grid">
+          <div className="stat-item">
+            <div className="stat-value active">{activeRules.length}</div>
+            <div className="stat-label">Active Rules</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>
-              {activeRules.filter(r => r.severity === 'critical').length}
+          <div className="stat-item">
+            <div className="stat-value critical">
+              {activeRules.filter(r => r.severity === SeverityEnum.CRITICAL).length}
             </div>
-            <div style={{ fontSize: '14px', color: '#64748b' }}>Critical Rules</div>
+            <div className="stat-label">Critical Rules</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ea580c' }}>
+          <div className="stat-item">
+            <div className="stat-value auto-block">
               {activeRules.filter(r => r.auto_block).length}
             </div>
-            <div style={{ fontSize: '14px', color: '#64748b' }}>Auto-Block Rules</div>
+            <div className="stat-label">Auto-Block Rules</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2563eb' }}>
+          <div className="stat-item">
+            <div className="stat-value approval">
               {activeRules.filter(r => r.require_approval).length}
             </div>
-            <div style={{ fontSize: '14px', color: '#64748b' }}>Approval Required</div>
+            <div className="stat-label">Approval Required</div>
           </div>
         </div>
       </div>
 
       {/* Create Rule Button */}
-      <div style={{ marginBottom: '24px' }}>
+      <div className="create-button-container">
         <button
           onClick={() => setShowCreateDialog(true)}
           aria-label="Create new fraud detection rule"
-          style={{
-            padding: '12px 24px',
-            background: '#1e40af',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
+          className="create-rule-btn"
         >
-          ➕ Create New Rule
+          <span>➕</span> Create New Rule
         </button>
       </div>
 
-      {/* Create Rule Modal */}
-      {showCreateDialog && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflowY: 'auto'
-          }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#1e293b' }}>Create Fraud Detection Rule</h2>
-            <RuleForm
-              formData={formData}
-              setFormData={setFormData}
-              onSubmit={handleCreateRule}
-              onCancel={() => setShowCreateDialog(false)}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Rules List */}
-      {rules.length > 20 ? (
-        <VirtualizedList
-          items={rules}
-          itemHeight={120}
-          containerHeight={600}
-          renderItem={(rule, index) => (
-            <div
-              key={rule.id}
-              role="listitem"
-              aria-label={`Fraud rule: ${rule.name}, severity ${rule.severity}, ${rule.is_active ? 'active' : 'inactive'}`}
-              style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                border: '1px solid #e2e8f0',
-                transition: 'box-shadow 0.2s',
-                marginBottom: '16px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '24px' }}>{getRuleTypeIcon(rule.rule_type)}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: 'white',
-                      background: getSeverityColor(rule.severity).replace('bg-', '').replace('-500', '')
-                    }}>
-                      {rule.severity.toUpperCase()}
-                    </span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      background: rule.is_active ? '#dbeafe' : '#f3f4f6',
-                      color: rule.is_active ? '#1e40af' : '#374151'
-                    }}>
-                      {rule.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                    {rule.auto_block && (
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        background: '#fee2e2',
-                        color: '#dc2626'
-                      }}>
-                        Auto-Block
-                      </span>
-                    )}
-                    {rule.require_approval && (
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        border: '1px solid #d1d5db',
-                        background: 'white'
-                      }}>
-                        Approval Required
-                      </span>
-                    )}
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#1e293b' }}>{rule.name}</h3>
-                  <p style={{ color: '#64748b', marginBottom: '8px' }}>{rule.description}</p>
-                  <div style={{ fontSize: '14px', color: '#64748b' }}>
-                    <strong>Condition:</strong> {rule.field} {rule.operator} {rule.value}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
-                    <span>Triggered: {rule.trigger_count} times</span>
-                    <span>False Positives: {rule.false_positive_count}</span>
-                    {rule.last_triggered && (
-                      <span>Last triggered: {new Date(rule.last_triggered).toLocaleDateString()}</span>
-                    )}
-                  </div>
+      <div className="rules-list">
+        {rules.map((rule) => (
+          <div
+            key={rule.id}
+            className="rule-card"
+          >
+            <div className="rule-card-header">
+              <div className="rule-info-main">
+                <div className="rule-type-icon">
+                  {getRuleTypeIcon(rule.rule_type)}
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => openEditDialog(rule)}
-                    style={{
-                      padding: '8px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: 'white',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(rule.id)}
-                    style={{
-                      padding: '8px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: 'white',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {rule.is_active ? '🟢' : '⚪'}
-                  </button>
+                <div>
+                  <h3 className="rule-name">
+                    {rule.name}
+                  </h3>
+                  <p className="rule-description-text">
+                    {rule.description}
+                  </p>
                 </div>
               </div>
-            </div>
-          )}
-        />
-      ) : (
-        <div
-          role="list"
-          aria-label="Fraud detection rules"
-          style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-        >
-          {rules.map((rule) => (
-            <div
-              key={rule.id}
-              role="listitem"
-              aria-label={`Fraud rule: ${rule.name}, severity ${rule.severity}, ${rule.is_active ? 'active' : 'inactive'}`}
-              style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                border: '1px solid #e2e8f0',
-                transition: 'box-shadow 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '24px' }}>{getRuleTypeIcon(rule.rule_type)}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: 'white',
-                      background: getSeverityColor(rule.severity).replace('bg-', '').replace('-500', '')
-                    }}>
-                      {rule.severity.toUpperCase()}
-                    </span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      background: rule.is_active ? '#dbeafe' : '#f3f4f6',
-                      color: rule.is_active ? '#1e40af' : '#374151'
-                    }}>
-                      {rule.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                    {rule.auto_block && (
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        background: '#fee2e2',
-                        color: '#dc2626'
-                      }}>
-                        Auto-Block
-                      </span>
-                    )}
-                    {rule.require_approval && (
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        border: '1px solid #d1d5db',
-                        background: 'white'
-                      }}>
-                        Approval Required
-                      </span>
-                    )}
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#1e293b' }}>{rule.name}</h3>
-                  <p style={{ color: '#64748b', marginBottom: '8px' }}>{rule.description}</p>
-                  <div style={{ fontSize: '14px', color: '#64748b' }}>
-                    <strong>Condition:</strong> {rule.field} {rule.operator} {rule.value}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
-                    <span>Triggered: {rule.trigger_count} times</span>
-                    <span>False Positives: {rule.false_positive_count}</span>
-                    {rule.last_triggered && (
-                      <span>Last triggered: {new Date(rule.last_triggered).toLocaleDateString()}</span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => openEditDialog(rule)}
-                    style={{
-                      padding: '8px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: 'white',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(rule.id)}
-                    style={{
-                      padding: '8px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: 'white',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {rule.is_active ? '🟢' : '⚪'}
-                  </button>
-                </div>
+              <div className="rule-actions">
+                <span className={`severity-badge ${rule.severity.toLowerCase()}`}>
+                  {rule.severity}
+                </span>
+                <button
+                  onClick={() => handleToggleActive(rule.id)}
+                  className={`toggle-active-btn ${rule.is_active ? 'active' : 'inactive'}`}
+                >
+                  {rule.is_active ? 'Active' : 'Inactive'}
+                </button>
+                <button
+                  onClick={() => openEditDialog(rule)}
+                  className="edit-rule-btn"
+                >
+                  ✏️
+                </button>
               </div>
             </div>
-          ))}
 
-          {rules.length === 0 && (
-            <div style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '48px',
-              textAlign: 'center',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🛡️</div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#1e293b' }}>No rules configured</h3>
-              <p style={{ color: '#64748b', marginBottom: '16px' }}>
-                Create your first fraud detection rule to start monitoring transactions.
-              </p>
+            <div className="rule-meta-grid">
+              <div>
+                <span className="meta-item-label">Rule Logic</span>
+                <span className="meta-item-value">
+                  {rule.field} {rule.operator} {rule.value}
+                </span>
+              </div>
+              <div>
+                <span className="meta-item-label">Triggered</span>
+                <span className="meta-item-value">
+                  {rule.trigger_count} times
+                </span>
+              </div>
+              <div>
+                <span className="meta-item-label">False Positives</span>
+                <span className="meta-item-value text-danger">
+                  {rule.false_positive_count}
+                </span>
+              </div>
+              <div>
+                <span className="meta-item-label">Last Triggered</span>
+                <span className="meta-item-value">
+                  {rule.last_triggered ? new Date(rule.last_triggered).toLocaleString() : 'Never'}
+                </span>
+              </div>
+            </div>
+
+            <div className="rule-options">
+              <label className="option-checkbox-label">
+                <input type="checkbox" checked={rule.auto_block} readOnly className="option-checkbox-input" />
+                Auto-block Transactions
+              </label>
+              <label className="option-checkbox-label">
+                <input type="checkbox" checked={rule.require_approval} readOnly className="option-checkbox-input" />
+                Require Manual Approval
+              </label>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Create/Edit Dialog */}
+      {(showCreateDialog || editingRule) && (
+        <div className="dialog-overlay">
+          <div className="dialog-container">
+            <h2 className="dialog-title">
+              {editingRule ? 'Edit Rule' : 'Create New Rule'}
+            </h2>
+
+            <div className="form-grid">
+              <div className="form-row-2col">
+                <div className="input-group">
+                  <label htmlFor="rule-name">Rule Name</label>
+                  <input
+                    id="rule-name"
+                    className="field-input"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter rule name"
+                    title="Enter a unique name for this fraud rule"
+                  />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="rule-type">Rule Type</label>
+                  <select
+                    id="rule-type"
+                    className="field-select"
+                    value={formData.rule_type}
+                    onChange={(e) => setFormData({ ...formData, rule_type: e.target.value as RuleTypeEnum })}
+                    title="Select the category of the fraud rule"
+                  >
+                    <option value="">Select Type</option>
+                    {(Object.values(RuleTypeEnum) as RuleTypeEnum[]).map(type => (
+                      <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="rule-description">Description</label>
+                <textarea
+                  id="rule-description"
+                  className="field-textarea"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe what this rule detects..."
+                  title="Provide a detailed description of the rule's purpose"
+                />
+              </div>
+
+              <div className="form-row-3col">
+                <div className="input-group-small">
+                  <label htmlFor="rule-field">Field</label>
+                  <input
+                    id="rule-field"
+                    className="field-input-small"
+                    value={formData.field}
+                    onChange={(e) => setFormData({ ...formData, field: e.target.value })}
+                    placeholder="amount"
+                    title="The transaction field to evaluate (e.g., amount, location)"
+                  />
+                </div>
+                <div className="input-group-small">
+                  <label htmlFor="rule-operator">Operator</label>
+                  <select
+                    id="rule-operator"
+                    className="field-select-small"
+                    value={formData.operator}
+                    onChange={(e) => setFormData({ ...formData, operator: e.target.value })}
+                    title="Comparison operator"
+                  >
+                    <option value=">">{'>'}</option>
+                    <option value="<">{'<'}</option>
+                    <option value="==">==</option>
+                    <option value="!=">!=</option>
+                    <option value="contains">contains</option>
+                  </select>
+                </div>
+                <div className="input-group-small">
+                  <label htmlFor="rule-threshold">Threshold</label>
+                  <input
+                    id="rule-threshold"
+                    className="field-input-small"
+                    value={formData.value}
+                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                    placeholder="1000"
+                    title="The value to compare against"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2col">
+                <div className="input-group">
+                  <label htmlFor="rule-severity">Severity</label>
+                  <select
+                    id="rule-severity"
+                    className="field-select"
+                    value={formData.severity}
+                    onChange={(e) => setFormData({ ...formData, severity: e.target.value as SeverityEnum })}
+                    title="Alert severity level"
+                  >
+                    {(Object.values(SeverityEnum) as SeverityEnum[]).map(sev => (
+                      <option key={sev} value={sev}>{sev.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label htmlFor="rule-escalation">Escalation Count</label>
+                  <input
+                    id="rule-escalation"
+                    className="field-input"
+                    type="number"
+                    value={formData.escalation_threshold}
+                    onChange={(e) => setFormData({ ...formData, escalation_threshold: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                    title="Number of triggers before escalation"
+                  />
+                </div>
+              </div>
+
+              <div className="dialog-checkbox-options">
+                <label className="dialog-checkbox-label" htmlFor="rule-auto-block">
+                  <input
+                    id="rule-auto-block"
+                    type="checkbox"
+                    className="dialog-checkbox-input"
+                    checked={formData.auto_block}
+                    onChange={(e) => setFormData({ ...formData, auto_block: e.target.checked })}
+                    title="Automatically block transactions that trigger this rule"
+                  />
+                  Auto-block Transactions
+                </label>
+                <label className="dialog-checkbox-label" htmlFor="rule-require-approval">
+                  <input
+                    id="rule-require-approval"
+                    type="checkbox"
+                    className="dialog-checkbox-input"
+                    checked={formData.require_approval}
+                    onChange={(e) => setFormData({ ...formData, require_approval: e.target.checked })}
+                    title="Require manual review for transactions that trigger this rule"
+                  />
+                  Require Manual Approval
+                </label>
+              </div>
+            </div>
+
+            <div className="dialog-actions">
               <button
-                onClick={() => setShowCreateDialog(true)}
-                style={{
-                  padding: '12px 24px',
-                  background: '#1e40af',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
+                className="btn-cancel"
+                onClick={() => { setShowCreateDialog(false); setEditingRule(null); resetForm(); }}
               >
-                ➕ Create First Rule
+                Cancel
+              </button>
+              <button
+                className="btn-submit"
+                onClick={editingRule ? handleUpdateRule : handleCreateRule}
+              >
+                {editingRule ? 'Save Changes' : 'Create Rule'}
               </button>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Edit Rule Modal */}
-      {editingRule && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflowY: 'auto'
-          }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px', color: '#1e293b' }}>Edit Fraud Detection Rule</h2>
-            <RuleForm
-              formData={formData}
-              setFormData={setFormData}
-              onSubmit={handleUpdateRule}
-              onCancel={() => setEditingRule(null)}
-            />
           </div>
         </div>
       )}
     </div>
   );
 });
-
-// Rule Form Component
-const RuleForm = ({ formData, setFormData, onSubmit, onCancel }) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit();
-  };
-
-  const updateFormData = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-        <div>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Rule Name</label>
-          <input
-            id="name"
-            type="text"
-            value={formData.name}
-            onChange={(e) => updateFormData('name', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="rule_type" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Rule Type</label>
-          <select
-            id="rule_type"
-            value={formData.rule_type}
-            onChange={(e) => updateFormData('rule_type', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px',
-              background: 'white'
-            }}
-          >
-            <option value="">Select rule type</option>
-            <option value="amount_threshold">Amount Threshold</option>
-            <option value="velocity_check">Velocity Check</option>
-            <option value="unusual_pattern">Unusual Pattern</option>
-            <option value="location_anomaly">Location Anomaly</option>
-            <option value="time_based">Time-Based Rule</option>
-            <option value="account_behavior">Account Behavior</option>
-            <option value="custom">Custom Rule</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="description" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Description</label>
-        <textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => updateFormData('description', e.target.value)}
-          rows={3}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '14px',
-            resize: 'vertical'
-          }}
-        />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-        <div>
-          <label htmlFor="severity" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Severity</label>
-          <select
-            id="severity"
-            value={formData.severity}
-            onChange={(e) => updateFormData('severity', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px',
-              background: 'white'
-            }}
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="field" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Field</label>
-          <input
-            id="field"
-            type="text"
-            value={formData.field}
-            onChange={(e) => updateFormData('field', e.target.value)}
-            placeholder="e.g., amount, account_id"
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="operator" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Operator</label>
-          <select
-            id="operator"
-            value={formData.operator}
-            onChange={(e) => updateFormData('operator', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px',
-              background: 'white'
-            }}
-          >
-            <option value="">Select operator</option>
-            <option value="gt">Greater Than</option>
-            <option value="gte">Greater Than or Equal</option>
-            <option value="lt">Less Than</option>
-            <option value="lte">Less Than or Equal</option>
-            <option value="eq">Equal</option>
-            <option value="ne">Not Equal</option>
-            <option value="contains">Contains</option>
-            <option value="in">In List</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="value" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Value</label>
-        <input
-          id="value"
-          type="text"
-          value={formData.value}
-          onChange={(e) => updateFormData('value', e.target.value)}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '14px'
-          }}
-          required
-        />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-        <div>
-          <label htmlFor="escalation_threshold" style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Escalation Threshold</label>
-          <input
-            id="escalation_threshold"
-            type="number"
-            value={formData.escalation_threshold}
-            onChange={(e) => updateFormData('escalation_threshold', parseInt(e.target.value) || 0)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={formData.is_active}
-            onChange={(e) => updateFormData('is_active', e.target.checked)}
-          />
-          <span style={{ fontSize: '14px', color: '#374151' }}>Active</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={formData.auto_block}
-            onChange={(e) => updateFormData('auto_block', e.target.checked)}
-          />
-          <span style={{ fontSize: '14px', color: '#374151' }}>Auto-Block</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={formData.require_approval}
-            onChange={(e) => updateFormData('require_approval', e.target.checked)}
-          />
-          <span style={{ fontSize: '14px', color: '#374151' }}>Require Approval</span>
-        </label>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: '8px 16px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            background: 'white',
-            color: '#374151',
-            cursor: 'pointer'
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            background: '#1e40af',
-            color: 'white',
-            cursor: 'pointer'
-          }}
-        >
-          {formData.id ? 'Update Rule' : 'Create Rule'}
-        </button>
-      </div>
-    </form>
-  );
-};
 
 export default FraudRules;

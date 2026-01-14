@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { MessageThread } from './MessageThread';
 export type PaginatedMessageThreadList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<MessageThread>;
+    results: Array<MessageThread>;
 };
-

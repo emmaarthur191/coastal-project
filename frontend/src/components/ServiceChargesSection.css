@@ -1,0 +1,216 @@
+.service-charges-container {
+    background: var(--color-white);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-border-light);
+}
+
+.section-header {
+    margin: 0 0 24px 0;
+    color: var(--color-secondary-dark);
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .grid-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card-panel {
+    background: var(--color-white-light);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-light);
+}
+
+.card-title {
+    margin: 0 0 16px 0;
+    color: var(--color-secondary-dark);
+}
+
+.form-group-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.input-field,
+.select-field,
+.textarea-field {
+    padding: 10px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-field:focus,
+.select-field:focus,
+.textarea-field:focus {
+    border-color: var(--color-primary);
+}
+
+.textarea-field {
+    min-height: 60px;
+}
+
+.label-group {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+}
+
+.btn-submit {
+    padding: 12px;
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-submit:hover {
+    opacity: 0.9;
+}
+
+.result-panel {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--color-white);
+    border-radius: 8px;
+    border: 1px solid var(--color-border-light);
+}
+
+.result-title {
+    margin: 0 0 12px 0;
+    color: var(--color-secondary-dark);
+}
+
+.result-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.breakdown-item {
+    padding: 8px;
+    background: var(--color-white-dark);
+    border-radius: 4px;
+}
+
+.calculator-desc {
+    margin: 0;
+    color: var(--color-text-tertiary);
+    font-size: 14px;
+}
+
+.commission-summary-section {
+    margin-top: 12px;
+}
+
+.summary-subtitle {
+    margin: 0 0 8px 0;
+    color: var(--color-secondary-dark);
+}
+
+.summary-list {
+    margin-left: 12px;
+}
+
+.active-charges-section {
+    margin-top: 24px;
+}
+
+.active-charges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.charge-card {
+    padding: 16px;
+    background: var(--color-white-light);
+    border-radius: 8px;
+    border: 1px solid var(--color-border-light);
+}
+
+.charge-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.charge-card-name {
+    margin: 0;
+    color: var(--color-secondary-dark);
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-percentage {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-fixed {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.charge-card-desc {
+    margin: 0 0 8px 0;
+    color: var(--color-text-tertiary);
+    font-size: 14px;
+}
+
+.charge-card-rate {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-secondary-dark);
+}
+
+.charge-card-footer {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+}
+
+.mt-24 {
+    margin-top: 24px;
+}

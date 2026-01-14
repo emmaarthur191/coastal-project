@@ -84,7 +84,8 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
             advance.save()
             return Response({"status": "success", "message": "Cash advance approved"})
         except PermissionDenied as e:
-            return Response({"error": str(e)}, status=403)
+            logger.warning(f"Permission denied in cash advance approval: {e}")
+            return Response({"error": "You are not authorized to perform this action."}, status=403)
         except CashAdvance.DoesNotExist:
             return Response({"error": "Cash advance not found"}, status=404)
 
@@ -150,6 +151,29 @@ class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins
     def perform_create(self, serializer):
         """Assign the current user as the cashier when opening a drawer."""
         serializer.save(cashier=self.request.user)
+
+    @action(detail=False, methods=["post"])
+    def open(self, request):
+        """Open a new cash drawer."""
+        from rest_framework import status as http_status
+
+        opening_balance = request.data.get("opening_balance", 0)
+
+        # Check if user already has an open drawer
+        existing_open = CashDrawer.objects.filter(cashier=request.user, status="open").first()
+        if existing_open:
+            return Response({"error": "You already have an open cash drawer"}, status=400)
+
+        drawer = CashDrawer.objects.create(
+            cashier=request.user,
+            opening_balance=Decimal(str(opening_balance)),
+            current_balance=Decimal(str(opening_balance)),
+            status="open",
+            opened_at=timezone.now(),
+        )
+
+        serializer = self.get_serializer(drawer)
+        return Response(serializer.data, status=http_status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def close(self, request, pk=None):
@@ -224,7 +248,7 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
         """Return the serializer class for check deposits."""
         return CheckDepositSerializer
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="process-check-deposit")
     def process_check_deposit(self, request):
         """Process a check deposit from the cashier dashboard."""
         import uuid
@@ -265,7 +289,10 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
                 }
             )
         except Exception as e:
-            return Response({"error": str(e)}, status=500)
+            logger.error(f"Error processing check deposit: {e}")
+            return Response(
+                {"error": "An error occurred while processing the check deposit. Please try again."}, status=500
+            )
 
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def approve(self, request, pk=None):
@@ -287,7 +314,8 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
             check.save()
             return Response({"status": "success", "message": "Check approved and amount credited"})
         except PermissionDenied as e:
-            return Response({"error": str(e)}, status=403)
+            logger.warning(f"Permission denied in check approval: {e}")
+            return Response({"error": "You are not authorized to perform this action."}, status=403)
         except CheckDeposit.DoesNotExist:
             return Response({"error": "Check deposit not found"}, status=404)
 

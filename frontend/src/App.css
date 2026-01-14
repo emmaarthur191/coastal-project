@@ -1,5 +1,15 @@
 ﻿/* Custom component styles */
 
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: blur(12px);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+
+  --premium-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --surface-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
 .delay-200 {
   animation-delay: 0.2s;
 }
@@ -10,4 +20,13 @@
 
 .delay-2000 {
   animation-delay: 2s;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
 }

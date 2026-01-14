@@ -9,8 +9,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from core.permissions import IsAdmin
 
@@ -43,13 +43,9 @@ class CreateStaffView(APIView):
 
     def post(self, request):
         """Handle administrative creation of staff users, including auto-password generation and SMS notification."""
-        # 1. Check Permissions (ensure caller is manager/admin)
-        # Allow superusers and staff members implicitly to prevent lockout if role isn't set
-        if not (
-            request.user.role in ["admin", "manager", "operations_manager"]
-            or request.user.is_superuser
-            or request.user.is_staff
-        ):
+        # SECURITY FIX (CVE-COASTAL-02): Removed is_staff to prevent privilege escalation
+        # Only explicit administrative roles can create staff, not just any is_staff user
+        if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
             return Response(
                 {
                     "status": "error",
@@ -232,12 +228,13 @@ class LoginView(APIView):
 
         # Get email to check account lockout before full validation
         email = request.data.get("email", "")
+        lookup_user = None  # Use a separate variable for the pre-lookup user
         try:
-            user = User.objects.get(email=email)
+            lookup_user = User.objects.get(email=email)
 
             # Security: Check if account is locked
-            if user.is_locked():
-                remaining = (user.locked_until - timezone.now()).seconds // 60
+            if lookup_user.is_locked():
+                remaining = (lookup_user.locked_until - timezone.now()).seconds // 60
                 return Response(
                     {
                         "status": "error",
@@ -254,8 +251,8 @@ class LoginView(APIView):
 
         if not serializer.is_valid():
             # If we found the user earlier, record failed attempt
-            if "user" in dir() and user:
-                is_locked = SecurityService.handle_failed_login(user, request)
+            if lookup_user:
+                is_locked = SecurityService.handle_failed_login(lookup_user, request)
                 if is_locked:
                     return Response(
                         {"error": "Account locked due to too many failed attempts.", "code": "ACCOUNT_LOCKED"},
@@ -331,6 +328,62 @@ class LogoutView(APIView):
 
         response.delete_cookie(settings.SIMPLE_JWT["AUTH_COOKIE"])
         response.delete_cookie(settings.SIMPLE_JWT["REFRESH_COOKIE"])
+
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Custom TokenRefreshView that reads the refresh token from an HttpOnly cookie
+    and sets the new access and refresh tokens back into HttpOnly cookies.
+    """
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
+
+        if refresh_token and "refresh" not in request.data:
+            # We need to inject the refresh token into request.data for TokenRefreshView
+            if hasattr(request.data, "_mutable"):
+                request.data["refresh"] = refresh_token
+            else:
+                try:
+                    request.data._mutable = True
+                    request.data["refresh"] = refresh_token
+                    request.data._mutable = False
+                except (AttributeError, TypeError):
+                    # If data is a dict or otherwise doesn't support _mutable
+                    if isinstance(request.data, dict):
+                        request.data["refresh"] = refresh_token
+                    else:
+                        # Fallback for other immutable types
+                        _data = request.data.copy()
+                        _data["refresh"] = refresh_token
+                        request._data = _data
+
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            access_token = response.data.get("access")
+            refresh_token = response.data.get("refresh")
+
+            if access_token:
+                response.set_cookie(
+                    key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+                    value=access_token,
+                    expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+                    secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                    httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                    samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+                )
+
+            if refresh_token:
+                response.set_cookie(
+                    key=settings.SIMPLE_JWT["REFRESH_COOKIE"],
+                    value=refresh_token,
+                    expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
+                    secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                    httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                    samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+                )
 
         return response
 
@@ -487,8 +540,7 @@ class SendOTPView(APIView):
                 "success": True,
                 "message": f"OTP sent to {phone_number}",
                 "expires_in": 300,  # 5 minutes
-                # Remove this in production - only for testing
-                "debug_otp": otp_code if settings.DEBUG else None,
+                # SECURITY FIX (CVE-COASTAL-03): Never expose OTP in API response, even in DEBUG
             }
         )
 
@@ -586,10 +638,41 @@ class MembersListView(APIView):
         ):
             return Response({"error": "Access denied. Staff only."}, status=403)
 
-        members = User.objects.filter(role="customer").values("id", "email", "first_name", "last_name")[:100]
-        return Response(
-            [{"id": m["id"], "name": f"{m['first_name']} {m['last_name']}", "email": m["email"]} for m in members]
+        from django.db.models import Prefetch
+
+        from core.models_legacy import ClientAssignment
+
+        # Prefetch active assignments with banker details in a single query
+        active_assignment_prefetch = Prefetch(
+            "assigned_to_bankers",
+            queryset=ClientAssignment.objects.filter(is_active=True).select_related("mobile_banker"),
+            to_attr="active_assignments_list",
         )
+
+        members_queryset = User.objects.filter(role="customer").prefetch_related(active_assignment_prefetch)[:100]
+
+        results = []
+        for m in members_queryset:
+            banker_info = None
+            assignment_id = None
+
+            # Get the first active assignment from the prefetched list
+            if hasattr(m, "active_assignments_list") and m.active_assignments_list:
+                assignment = m.active_assignments_list[0]
+                assignment_id = assignment.id
+                banker = assignment.mobile_banker
+                banker_info = {"id": banker.id, "name": banker.get_full_name() or banker.email}
+
+            results.append(
+                {
+                    "id": m.id,
+                    "name": f"{m.first_name} {m.last_name}".strip() or m.email,
+                    "email": m.email,
+                    "current_assignment": {"id": assignment_id, "banker": banker_info} if assignment_id else None,
+                }
+            )
+
+        return Response(results)
 
 
 class StaffListView(APIView):
@@ -619,7 +702,8 @@ class StaffIdsView(APIView):
         role = request.query_params.get("role")
         status = request.query_params.get("status")
 
-        queryset = User.objects.filter(is_staff=True)
+        # Filter to exclude customers, allowing all other roles (staff, banker, manager, etc.)
+        queryset = User.objects.exclude(role="customer")
 
         if role:
             queryset = queryset.filter(role=role)
@@ -628,21 +712,32 @@ class StaffIdsView(APIView):
         elif status == "inactive":
             queryset = queryset.filter(is_active=False)
 
-        staff = queryset.values("id", "email", "first_name", "last_name", "role", "is_active", "date_joined")
+        staff = queryset.values(
+            "id", "email", "first_name", "last_name", "role", "is_active", "date_joined", "staff_id", "phone_number"
+        )
 
         results = []
         for s in staff:
-            # Generate staff ID based on user ID
-            staff_id = f"STAFF-{s['id']:05d}"
+            # Use stored official staff_id if available, otherwise generate fallback
+            staff_id_official = s.get("staff_id")
+            if not staff_id_official:
+                staff_id_official = f"STAFF-{s['id']:05d}"
+
             results.append(
                 {
                     "id": s["id"],
-                    "staff_id": staff_id,
+                    "staff_id": staff_id_official,
                     "name": f"{s['first_name']} {s['last_name']}",
+                    "first_name": s["first_name"] or "",
+                    "last_name": s["last_name"] or "",
                     "email": s["email"],
+                    "phone_number": s.get("phone_number"),
                     "role": s["role"],
                     "status": "active" if s["is_active"] else "inactive",
+                    "is_active": s["is_active"],
+                    "date_joined": s["date_joined"].isoformat() if s["date_joined"] else None,
                     "joined_date": s["date_joined"].isoformat() if s["date_joined"] else None,
+                    "employment_date": s["date_joined"].isoformat() if s["date_joined"] else None,
                 }
             )
 

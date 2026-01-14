@@ -2,6 +2,21 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
+import { logger } from '../utils/logger';
+import './Login.css';
+
+// Type definitions
+interface FormErrors {
+  email?: string;
+  password?: string;
+  submit?: string;
+}
+
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  user?: { role?: string };
+}
 
 /**
  * Production-ready, accessible login component with modern best practices
@@ -14,19 +29,20 @@ function LoginPage() {
     password: '',
     rememberMe: false
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [validationWarnings, setValidationWarnings] = useState({});
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [_validationWarnings, _setValidationWarnings] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [lastInput, setLastInput] = useState('');
+  const [_lastInput, setLastInput] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   // Accessibility and refs
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
+  const passwordStrengthRef = useRef<HTMLDivElement>(null);
   const formRef = useRef(null);
   const errorSummaryRef = useRef(null);
-  const { login, checkAuth, getDashboardRoute, user } = useAuth();
+  const { login, checkAuth: _checkAuth, getDashboardRoute: _getDashboardRoute, user: _user } = useAuth();
   const navigate = useNavigate();
 
   // Password validation disabled - we only check if password exists now
@@ -47,19 +63,20 @@ function LoginPage() {
     return []; // No complex rules - just need a password
   }, []);
 
-  // Real-time validation
-  const validateField = useCallback((name, value) => {
+  const validateField = useCallback((name: string, value: string) => {
     switch (name) {
-      case 'email':
+      case 'email': {
         const emailError = validateEmail(value);
         return { email: emailError };
-      case 'password':
+      }
+      case 'password': {
         const passwordErrors = validatePassword(value);
         return {
           password: passwordErrors.length > 0 ?
             `Password must contain: ${passwordErrors.map(rule => rule.message).join(', ')}` :
             null
         };
+      }
       default:
         return {};
     }
@@ -86,7 +103,7 @@ function LoginPage() {
 
   // Form validation on submit
   const validateForm = useCallback(() => {
-    const errors = {};
+    const errors: FormErrors = {};
 
     // Email validation
     const emailError = validateEmail(formData.email);
@@ -123,7 +140,7 @@ function LoginPage() {
     setSuccessMessage('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password) as LoginResult;
 
       if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
@@ -137,7 +154,7 @@ function LoginPage() {
 
         // Calculate route directly from login response user data (not async state)
         const userRole = result.user?.role;
-        console.log('[DEBUG] User role from login response:', userRole);
+        logger.debug('[Login] User role from login response:', userRole);
 
         const roleRoutes = {
           customer: '/member-dashboard',
@@ -150,7 +167,7 @@ function LoginPage() {
         };
 
         const targetRoute = roleRoutes[userRole] || '/dashboard';
-        console.log('[DEBUG] Calculated target route:', targetRoute);
+        logger.debug('[Login] Calculated target route:', targetRoute);
 
         // Navigate using React Router to preserve state (User object from login response)
         // This avoids a full page reload which would lose the state and force a checkAuth (which might fail if cookies aren't ready)
@@ -159,7 +176,7 @@ function LoginPage() {
         setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
         passwordInputRef.current?.focus();
       }
-    } catch (error) {
+    } catch {
       setFormErrors({
         submit: 'Network error. Please check your connection and try again.'
       });
@@ -209,8 +226,15 @@ function LoginPage() {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
+  // Update password strength bar width
+  useEffect(() => {
+    if (passwordStrengthRef.current) {
+      passwordStrengthRef.current.style.setProperty('--strength-width', `${passwordStrength}%`);
+    }
+  }, [passwordStrength]);
+
   // Keyboard navigation support
-  const handleKeyDown = (e, action) => {
+  const _handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       action();
@@ -375,12 +399,12 @@ function LoginPage() {
                       {passwordStrength < 40 ? 'Weak' : passwordStrength < 80 ? 'Good' : 'Strong'}
                     </span>
                   </div>
-                  <div className="w-full bg-secondary-200 rounded-full h-1.5 overflow-hidden">
+                  <div className="password-strength-container">
                     <div
-                      className={`h-full transition-all duration-300 ${passwordStrength < 40 ? 'bg-error-500' :
-                        passwordStrength < 80 ? 'bg-warning-500' : 'bg-success-500'
+                      ref={passwordStrengthRef}
+                      className={`password-strength-fill ${passwordStrength < 40 ? 'is-weak' :
+                        passwordStrength < 80 ? 'is-good' : 'is-strong'
                         }`}
-                      style={{ width: `${passwordStrength}%` }}
                     />
                   </div>
                 </div>

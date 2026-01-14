@@ -21,14 +21,15 @@ from rest_framework.viewsets import GenericViewSet, ViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from core.models import ClientAssignment, Transaction, VisitSchedule
+from core.permissions import IsStaff
 
 logger = logging.getLogger(__name__)
 
 
-class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     """ViewSet for mobile banker visit schedules."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
 
     def get_queryset(self):
         """Return the list of scheduled visits for the current mobile banker."""
@@ -55,11 +56,19 @@ class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Gener
 
         return VisitScheduleSerializer
 
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        """Mark a visit as completed."""
+        visit = self.get_object()
+        visit.status = "completed"
+        visit.save()
+        return Response({"status": "success", "message": "Visit marked as completed"})
+
 
 class MobileBankerMetricsView(APIView):
     """Metrics for mobile banker dashboard."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
 
     def get(self, request):
         today = timezone.now().date()
@@ -113,9 +122,9 @@ class MobileOperationsViewSet(ViewSet):
     Handles RPC-style actions: process_deposit, process_withdrawal, schedule_visit.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="process-deposit")
     def process_deposit(self, request):
         """Process a deposit from mobile banker (permission check handled by viewset)."""
         # SECURITY: Mobile banker operations should be restricted
@@ -179,7 +188,7 @@ class MobileOperationsViewSet(ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="process-withdrawal")
     def process_withdrawal(self, request):
         """Process a withdrawal from mobile banker (permission check handled by viewset)."""
         # SECURITY: Mobile banker operations should be restricted
@@ -246,7 +255,63 @@ class MobileOperationsViewSet(ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="process-repayment")
+    def process_repayment(self, request):
+        """Process a loan repayment (permission check handled by viewset)."""
+        from core.models import Loan
+        from core.services import LoanService
+
+        member_id = request.data.get("member_id")
+        amount = request.data.get("amount")
+
+        if not member_id or not amount:
+            return Response({"error": "member_id and amount are required"}, status=400)
+
+        try:
+            amount = Decimal(str(amount))
+            if amount <= 0:
+                return Response({"error": "Amount must be positive"}, status=400)
+        except Exception:
+            return Response({"error": "Invalid amount"}, status=400)
+
+        # Find the oldest active loan for this member
+        loan = (
+            Loan.objects.filter(user_id=member_id, status__in=["approved", "active", "disbursed"])
+            .order_by("created_at")
+            .first()
+        )
+
+        if not loan:
+            return Response({"error": "No active loan found for this member"}, status=404)
+
+        try:
+            with transaction.atomic():
+                repaid_loan = LoanService.repay_loan(loan, amount)
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": f"Repayment of GHS {amount} successful",
+                    "data": {
+                        "loan_id": repaid_loan.id,
+                        "outstanding_balance": str(repaid_loan.outstanding_balance),
+                        "loan_status": repaid_loan.status,
+                    },
+                }
+            )
+        except Exception as e:
+            logger.error(f"Mobile repayment failed for user {member_id}: {e}")
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Failed to process repayment",
+                    "code": "REPAYMENT_FAILED",
+                    "error_detail": str(e) if settings.DEBUG else None,
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=["post"], url_path="schedule-visit")
     def schedule_visit(self, request):
         """Create a new visit schedule for a client (RPC-style action)."""
         from core.models import VisitSchedule
@@ -282,8 +347,8 @@ class ClientAssignmentViewSet(
 
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ["status", "is_active"]
-    ordering_fields = ["created_at", "next_visit"]
+    filterset_fields = ["status", "is_active", "mobile_banker"]
+    ordering_fields = ["created_at", "next_visit", "priority"]
     ordering = ["-created_at"]
 
     def get_queryset(self):
@@ -307,7 +372,7 @@ class ClientAssignmentViewSet(
         else:
             serializer.save()
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], url_path="my-clients")
     def my_clients(self, request):
         """Get all clients assigned to the current mobile banker."""
         from core.models import ClientAssignment
@@ -329,7 +394,7 @@ class ClientAssignmentViewSet(
                 }
             )
 
-        return Response({"clients": clients})
+        return Response(clients)
 
     def _format_next_visit(self, dt):
         """Helper to format next visit datetime to ISO string or string representation."""
@@ -347,7 +412,7 @@ class ClientAssignmentViewSet(
         assignment.save()
         return Response({"status": "success", "message": "Assignment marked as completed"})
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="update-status")
     def update_status(self, request, pk=None):
         """Update the status of a specific client assignment."""
         assignment = self.get_object()
@@ -355,4 +420,5 @@ class ClientAssignmentViewSet(
         if new_status:
             assignment.status = new_status
             assignment.save()
+            return Response({"status": "success", "message": f"Status updated to {new_status}"})
         return Response({"error": "Status is required"}, status=400)

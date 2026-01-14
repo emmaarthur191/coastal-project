@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\views\registration.py
-# hypothesis_version: 6.148.7
-
-['accountType', 'account_type', 'applicant', 'customer', 'daily_susu', 'email', 'error', 'firstName', 'first_name', 'ghana_card', 'id', 'idType', 'id_type', 'lastName', 'last_name', 'message', 'name', 'pending_verification', 'phone', 'phoneNumber', 'post', 'registration_id', 'results', 'status', 'submitted_at', 'success']

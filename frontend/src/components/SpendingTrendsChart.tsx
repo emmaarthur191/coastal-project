@@ -2,7 +2,17 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrencyGHS } from '../utils/formatters';
 
-const SpendingTrendsChart = ({ data }) => {
+export interface SpendingTrendsData {
+  month: string;
+  spending: number;
+  income: number;
+}
+
+interface SpendingTrendsChartProps {
+  data: SpendingTrendsData[];
+}
+
+const SpendingTrendsChart: React.FC<SpendingTrendsChartProps> = ({ data }) => {
   // Show empty state if no data provided
   if (!data || data.length === 0) {
     return (
@@ -12,15 +22,19 @@ const SpendingTrendsChart = ({ data }) => {
     );
   }
 
-  const chartData = data;
-
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-neutral-200 rounded-lg shadow-lg">
           <p className="font-medium text-neutral-900">{label}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
+            <p
+              key={index}
+              className={`text-sm ${entry.color === '#0066CC' ? 'text-primary-500' :
+                  entry.color === '#10b981' ? 'text-success-500' :
+                    'text-gray-900'
+                }`}
+            >
               {entry.name}: {formatCurrencyGHS(entry.value)}
             </p>
           ))}
@@ -33,7 +47,7 @@ const SpendingTrendsChart = ({ data }) => {
   return (
     <div className="w-full h-64">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
           <XAxis
             dataKey="month"

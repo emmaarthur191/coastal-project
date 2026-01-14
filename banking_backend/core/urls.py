@@ -12,6 +12,7 @@ from .chat_views import (
 from .ml.views import MLBatchAnalysisView, MLFraudAnalysisView, MLModelStatusView, MLModelTrainView
 from .report_download import ReportDownloadView
 from .views import (
+    AccountBalanceView,
     AccountClosureViewSet,
     AccountOpeningViewSet,
     AccountStatementViewSet,
@@ -33,10 +34,12 @@ from .views import (
     DeviceViewSet,
     ExpensesView,
     FraudAlertViewSet,
+    FraudRuleViewSet,
     GeneratePayslipView,
     GenerateReportView,
     GenerateStatementView,
     LoanViewSet,
+    ManagerOverviewView,
     MessageThreadViewSet,
     MessageViewSet,
     MobileBankerMetricsView,
@@ -46,8 +49,12 @@ from .views import (
     # Manager dashboard views
     OperationsMetricsView,
     PayslipViewSet,
+    PerformanceAlertsView,
+    PerformanceChartView,
     PerformanceDashboardView,
     PerformanceMetricsView,
+    PerformanceRecommendationsView,
+    PerformanceVolumeView,
     ProductViewSet,
     PromotionViewSet,
     RefundViewSet,
@@ -94,6 +101,8 @@ router.register(r"banking/staff-accounts", StaffAccountsViewSet, basename="staff
 
 # Fraud endpoints (alias to fraud-alerts for frontend compatibility)
 router.register(r"fraud/alerts", FraudAlertViewSet, basename="fraud-alert")
+router.register(r"fraud/rules", FraudRuleViewSet, basename="fraud-rule")
+router.register(r"banking/fraud-alerts", FraudAlertViewSet, basename="banking-fraud-alert")
 
 # Reports endpoints
 router.register(r"reports/reports", ReportViewSet, basename="report")
@@ -118,7 +127,7 @@ router.register(r"messaging/blocked-users", BlockedUsersViewSet, basename="block
 
 # Operations/Mobile Banker endpoints
 router.register(r"operations/messages", OperationsMessagesViewSet, basename="operations-message")
-router.register(r"operations/visit_schedules", VisitScheduleViewSet, basename="visit-schedule")
+router.register(r"operations/visit-schedules", VisitScheduleViewSet, basename="visit-schedule")
 router.register(r"operations/assignments", ClientAssignmentViewSet, basename="client-assignment")
 router.register(r"operations", MobileOperationsViewSet, basename="mobile-ops")
 
@@ -130,9 +139,17 @@ router.register(r"operations/statements", AccountStatementViewSet, basename="sta
 urlpatterns = [
     # Account summary endpoint (maps to StaffAccountsViewSet.summary)
     path("accounts/summary/", StaffAccountsViewSet.as_view({"get": "summary"}), name="accounts-summary"),
+    # Account balance endpoint for authenticated users
+    path("accounts/balance/", AccountBalanceView.as_view(), name="account-balance"),
+    # Manager dashboard overview endpoint
+    path("accounts/manager/overview/", ManagerOverviewView.as_view(), name="manager-overview"),
     path("performance/system-health/", SystemHealthView.as_view(), name="system-health"),
     path("performance/dashboard-data/", PerformanceDashboardView.as_view(), name="performance-dashboard"),
     path("performance/metrics/", PerformanceMetricsView.as_view(), name="performance-metrics"),
+    path("performance/volume/", PerformanceVolumeView.as_view(), name="performance-volume"),
+    path("performance/chart/", PerformanceChartView.as_view(), name="performance-chart"),
+    path("performance/alerts/", PerformanceAlertsView.as_view(), name="performance-alerts"),
+    path("performance/recommendations/", PerformanceRecommendationsView.as_view(), name="performance-recommendations"),
     path("services/stats/", ServiceStatsView.as_view(), name="service-stats"),
     path("audit/dashboard/", AuditDashboardView.as_view(), name="audit-dashboard"),
     path("reports/analytics/", ReportAnalyticsView.as_view(), name="report-analytics"),

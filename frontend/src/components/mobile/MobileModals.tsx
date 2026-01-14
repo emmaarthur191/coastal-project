@@ -45,228 +45,435 @@ const MobileModal: React.FC<MobileModalProps> = ({ isOpen, onClose, title, child
 };
 
 // --- STYLED INPUTS ---
-const InputGroup = ({ label, type = 'text', value, onChange, placeholder, options }: any) => (
+interface InputGroupProps {
+    label: string;
+    type?: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+    placeholder?: string;
+    options?: { value: string; label: string }[];
+}
+
+const InputGroup: React.FC<InputGroupProps> = ({ label, type = 'text', value, onChange, placeholder, options }) => (
     <div className="mb-4">
+        <label className="block text-sm font-bold text-gray-700 mb-1">{label}</label>
         {options ? (
-            <div className="relative">
-                <Input
-                    label={label}
-                    as="select"
-                    value={value}
-                    onChange={onChange}
-                    className="w-full font-bold"
-                >
-                    {options.map((opt: any) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </Input>
-            </div>
-        ) : (
-            <Input
-                label={label}
-                type={type}
+            <select
+                className="w-full px-4 py-2 rounded-xl border-2 border-gray-100 outline-none focus:border-black transition-all bg-gray-50 text-gray-800"
                 value={value}
                 onChange={onChange}
-                placeholder={placeholder}
-                className="w-full font-bold"
+                title={label}
+            >
+                {options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
+        ) : (
+            <Input
+                type={type}
+                className="w-full px-4 py-2 rounded-xl border-2 border-gray-100 outline-none focus:border-black transition-all bg-gray-50 text-gray-800"
+                placeholder={placeholder || label}
+                value={value}
+                onChange={onChange}
+                title={label}
             />
         )}
     </div>
 );
 
 // --- SPECIFIC MODALS ---
+interface BaseFormModalProps<T> {
+    isOpen: boolean;
+    onClose: () => void;
+    formData: T;
+    setFormData: (data: T) => void;
+    onSubmit: (e: React.FormEvent) => void;
+    loading?: boolean;
+}
 
-export const DepositModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: any) => (
+export const DepositModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
         title="📥 New Deposit"
         footer={
             <>
-                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
-                <Button onClick={onSubmit} variant="success">Process Deposit 💰</Button>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="success" disabled={loading}>
+                    {loading ? 'Processing...' : 'Process Deposit 💰'}
+                </Button>
             </>
         }
     >
         <InputGroup
-            label="Member ID / Account Number"
-            value={formData.account_number || formData.member_id}
-            onChange={(e: any) => setFormData({ ...formData, account_number: e.target.value })}
-            placeholder="Enter account number..."
-        />
-        <InputGroup
-            label="Account Type"
-            value={formData.account_type || 'daily_susu'}
-            options={[
-                { value: 'daily_susu', label: 'Daily Susu' },
-                { value: 'savings', label: 'Savings' },
-                { value: 'checking', label: 'Checking' }
-            ]}
-            onChange={(e: any) => setFormData({ ...formData, account_type: e.target.value })}
+            label="Member ID"
+            value={formData.member_id}
+            onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
         />
         <InputGroup
             label="Amount (GHS)"
             type="number"
             value={formData.amount}
-            onChange={(e: any) => setFormData({ ...formData, amount: e.target.value })}
-            placeholder="0.00"
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+        />
+        <InputGroup
+            label="Deposit Type"
+            value={formData.deposit_type}
+            onChange={(e) => setFormData({ ...formData, deposit_type: e.target.value })}
+            options={[
+                { value: 'daily_susu', label: 'Daily Susu' },
+                { value: 'savings', label: 'Regular Savings' },
+                { value: 'shares', label: 'Shares' },
+            ]}
         />
     </MobileModal>
 );
 
-export const WithdrawalModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: any) => (
+export const WithdrawalModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
         title="📤 New Withdrawal"
         footer={
             <>
-                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
-                <Button onClick={onSubmit} variant="danger">Process Withdrawal 💸</Button>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="danger" disabled={loading}>
+                    {loading ? 'Processing...' : 'Process Withdrawal 💸'}
+                </Button>
             </>
         }
     >
         <InputGroup
-            label="Member ID / Account Number"
-            value={formData.account_number || formData.member_id}
-            onChange={(e: any) => setFormData({ ...formData, account_number: e.target.value })}
-            placeholder="Enter account number..."
-        />
-        <InputGroup
-            label="Amount (GHS)"
-            type="number"
-            value={formData.amount}
-            onChange={(e: any) => setFormData({ ...formData, amount: e.target.value })}
-            placeholder="0.00"
-        />
-    </MobileModal>
-);
-
-export const PaymentModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: any) => (
-    <MobileModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title="💵 Collect Payment"
-        footer={
-            <>
-                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
-                <Button onClick={onSubmit} variant="primary">Collect Payment 💳</Button>
-            </>
-        }
-    >
-        <InputGroup
-            label="Client Name / ID"
+            label="Member ID"
             value={formData.member_id}
-            onChange={(e: any) => setFormData({ ...formData, member_id: e.target.value })}
-            placeholder="Client..."
+            onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
         />
         <InputGroup
             label="Amount (GHS)"
             type="number"
             value={formData.amount}
-            onChange={(e: any) => setFormData({ ...formData, amount: e.target.value })}
-            placeholder="0.00"
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
         />
-        <p className="text-xs text-gray-500 mt-2 italic">Use this for loan repayments or generic collections.</p>
     </MobileModal>
 );
 
-export const LoanModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: any) => (
+export const PaymentModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="🤝 Loan Application"
+        title="💸 Loan Payment"
         footer={
             <>
-                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
-                <Button onClick={onSubmit} variant="secondary">Submit Application 📝</Button>
+                <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="primary" disabled={loading}>
+                    {loading ? 'Processing...' : 'Make Payment ✅'}
+                </Button>
             </>
         }
     >
         <InputGroup
-            label="Applicant Name"
-            value={formData.applicant_name}
-            onChange={(e: any) => setFormData({ ...formData, applicant_name: e.target.value })}
-            placeholder="Full Name"
+            label="Member ID"
+            value={formData.member_id}
+            onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
         />
         <InputGroup
-            label="Loan Amount Requested"
+            label="Amount (GHS)"
             type="number"
-            value={formData.loan_amount}
-            onChange={(e: any) => setFormData({ ...formData, loan_amount: e.target.value })}
-            placeholder="0.00"
-        />
-        <InputGroup
-            label="Purpose"
-            value={formData.loan_purpose}
-            onChange={(e: any) => setFormData({ ...formData, loan_purpose: e.target.value })}
-            placeholder="Reason for loan..."
-        />
-        <InputGroup
-            label="Monthly Income"
-            type="number"
-            value={formData.monthly_income}
-            onChange={(e: any) => setFormData({ ...formData, monthly_income: e.target.value })}
-            placeholder="0.00"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
         />
     </MobileModal>
 );
 
-export const VisitModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: any) => (
+export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="🛵 Schedule Visit"
+        title="🏦 Loan Application"
         footer={
             <>
-                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
-                <Button onClick={onSubmit} variant="warning" className="text-white">Schedule 📅</Button>
+                <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="primary" disabled={loading}>
+                    {loading ? 'Submitting...' : 'Submit Application 📄'}
+                </Button>
+            </>
+        }
+    >
+        {/* PERSONAL INFO */}
+        <div className="mb-6">
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">👤 Personal Information</p>
+            <InputGroup
+                label="Member ID"
+                value={formData.member_id}
+                onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
+            />
+            <InputGroup
+                label="Date of Birth"
+                type="date"
+                value={formData.date_of_birth}
+                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="ID Type"
+                    value={formData.id_type}
+                    onChange={(e) => setFormData({ ...formData, id_type: e.target.value })}
+                    options={[
+                        { value: 'ghana_card', label: 'Ghana Card' },
+                        { value: 'voter_id', label: 'Voter ID' },
+                        { value: 'passport', label: 'Passport' },
+                    ]}
+                />
+                <InputGroup
+                    label="ID Number"
+                    value={formData.id_number}
+                    onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
+                />
+            </div>
+            <InputGroup
+                label="Digital Address"
+                value={formData.digital_address}
+                onChange={(e) => setFormData({ ...formData, digital_address: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="Town"
+                    value={formData.town}
+                    onChange={(e) => setFormData({ ...formData, town: e.target.value })}
+                />
+                <InputGroup
+                    label="City"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+            </div>
+        </div>
+
+        {/* NEXT OF KIN 1 */}
+        <div className="mb-6">
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">👪 Next of Kin (1)</p>
+            <InputGroup
+                label="Full Name"
+                value={formData.next_of_kin_1_name}
+                onChange={(e) => setFormData({ ...formData, next_of_kin_1_name: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="Relationship"
+                    value={formData.next_of_kin_1_relationship}
+                    onChange={(e) => setFormData({ ...formData, next_of_kin_1_relationship: e.target.value })}
+                />
+                <InputGroup
+                    label="Phone"
+                    value={formData.next_of_kin_1_phone}
+                    onChange={(e) => setFormData({ ...formData, next_of_kin_1_phone: e.target.value })}
+                />
+            </div>
+            <InputGroup
+                label="Address"
+                value={formData.next_of_kin_1_address}
+                onChange={(e) => setFormData({ ...formData, next_of_kin_1_address: e.target.value })}
+            />
+        </div>
+
+        {/* NEXT OF KIN 2 */}
+        <div className="mb-6">
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">👪 Next of Kin (2)</p>
+            <InputGroup
+                label="Full Name"
+                value={formData.next_of_kin_2_name}
+                onChange={(e) => setFormData({ ...formData, next_of_kin_2_name: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="Relationship"
+                    value={formData.next_of_kin_2_relationship}
+                    onChange={(e) => setFormData({ ...formData, next_of_kin_2_relationship: e.target.value })}
+                />
+                <InputGroup
+                    label="Phone"
+                    value={formData.next_of_kin_2_phone}
+                    onChange={(e) => setFormData({ ...formData, next_of_kin_2_phone: e.target.value })}
+                />
+            </div>
+            <InputGroup
+                label="Address"
+                value={formData.next_of_kin_2_address}
+                onChange={(e) => setFormData({ ...formData, next_of_kin_2_address: e.target.value })}
+            />
+        </div>
+
+        {/* GUARANTOR 1 */}
+        <div className="mb-6">
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">🛡️ Guarantor (1)</p>
+            <InputGroup
+                label="Full Name"
+                value={formData.guarantor_1_name}
+                onChange={(e) => setFormData({ ...formData, guarantor_1_name: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="ID Type"
+                    value={formData.guarantor_1_id_type}
+                    onChange={(e) => setFormData({ ...formData, guarantor_1_id_type: e.target.value })}
+                    options={[
+                        { value: 'ghana_card', label: 'Ghana Card' },
+                        { value: 'voter_id', label: 'Voter ID' },
+                        { value: 'passport', label: 'Passport' },
+                    ]}
+                />
+                <InputGroup
+                    label="ID Number"
+                    value={formData.guarantor_1_id_number}
+                    onChange={(e) => setFormData({ ...formData, guarantor_1_id_number: e.target.value })}
+                />
+            </div>
+            <InputGroup
+                label="Phone"
+                value={formData.guarantor_1_phone}
+                onChange={(e) => setFormData({ ...formData, guarantor_1_phone: e.target.value })}
+            />
+            <InputGroup
+                label="Address"
+                value={formData.guarantor_1_address}
+                onChange={(e) => setFormData({ ...formData, guarantor_1_address: e.target.value })}
+            />
+        </div>
+
+        {/* GUARANTOR 2 */}
+        <div className="mb-6">
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">🛡️ Guarantor (2)</p>
+            <InputGroup
+                label="Full Name"
+                value={formData.guarantor_2_name}
+                onChange={(e) => setFormData({ ...formData, guarantor_2_name: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="ID Type"
+                    value={formData.guarantor_2_id_type}
+                    onChange={(e) => setFormData({ ...formData, guarantor_2_id_type: e.target.value })}
+                    options={[
+                        { value: 'ghana_card', label: 'Ghana Card' },
+                        { value: 'voter_id', label: 'Voter ID' },
+                        { value: 'passport', label: 'Passport' },
+                    ]}
+                />
+                <InputGroup
+                    label="ID Number"
+                    value={formData.guarantor_2_id_number}
+                    onChange={(e) => setFormData({ ...formData, guarantor_2_id_number: e.target.value })}
+                />
+            </div>
+            <InputGroup
+                label="Phone"
+                value={formData.guarantor_2_phone}
+                onChange={(e) => setFormData({ ...formData, guarantor_2_phone: e.target.value })}
+            />
+            <InputGroup
+                label="Address"
+                value={formData.guarantor_2_address}
+                onChange={(e) => setFormData({ ...formData, guarantor_2_address: e.target.value })}
+            />
+        </div>
+
+        {/* LOAN DETAILS */}
+        <div className="mb-2">
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">💰 Loan & Financial Details</p>
+            <InputGroup
+                label="Loan Amount (GHS)"
+                type="number"
+                value={formData.loan_amount}
+                onChange={(e) => setFormData({ ...formData, loan_amount: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+                <InputGroup
+                    label="Term (Months)"
+                    type="number"
+                    value={formData.term_months}
+                    onChange={(e) => setFormData({ ...formData, term_months: e.target.value })}
+                />
+                <InputGroup
+                    label="Interest Rate (%)"
+                    type="number"
+                    value={formData.interest_rate}
+                    onChange={(e) => setFormData({ ...formData, interest_rate: e.target.value })}
+                />
+            </div>
+            <InputGroup
+                label="Monthly Income (GHS)"
+                type="number"
+                value={formData.monthly_income}
+                onChange={(e) => setFormData({ ...formData, monthly_income: e.target.value })}
+            />
+            <InputGroup
+                label="Purpose"
+                value={formData.loan_purpose}
+                onChange={(e) => setFormData({ ...formData, loan_purpose: e.target.value })}
+            />
+        </div>
+    </MobileModal>
+);
+
+export const ScheduleModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+    <MobileModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="📅 Schedule Visit"
+        footer={
+            <>
+                <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="success" disabled={loading}>
+                    {loading ? 'Scheduling...' : 'Schedule Stop 📍'}
+                </Button>
             </>
         }
     >
         <InputGroup
             label="Client Name"
             value={formData.client_name}
-            onChange={(e: any) => setFormData({ ...formData, client_name: e.target.value })}
-            placeholder="Name..."
+            onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+            placeholder="Search or enter client name"
         />
         <InputGroup
             label="Location"
             value={formData.location}
-            onChange={(e: any) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Area/Town"
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            placeholder="Client shop, office, etc."
         />
         <InputGroup
             label="Date & Time"
             type="datetime-local"
             value={formData.scheduled_time}
-            onChange={(e: any) => setFormData({ ...formData, scheduled_time: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
         />
         <InputGroup
             label="Purpose"
             value={formData.purpose}
-            onChange={(e: any) => setFormData({ ...formData, purpose: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, purpose: (e.target as HTMLInputElement).value })}
             placeholder="Collection, Sales, etc."
         />
     </MobileModal>
 );
 
-export const MessageModal = ({ isOpen, onClose, formData, setFormData, onSubmit }: any) => (
+export const MessageModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
         title="💬 New Message"
         footer={
             <>
-                <Button onClick={onClose} variant="ghost" className="text-gray-600">Cancel</Button>
-                <Button onClick={onSubmit} variant="primary">Send Message 📨</Button>
+                <Button onClick={onClose} variant="ghost" className="text-gray-600" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="primary" disabled={loading}>
+                    {loading ? 'Sending...' : 'Send Message 📨'}
+                </Button>
             </>
         }
     >
         <InputGroup
             label="Subject"
             value={formData.subject}
-            onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
             placeholder="Message Subject..."
         />
         <InputGroup
@@ -277,13 +484,13 @@ export const MessageModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
                 { value: 'medium', label: 'Medium' },
                 { value: 'high', label: 'High' }
             ]}
-            onChange={(e: any) => setFormData({ ...formData, priority: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
         />
         <div className="mb-4">
             <label className="block text-sm font-bold text-gray-500 mb-1">Message</label>
             <textarea
-                value={formData.content || formData.message}
-                onChange={(e: any) => setFormData({ ...formData, content: e.target.value })}
+                value={formData.content || formData.message || ''}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Type your message..."
                 rows={4}
                 className="w-full p-3 rounded-lg border-2 border-gray-200 outline-none focus:border-blue-400 font-medium text-gray-700 resize-y"
@@ -292,7 +499,7 @@ export const MessageModal = ({ isOpen, onClose, formData, setFormData, onSubmit 
     </MobileModal>
 );
 
-export const KycModal = ({ isOpen, onClose }: any) => (
+export const KycModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}

@@ -6,6 +6,7 @@ Imports are provided for backward compatibility with existing code.
 
 # Account views
 from core.views.accounts import (
+    AccountBalanceView,
     AccountClosureViewSet,
     AccountOpeningViewSet,
     AccountViewSet,
@@ -28,15 +29,20 @@ from core.views.dashboard import (
     BranchActivityView,
     CashFlowView,
     ExpensesView,
+    ManagerOverviewView,
     OperationsMetricsView,
+    PerformanceAlertsView,
+    PerformanceChartView,
     PerformanceDashboardView,
     PerformanceMetricsView,
+    PerformanceRecommendationsView,
+    PerformanceVolumeView,
     SystemAlertsView,
     WorkflowStatusView,
 )
 
 # Fraud views
-from core.views.fraud import FraudAlertViewSet
+from core.views.fraud import FraudAlertViewSet, FraudRuleViewSet
 
 # Loan views
 from core.views.loans import LoanViewSet
@@ -125,6 +131,7 @@ __all__ = [
     "ExpensesView",
     # Fraud
     "FraudAlertViewSet",
+    "FraudRuleViewSet",
     "GeneratePayslipView",
     # Reports
     "GenerateReportView",
@@ -140,8 +147,12 @@ __all__ = [
     "OperationsMessagesViewSet",
     "OperationsMetricsView",
     "PayslipViewSet",
+    "PerformanceAlertsView",
+    "PerformanceChartView",
     "PerformanceDashboardView",
     "PerformanceMetricsView",
+    "PerformanceRecommendationsView",
+    "PerformanceVolumeView",
     # Products
     "ProductViewSet",
     "PromotionViewSet",

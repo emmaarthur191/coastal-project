@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/api.ts';
+import { apiService } from '../services/api';
 import { formatCurrencyGHS } from '../utils/formatters';
+import './Accounts.css';
 
 function Accounts() {
   const [accounts, setAccounts] = useState([]);
@@ -13,7 +14,12 @@ function Accounts() {
     const loadAccounts = async () => {
       try {
         const result = await apiService.getAccounts();
-        setAccounts(result || []);
+        if (result.success) {
+          setAccounts(result.data || []);
+        } else {
+          console.error('Failed to load accounts:', result.error);
+          setAccounts([]);
+        }
       } catch (error) {
         console.error('Failed to load accounts:', error);
         setAccounts([]);
@@ -41,198 +47,66 @@ function Accounts() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        padding: '40px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '40px',
-          textAlign: 'center',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid #f3f4f6',
-            borderTop: '3px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
-          }}></div>
-          <p style={{ color: '#6b7280', fontSize: '16px' }}>Loading your accounts...</p>
+      <div className="loading-container">
+        <div className="loading-box">
+          <div className="spinner"></div>
+          <p className="loading-text">Loading your accounts...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '20px'
-    }}>
+    <div className="accounts-page">
       {/* Header */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '30px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+      <div className="header-section">
+        <div className="header-content">
           <div>
-            <h1 style={{
-              margin: '0 0 8px 0',
-              color: '#1e293b',
-              fontSize: '28px',
-              fontWeight: '700'
-            }}>
+            <h1 className="header-title">
               Account Management
             </h1>
-            <p style={{
-              margin: 0,
-              color: '#64748b',
-              fontSize: '16px'
-            }}>
+            <p className="header-subtitle">
               View and manage all your credit union accounts
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{
-              padding: '12px 20px',
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '10px',
-              color: '#374151',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#3b82f6';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#f8fafc';
-                e.currentTarget.style.color = '#374151';
-              }}>
+          <div className="action-buttons">
+            <button className="btn-view-statements">
               View Statements
             </button>
-            <button style={{
-              padding: '12px 20px',
-              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-              border: 'none',
-              borderRadius: '10px',
-              color: 'white',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}>
+            <button className="btn-add-account">
               Add Account
             </button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div style={{ position: 'relative' }}>
+        <div className="search-container">
           <input
             type="text"
             placeholder="Search by account name or number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px 12px 44px',
-              border: '1px solid #d1d5db',
-              borderRadius: '10px',
-              fontSize: '14px',
-              background: '#f9fafb'
-            }}
+            className="search-input"
           />
-          <span style={{
-            position: 'absolute',
-            left: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#6b7280',
-            fontSize: '16px'
-          }}>
-
+          <span className="search-icon">
+            {/* Icon placeholder if needed, or keeping empty span as in original code */}
           </span>
         </div>
       </div>
 
       {/* Account Type Tabs */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '20px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+      <div className="tabs-container">
+        <div className="tabs-scroll-area">
           {accountTypes.map((type) => (
             <button
               key={type.id}
               onClick={() => setActiveTab(type.id)}
-              style={{
-                padding: '16px 20px',
-                background: activeTab === type.id ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                color: activeTab === type.id ? 'white' : '#374151',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                minWidth: '160px',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== type.id) {
-                  e.currentTarget.style.background = '#3b82f6';
-                  e.currentTarget.style.color = 'white';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== type.id) {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }
-              }}
+              className={`tab-btn ${activeTab === type.id ? 'active' : ''}`}
             >
-              <span style={{ fontSize: '18px' }}>{type.icon}</span>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '14px' }}>{type.name}</div>
-                <div style={{
-                  fontSize: '12px',
-                  opacity: activeTab === type.id ? 0.9 : 0.6
-                }}>
+              <span className="tab-icon">{type.icon}</span>
+              <div className="tab-text-container">
+                <div className="tab-name">{type.name}</div>
+                <div className="tab-count">
                   {type.count} accounts
                 </div>
               </div>
@@ -242,173 +116,70 @@ function Accounts() {
       </div>
 
       {/* Accounts Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-        gap: '20px'
-      }}>
+      <div className="accounts-grid">
         {filteredAccounts.map((account) => (
-          <div key={account.id} style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '24px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #e2e8f0',
-            transition: 'all 0.3s ease',
-            cursor: 'pointer'
-          }}
+          <div
+            key={account.id}
+            className="account-card"
             onClick={() => setExpandedAccount(expandedAccount === account.id ? null : account.id)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-            }}>
+          >
             {/* Account Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <div className="account-header">
               <div>
-                <h3 style={{
-                  margin: '0 0 8px 0',
-                  color: '#1e293b',
-                  fontSize: '18px',
-                  fontWeight: '600'
-                }}>
+                <h3 className="account-name-h3">
                   {account.name}
                 </h3>
-                <p style={{
-                  margin: 0,
-                  color: '#64748b',
-                  fontSize: '14px',
-                  fontFamily: 'monospace'
-                }}>
+                <p className="account-number-p">
                   {account.account_number}
                 </p>
               </div>
-              <div style={{
-                background: getAccountTypeColor(account.type).background,
-                color: getAccountTypeColor(account.type).color,
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '12px',
-                fontWeight: '600',
-                textTransform: 'capitalize'
-              }}>
+              <div className={`account-badge ${account.type}`}>
                 {account.type}
               </div>
             </div>
 
             {/* Balance */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{
-                color: '#1e293b',
-                fontSize: '24px',
-                fontWeight: '700',
-                lineHeight: '1.2'
-              }}>
+            <div className="balance-section">
+              <div className="balance-amount">
                 {formatCurrencyGHS(account.balance)}
               </div>
-              <div style={{
-                color: '#64748b',
-                fontSize: '14px'
-              }}>
+              <div className="balance-label">
                 Available Balance
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <button style={{
-                padding: '8px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                color: '#374151',
-                fontSize: '12px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#3b82f6';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }}>
+            <div className="account-actions">
+              <button className="action-btn transfer">
                 Transfer
               </button>
-              <button style={{
-                padding: '8px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                color: '#374151',
-                fontSize: '12px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#10b981';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }}>
+              <button className="action-btn statement">
                 Statement
               </button>
-              <button style={{
-                padding: '8px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                color: '#374151',
-                fontSize: '12px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#8b5cf6';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.color = '#374151';
-                }}>
+              <button className="action-btn details">
                 Details
               </button>
             </div>
 
             {/* Expanded Details */}
             {expandedAccount === account.id && (
-              <div style={{
-                padding: '16px',
-                background: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                marginTop: '16px'
-              }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
-                  <div>
-                    <div style={{ color: '#64748b', marginBottom: '4px' }}>Account Status</div>
-                    <div style={{ color: '#059669', fontWeight: '600' }}>Active</div>
+              <div className="expanded-details">
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <div className="detail-label">Account Status</div>
+                    <div className="detail-value active">Active</div>
                   </div>
-                  <div>
-                    <div style={{ color: '#64748b', marginBottom: '4px' }}>Interest Rate</div>
-                    <div style={{ color: '#1e293b', fontWeight: '600' }}>5.2%</div>
+                  <div className="detail-item">
+                    <div className="detail-label">Interest Rate</div>
+                    <div className="detail-value">5.2%</div>
                   </div>
-                  <div>
-                    <div style={{ color: '#64748b', marginBottom: '4px' }}>Last Transaction</div>
-                    <div style={{ color: '#1e293b', fontWeight: '600' }}>2 days ago</div>
+                  <div className="detail-item">
+                    <div className="detail-label">Last Transaction</div>
+                    <div className="detail-value">2 days ago</div>
                   </div>
-                  <div>
-                    <div style={{ color: '#64748b', marginBottom: '4px' }}>Overdraft Limit</div>
-                    <div style={{ color: '#1e293b', fontWeight: '600' }}>{formatCurrencyGHS(1000)}</div>
+                  <div className="detail-item">
+                    <div className="detail-label">Overdraft Limit</div>
+                    <div className="detail-value">{formatCurrencyGHS(1000)}</div>
                   </div>
                 </div>
               </div>
@@ -419,65 +190,21 @@ function Accounts() {
 
       {/* Empty State */}
       {filteredAccounts.length === 0 && (
-        <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '60px 40px',
-          textAlign: 'center',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
-          <h3 style={{
-            margin: '0 0 8px 0',
-            color: '#1e293b',
-            fontSize: '20px',
-            fontWeight: '600'
-          }}>
+        <div className="empty-state">
+          <div className="empty-icon"></div>
+          <h3 className="empty-title">
             No accounts found
           </h3>
-          <p style={{
-            margin: '0 0 24px 0',
-            color: '#64748b',
-            fontSize: '16px'
-          }}>
+          <p className="empty-text">
             {searchTerm ? 'Try adjusting your search terms' : 'Get started by opening your first account'}
           </p>
-          <button style={{
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-            border: 'none',
-            borderRadius: '10px',
-            color: 'white',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}>
+          <button className="empty-btn">
             Open New Account
           </button>
         </div>
       )}
-
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
     </div>
   );
-}
-
-// Helper function for account type colors
-function getAccountTypeColor(type) {
-  const colors = {
-    daily_susu: { background: '#d1fae5', color: '#065f46' },
-    shares: { background: '#dbeafe', color: '#1e40af' },
-    monthly_contribution: { background: '#fef3c7', color: '#92400e' },
-    default: { background: '#f3f4f6', color: '#374151' }
-  };
-  return colors[type] || colors.default;
 }
 
 export default Accounts;

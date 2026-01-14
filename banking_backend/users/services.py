@@ -2,6 +2,7 @@ import logging
 import re
 
 from django.conf import settings
+from django.utils import timezone
 
 import requests
 
@@ -45,50 +46,64 @@ class SendexaService:
 
     @staticmethod
     def send_sms(phone_number, message):
-        """Send an SMS to a single recipient."""
+        """Send an SMS to a single recipient with outbox persistence."""
         if not phone_number:
             logger.error("Sendexa: Phone number is required")
             return False, "Phone number is required"
 
         # Normalize phone number to E.164 format
         normalized_phone = SendexaService.normalize_phone_number(phone_number)
-        logger.info(f"Sendexa: Normalized phone from '{phone_number}' to '{normalized_phone}'")
+
+        # 1. Create Outbox Entry
+        from core.models.reliability import SmsOutbox
+
+        outbox_entry = SmsOutbox.objects.create(phone_number=normalized_phone, message=message, status="pending")
 
         # Configuration from settings
-        if settings.DEBUG:
-            logger.info(f"[SENDEXA MOCK] Would send to {normalized_phone}: {message}")
-            return True, "Mock SMS sent successfully"
-
         url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/sms/send")
         auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
+        if settings.DEBUG and not auth_token:
+            logger.info(f"[SENDEXA MOCK] Would send to {normalized_phone}: {message}")
+            outbox_entry.status = "sent"
+            outbox_entry.sent_at = timezone.now()
+            outbox_entry.save()
+            return True, "Mock SMS sent successfully"
+
         if not auth_token:
-            logger.error("Sendexa: SENDEXA_AUTH_TOKEN is not configured")
-            return False, "SMS service not configured (missing auth token)"
+            error_msg = "SMS service not configured (missing auth token)"
+            logger.error(f"Sendexa: {error_msg}")
+            outbox_entry.status = "failed"
+            outbox_entry.error_message = error_msg
+            outbox_entry.save()
+            return False, error_msg
 
-        # Prepare headers with pre-encoded Base64 token
+        # Prepare headers and payload
         headers = {"Authorization": f"Basic {auth_token}", "Content-Type": "application/json"}
-
-        # Prepare payload
         payload = {"to": normalized_phone, "sender": sender_id, "message": message}
 
         try:
-            logger.info(
-                f"Sendexa Request: URL={url} Payload={payload} AuthHeader=Basic ...{auth_token[-4:] if auth_token else 'NONE'}"
-            )
-
             response = requests.post(url, json=payload, headers=headers, timeout=15)
+            success, result = SendexaService._handle_response(response)
 
-            # Log response for debugging
-            logger.info(f"Sendexa Response: Status={response.status_code} Body={response.text}")
-            logger.info(f"Sendexa Response Headers: {response.headers}")
+            if success:
+                outbox_entry.status = "sent"
+                outbox_entry.sent_at = timezone.now()
+            else:
+                outbox_entry.status = "failed"
+                outbox_entry.error_message = str(result)
 
-            return SendexaService._handle_response(response)
+            outbox_entry.save()
+            return success, result
 
         except requests.RequestException as e:
+            error_msg = f"Connection error: {e!s}"
             logger.error(f"Sendexa connection error: {e!s}")
-            return False, f"Connection error: {e!s}"
+            outbox_entry.status = "failed"
+            outbox_entry.error_message = error_msg
+            outbox_entry.save()
+            return False, error_msg
 
     @staticmethod
     def _handle_response(response):

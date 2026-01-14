@@ -4,7 +4,27 @@ import { Settings, Volume2, VolumeX, Eye, EyeOff, Shield, Users, X } from 'lucid
 
 interface Theme {
   name: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean;
+}
+
+interface Preferences {
+  sound_enabled: boolean;
+  notification_sound: string;
+  read_receipts_enabled: boolean;
+  typing_indicators_enabled: boolean;
+  last_seen_visible: boolean;
+  auto_delete_enabled: boolean;
+  auto_delete_days: number;
+  markdown_enabled: boolean;
+  emoji_shortcuts_enabled: boolean;
+  font_size: string;
+}
+
+interface BlockedUser {
+  id: number;
+  blocked: number;
+  blocked_full_name: string;
+  blocked_username: string;
 }
 
 interface SettingsModalProps {
@@ -22,11 +42,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   setShowSettings,
   currentTheme,
   setCurrentTheme,
-  notificationsEnabled,
-  setNotificationsEnabled,
   themes
 }) => {
-  const [preferences, setPreferences] = useState({
+  const [preferences, setPreferences] = useState<Preferences>({
     sound_enabled: true,
     notification_sound: 'default',
     read_receipts_enabled: true,
@@ -39,7 +57,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     font_size: 'medium'
   });
 
-  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
@@ -55,8 +73,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const loadPreferences = async () => {
     try {
       setLoading(true);
-      const response = await api.get('messaging/preferences/');
-      setPreferences(response.data);
+      const response = await api.get<Preferences>('messaging/preferences/');
+      if (response.data) {
+        setPreferences(response.data);
+      }
     } catch (error) {
       console.error('Failed to load preferences:', error);
     } finally {
@@ -66,18 +86,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const loadBlockedUsers = async () => {
     try {
-      const response = await api.get('messaging/blocked-users/');
-      setBlockedUsers(response.data);
+      const response = await api.get<BlockedUser[]>('messaging/blocked-users/');
+      if (response.data) {
+        setBlockedUsers(response.data);
+      }
     } catch (error) {
       console.error('Failed to load blocked users:', error);
     }
   };
 
-  const savePreferences = async (updates) => {
+  const savePreferences = async (updates: Partial<Preferences>) => {
     try {
       setSaving(true);
-      const response = await api.post('messaging/preferences/', updates);
-      setPreferences(response.data);
+      const response = await api.post<Preferences>('messaging/preferences/', updates);
+      if (response.data) {
+        setPreferences(response.data);
+      }
     } catch (error) {
       console.error('Failed to save preferences:', error);
       alert('Failed to save preferences');
@@ -86,7 +110,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const handleUnblock = async (userId) => {
+  const handleUnblock = async (userId: number) => {
     try {
       await api.post('messaging/blocked-users/unblock/', { user_id: userId });
       setBlockedUsers(blockedUsers.filter(u => u.blocked !== userId));
@@ -96,7 +120,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const updatePreference = (key, value) => {
+  const updatePreference = (key: keyof Preferences, value: Preferences[keyof Preferences]) => {
     const updates = { ...preferences, [key]: value };
     setPreferences(updates);
     savePreferences({ [key]: value });
@@ -115,6 +139,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           <button
             onClick={() => setShowSettings(false)}
+            aria-label="Close settings modal"
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
           >
             <X className="w-6 h-6" />
@@ -159,8 +184,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="space-y-6">
                   {/* Theme */}
                   <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Theme</label>
+                    <label htmlFor="theme-select" className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Theme</label>
                     <select
+                      id="theme-select"
                       value={currentTheme}
                       onChange={(e) => setCurrentTheme(e.target.value)}
                       className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -190,8 +216,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                       {preferences.sound_enabled && (
                         <div className="ml-8">
-                          <label className="block text-xs font-medium mb-2 text-gray-600 dark:text-gray-400">Notification Sound</label>
+                          <label htmlFor="notification-sound-select" className="block text-xs font-medium mb-2 text-gray-600 dark:text-gray-400">Notification Sound</label>
                           <select
+                            id="notification-sound-select"
                             value={preferences.notification_sound}
                             onChange={(e) => updatePreference('notification_sound', e.target.value)}
                             className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-sm"
@@ -232,8 +259,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       </label>
 
                       <div>
-                        <label className="block text-xs font-medium mb-2 text-gray-600 dark:text-gray-400">Font Size</label>
+                        <label htmlFor="font-size-select" className="block text-xs font-medium mb-2 text-gray-600 dark:text-gray-400">Font Size</label>
                         <select
+                          id="font-size-select"
                           value={preferences.font_size}
                           onChange={(e) => updatePreference('font_size', e.target.value)}
                           className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-sm"
@@ -324,8 +352,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     {preferences.auto_delete_enabled && (
                       <div className="mt-3">
-                        <label className="block text-xs font-medium mb-2 text-gray-600 dark:text-gray-400">Delete messages after</label>
+                        <label htmlFor="auto-delete-days-select" className="block text-xs font-medium mb-2 text-gray-600 dark:text-gray-400">Delete messages after</label>
                         <select
+                          id="auto-delete-days-select"
                           value={preferences.auto_delete_days}
                           onChange={(e) => updatePreference('auto_delete_days', parseInt(e.target.value))}
                           className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-sm"

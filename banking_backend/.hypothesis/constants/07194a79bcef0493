@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\config\urls.py
-# hypothesis_version: 6.148.7
-
-['admin/', 'api/', 'api/health/', 'api/health/simple/', 'api/schema/', 'api/schema/redoc/', 'api/users/', 'core.urls', 'favicon.ico', 'health-check', 'health-check-simple', 'redoc', 'root', 'schema', 'swagger-ui', 'users.urls']

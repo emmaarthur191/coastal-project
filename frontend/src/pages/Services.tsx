@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { api, apiService, ServiceRequest } from '../services/api';
+
+interface ServiceStats {
+  total_requests?: number;
+  pending_requests?: number;
+  fulfilled_requests?: number;
+  rejected_requests?: number;
+  [key: string]: unknown;
+}
 
 function Services() {
-  const [serviceRequests, setServiceRequests] = useState([]);
-  const [stats, setStats] = useState({});
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [stats, setStats] = useState<ServiceStats>({});
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('');
 
@@ -14,8 +22,11 @@ function Services() {
 
   const loadServiceRequests = async () => {
     try {
-      const response = await api.get('services/requests/');
-      setServiceRequests(response.data);
+      setLoading(true);
+      const result = await apiService.getServiceRequests();
+      if (result.success && result.data) {
+        setServiceRequests(result.data.results || []);
+      }
     } catch (error) {
       console.error('Error loading service requests:', error);
     } finally {
@@ -25,7 +36,7 @@ function Services() {
 
   const loadStats = async () => {
     try {
-      const response = await api.get('services/stats/');
+      const response = await api.get<ServiceStats>('services/stats/');
       setStats(response.data);
     } catch (error) {
       console.error('Error loading service stats:', error);
@@ -36,7 +47,7 @@ function Services() {
     ? serviceRequests.filter(request => request.status === selectedStatus)
     : serviceRequests;
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-blue-100 text-blue-800';
@@ -139,11 +150,10 @@ function Services() {
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setSelectedStatus('')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedStatus === ''
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedStatus === ''
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               All Statuses
             </button>
@@ -151,11 +161,10 @@ function Services() {
               <button
                 key={status}
                 onClick={() => setSelectedStatus(status)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
-                  selectedStatus === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${selectedStatus === status
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {status.replace('_', ' ')}
               </button>
@@ -210,12 +219,11 @@ function Services() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${
-                        request.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${request.priority === 'urgent' ? 'bg-red-100 text-red-800' :
                         request.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                        request.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                          request.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                        }`}>
                         {request.priority}
                       </span>
                     </td>

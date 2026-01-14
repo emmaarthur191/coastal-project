@@ -16,6 +16,8 @@ interface PayslipFormData {
   staff_id?: string;
   base_pay?: string;
   allowances?: string;
+  month?: string;
+  year?: string;
 }
 
 interface PrintData {
@@ -29,6 +31,8 @@ interface PrintData {
   total: number;
   date: string;
   payPeriod: string;
+  month: number;
+  year: number;
 }
 
 interface PayslipSectionProps {
@@ -61,6 +65,24 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const months = [
+    { value: '1', label: 'January' },
+    { value: '2', label: 'February' },
+    { value: '3', label: 'March' },
+    { value: '4', label: 'April' },
+    { value: '5', label: 'May' },
+    { value: '6', label: 'June' },
+    { value: '7', label: 'July' },
+    { value: '8', label: 'August' },
+    { value: '9', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString());
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GH', {
       style: 'currency',
@@ -92,7 +114,9 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
       ssnit,
       total,
       date: new Date().toLocaleDateString(),
-      payPeriod: `${new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`
+      month: parseInt(formData.month || (new Date().getMonth() + 1).toString()),
+      year: parseInt(formData.year || new Date().getFullYear().toString()),
+      payPeriod: `${months.find(m => m.value === (formData.month || (new Date().getMonth() + 1).toString()))?.label} ${formData.year || new Date().getFullYear()}`
     });
     setIsGenerated(true);
   };
@@ -236,6 +260,42 @@ const PayslipSection: React.FC<PayslipSectionProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                  Month
+                </label>
+                <select
+                  name="month"
+                  title="Month"
+                  aria-label="Select Month"
+                  value={formData.month || (new Date().getMonth() + 1).toString()}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 text-sm"
+                >
+                  {months.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                  Year
+                </label>
+                <select
+                  name="year"
+                  title="Year"
+                  aria-label="Select Year"
+                  value={formData.year || new Date().getFullYear().toString()}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 text-sm"
+                >
+                  {years.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <Input

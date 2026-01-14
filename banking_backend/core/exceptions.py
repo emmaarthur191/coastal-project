@@ -1,8 +1,40 @@
-"""Custom exceptions for the Coastal Banking application.
+import logging
 
-These exceptions provide granular, banking-specific error handling
-for financial operations, enabling structured error responses and logging.
-"""
+from django.conf import settings
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import exception_handler
+
+logger = logging.getLogger(__name__)
+
+
+def custom_exception_handler(exc, context):
+    """Custom exception handler for Django REST Framework.
+    Ensures that any exception (including TypeErrors or other standard Python exceptions)
+    returns a JSON response instead of a Django HTML error page.
+    """
+    # Call REST framework's default exception handler first to get the standard error response.
+    response = exception_handler(exc, context)
+
+    # If it's not a DRF exception (like a TypeError), response will be None
+    if response is None:
+        logger.error(f"Internal Server Error: {exc!s}", exc_info=True)
+
+        return Response(
+            {
+                "status": "error",
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": ("An unexpected error occurred on the server. " "Our developers have been notified."),
+                "detail": str(exc) if settings.DEBUG else None,
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # Enhance standard DRF errors with consistent branding if needed
+    if isinstance(response.data, dict):
+        response.data.setdefault("status", "error")
+
+    return response
 
 
 class BankingException(Exception):

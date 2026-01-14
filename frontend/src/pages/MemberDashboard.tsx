@@ -1,12 +1,21 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
-import { apiService, authService } from '../services/api.ts';
+import { authService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import RequestServicesTab from '../components/member/RequestServicesTab';
+import { MemberDashboardData, Transaction, Account, ServiceRequest } from '../services/api';
+
+interface BackendStatus {
+  balance: boolean;
+  accounts: boolean;
+  services: boolean;
+  password: boolean;
+  twofa: boolean;
+}
 
 function MemberDashboard() {
   const { user, logout } = useAuth();
@@ -15,13 +24,13 @@ function MemberDashboard() {
   // --- STATE MANAGEMENT ---
   const [activeView, setActiveView] = useState('balance');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Tab-specific state
-  const [accountBalance, setAccountBalance] = useState(null);
-  const [transactions, setTransactions] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [serviceRequests, setServiceRequests] = useState([]);
+  const [accountBalance, setAccountBalance] = useState<MemberDashboardData | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [twoFactorStatus, setTwoFactorStatus] = useState({ enabled: false });
 
   // Form states
@@ -30,24 +39,63 @@ function MemberDashboard() {
     new_password: '',
     confirm_password: ''
   });
-  const [serviceRequestForm, setServiceRequestForm] = useState({
-    request_type: 'statement',
-    description: '',
-    delivery_method: 'email'
-  });
-  const [serviceRequestError, setServiceRequestError] = useState('');
+
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpExpiresIn, setOtpExpiresIn] = useState(0);
 
   // Backend availability checks
-  const [backendStatus, setBackendStatus] = useState({
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({
     balance: true,
     accounts: true,
     services: true,
     password: true,
     twofa: true
   });
+
+  // --- DATA FETCHING FUNCTIONS ---
+  // Using refs to avoid circular dependencies in useCallback
+  const fetchAccountBalance = useCallback(async () => {
+    try {
+      const data = await authService.getMemberDashboardData();
+      setAccountBalance(data);
+      setTransactions(data.recent_transactions || []);
+      return true;
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+      return false;
+    }
+  }, []);
+
+  const fetchAccounts = useCallback(async () => {
+    try {
+      const result = await authService.getAccounts();
+      if (result.success) {
+        setAccounts(result.data);
+        return true;
+      } else {
+        console.error('Error fetching accounts:', result.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      return false;
+    }
+  }, []);
+
+  const fetchServiceRequests = useCallback(async () => {
+    try {
+      const result = await authService.getServiceRequests();
+      if (result.success && result.data) {
+        setServiceRequests(result.data.results || []);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error fetching service requests:', error);
+      return false;
+    }
+  }, []);
 
   const menuItems = [
     { id: 'balance', name: 'Account Balance', icon: '💰', available: backendStatus.balance },
@@ -58,84 +106,46 @@ function MemberDashboard() {
   ];
 
   // --- EFFECTS ---
+  // Single effect for initial data load - runs only once on mount
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    let isMounted = true;
 
-  useEffect(() => {
-    if (activeView === 'balance') fetchAccountBalance();
-    if (activeView === 'accounts') fetchAccounts();
-    if (activeView === 'services') fetchServiceRequests();
-  }, [activeView]);
+    const loadInitialData = async () => {
+      setLoading(true);
+      try {
+        const [balanceOk, accountsOk, servicesOk] = await Promise.all([
+          fetchAccountBalance(),
+          fetchAccounts(),
+          fetchServiceRequests()
+        ]);
 
-  // --- DATA FETCHING FUNCTIONS ---
-  const fetchInitialData = async () => {
-    setLoading(true);
-    try {
-      await checkBackendAvailability();
-      await Promise.allSettled([
-        fetchAccountBalance(),
-        fetchAccounts(),
-        fetchServiceRequests()
-      ]);
-    } catch (error) {
-      console.error('Error fetching initial data:', error);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkBackendAvailability = async () => {
-    const checks = {
-      balance: apiService.getMemberDashboardData(),
-      accounts: apiService.getAccounts(),
-      services: apiService.getServiceRequests ? apiService.getServiceRequests() : Promise.resolve([]),
-      password: Promise.resolve(true),
-      twofa: Promise.resolve(true)
+        if (isMounted) {
+          setBackendStatus({
+            balance: balanceOk,
+            accounts: accountsOk,
+            services: servicesOk,
+            password: true,
+            twofa: true
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+        if (isMounted) {
+          setError('Failed to load dashboard data');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    const results = await Promise.allSettled(Object.values(checks));
-    const status = {};
-    Object.keys(checks).forEach((key, index) => {
-      status[key] = results[index].status === 'fulfilled';
-    });
-    setBackendStatus(status);
-  };
+    loadInitialData();
 
-  const fetchAccountBalance = async () => {
-    if (!backendStatus.balance) return;
-    try {
-      const data = await apiService.getMemberDashboardData();
-      setAccountBalance(data);
-      setTransactions(data.recent_transactions || []);
-    } catch (error) {
-      console.error('Error fetching balance:', error);
-      setBackendStatus(prev => ({ ...prev, balance: false }));
-    }
-  };
-
-  const fetchAccounts = async () => {
-    if (!backendStatus.accounts) return;
-    try {
-      const data = await apiService.getAccounts();
-      setAccounts(data);
-    } catch (error) {
-      console.error('Error fetching accounts:', error);
-      setBackendStatus(prev => ({ ...prev, accounts: false }));
-    }
-  };
-
-  const fetchServiceRequests = async () => {
-    if (!backendStatus.services) return;
-    try {
-      const data = await apiService.getServiceRequests();
-      setServiceRequests(data);
-    } catch (error) {
-      console.error('Error fetching service requests:', error);
-      setBackendStatus(prev => ({ ...prev, services: false }));
-    }
-  };
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchAccountBalance, fetchAccounts, fetchServiceRequests]);
 
   // --- HANDLERS ---
   const handleLogout = async () => {
@@ -143,7 +153,7 @@ function MemberDashboard() {
     navigate('/login');
   };
 
-  const handleChangePassword = async (e) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!backendStatus.password) {
       alert('Password change service unavailable');
@@ -154,7 +164,7 @@ function MemberDashboard() {
       return;
     }
     try {
-      const result = await apiService.changePassword(passwordForm);
+      const result = await authService.changePassword(passwordForm);
       if (result.success) {
         alert('Password changed successfully!');
         setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
@@ -166,37 +176,7 @@ function MemberDashboard() {
     }
   };
 
-  const handleServiceRequest = async (e) => {
-    e.preventDefault();
-    if (!backendStatus.services) return;
-    try {
-      const response = await fetch('/api/users/service-requests/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // SECURITY: Auth handled by HTTP-only cookies (credentials: 'include')
-        },
-        credentials: 'include',
-        body: JSON.stringify(serviceRequestForm)
-      });
-      const data = await response.json();
-      if (response.ok) {
-        alert('Request submitted!');
-        setServiceRequestForm({ request_type: 'statement', description: '', delivery_method: 'email' });
-        setServiceRequestError('');
-        fetchServiceRequests();
-      } else {
-        if (data.requires_2fa) {
-          setServiceRequestError('2FA required. Please enable 2FA.');
-          setActiveView('twofa');
-        } else {
-          setServiceRequestError(data.error || 'Submission failed');
-        }
-      }
-    } catch (error) {
-      setServiceRequestError('Error: ' + error.message);
-    }
-  };
+
 
   const handleSendOTP = async () => {
     try {
@@ -300,22 +280,26 @@ function MemberDashboard() {
                   <h3 className="text-lg font-bold text-secondary-900">Recent Transactions</h3>
                 </div>
                 <div className="space-y-4">
-                  {transactions.slice(0, 5).map((transaction, index) => (
-                    <div key={index} className="flex justify-between items-center p-4 bg-secondary-50 rounded-lg border border-secondary-100 hover:border-primary-200 transition-colors">
-                      <div className="flex items-center">
-                        <div className={`p-2 rounded-full mr-4 ${transaction.amount > 0 ? 'bg-success-100 text-success-600' : 'bg-error-100 text-error-600'}`}>
-                          {transaction.amount > 0 ? '↓' : '↑'}
+                  {transactions.slice(0, 5).map((transaction, index) => {
+                    const amount = parseFloat(transaction.amount);
+                    const isPositive = amount > 0;
+                    return (
+                      <div key={index} className="flex justify-between items-center p-4 bg-secondary-50 rounded-lg border border-secondary-100 hover:border-primary-200 transition-colors">
+                        <div className="flex items-center">
+                          <div className={`p-2 rounded-full mr-4 ${isPositive ? 'bg-success-100 text-success-600' : 'bg-error-100 text-error-600'}`}>
+                            {isPositive ? '↓' : '↑'}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-secondary-900">{transaction.description}</p>
+                            <p className="text-xs text-secondary-500">{new Date(transaction.timestamp).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-secondary-900">{transaction.description}</p>
-                          <p className="text-xs text-secondary-500">{new Date(transaction.date).toLocaleDateString()}</p>
-                        </div>
+                        <span className={`font-bold ${isPositive ? 'text-success-600' : 'text-secondary-900'}`}>
+                          {formatCurrencyGHS(amount)}
+                        </span>
                       </div>
-                      <span className={`font-bold ${transaction.amount > 0 ? 'text-success-600' : 'text-secondary-900'}`}>
-                        {formatCurrencyGHS(transaction.amount)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {transactions.length === 0 && (
                     <p className="text-center text-secondary-500 py-4">No recent transactions found.</p>
                   )}
@@ -337,8 +321,8 @@ function MemberDashboard() {
                   ****{account.account_number?.slice(-4) || '****'}
                 </span>
               </div>
-              <h4 className="text-lg font-bold text-secondary-900 mb-1">{account.type} Account</h4>
-              <p className="text-2xl font-bold text-primary-600">{formatCurrencyGHS(account.balance || 0)}</p>
+              <h4 className="text-lg font-bold text-secondary-900 mb-1">{account.account_type_display} Account</h4>
+              <p className="text-2xl font-bold text-primary-600">{formatCurrencyGHS(parseFloat(account.balance || '0'))}</p>
             </Card>
           ))}
         </div>
@@ -346,7 +330,10 @@ function MemberDashboard() {
 
       {/* --- SERVICES VIEW --- */}
       {activeView === 'services' && (
-        <RequestServicesTab />
+        <RequestServicesTab
+          serviceRequests={serviceRequests}
+          onRequestUpdate={fetchServiceRequests}
+        />
       )}
 
       {/* --- PASSWORD VIEW --- */}
@@ -356,8 +343,9 @@ function MemberDashboard() {
             <h3 className="text-lg font-bold text-secondary-900 mb-6">Change Password</h3>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">Current Password</label>
+                <label htmlFor="current-password" className="block text-sm font-medium text-secondary-700 mb-1">Current Password</label>
                 <input
+                  id="current-password"
                   type="password"
                   value={passwordForm.current_password}
                   onChange={e => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
@@ -366,8 +354,9 @@ function MemberDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">New Password</label>
+                <label htmlFor="new-password" className="block text-sm font-medium text-secondary-700 mb-1">New Password</label>
                 <input
+                  id="new-password"
                   type="password"
                   value={passwordForm.new_password}
                   onChange={e => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
@@ -376,8 +365,9 @@ function MemberDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">Confirm New Password</label>
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-secondary-700 mb-1">Confirm New Password</label>
                 <input
+                  id="confirm-password"
                   type="password"
                   value={passwordForm.confirm_password}
                   onChange={e => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
@@ -398,8 +388,17 @@ function MemberDashboard() {
             <h3 className="text-lg font-bold text-secondary-900 mb-6">Two-Factor Authentication</h3>
             <p className="text-sm text-secondary-600 mb-6">Secure your account by enabling SMS-based 2FA. We'll send a code to your registered phone.</p>
 
+            {twoFactorStatus.enabled && (
+              <div className="mb-4 p-3 bg-success-50 border border-success-200 rounded-lg flex items-center">
+                <span className="text-success-600 mr-2">✓</span>
+                <span className="text-sm font-medium text-success-700">2FA is currently enabled on your account</span>
+              </div>
+            )}
+
             {!otpSent ? (
-              <Button onClick={handleSendOTP} className="w-full">Send Verification Code</Button>
+              <Button onClick={handleSendOTP} className="w-full" disabled={twoFactorStatus.enabled}>
+                {twoFactorStatus.enabled ? '2FA Already Enabled' : 'Send Verification Code'}
+              </Button>
             ) : (
               <div className="space-y-4">
                 <div className="bg-primary-50 p-4 rounded-lg text-center">

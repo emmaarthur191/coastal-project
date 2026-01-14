@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
 import { Plus, Edit2, Trash2, Tag, Loader, X, Save, AlertCircle } from 'lucide-react';
+import { AxiosError } from 'axios';
 
 // Interfaces matching backend models
 interface Product {
@@ -31,9 +32,13 @@ const PRODUCT_TYPES = [
     { value: 'savings', label: 'Savings Account' },
     { value: 'loan', label: 'Loan' },
     { value: 'insurance', label: 'Insurance' },
-    { value: 'investment', 'label': 'Investment' },
+    { value: 'investment', label: 'Investment' },
     { value: 'susu', label: 'Susu Account' }
 ];
+
+type ManageableItem = Product | Promotion;
+
+interface FormData extends Partial<Product>, Partial<Promotion> { }
 
 const ProductsServicesManagement = () => {
     const [activeTab, setActiveTab] = useState<'products' | 'promotions'>('products');
@@ -44,33 +49,33 @@ const ProductsServicesManagement = () => {
     // Modal State
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<ManageableItem | null>(null);
 
     // Form State
-    const [formData, setFormData] = useState<any>({});
+    const [formData, setFormData] = useState<FormData>({});
     const [formError, setFormError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, [activeTab]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             if (activeTab === 'products') {
-                const res = await api.get('products/products/');
-                setProducts(res.data?.results || res.data || []);
+                const res = await api.get<{ results: Product[] }>('products/products/');
+                setProducts(res.data?.results || []);
             } else {
-                const res = await api.get('products/promotions/');
-                setPromotions(res.data?.results || res.data || []);
+                const res = await api.get<{ results: Promotion[] }>('products/promotions/');
+                setPromotions(res.data?.results || []);
             }
         } catch (err) {
             console.error('Failed to fetch data', err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleCreateClick = () => {
         setModalMode('create');
@@ -88,7 +93,7 @@ const ProductsServicesManagement = () => {
         setShowModal(true);
     };
 
-    const handleEditClick = (item: any) => {
+    const handleEditClick = (item: ManageableItem) => {
         setModalMode('edit');
         setEditingItem(item);
         setFormData({ ...item });
@@ -115,7 +120,7 @@ const ProductsServicesManagement = () => {
 
         try {
             const endpoint = activeTab === 'products' ? 'products/products/' : 'products/promotions/';
-            const url = modalMode === 'edit' ? `${endpoint}${editingItem.id}/` : endpoint;
+            const url = modalMode === 'edit' && editingItem ? `${endpoint}${editingItem.id}/` : endpoint;
             const method = modalMode === 'edit' ? 'patch' : 'post';
 
             // Clean payload
@@ -123,20 +128,25 @@ const ProductsServicesManagement = () => {
 
             // Numeric conversions
             if (activeTab === 'products') {
-                if (payload.interest_rate) payload.interest_rate = parseFloat(payload.interest_rate);
-                if (payload.minimum_balance) payload.minimum_balance = parseFloat(payload.minimum_balance);
-                if (payload.maximum_balance) payload.maximum_balance = parseFloat(payload.maximum_balance);
+                if (payload.interest_rate) payload.interest_rate = parseFloat(String(payload.interest_rate));
+                if (payload.minimum_balance) payload.minimum_balance = parseFloat(String(payload.minimum_balance));
+                if (payload.maximum_balance) payload.maximum_balance = parseFloat(String(payload.maximum_balance));
             } else {
-                if (payload.discount_percentage) payload.discount_percentage = parseFloat(payload.discount_percentage);
-                if (payload.bonus_amount) payload.bonus_amount = parseFloat(payload.bonus_amount);
+                if (payload.discount_percentage) payload.discount_percentage = parseFloat(String(payload.discount_percentage));
+                if (payload.bonus_amount) payload.bonus_amount = parseFloat(String(payload.bonus_amount));
             }
 
             await api[method](url, payload);
             setShowModal(false);
             fetchData();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Submit failed', err);
-            setFormError(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Failed to save.');
+            // Type-safe error handling for Axios errors
+            if (err instanceof AxiosError) {
+                setFormError(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Failed to save.');
+            } else {
+                setFormError('Failed to save.');
+            }
         } finally {
             setSubmitting(false);
         }
@@ -146,8 +156,9 @@ const ProductsServicesManagement = () => {
         <>
             <div className="grid grid-cols-2 gap-4">
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <label htmlFor="product-name" className="block text-sm font-medium text-gray-700">Name</label>
                     <input
+                        id="product-name"
                         type="text"
                         className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-500 focus:border-blue-500"
                         value={formData.name || ''}
@@ -156,8 +167,9 @@ const ProductsServicesManagement = () => {
                     />
                 </div>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Product Type</label>
+                    <label htmlFor="product-type" className="block text-sm font-medium text-gray-700">Product Type</label>
                     <select
+                        id="product-type"
                         className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-500 focus:border-blue-500"
                         value={formData.product_type || 'savings'}
                         onChange={e => setFormData({ ...formData, product_type: e.target.value })}
@@ -168,8 +180,9 @@ const ProductsServicesManagement = () => {
             </div>
 
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label htmlFor="product-description" className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
+                    id="product-description"
                     className="mt-1 block w-full rounded-md border border-gray-300 p-2"
                     rows={3}
                     value={formData.description || ''}
@@ -179,24 +192,24 @@ const ProductsServicesManagement = () => {
 
             <div className="grid grid-cols-3 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Interest Rate (%)</label>
-                    <input type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
-                        value={formData.interest_rate || ''}
-                        onChange={e => setFormData({ ...formData, interest_rate: e.target.value })}
+                    <label htmlFor="product-interest-rate" className="block text-sm font-medium text-gray-700">Interest Rate (%)</label>
+                    <input id="product-interest-rate" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                        value={formData.interest_rate ?? ''}
+                        onChange={e => setFormData({ ...formData, interest_rate: e.target.value as unknown as number })}
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Min Balance</label>
-                    <input type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
-                        value={formData.minimum_balance || 0}
-                        onChange={e => setFormData({ ...formData, minimum_balance: e.target.value })}
+                    <label htmlFor="product-min-balance" className="block text-sm font-medium text-gray-700">Min Balance</label>
+                    <input id="product-min-balance" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                        value={formData.minimum_balance ?? 0}
+                        onChange={e => setFormData({ ...formData, minimum_balance: e.target.value as unknown as number })}
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Max Balance (Opt)</label>
-                    <input type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
-                        value={formData.maximum_balance || ''}
-                        onChange={e => setFormData({ ...formData, maximum_balance: e.target.value })}
+                    <label htmlFor="product-max-balance" className="block text-sm font-medium text-gray-700">Max Balance (Opt)</label>
+                    <input id="product-max-balance" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                        value={formData.maximum_balance ?? ''}
+                        onChange={e => setFormData({ ...formData, maximum_balance: e.target.value as unknown as number })}
                     />
                 </div>
             </div>
@@ -214,8 +227,9 @@ const ProductsServicesManagement = () => {
     const renderPromotionForm = () => (
         <>
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Promotion Name</label>
+                <label htmlFor="promo-name" className="block text-sm font-medium text-gray-700">Promotion Name</label>
                 <input
+                    id="promo-name"
                     type="text"
                     className="mt-1 block w-full rounded-md border border-gray-300 p-2"
                     value={formData.name || ''}
@@ -225,8 +239,9 @@ const ProductsServicesManagement = () => {
             </div>
 
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label htmlFor="promo-description" className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
+                    id="promo-description"
                     className="mt-1 block w-full rounded-md border border-gray-300 p-2"
                     rows={3}
                     value={formData.description || ''}
@@ -236,18 +251,18 @@ const ProductsServicesManagement = () => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Discount Percentage (%)</label>
-                    <input type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
-                        value={formData.discount_percentage || ''}
-                        onChange={e => setFormData({ ...formData, discount_percentage: e.target.value })}
+                    <label htmlFor="promo-discount" className="block text-sm font-medium text-gray-700">Discount Percentage (%)</label>
+                    <input id="promo-discount" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                        value={formData.discount_percentage ?? ''}
+                        onChange={e => setFormData({ ...formData, discount_percentage: e.target.value as unknown as number })}
                         placeholder="e.g. 5.0"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Bonus Amount (GHS)</label>
-                    <input type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
-                        value={formData.bonus_amount || ''}
-                        onChange={e => setFormData({ ...formData, bonus_amount: e.target.value })}
+                    <label htmlFor="promo-bonus" className="block text-sm font-medium text-gray-700">Bonus Amount (GHS)</label>
+                    <input id="promo-bonus" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                        value={formData.bonus_amount ?? ''}
+                        onChange={e => setFormData({ ...formData, bonus_amount: e.target.value as unknown as number })}
                         placeholder="e.g. 50.00"
                     />
                 </div>
@@ -255,16 +270,16 @@ const ProductsServicesManagement = () => {
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                    <input type="date" className="mt-1 block w-full p-2 border rounded"
+                    <label htmlFor="promo-start-date" className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input id="promo-start-date" type="date" className="mt-1 block w-full p-2 border rounded"
                         value={formData.start_date || ''}
                         onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                         required
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">End Date</label>
-                    <input type="date" className="mt-1 block w-full p-2 border rounded"
+                    <label htmlFor="promo-end-date" className="block text-sm font-medium text-gray-700">End Date</label>
+                    <input id="promo-end-date" type="date" className="mt-1 block w-full p-2 border rounded"
                         value={formData.end_date || ''}
                         onChange={e => setFormData({ ...formData, end_date: e.target.value })}
                         required
@@ -348,8 +363,8 @@ const ProductsServicesManagement = () => {
                                             </span>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <button onClick={() => handleEditClick(product)} className="text-gray-500 hover:text-blue-600 mr-3"><Edit2 size={18} /></button>
-                                            <button onClick={() => handleDeleteClick(product.id)} className="text-gray-500 hover:text-red-600"><Trash2 size={18} /></button>
+                                            <button onClick={() => handleEditClick(product)} className="text-gray-500 hover:text-blue-600 mr-3" aria-label="Edit product"><Edit2 size={18} /></button>
+                                            <button onClick={() => handleDeleteClick(product.id)} className="text-gray-500 hover:text-red-600" aria-label="Delete product"><Trash2 size={18} /></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -385,8 +400,8 @@ const ProductsServicesManagement = () => {
                                             </span>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <button onClick={() => handleEditClick(promo)} className="text-gray-500 hover:text-blue-600 mr-3"><Edit2 size={18} /></button>
-                                            <button onClick={() => handleDeleteClick(promo.id)} className="text-gray-500 hover:text-red-600"><Trash2 size={18} /></button>
+                                            <button onClick={() => handleEditClick(promo)} className="text-gray-500 hover:text-blue-600 mr-3" aria-label="Edit promotion"><Edit2 size={18} /></button>
+                                            <button onClick={() => handleDeleteClick(promo.id)} className="text-gray-500 hover:text-red-600" aria-label="Delete promotion"><Trash2 size={18} /></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -405,7 +420,7 @@ const ProductsServicesManagement = () => {
                             <h2 className="text-xl font-bold text-gray-800">
                                 {modalMode === 'create' ? 'Create' : 'Edit'} {activeTab === 'products' ? 'Product' : 'Promotion'}
                             </h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close modal"><X size={24} /></button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto">

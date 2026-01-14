@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\views\system.py
-# hypothesis_version: 6.148.7
-
-['1.0.0', 'SELECT 1', 'database', 'healthy', 'ok', 'services', 'status', 'timestamp', 'unhealthy', 'version', 'web_server']

@@ -1,11 +1,12 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { formatCurrencyGHS } from '../utils/formatters';
+import './ExpenseBreakdownChart.css';
 
 interface ExpenseData {
   name: string;
   value: number;
   color: string;
-  [key: string]: any;
+  [key: string]: string | number;
 }
 
 interface TooltipProps {
@@ -53,10 +54,9 @@ const ExpenseBreakdownChart = ({ data }: { data: ExpenseData[] }) => {
       <div className="flex flex-wrap justify-center gap-4 mt-4">
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
+            <svg className="legend-color-indicator" viewBox="0 0 12 12">
+              <circle cx="6" cy="6" r="6" fill={entry.color} />
+            </svg>
             <span className="text-sm text-neutral-700">{entry.value}</span>
           </div>
         ))}

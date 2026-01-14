@@ -6,6 +6,8 @@ This module contains views for managing bank products and promotions.
 import logging
 
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -23,9 +25,16 @@ logger = logging.getLogger(__name__)
 
 
 class ProductViewSet(
-    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
 ):
     """ViewSet for managing bank products."""
+
+    queryset = Product.objects.all()
 
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -33,9 +42,10 @@ class ProductViewSet(
     ordering_fields = ["name", "created_at"]
     ordering = ["product_type", "name"]
 
-    def get_queryset(self):
+    @method_decorator(cache_page(60 * 10))
+    def list(self, request, *args, **kwargs):
         """Return the list of all products."""
-        return Product.objects.all()
+        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):
         """Return the serializer class for products."""
@@ -48,8 +58,17 @@ class ProductViewSet(
         return super().get_permissions()
 
 
-class PromotionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class PromotionViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
     """ViewSet for managing promotions."""
+
+    queryset = Promotion.objects.all()
 
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -57,9 +76,10 @@ class PromotionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
     ordering_fields = ["start_date", "end_date"]
     ordering = ["-start_date"]
 
-    def get_queryset(self):
+    @method_decorator(cache_page(60 * 10))
+    def list(self, request, *args, **kwargs):
         """Return the list of all promotional offers."""
-        return Promotion.objects.all()
+        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):
         """Return the serializer class for promotions."""
@@ -71,6 +91,7 @@ class PromotionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
             return [IsStaff()]
         return super().get_permissions()
 
+    @method_decorator(cache_page(60 * 10))
     @action(detail=False, methods=["get"])
     def active(self, request):
         """Get currently active promotions."""

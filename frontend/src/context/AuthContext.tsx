@@ -5,6 +5,7 @@ interface User {
   id: number;
   username: string;
   email: string;
+  name?: string;
   first_name?: string;
   last_name?: string;
   role?: string;
@@ -91,8 +92,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         return { success: false, error: 'Login successful but no user data received' };
       }
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      return { success: false, error: errorMessage };
     }
   };
 

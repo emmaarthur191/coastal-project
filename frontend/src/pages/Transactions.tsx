@@ -1,7 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/api.ts';
+﻿import React, { useState, useEffect, useCallback } from 'react';
+import { authService as apiService } from '../services/api';
+import { Input } from '../components/ui/Input';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { sanitizeUserInput } from '../utils/sanitizer';
+import { logger } from '../utils/logger';
+import './Transactions.css';
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -22,19 +25,14 @@ function Transactions() {
   const [pagination, setPagination] = useState(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
 
-  useEffect(() => {
-    loadTransactions();
-    loadBalanceData();
-  }, [filters]);
-
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
       // Build query parameters for enhanced API
       const params = {
         page_size: 50,
         page: 1
-      } as any;
+      } as Record<string, string | number>;
 
       if (filters.type !== 'all') params.type = filters.type;
       if (filters.status !== 'all') params.status = filters.status;
@@ -68,32 +66,46 @@ function Transactions() {
       }
 
       const result = await apiService.getTransactions(params);
-      setTransactions(result.transactions || []);
-      setPagination(result.pagination);
+      if (result.success && result.data) {
+        setTransactions(result.data.results || []);
+        // Adapt PaginatedResponse to the component's expected pagination format if needed
+        setPagination({
+          current_page: params.page as number || 1,
+          total_pages: Math.ceil((result.data.count || 0) / (params.page_size as number || 50)),
+          total_count: result.data.count
+        });
+      } else {
+        setTransactions([]);
+      }
     } catch (error) {
-      console.error('Failed to load transactions:', error);
+      logger.error('Failed to load transactions:', error);
       setTransactions([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.type, filters.status, filters.category, filters.search, filters.memberName, filters.tags, filters.sortBy, filters.sortOrder, filters.dateRange]);
 
-  const loadBalanceData = async () => {
+  const loadBalanceData = useCallback(async () => {
     try {
       setLoadingBalance(true);
       const result = await apiService.getBalanceInquiry();
       setBalanceData(result);
     } catch (error) {
-      console.error('Failed to load balance data:', error);
+      logger.error('Failed to load balance data:', error);
     } finally {
       setLoadingBalance(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadTransactions();
+    loadBalanceData();
+  }, [loadTransactions, loadBalanceData]);
 
   const handleExport = async () => {
     try {
       // Use the same parameters as the current transaction load
-      const params = {
+      const params: Record<string, string | number> = {
         page_size: 10000  // Export all transactions (up to limit)
       };
 
@@ -141,13 +153,13 @@ function Transactions() {
       window.URL.revokeObjectURL(url);
 
     } catch (error) {
-      console.error('Failed to export transactions:', error);
+      logger.error('Failed to export transactions:', error);
       alert('Failed to export transactions. Please try again.');
     }
   };
 
   // Filter transactions based on current filters
-  const filteredTransactions = transactions.filter(transaction => {
+  const _filteredTransactions = transactions.filter(transaction => {
     // Handle subtype filtering
     let matchesType = filters.type === 'all';
     if (!matchesType) {
@@ -220,128 +232,62 @@ function Transactions() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        padding: '40px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '40px',
-          textAlign: 'center',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid #f3f4f6',
-            borderTop: '3px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
-          }}></div>
-          <p style={{ color: '#6b7280', fontSize: '16px' }}>Loading transactions...</p>
+      <div className="transactions-loading">
+        <div className="transactions-loading__card">
+          <div className="transactions-loading__spinner"></div>
+          <p className="transactions-loading__text">Loading transactions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '20px'
-    }}>
+    <div className="transactions-page">
       {/* Balance Inquiry Section */}
       {balanceData && (
-        <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '24px',
-          marginBottom: '24px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{
-              margin: 0,
-              color: '#1e293b',
-              fontSize: '20px',
-              fontWeight: '700'
-            }}>
+        <div className="balance-section">
+          <div className="balance-section__header">
+            <h2 className="balance-section__title">
               Account Balance Summary
             </h2>
             <button
               onClick={loadBalanceData}
               disabled={loadingBalance}
-              style={{
-                padding: '8px 16px',
-                background: '#3b82f6',
-                border: 'none',
-                borderRadius: '8px',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: loadingBalance ? 'not-allowed' : 'pointer',
-                opacity: loadingBalance ? 0.6 : 1
-              }}
+              className="balance-section__refresh-btn"
             >
               {loadingBalance ? 'Refreshing...' : 'Refresh Balance'}
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>Total Balance</div>
-              <div style={{ fontSize: '28px', fontWeight: '700' }}>
+          <div className="balance-section__grid">
+            <div className="balance-total-card">
+              <div className="balance-total-card__label">Total Balance</div>
+              <div className="balance-total-card__amount">
                 {formatCurrencyGHS(balanceData.total_balance)}
               </div>
             </div>
 
             {balanceData.accounts.map((account, index) => (
-              <div key={index} style={{
-                background: 'white',
-                border: '1px solid #e2e8f0',
-                padding: '20px',
-                borderRadius: '12px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div key={index} className="balance-account-card">
+                <div className="balance-account-card__header">
                   <div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>
+                    <div className="balance-account-card__type">
                       {account.account_type}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                    <div className="balance-account-card__number">
                       ****{account.account_number}
                     </div>
                   </div>
-                  <span style={{
-                    background: account.status === 'Active' ? '#d1fae5' : '#fee2e2',
-                    color: account.status === 'Active' ? '#065f46' : '#dc2626',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '10px',
-                    fontWeight: '600'
-                  }}>
+                  <span className={`balance-account-card__status ${account.status === 'Active' ? 'balance-account-card__status--active' : 'balance-account-card__status--inactive'}`}>
                     {account.status}
                   </span>
                 </div>
 
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b', marginBottom: '8px' }}>
+                <div className="balance-account-card__balance">
                   {formatCurrencyGHS(account.current_balance)}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b' }}>
+                <div className="balance-account-card__activity">
                   <span>Recent Deposits: {formatCurrencyGHS(account.recent_activity.total_deposits)}</span>
                   <span>Recent Withdrawals: {formatCurrencyGHS(account.recent_activity.total_withdrawals)}</span>
                 </div>
@@ -352,313 +298,158 @@ function Transactions() {
       )}
 
       {/* Header */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '30px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-          <div>
-            <h1 style={{
-              margin: '0 0 8px 0',
-              color: '#1e293b',
-              fontSize: '28px',
-              fontWeight: '700'
-            }}>
+      <div className="header-section">
+        <div className="header-section__top">
+          <div className="header-section__title-group">
+            <h1>
               Transaction History
             </h1>
-            <p style={{
-              margin: 0,
-              color: '#64748b',
-              fontSize: '16px'
-            }}>
+            <p>
               View and manage all your financial transactions
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="header-section__actions">
             {/* Export Options */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="header-section__export-options">
               {exportOptions.map((option, index) => (
-                <button key={index} style={{
-                  padding: '10px 16px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  color: '#374151',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '14px',
-                  transition: 'all 0.2s'
-                }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#3b82f6';
-                    e.currentTarget.style.color = 'white';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#f8fafc';
-                    e.currentTarget.style.color = '#374151';
-                  }}>
+                <button key={index} className="export-option-btn">
                   <span>{option.icon}</span>
                   {option.format}
                 </button>
               ))}
             </div>
-            <button style={{
-              padding: '12px 20px',
-              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-              border: 'none',
-              borderRadius: '10px',
-              color: 'white',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}>
+            <button className="print-statement-btn">
               Print Statement
             </button>
           </div>
         </div>
 
         {/* Filters Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+        <div className="filters-row">
           {/* Transaction Type Filter */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Transaction Type
-            </label>
-            <select
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            >
-              {transactionTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.name}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Transaction Type"
+            id="transaction-type-filter"
+            title="Filter by transaction type"
+            value={filters.type}
+            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+          >
+            {transactionTypes.map(type => (
+              <option key={type.id} value={type.id}>{type.name}</option>
+            ))}
+          </Input>
 
           {/* Category Filter */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Category
-            </label>
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            >
-              {categoryTypes.map(category => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Category"
+            id="category-filter"
+            title="Filter by category"
+            value={filters.category}
+            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+          >
+            {categoryTypes.map(category => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </Input>
 
           {/* Status Filter */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Status
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            >
-              {statusTypes.map(status => (
-                <option key={status.id} value={status.id}>{status.name}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Status"
+            id="status-filter"
+            title="Filter by status"
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          >
+            {statusTypes.map(status => (
+              <option key={status.id} value={status.id}>{status.name}</option>
+            ))}
+          </Input>
 
           {/* Date Range Filter */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Date Range
-            </label>
-            <select
-              value={filters.dateRange}
-              onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            >
-              {dateRanges.map(range => (
-                <option key={range.id} value={range.id}>{range.name}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Date Range"
+            id="date-range-filter"
+            title="Filter by date range"
+            value={filters.dateRange}
+            onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+          >
+            {dateRanges.map(range => (
+              <option key={range.id} value={range.id}>{range.name}</option>
+            ))}
+          </Input>
 
           {/* Sort By */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Sort By
-            </label>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            >
-              {sortOptions.map(option => (
-                <option key={option.id} value={option.id}>{option.name}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Sort By"
+            id="sort-by-filter"
+            title="Sort transactions by"
+            value={filters.sortBy}
+            onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+          >
+            {sortOptions.map(option => (
+              <option key={option.id} value={option.id}>{option.name}</option>
+            ))}
+          </Input>
 
           {/* Search */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Search
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                placeholder="Search transactions..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  background: '#f9fafb'
-                }}
-              />
-              <span style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6b7280'
-              }}>
-                🔍
-              </span>
-            </div>
-          </div>
+          <Input
+            label="Search"
+            id="search-filter"
+            title="Search transactions"
+            placeholder="Search transactions..."
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          />
         </div>
 
         {/* Advanced Filters Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+        <div className="advanced-filters-row">
           {/* Member Name Filter */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Member Name
-            </label>
-            <input
-              type="text"
-              placeholder="Filter by member name..."
-              value={filters.memberName}
-              onChange={(e) => setFilters({ ...filters, memberName: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            />
-          </div>
+          <Input
+            label="Member Name"
+            id="member-name-filter"
+            title="Filter by member name"
+            placeholder="Filter by member name..."
+            value={filters.memberName}
+            onChange={(e) => setFilters({ ...filters, memberName: e.target.value })}
+          />
 
           {/* Tags Filter */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Tags (comma-separated)
-            </label>
-            <input
-              type="text"
-              placeholder="Filter by tags..."
-              value={filters.tags}
-              onChange={(e) => setFilters({ ...filters, tags: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            />
-          </div>
+          <Input
+            label="Tags (comma-separated)"
+            id="tags-filter"
+            title="Filter by tags"
+            placeholder="Filter by tags..."
+            value={filters.tags}
+            onChange={(e) => setFilters({ ...filters, tags: e.target.value })}
+          />
 
           {/* Sort Order */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px' }}>
-              Sort Order
-            </label>
-            <select
-              value={filters.sortOrder}
-              onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'white'
-              }}
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Sort Order"
+            id="sort-order-filter"
+            title="Select sort order"
+            value={filters.sortOrder}
+            onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value })}
+          >
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </Input>
         </div>
 
         {/* Filter Summary */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ color: '#64748b', fontSize: '14px' }}>
+        <div className="filter-summary">
+          <div className="filter-summary__info">
             Showing {transactions.length} transactions
             {pagination && ` (Page ${pagination.current_page} of ${pagination.total_pages})`}
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="filter-summary__actions">
             <button
               onClick={() => setFilters({
                 type: 'all',
@@ -671,30 +462,13 @@ function Transactions() {
                 memberName: '',
                 tags: ''
               })}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#3b82f6',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textDecoration: 'underline'
-              }}
+              className="clear-filters-btn"
             >
               Clear Filters
             </button>
             <button
               onClick={handleExport}
-              style={{
-                padding: '8px 16px',
-                background: '#10b981',
-                border: 'none',
-                borderRadius: '8px',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
+              className="export-csv-btn"
             >
               Export CSV
             </button>
@@ -703,173 +477,87 @@ function Transactions() {
       </div>
 
       {/* Transactions Table */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '0',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #e2e8f0',
-        overflow: 'hidden'
-      }}>
+      <div className="transactions-table">
         {/* Table Header */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr auto',
-          gap: '16px',
-          padding: '20px 24px',
-          background: '#f8fafc',
-          borderBottom: '1px solid #e2e8f0',
-          fontWeight: '600',
-          color: '#374151',
-          fontSize: '14px'
-        }}>
+        <div className="transactions-table__header">
           <div>Description</div>
           <div>Date</div>
           <div>Type</div>
           <div>Category</div>
           <div>Status</div>
-          <div style={{ textAlign: 'right' }}>Amount</div>
+          <div className="transactions-table__header-amount">Amount</div>
         </div>
 
         {/* Table Body */}
-        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+        <div className="transactions-table__body">
           {transactions.length > 0 ? (
             transactions.map((transaction) => (
               <div
                 key={transaction.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr auto',
-                  gap: '16px',
-                  padding: '20px 24px',
-                  borderBottom: '1px solid #f1f5f9',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  alignItems: 'center'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f8fafc';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                }}
+                className="transaction-row"
                 onClick={() => setSelectedTransaction(transaction)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    background: getTransactionColor(transaction.type).background,
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '14px',
-                    color: getTransactionColor(transaction.type, transaction.subtype).color
-                  }}>
+                <div className="transaction-row__description">
+                  <div
+                    className={`transaction-row__icon ${getTransactionThemeClass(transaction.type, transaction.subtype)}`}
+                  >
                     {getTransactionIcon(transaction.type, transaction.subtype)}
                   </div>
                   <div>
-                    <div style={{
-                      color: '#1e293b',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      marginBottom: '2px'
-                    }}>
+                    <div className="transaction-row__description-text">
                       {sanitizeUserInput(transaction.description)}
                     </div>
-                    <div style={{
-                      color: '#64748b',
-                      fontSize: '12px'
-                    }}>
+                    <div className="transaction-row__reference">
                       Ref: {transaction.reference || 'N/A'}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <div style={{
-                    color: '#1e293b',
-                    fontWeight: '500',
-                    fontSize: '14px'
-                  }}>
+                  <div className="transaction-row__date">
                     {transaction.date}
                   </div>
-                  <div style={{
-                    color: '#64748b',
-                    fontSize: '12px'
-                  }}>
+                  <div className="transaction-row__time">
                     {transaction.time || '10:30 AM'}
                   </div>
                 </div>
 
                 <div>
-                  <span style={{
-                    background: getTransactionColor(transaction.type, transaction.subtype).background,
-                    color: getTransactionColor(transaction.type, transaction.subtype).color,
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    textTransform: 'capitalize'
-                  }}>
-                    {transaction.subtype ? `${transaction.subtype.replace('_', ' ')}` : transaction.type}
+                  <span
+                    className={`transaction-badge transaction-badge--type ${getTransactionThemeClass(transaction.type, transaction.subtype)}`}
+                  >
+                    {transaction.subtype ? `${transaction.subtype.replace('_', ' ')} ` : transaction.type}
                   </span>
                 </div>
 
                 <div>
-                  <span style={{
-                    background: getCategoryColor(transaction.category).background,
-                    color: getCategoryColor(transaction.category).color,
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    textTransform: 'capitalize'
-                  }}>
+                  <span
+                    className={`transaction-badge transaction-badge--type ${getCategoryThemeClass(transaction.category)}`}
+                  >
                     {transaction.category}
                   </span>
                 </div>
 
                 <div>
-                  <span style={{
-                    background: getStatusColor(transaction.status).background,
-                    color: getStatusColor(transaction.status).color,
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600'
-                  }}>
+                  <span
+                    className={`transaction-badge ${getStatusThemeClass(transaction.status)}`}
+                  >
                     {transaction.status}
                   </span>
                 </div>
 
-                <div style={{
-                  textAlign: 'right',
-                  color: transaction.amount >= 0 ? '#059669' : '#dc2626',
-                  fontWeight: '700',
-                  fontSize: '16px'
-                }}>
+                <div className={`transaction-row__amount ${transaction.amount >= 0 ? 'transaction-row__amount--positive' : 'transaction-row__amount--negative'}`}>
                   {transaction.amount >= 0 ? '+' : ''}{formatCurrencyGHS(transaction.amount)}
                 </div>
               </div>
             ))
           ) : (
-            <div style={{
-              padding: '60px 40px',
-              textAlign: 'center',
-              color: '#64748b'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
-              <h3 style={{
-                margin: '0 0 8px 0',
-                color: '#1e293b',
-                fontSize: '20px',
-                fontWeight: '600'
-              }}>
+            <div className="transactions-empty">
+              <div className="transactions-empty__icon"></div>
+              <h3 className="transactions-empty__title">
                 No transactions found
               </h3>
-              <p style={{ margin: 0, fontSize: '16px' }}>
+              <p className="transactions-empty__text">
                 {filters.search ? 'Try adjusting your search terms' : 'No transactions match your current filters'}
               </p>
             </div>
@@ -879,112 +567,67 @@ function Transactions() {
 
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}
-          onClick={() => setSelectedTransaction(null)}>
-          <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '30px',
-            maxWidth: '500px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-          }}
-            onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <h3 style={{
-                margin: 0,
-                color: '#1e293b',
-                fontSize: '24px',
-                fontWeight: '700'
-              }}>
+        <div className="modal-overlay" onClick={() => setSelectedTransaction(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-header__title">
                 Transaction Details
               </h3>
               <button
                 onClick={() => setSelectedTransaction(null)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '20px',
-                  color: '#64748b',
-                  cursor: 'pointer',
-                  padding: '4px'
-                }}
+                aria-label="Close transaction details"
+                title="Close"
+                className="modal-close-btn"
               >
-
+                ×
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="modal-body">
               {/* Amount */}
-              <div style={{ textAlign: 'center', padding: '20px', background: '#f8fafc', borderRadius: '12px' }}>
-                <div style={{
-                  color: selectedTransaction.amount >= 0 ? '#059669' : '#dc2626',
-                  fontSize: '32px',
-                  fontWeight: '700',
-                  marginBottom: '8px'
-                }}>
+              <div className="modal-amount-card">
+                <div className={`modal-amount-card__value ${selectedTransaction.amount >= 0 ? 'modal-amount-card__value--positive' : 'modal-amount-card__value--negative'}`}>
                   {selectedTransaction.amount >= 0 ? '+' : ''}{formatCurrencyGHS(selectedTransaction.amount)}
                 </div>
-                <div style={{ color: '#64748b', fontSize: '14px' }}>
+                <div className="modal-amount-card__info">
                   {selectedTransaction.type.toUpperCase()} • {selectedTransaction.category} • {selectedTransaction.status}
                 </div>
               </div>
 
               {/* Details Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="modal-details-grid">
                 <div>
-                  <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Description</div>
-                  <div style={{ color: '#1e293b', fontWeight: '600' }}>{sanitizeUserInput(selectedTransaction.description)}</div>
+                  <div className="modal-detail-item__label">Description</div>
+                  <div className="modal-detail-item__value">{sanitizeUserInput(selectedTransaction.description)}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Category</div>
-                  <div style={{ color: '#1e293b', fontWeight: '600' }}>{selectedTransaction.category}</div>
+                  <div className="modal-detail-item__label">Category</div>
+                  <div className="modal-detail-item__value">{selectedTransaction.category}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Date & Time</div>
-                  <div style={{ color: '#1e293b', fontWeight: '600' }}>{selectedTransaction.date} • 10:30 AM</div>
+                  <div className="modal-detail-item__label">Date & Time</div>
+                  <div className="modal-detail-item__value">{selectedTransaction.date} • 10:30 AM</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Status</div>
-                  <div style={{ color: '#1e293b', fontWeight: '600' }}>{selectedTransaction.status}</div>
+                  <div className="modal-detail-item__label">Status</div>
+                  <div className="modal-detail-item__value">{selectedTransaction.status}</div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Transaction ID</div>
-                  <div style={{ color: '#1e293b', fontWeight: '600', fontFamily: 'monospace' }}>
+                  <div className="modal-detail-item__label">Transaction ID</div>
+                  <div className="modal-detail-item__value modal-detail-item__value--mono">
                     {selectedTransaction.reference || 'TX-001234'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Account</div>
-                  <div style={{ color: '#1e293b', fontWeight: '600' }}>Primary Savings (****4587)</div>
+                  <div className="modal-detail-item__label">Account</div>
+                  <div className="modal-detail-item__value">Primary Savings (****4587)</div>
                 </div>
                 {selectedTransaction.tags && selectedTransaction.tags.length > 0 && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ color: '#64748b', fontSize: '12px', marginBottom: '4px' }}>Tags</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  <div className="modal-detail-item--full">
+                    <div className="modal-detail-item__label">Tags</div>
+                    <div className="modal-tags">
                       {selectedTransaction.tags.map((tag, index) => (
-                        <span key={index} style={{
-                          background: '#e2e8f0',
-                          color: '#374151',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          fontWeight: '500'
-                        }}>
+                        <span key={index} className="modal-tag">
                           {tag}
                         </span>
                       ))}
@@ -994,59 +637,24 @@ function Transactions() {
               </div>
 
               {/* Actions */}
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                <button style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  color: '#374151',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#3b82f6';
-                    e.currentTarget.style.color = 'white';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#f8fafc';
-                    e.currentTarget.style.color = '#374151';
-                  }}
+              <div className="modal-actions">
+                <button
+                  className="modal-action-btn modal-action-btn--primary"
                   onClick={async () => {
                     try {
                       const receiptData = await apiService.generateReceipt(selectedTransaction.id);
-                      // For now, just show the receipt data in console
+                      // For now, just show the receipt data in dev console
                       // In a real implementation, this would generate a PDF or printable format
-                      console.log('Receipt data:', receiptData);
-                      alert('Receipt generated successfully! Check console for details.');
+                      logger.debug('[Receipt] Generated:', receiptData);
+                      alert('Receipt generated successfully!');
                     } catch (error) {
-                      console.error('Failed to generate receipt:', error);
+                      logger.error('[Receipt] Failed to generate:', error);
                       alert('Failed to generate receipt. Please try again.');
                     }
                   }}>
                   Download Receipt
                 </button>
-                <button style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  color: '#374151',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#ef4444';
-                    e.currentTarget.style.color = 'white';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#f8fafc';
-                    e.currentTarget.style.color = '#374151';
-                  }}>
+                <button className="modal-action-btn modal-action-btn--danger">
                   Report Issue
                 </button>
               </div>
@@ -1055,14 +663,7 @@ function Transactions() {
         </div>
       )}
 
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
+
     </div>
   );
 }
@@ -1085,45 +686,45 @@ function getTransactionIcon(type, subtype) {
   return icons[subtype] || icons[type] || icons.default;
 }
 
-function getTransactionColor(type, subtype) {
-  const colors = {
-    deposit: { background: '#d1fae5', color: '#065f46' },
-    withdrawal: { background: '#fee2e2', color: '#dc2626' },
-    transfer: { background: '#dbeafe', color: '#1e40af' },
-    payment: { background: '#fef3c7', color: '#92400e' },
-    daily_susu: { background: '#d1fae5', color: '#065f46' },
-    shares: { background: '#dbeafe', color: '#1e40af' },
-    monthly_contribution: { background: '#fef3c7', color: '#92400e' },
-    withdrawal_daily_susu: { background: '#fee2e2', color: '#dc2626' },
-    withdrawal_shares: { background: '#fed7d7', color: '#c53030' },
-    withdrawal_monthly_contribution: { background: '#feb2b2', color: '#b91c1c' },
-    default: { background: '#f3f4f6', color: '#374151' }
+function getTransactionThemeClass(type, subtype) {
+  const themes = {
+    deposit: 'theme-success',
+    withdrawal: 'theme-danger',
+    transfer: 'theme-info',
+    payment: 'theme-warning',
+    daily_susu: 'theme-success',
+    shares: 'theme-info',
+    monthly_contribution: 'theme-warning',
+    withdrawal_daily_susu: 'theme-danger',
+    withdrawal_shares: 'theme-danger-alt-1',
+    withdrawal_monthly_contribution: 'theme-danger-alt-2',
+    default: 'theme-neutral'
   };
-  return colors[subtype] || colors[type] || colors.default;
+  return themes[subtype] || themes[type] || themes.default;
 }
 
-function getCategoryColor(category) {
-  const colors = {
-    income: { background: '#d1fae5', color: '#065f46' },
-    expense: { background: '#fee2e2', color: '#dc2626' },
-    transfer: { background: '#dbeafe', color: '#1e40af' },
-    loan: { background: '#fef3c7', color: '#92400e' },
-    fee: { background: '#f3f4f6', color: '#374151' },
-    other: { background: '#f3f4f6', color: '#374151' },
-    default: { background: '#f3f4f6', color: '#374151' }
+function getCategoryThemeClass(category) {
+  const themes = {
+    income: 'theme-success',
+    expense: 'theme-danger',
+    transfer: 'theme-info',
+    loan: 'theme-warning',
+    fee: 'theme-neutral',
+    other: 'theme-neutral',
+    default: 'theme-neutral'
   };
-  return colors[category] || colors.default;
+  return themes[category] || themes.default;
 }
 
-function getStatusColor(status) {
-  const colors = {
-    completed: { background: '#d1fae5', color: '#065f46' },
-    pending: { background: '#fef3c7', color: '#92400e' },
-    failed: { background: '#fee2e2', color: '#dc2626' },
-    cancelled: { background: '#f3f4f6', color: '#374151' },
-    default: { background: '#f3f4f6', color: '#374151' }
+function getStatusThemeClass(status) {
+  const themes = {
+    completed: 'theme-success',
+    pending: 'theme-warning',
+    failed: 'theme-danger',
+    cancelled: 'theme-neutral',
+    default: 'theme-neutral'
   };
-  return colors[status] || colors.default;
+  return themes[status] || themes.default;
 }
 
 export default Transactions;

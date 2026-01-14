@@ -3,12 +3,67 @@ kind: ConfigMap
 metadata:
   name: banking-config
   namespace: banking-app
+  labels:
+    app: banking-backend
+    environment: production
 data:
+  # =============================================================================
+  # Application Configuration (Non-Sensitive Only)
+  # =============================================================================
+  # SECURITY NOTE: Never store secrets here! Use Kubernetes Secrets or
+  # External Secrets Operator for sensitive values.
+  # =============================================================================
+
+  # Django Settings
   DJANGO_SETTINGS_MODULE: "config.settings"
   DEBUG: "False"
-  ALLOWED_HOSTS: "banking-app.com,api.banking-app.com"
-  SECRET_KEY: "your-secret-key-here"  # Replace with actual secret
-  REDIS_URL: "redis://redis-service:6379"
-  DATABASE_URL: "postgresql://banking_user:password@postgres-service:5432/banking_db"
+  ALLOWED_HOSTS: "banking-app.com,api.banking-app.com,.onrender.com"
+
+  # Service Endpoints (Internal K8s DNS)
+  REDIS_URL: "redis://redis-service:6379/0"
+  REDIS_HOST: "redis-service"
+
+  # Celery Configuration
+  CELERY_BROKER_URL: "redis://redis-service:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-service:6379/1"
+
+  # Flower Monitoring (Port only - auth via Secrets)
   FLOWER_PORT: "5555"
-  FLOWER_BASIC_AUTH: "admin:admin"
+
+  # Logging Configuration
+  LOG_LEVEL: "INFO"
+  LOG_DIR: "/var/log/coastal"
+
+  # Performance Tuning
+  CONN_MAX_AGE: "600"
+  GUNICORN_WORKERS: "4"
+  GUNICORN_THREADS: "2"
+
+  # Security Headers
+  SECURE_SSL_REDIRECT: "True"
+  SECURE_HSTS_SECONDS: "31536000"
+
+  # API Configuration
+  API_PAGE_SIZE: "20"
+  THROTTLE_RATE_ANON: "100/hour"
+  THROTTLE_RATE_USER: "1000/hour"
+
+  # Timezone
+  TIME_ZONE: "UTC"
+
+  # SMS Gateway (Non-sensitive settings only)
+  SENDEXA_SENDER_ID: "CACCU"
+  SENDEXA_API_URL: "https://api.sendexa.co/v1/sms/send"
+
+  # =============================================================================
+  # REMINDER: The following MUST be in Kubernetes Secrets (secret.yaml)
+  # =============================================================================
+  # - SECRET_KEY (Django secret)
+  # - DATABASE_URL (PostgreSQL connection string)
+  # - DATABASE_PASSWORD (for backup jobs)
+  # - FLOWER_BASIC_AUTH (monitoring authentication)
+  # - SENDEXA_API_KEY (SMS API credentials)
+  # - SENDEXA_API_SECRET
+  # - SENDEXA_AUTH_TOKEN
+  # - SENTRY_DSN (error monitoring)
+  # =============================================================================

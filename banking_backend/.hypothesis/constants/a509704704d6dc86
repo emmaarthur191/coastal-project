@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\migrations\0018_chatroom_chatmessage.py
-# hypothesis_version: 6.148.7
-
-[100, '-updated_at', '0017_servicecharge', 'ChatMessage', 'ChatRoom', 'ID', 'chat_rooms', 'content', 'core', 'core.chatroom', 'created_at', 'created_by', 'created_rooms', 'id', 'is_group', 'is_read', 'members', 'messages', 'name', 'ordering', 'room', 'sender', 'sent_chat_messages', 'updated_at']

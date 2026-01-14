@@ -13,6 +13,9 @@ class FraudAlert(models.Model):
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fraud_alerts")
+    transaction = models.ForeignKey(
+        "core.Transaction", on_delete=models.SET_NULL, null=True, blank=True, related_name="fraud_alerts"
+    )
     message = models.TextField()
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default="medium")
     is_resolved = models.BooleanField(default=False)

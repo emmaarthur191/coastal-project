@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\migrations\0014_operationsmessage_visitschedule.py
-# hypothesis_version: 6.148.7
-
-[255, '0013_expense', 'Cancelled', 'Completed', 'High', 'ID', 'Low', 'Medium', 'Missed', 'OperationsMessage', 'Scheduled', 'VisitSchedule', 'cancelled', 'client_name', 'completed', 'core', 'created_at', 'high', 'id', 'is_read', 'location', 'low', 'medium', 'message', 'missed', 'mobile_banker', 'notes', 'priority', 'recipient', 'scheduled', 'scheduled_time', 'sender', 'sent_ops_messages', 'status', 'title', 'updated_at', 'visit_schedules']

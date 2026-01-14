@@ -1,0 +1,8 @@
+﻿src/components/EnhancedUserManagementForm.tsx(159,53): error TS2345: Argument of type 'UserFormData' is not assignable to parameter of type 'CreateUserData | FormData'.
+  Type 'UserFormData' is not assignable to type 'CreateUserData'.
+    Index signature for type 'string' is missing in type 'UserFormData'.
+src/pages/MemberDashboard.tsx(322,72): error TS2365: Operator '>' cannot be applied to types 'string' and 'number'.
+src/pages/MemberDashboard.tsx(323,28): error TS2365: Operator '>' cannot be applied to types 'string' and 'number'.
+src/pages/MemberDashboard.tsx(327,91): error TS2339: Property 'date' does not exist on type 'Transaction'.
+src/pages/MemberDashboard.tsx(330,55): error TS2365: Operator '>' cannot be applied to types 'string' and 'number'.
+src/pages/MemberDashboard.tsx(356,82): error TS2339: Property 'type' does not exist on type 'Account'.

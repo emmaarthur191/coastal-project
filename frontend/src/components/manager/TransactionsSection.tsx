@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../../services/api';
+import { Transaction } from '../../api/models/Transaction';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card } from '../ui/Card';
 import GlassCard from '../ui/modern/GlassCard';
 import ModernStatCard from '../ui/modern/ModernStatCard';
-
-interface Transaction {
-  id: number;
-  amount: string | number;
-  transaction_type: string;
-  description: string;
-  status: string;
-  timestamp: string;
-  from_account?: any;
-  to_account?: any;
-}
 
 const TransactionsSection: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -34,10 +24,8 @@ const TransactionsSection: React.FC = () => {
     setLoading(true);
     try {
       const response = await authService.getAllTransactions();
-      if (response.success) {
-        const txData = Array.isArray(response.data) ? response.data :
-          (response.data?.results || []);
-        setTransactions(txData);
+      if (response.success && response.data) {
+        setTransactions(response.data.transactions);
       }
     } catch (error) {
       console.error('Failed to fetch transactions:', error);
@@ -64,8 +52,8 @@ const TransactionsSection: React.FC = () => {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    const s = status.toLowerCase();
+  const getStatusBadge = (status?: string) => {
+    const s = status?.toLowerCase() || 'unknown';
     let classes = 'bg-gray-100 text-gray-600';
     if (s === 'completed') classes = 'bg-emerald-100 text-emerald-700';
     else if (s === 'pending') classes = 'bg-amber-100 text-amber-700';
@@ -74,7 +62,7 @@ const TransactionsSection: React.FC = () => {
 
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${classes}`}>
-        {status}
+        {status || 'Unknown'}
       </span>
     );
   };
@@ -94,14 +82,14 @@ const TransactionsSection: React.FC = () => {
     const matchesType = filter.type === 'all' || tx.transaction_type === filter.type;
     const matchesStatus = filter.status === 'all' || tx.status === filter.status;
     const matchesSearch = filter.search === '' ||
-      tx.description.toLowerCase().includes(filter.search.toLowerCase()) ||
+      (tx.description && tx.description.toLowerCase().includes(filter.search.toLowerCase())) ||
       tx.id.toString().includes(filter.search);
     return matchesType && matchesStatus && matchesSearch;
   });
 
   const totalVolume = filteredTransactions
     .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + (typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount), 0);
+    .reduce((sum, t) => sum + (typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount)), 0);
 
   if (loading) {
     return (
@@ -170,6 +158,7 @@ const TransactionsSection: React.FC = () => {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Type</label>
             <select
+              title="Filter by type"
               value={filter.type}
               onChange={(e) => setFilter({ ...filter, type: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
@@ -185,6 +174,7 @@ const TransactionsSection: React.FC = () => {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Status</label>
             <select
+              title="Filter by status"
               value={filter.status}
               onChange={(e) => setFilter({ ...filter, status: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"

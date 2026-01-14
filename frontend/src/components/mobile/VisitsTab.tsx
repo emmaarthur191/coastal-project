@@ -13,9 +13,10 @@ interface Visit {
 interface VisitsTabProps {
   scheduledVisits: Visit[];
   onAddStop: () => void;
+  onComplete?: (id: number) => void;
 }
 
-const VisitsTab: React.FC<VisitsTabProps> = ({ scheduledVisits, onAddStop }) => {
+const VisitsTab: React.FC<VisitsTabProps> = ({ scheduledVisits, onAddStop, onComplete }) => {
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -25,15 +26,19 @@ const VisitsTab: React.FC<VisitsTabProps> = ({ scheduledVisits, onAddStop }) => 
         </Button>
       </div>
       <div className="space-y-4">
-        {scheduledVisits.length > 0 ? scheduledVisits.map(visit => (
-          <GlassCard key={visit.id} className="flex justify-between items-center p-4">
+        {scheduledVisits.length > 0 ? scheduledVisits.map((visit, index) => (
+          <GlassCard key={visit.id || `visit-${index}`} className="flex justify-between items-center p-4">
             <div>
               <strong className="block text-gray-800 text-lg">{visit.client_name}</strong>
               <div className="text-xs text-gray-500 font-medium">
                 {visit.scheduled_time} • {visit.purpose}
               </div>
             </div>
-            <div className="text-2xl" title={visit.status === 'completed' ? 'Completed' : 'Pending'}>
+            <div
+              className={`text-2xl cursor-pointer hover:scale-110 transition-transform ${visit.status === 'completed' ? 'pointer-events-none opacity-100' : 'opacity-70 hover:opacity-100'}`}
+              title={visit.status === 'completed' ? 'Completed' : 'Click to complete'}
+              onClick={() => visit.status !== 'completed' && onComplete?.(visit.id)}
+            >
               {visit.status === 'completed' ? '✅' : '⏳'}
             </div>
           </GlassCard>

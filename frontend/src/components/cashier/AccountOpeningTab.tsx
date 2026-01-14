@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { api } from '../../services/api.ts';
+import React, { useState, useRef, useCallback, useId } from 'react';
+import { api } from '../../services/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
@@ -9,6 +9,17 @@ import GlassCard from '../ui/modern/GlassCard';
  * Unified form matching Mobile Banker's ClientRegistrationTab with camera capture
  */
 const AccountOpeningTab: React.FC = () => {
+  // Response interfaces
+  interface OtpResponse {
+    debug_otp?: string;
+  }
+
+  interface SubmitResponse {
+    success: boolean;
+    account_id?: string;
+    error?: string;
+  }
+
   // Form data state - matching ClientRegistrationTab structure
   const [formData, setFormData] = useState({
     // Personal Information
@@ -57,6 +68,11 @@ const AccountOpeningTab: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [debugOtp, setDebugOtp] = useState('');
+
+  const idTypeSelectId = useId();
+  const accountTypeSelectId = useId();
+  const cardTypeSelectId = useId();
+
 
   // === CAMERA FUNCTIONS ===
   const startCamera = useCallback(async () => {
@@ -201,12 +217,12 @@ const AccountOpeningTab: React.FC = () => {
     }
     try {
       setOtpLoading(true);
-      const response = await api.post('banking/account-openings/send_otp/', {
+      const response = await api.post<OtpResponse>('banking/account-openings/send-otp/', {
         phone_number: formData.phoneNumber,
         operation_type: 'account_opening'
       });
       setOtpSent(true);
-      setDebugOtp(response.data.debug_otp || '');
+      setDebugOtp(response.data?.debug_otp || '');
       setMessage({ type: 'success', text: `OTP sent to ${formData.phoneNumber}` });
     } catch (error) {
       console.error('Error sending OTP:', error);
@@ -240,22 +256,23 @@ const AccountOpeningTab: React.FC = () => {
         photo: formData.photo
       };
 
-      const response = await api.post('banking/account-openings/verify_and_submit/', {
+      const response = await api.post<SubmitResponse>('banking/account-openings/verify-and-submit/', {
         otp_code: otpCode,
         phone_number: formData.phoneNumber,
         account_data: submitData
       });
 
-      if (response.data.success) {
+      if (response.data?.success) {
         setCurrentStep(3);
-        setNewAccountId(response.data.account_id || 'New Account');
+        setNewAccountId(response.data?.account_id || 'New Account');
         resetForm();
       } else {
-        setMessage({ type: 'error', text: response.data.error || 'Verification failed' });
+        setMessage({ type: 'error', text: response.data?.error || 'Verification failed' });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error verifying OTP:', error);
-      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to verify OTP.' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP.';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setOtpLoading(false);
     }
@@ -352,7 +369,15 @@ const AccountOpeningTab: React.FC = () => {
                     </>
                   )}
                 </div>
-                <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileUpload} className="hidden" />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  aria-label="Upload customer photo"
+                  title="Upload customer photo"
+                />
               </div>
             </div>
             <canvas ref={canvasRef} className="hidden" />
@@ -374,20 +399,20 @@ const AccountOpeningTab: React.FC = () => {
           <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><span>🪪</span> Identification</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">ID Type *</label>
-                <select
-                  value={formData.idType}
-                  onChange={(e) => handleInputChange('idType', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50/50"
-                >
-                  <option value="ghana_card">Ghana Card</option>
-                  <option value="voter_id">Voter ID</option>
-                  <option value="passport">Passport</option>
-                  <option value="drivers_license">Driver's License</option>
-                  <option value="nhis_card">NHIS Card</option>
-                </select>
-              </div>
+              <Input
+                as="select"
+                label="ID Type *"
+                id={idTypeSelectId}
+                title="Select the type of ID provided by the customer"
+                value={formData.idType}
+                onChange={(e) => handleInputChange('idType', e.target.value)}
+              >
+                <option value="ghana_card">Ghana Card</option>
+                <option value="voter_id">Voter ID</option>
+                <option value="passport">Passport</option>
+                <option value="drivers_license">Driver's License</option>
+                <option value="nhis_card">NHIS Card</option>
+              </Input>
               <Input label="ID Number *" value={formData.idNumber} onChange={(e) => handleInputChange('idNumber', e.target.value)} placeholder="Enter ID number" required />
             </div>
           </GlassCard>
@@ -436,31 +461,31 @@ const AccountOpeningTab: React.FC = () => {
           <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><span>🏦</span> Account Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Account Type *</label>
-                <select
-                  value={formData.accountType}
-                  onChange={(e) => handleInputChange('accountType', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50/50"
-                >
-                  <option value="daily_susu">Daily Susu Account</option>
-                  <option value="shares">Shares Account</option>
-                  <option value="monthly_contribution">Monthly Contribution</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Card Type</label>
-                <select
-                  value={formData.cardType}
-                  onChange={(e) => handleInputChange('cardType', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50/50"
-                >
-                  <option value="standard">Standard Card</option>
-                  <option value="gold">Gold Card</option>
-                  <option value="platinum">Platinum Card</option>
-                  <option value="none">No Card Required</option>
-                </select>
-              </div>
+              <Input
+                as="select"
+                label="Account Type *"
+                id={accountTypeSelectId}
+                title="Select the type of account to open"
+                value={formData.accountType}
+                onChange={(e) => handleInputChange('accountType', e.target.value)}
+              >
+                <option value="daily_susu">Daily Susu Account</option>
+                <option value="shares">Shares Account</option>
+                <option value="monthly_contribution">Monthly Contribution</option>
+              </Input>
+              <Input
+                as="select"
+                label="Card Type"
+                id={cardTypeSelectId}
+                title="Select the type of ATM card requested, if any"
+                value={formData.cardType}
+                onChange={(e) => handleInputChange('cardType', e.target.value)}
+              >
+                <option value="standard">Standard Card</option>
+                <option value="gold">Gold Card</option>
+                <option value="platinum">Platinum Card</option>
+                <option value="none">No Card Required</option>
+              </Input>
             </div>
           </GlassCard>
 

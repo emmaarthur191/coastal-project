@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { Refund } from './Refund';
 export type PaginatedRefundList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<Refund>;
+    results: Array<Refund>;
 };
-

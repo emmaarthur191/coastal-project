@@ -302,6 +302,9 @@ class TransactionService:
                     message=f"Insufficient funds. Available: {from_account.balance}, Requested: {amount}",
                     details={"available": str(from_account.balance), "requested": str(amount)},
                 )
+        elif transaction_type == "repayment":
+            # Repayments (especially in the field) can be cash-based and might not have a source account.
+            return True
         elif transaction_type == "deposit":
             if not to_account:
                 raise InvalidTransactionError(message="Deposit requires a destination account.")
@@ -468,6 +471,50 @@ class LoanService:
 
         except Exception as e:
             logger.error(f"Loan SMS notification error for loan {loan.id}: {e}")
+
+    @staticmethod
+    @transaction.atomic
+    def repay_loan(loan: Loan, amount: Decimal) -> Loan:
+        """Record a loan repayment and update the outstanding balance.
+
+        Args:
+            loan: The Loan instance being repaid.
+            amount: The repayment amount.
+
+        Returns:
+            Loan: The updated Loan instance.
+
+        """
+        if loan.status not in ["approved", "active", "disbursed"]:
+            raise ValidationError("Repayments can only be made on approved or active loans.")
+
+        if amount <= 0:
+            raise ValidationError("Repayment amount must be positive.")
+
+        # Update balance atomically
+        loan.outstanding_balance = F("outstanding_balance") - amount
+        loan.save(update_fields=["outstanding_balance", "updated_at"])
+
+        # Refresh to get the calculated value
+        loan.refresh_from_db()
+
+        # Update status if fully repaid
+        if loan.outstanding_balance <= 0:
+            loan.status = "paid_off"
+            loan.outstanding_balance = Decimal("0.00")
+            loan.save(update_fields=["status", "outstanding_balance", "updated_at"])
+
+        # Create repayment transaction
+        TransactionService.create_transaction(
+            from_account=None,
+            to_account=None,
+            amount=amount,
+            transaction_type="repayment",
+            description=f"Loan Repayment for Loan #{loan.id}",
+        )
+
+        logger.info(f"Loan {loan.id} repayment of {amount} processed. New balance: {loan.outstanding_balance}")
+        return loan
 
     @staticmethod
     def calculate_monthly_payment(loan: Loan) -> Decimal:

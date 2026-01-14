@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 
 interface Payslip {
@@ -17,16 +17,39 @@ const StaffPayslipViewer: React.FC = () => {
     const [payslips, setPayslips] = useState<Payslip[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [filters, setFilters] = useState({
+        month: '',
+        year: new Date().getFullYear().toString()
+    });
 
-    useEffect(() => {
-        fetchMyPayslips();
-    }, []);
+    const months = [
+        { value: '', label: 'All Months' },
+        { value: '1', label: 'January' },
+        { value: '2', label: 'February' },
+        { value: '3', label: 'March' },
+        { value: '4', label: 'April' },
+        { value: '5', label: 'May' },
+        { value: '6', label: 'June' },
+        { value: '7', label: 'July' },
+        { value: '8', label: 'August' },
+        { value: '9', label: 'September' },
+        { value: '10', label: 'October' },
+        { value: '11', label: 'November' },
+        { value: '12', label: 'December' },
+    ];
 
-    const fetchMyPayslips = async () => {
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString());
+
+    const fetchMyPayslips = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await api.get('operations/payslips/my_payslips/');
-            setPayslips(response.data || []);
+            const queryParams = new URLSearchParams();
+            if (filters.month) queryParams.append('month', filters.month);
+            if (filters.year) queryParams.append('year', filters.year);
+
+            const response = await api.get<Payslip[]>(`operations/payslips/my_payslips/?${queryParams.toString()}`);
+            setPayslips(Array.isArray(response.data) ? response.data : []);
             setError('');
         } catch (err) {
             console.error('Error fetching payslips:', err);
@@ -34,14 +57,18 @@ const StaffPayslipViewer: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters.month, filters.year]);
+
+    useEffect(() => {
+        fetchMyPayslips();
+    }, [fetchMyPayslips]);
 
     const handleDownload = async (id: number, month: number, year: number) => {
         try {
-            const response = await api.get(`operations/payslips/${id}/download/`, {
+            const response = await api.get<Blob>(`operations/payslips/${id}/download/`, {
                 responseType: 'blob'
-            } as any);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+            });
+            const url = window.URL.createObjectURL(response.data);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', `payslip_${month}_${year}.pdf`);
@@ -71,6 +98,37 @@ const StaffPayslipViewer: React.FC = () => {
                     {error}
                 </div>
             )}
+
+            <div className="flex flex-wrap gap-4 mb-6 bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                <div className="flex-1 min-w-[150px]">
+                    <label className="block text-xs font-bold text-secondary-500 uppercase mb-1">Month</label>
+                    <select
+                        value={filters.month}
+                        onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+                        aria-label="Filter by month"
+                        title="Month Filter"
+                        className="w-full p-2 rounded-lg border border-secondary-300 focus:ring-2 focus:ring-primary-500/20 outline-none"
+                    >
+                        {months.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex-1 min-w-[150px]">
+                    <label className="block text-xs font-bold text-secondary-500 uppercase mb-1">Year</label>
+                    <select
+                        value={filters.year}
+                        onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                        aria-label="Filter by year"
+                        title="Year Filter"
+                        className="w-full p-2 rounded-lg border border-secondary-300 focus:ring-2 focus:ring-primary-500/20 outline-none"
+                    >
+                        {years.map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
 
             {loading ? (
                 <div className="text-center py-12 text-secondary-500">Loading payslips...</div>

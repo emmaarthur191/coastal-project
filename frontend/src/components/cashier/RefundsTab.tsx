@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../services/api.ts';
+import { api } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -49,7 +49,7 @@ const RefundsTab: React.FC = () => {
   const fetchRefunds = async () => {
     try {
       setLoading(true);
-      const response = await api.get('banking/refunds/');
+      const response = await api.get<any>('banking/refunds/');
       const data = response.data?.results || response.data || [];
       setRefunds(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -66,7 +66,7 @@ const RefundsTab: React.FC = () => {
     try {
       setProcessing(true);
       const amount = approvedAmount ? parseFloat(approvedAmount) : undefined;
-      await api.post(`banking/refunds/${selectedRefund.id}/approve/`, {
+      await api.post<any>(`banking/refunds/${selectedRefund.id}/approve/`, {
         approved_amount: amount,
         notes: approvalNotes
       });
@@ -88,7 +88,7 @@ const RefundsTab: React.FC = () => {
     if (!selectedRefund) return;
     try {
       setProcessing(true);
-      await api.post(`banking/refunds/${selectedRefund.id}/reject/`, { notes: rejectionNotes });
+      await api.post<any>(`banking/refunds/${selectedRefund.id}/reject/`, { notes: rejectionNotes });
       setMessage({ type: 'success', text: 'Refund rejected successfully' });
       setShowRejectionModal(false);
       setSelectedRefund(null);
@@ -229,16 +229,16 @@ const RefundsTab: React.FC = () => {
                 onChange={(e) => setApprovedAmount(e.target.value)}
                 placeholder={selectedRefund.requested_amount.toString()}
               />
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Approval Notes</label>
-                <textarea
-                  value={approvalNotes}
-                  onChange={(e) => setApprovalNotes(e.target.value)}
-                  placeholder="Optional notes..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                />
-              </div>
+              <Input
+                as="textarea"
+                label="Approval Notes"
+                id="approval-notes"
+                title="Optional notes for refund approval"
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
+                placeholder="Optional notes..."
+                rows={3}
+              />
               <div className="flex gap-3 justify-end mt-4">
                 <Button variant="secondary" onClick={() => setShowApprovalModal(false)} disabled={processing}>Cancel</Button>
                 <Button variant="success" onClick={handleApprove} disabled={processing}>
@@ -258,17 +258,17 @@ const RefundsTab: React.FC = () => {
             <p className="text-gray-600 text-sm mb-4">Refund for {selectedRefund.original_transaction_ref}</p>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Rejection Reason *</label>
-                <textarea
-                  value={rejectionNotes}
-                  onChange={(e) => setRejectionNotes(e.target.value)}
-                  placeholder="Reason for rejection..."
-                  rows={3}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none"
-                />
-              </div>
+              <Input
+                as="textarea"
+                label="Rejection Reason *"
+                id="rejection-notes"
+                title="Mandatory reason for refund rejection"
+                value={rejectionNotes}
+                onChange={(e) => setRejectionNotes(e.target.value)}
+                placeholder="Reason for rejection..."
+                rows={3}
+                required
+              />
               <div className="flex gap-3 justify-end mt-4">
                 <Button variant="secondary" onClick={() => setShowRejectionModal(false)} disabled={processing}>Cancel</Button>
                 <Button variant="danger" onClick={handleReject} disabled={processing || !rejectionNotes.trim()}>

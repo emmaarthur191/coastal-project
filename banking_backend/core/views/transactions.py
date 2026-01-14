@@ -8,7 +8,7 @@ from decimal import Decimal, DecimalException
 
 from django.db import models, transaction
 from django.db.models import Q
-from rest_framework import mixins
+from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
@@ -18,6 +18,7 @@ from rest_framework.viewsets import GenericViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from core.exceptions import BankingException, InsufficientFundsError, InvalidTransactionError
+from core.mixins import IdempotencyMixin
 from core.models import Account, Transaction
 from core.permissions import IsCustomer, IsStaff
 from core.serializers import TransactionSerializer
@@ -26,7 +27,9 @@ from core.services import AccountService, TransactionService
 logger = logging.getLogger(__name__)
 
 
-class TransactionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class TransactionViewSet(
+    IdempotencyMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet
+):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -58,6 +61,13 @@ class TransactionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
         amount = serializer.validated_data.get("amount")
         transaction_type = serializer.validated_data.get("transaction_type")
         description = serializer.validated_data.get("description", "")
+
+        # SECURITY FIX (CVE-COASTAL-01): Verify account ownership to prevent IDOR attacks
+        user = self.request.user
+        if from_account and from_account.user != user:
+            raise ValidationError(
+                {"status": "error", "message": "You do not own this account.", "code": "UNAUTHORIZED_ACCOUNT_ACCESS"}
+            )
 
         try:
             with transaction.atomic():

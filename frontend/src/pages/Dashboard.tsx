@@ -9,7 +9,7 @@ import OperationsManagerDashboard from './OperationsManagerDashboard';
 import MemberDashboard from './MemberDashboard';
 
 function Dashboard() {
-  const { user, isManager, isCashier, isMobileBanker, isOperationsManager, isMember } = useAuth();
+  const { isManager, isCashier, isMobileBanker, isOperationsManager } = useAuth();
 
   // Role-based dashboard rendering
   const renderDashboard = () => {

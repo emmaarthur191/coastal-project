@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { Report } from './Report';
 export type PaginatedReportList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<Report>;
+    results: Array<Report>;
 };
-

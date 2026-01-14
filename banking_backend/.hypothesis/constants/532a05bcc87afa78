@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\views\mobile.py
-# hypothesis_version: 6.148.7
-
-[100, 400, 404, 500, '-created_at', '-scheduled_time', '0', 'Account not found', 'Insufficient funds', 'Invalid amount', 'Status is required', 'Unknown', 'account_type', 'active', 'admin', 'amount', 'client', 'client_id', 'client_name', 'clients', 'collections', 'completed', 'completion_rate', 'created_at', 'daily_susu', 'deposit', 'error', 'get', 'id', 'is_active', 'isoformat', 'location', 'manager', 'member_id', 'message', 'mobile', 'mobile_banker', 'new_balance', 'next_visit', 'notes', 'performance', 'post', 'scheduled', 'scheduled_time', 'status', 'success', 'superuser', 'this_week', 'today', 'total', 'transaction_id', 'updated_at', 'visit_id', 'visits', 'withdrawal']

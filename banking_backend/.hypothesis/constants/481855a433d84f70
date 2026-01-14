@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\migrations\0019_remove_old_messaging.py
-# hypothesis_version: 6.148.7
-
-['BankingMessage', 'BlockedUser', 'Message', 'MessageThread', 'core']

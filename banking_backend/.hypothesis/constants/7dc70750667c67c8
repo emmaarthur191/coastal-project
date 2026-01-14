@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\users\security.py
-# hypothesis_version: 6.148.7
-
-[200, 300, 500, ',', '0.0.0.0', '0.00', '127.0.0.1', 'HTTP_USER_AGENT', 'HTTP_X_FORWARDED_FOR', 'Localhost', 'Other', 'REMOTE_ADDR', 'Unknown Device', 'Unknown Location', 'account_locked', 'attempts', 'browser', 'city', 'country', 'device', 'failed_login', 'is_bot', 'is_mobile', 'is_pc', 'is_tablet', 'localhost', 'location', 'locked_until', 'login', 'login_attempts:{}', 'os', 'status', 'success']

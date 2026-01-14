@@ -1,0 +1,35 @@
+/* MonthlyComparisonChart Component Styles */
+
+.tooltip-indicator {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 0.25rem;
+}
+
+.tooltip-indicator.income {
+    background-color: #10b981;
+}
+
+.tooltip-indicator.expenses {
+    background-color: #ef4444;
+}
+
+.tooltip-indicator.savings {
+    background-color: #0066CC;
+}
+
+.tooltip-value {
+    font-weight: 500;
+}
+
+.tooltip-value.income {
+    color: #10b981;
+}
+
+.tooltip-value.expenses {
+    color: #ef4444;
+}
+
+.tooltip-value.savings {
+    color: #0066CC;
+}

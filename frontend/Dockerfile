@@ -1,5 +1,5 @@
-# Use Node.js 18 Alpine image
-FROM node:18-alpine
+# Use Node.js 22 Alpine image for modern package support
+FROM node:22-alpine
 
 # Set work directory
 WORKDIR /app
@@ -7,17 +7,18 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for dev mode)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
-
-# Expose port
+# Expose Vite dev server port
 EXPOSE 3000
 
-# Serve the application
-CMD ["npx", "serve", "-s", "dist", "-l", "3000"]
+# Set environment for development
+ENV NODE_ENV=development
+
+# Run Vite dev server directly
+# Note: volumes in docker-compose will handle hot reloading
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "3000"]

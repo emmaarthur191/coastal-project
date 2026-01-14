@@ -1,26 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { authService } from '../../services/api';
+import { authService, ServiceCharge, ServiceChargeCalculation } from '../../services/api';
 import GlassCard from '../ui/modern/GlassCard';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
-interface ServiceCharge {
-  id: number;
-  name: string;
-  description: string;
-  charge_type: 'fixed' | 'percentage';
-  rate: string;
-  applicable_to: string[];
-  is_active: boolean;
-}
+
 
 interface ServiceChargesSectionProps {
-  newCharge: any;
-  setNewCharge: React.Dispatch<React.SetStateAction<any>>;
-  serviceChargeCalculation: any;
-  setServiceChargeCalculation: React.Dispatch<React.SetStateAction<any>>;
-  serviceCharges: any[];
-  fetchServiceCharges: () => void;
+  newCharge: ServiceCharge;
+  setNewCharge: React.Dispatch<React.SetStateAction<ServiceCharge>>;
+  serviceChargeCalculation: ServiceChargeCalculation | null;
+  setServiceChargeCalculation: React.Dispatch<React.SetStateAction<ServiceChargeCalculation | null>>;
 }
 
 const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
@@ -28,11 +18,14 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
   setNewCharge,
   serviceChargeCalculation,
   setServiceChargeCalculation,
-  serviceCharges: propServiceCharges,
-  fetchServiceCharges: propFetchServiceCharges
 }) => {
   const [charges, setCharges] = useState<ServiceCharge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calculating, setCalculating] = useState(false);
+  const [calcData, setCalcData] = useState({
+    amount: '',
+    transaction_type: 'withdrawal'
+  });
 
   // Banking operations that can have service charges
   const operations = [
@@ -111,6 +104,33 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
     ));
   };
 
+  const handleCalculate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!calcData.amount || parseFloat(calcData.amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    setCalculating(true);
+    try {
+      const result = await authService.calculateServiceCharge({
+        transaction_type: calcData.transaction_type,
+        amount: parseFloat(calcData.amount)
+      });
+
+      if (result.success) {
+        setServiceChargeCalculation(result.data as ServiceChargeCalculation);
+      } else {
+        alert('Calculation failed: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Calculator error:', error);
+      alert('An unexpected error occurred during calculation');
+    } finally {
+      setCalculating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -136,10 +156,12 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
               />
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                <label htmlFor="charge_type" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
                   Charge Type *
                 </label>
                 <select
+                  id="charge_type"
+                  title="Select charge type"
                   required
                   value={newCharge.charge_type || 'fixed'}
                   onChange={(e) => setNewCharge({ ...newCharge, charge_type: e.target.value })}
@@ -152,10 +174,11 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+              <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
                 Description
               </label>
               <textarea
+                id="description"
                 placeholder="Describe when this charge applies..."
                 value={newCharge.description || ''}
                 onChange={(e) => setNewCharge({ ...newCharge, description: e.target.value })}
@@ -212,6 +235,96 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
               💾 Create Service Charge
             </Button>
           </form>
+        </GlassCard>
+
+        {/* Service Charge Calculator */}
+        <GlassCard className="p-6 border-t-[6px] border-t-amber-500">
+          <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-sm">🧮</span>
+            Fee Calculator
+          </h4>
+
+          <form onSubmit={handleCalculate} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="calc_type" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                  Transaction Type
+                </label>
+                <select
+                  id="calc_type"
+                  title="Select transaction type"
+                  value={calcData.transaction_type}
+                  onChange={(e) => setCalcData({ ...calcData, transaction_type: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all outline-none bg-gray-50"
+                >
+                  {operations.map(op => (
+                    <option key={op} value={op}>
+                      {op.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Input
+                label="Transaction Amount (GHS)"
+                type="number"
+                step="0.01"
+                required
+                placeholder="e.g., 500.00"
+                value={calcData.amount}
+                onChange={(e) => setCalcData({ ...calcData, amount: e.target.value })}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              variant="secondary"
+              className="w-full py-3 border-amber-200 text-amber-700 hover:bg-amber-50"
+              disabled={calculating}
+            >
+              {calculating ? '🔄 Calculating...' : '🧮 Preview Charges'}
+            </Button>
+          </form>
+
+          {serviceChargeCalculation && (
+            <div className="mt-8 p-5 bg-amber-50/50 rounded-2xl border border-amber-100 animate-in fade-in slide-in-from-top-2 duration-300">
+              <h5 className="text-sm font-bold text-amber-800 mb-4 flex items-center gap-2">
+                📊 Calculation Result
+                <span className="text-[10px] font-medium bg-white text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">
+                  {calcData.transaction_type.replace(/_/g, ' ')}
+                </span>
+              </h5>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Base Amount</span>
+                  <span className="font-bold text-gray-800">GHS {serviceChargeCalculation.transaction_amount?.toFixed(2)}</span>
+                </div>
+
+                <div className="space-y-1.5 py-3 border-y border-amber-100/50">
+                  {serviceChargeCalculation.charge_breakdown?.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500">{item.name} ({item.rate}{item.type === 'percentage' ? '%' : ' GHS'})</span>
+                      <span className="font-semibold text-amber-700">+GHS {item.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {(!serviceChargeCalculation.charge_breakdown || serviceChargeCalculation.charge_breakdown.length === 0) && (
+                    <div className="text-[10px] text-gray-400 italic text-center py-1">No applicable fees found for this operation</div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-sm font-bold text-gray-700">Total Charges</span>
+                  <span className="text-lg font-black text-amber-600">GHS {serviceChargeCalculation.total_service_charge?.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-white rounded-xl border border-amber-100 mt-2 shadow-sm">
+                  <span className="text-sm font-bold text-gray-800">Net Final Amount</span>
+                  <span className="text-xl font-black text-coastal-primary">GHS {serviceChargeCalculation.net_amount?.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </GlassCard>
 
         {/* Existing Charges List */}

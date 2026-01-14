@@ -1,0 +1,294 @@
+.security-section {
+    padding: 24px;
+}
+
+.security-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.security-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.security-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.auto-refresh-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.refresh-button {
+    padding: 8px 16px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.refresh-button:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.refresh-button:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+/* Tabs */
+.tabs-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background-color: transparent;
+    color: #64748b;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.tab-button.active {
+    background-color: #1e40af;
+    color: white;
+}
+
+.tab-button:hover:not(.active) {
+    background-color: #f1f5f9;
+}
+
+.tab-count-badge {
+    background-color: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.tab-button.active .tab-count-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Tables */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.security-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-header-row {
+    background-color: #f8fafc;
+}
+
+.table-header-cell {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.table-row {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-cell {
+    padding: 12px 16px;
+}
+
+.empty-state-cell {
+    padding: 40px;
+    text-align: center;
+    color: #64748b;
+}
+
+/* Audit Logs Specific */
+.audit-action-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.audit-action-delete {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.audit-action-create {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.audit-action-default {
+    background-color: #e0f2fe;
+    color: #0284c7;
+}
+
+.resource-cell {
+    color: #64748b;
+}
+
+.ip-address-cell {
+    color: #64748b;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.timestamp-cell {
+    color: #64748b;
+    font-size: 13px;
+}
+
+/* Login Attempts Specific */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-success {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.status-failed {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.location-text {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.ip-subtext {
+    color: #94a3b8;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+/* Fraud Alerts Specific */
+.fraud-alert-type {
+    font-weight: 600;
+}
+
+.severity-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Severity colors - mapped from getSeverityColor */
+.severity-critical {
+    background-color: rgba(220, 38, 38, 0.12);
+    /* #dc2626 + 20 alpha approx */
+    color: #dc2626;
+}
+
+.severity-high {
+    background-color: rgba(234, 88, 12, 0.12);
+    /* #ea580c + 20 alpha approx */
+    color: #ea580c;
+}
+
+.severity-medium {
+    background-color: rgba(202, 138, 4, 0.12);
+    /* #ca8a04 + 20 alpha approx */
+    color: #ca8a04;
+}
+
+.severity-low {
+    background-color: rgba(22, 163, 74, 0.12);
+    /* #16a34a + 20 alpha approx */
+    color: #16a34a;
+}
+
+.severity-default {
+    background-color: rgba(107, 114, 128, 0.12);
+    /* #6b7280 + 20 alpha approx */
+    color: #6b7280;
+}
+
+.fraud-status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fraud-status-resolved {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.fraud-status-pending {
+    background-color: #fef9c3;
+    color: #ca8a04;
+}
+
+.alert-description {
+    color: #64748b;
+    max-width: 300px;
+}
+
+/* Active Sessions Specific */
+.session-user-name {
+    font-weight: 600;
+}
+
+.terminate-button {
+    padding: 6px 12px;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.terminate-button:hover {
+    background-color: #fca5a5;
+}

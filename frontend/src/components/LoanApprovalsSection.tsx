@@ -1,23 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { formatCurrencyGHS } from '../utils/formatters';
-import { authService } from '../services/api.ts';
+import { authService, LoanExtended } from '../services/api';
+import './LoanApprovalsSection.css';
 
-function LoanApprovalsSection() {
-  const [loans, setLoans] = useState([]);
-  const [filteredLoans, setFilteredLoans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showConfirmDialog, setShowConfirmDialog] = useState(null);
-  const [actionNotes, setActionNotes] = useState('');
+type LoanAction = 'approve' | 'reject';
+
+interface ConfirmDialogProps {
+  loan: LoanExtended;
+  action: LoanAction;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const LoanApprovalsSection: React.FC = () => {
+  const [loans, setLoans] = useState<LoanExtended[]>([]);
+  const [filteredLoans, setFilteredLoans] = useState<LoanExtended[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showConfirmDialog, setShowConfirmDialog] = useState<{ loan: LoanExtended; action: LoanAction } | null>(null);
+  const [actionNotes, setActionNotes] = useState<string>('');
 
   // Fetch pending loans
   const fetchLoans = async () => {
     try {
       const response = await authService.getPendingLoans();
-      if (response.success) {
-        // The backend wraps the data in a success response structure: { success: true, data: [...], timestamp: ... }
-        const loansData = response.data && response.data.data && Array.isArray(response.data.data) ? response.data.data : [];
+      if (response.success && response.data) {
+        // The backend returns a PaginatedResponse structure in response.data
+        const loansData = response.data.results || [];
         setLoans(loansData);
         setFilteredLoans(loansData);
       } else {
@@ -40,9 +50,10 @@ function LoanApprovalsSection() {
 
     // Search filter
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(loan =>
-        (loan.borrower_name || loan.applicant || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (loan.purpose || loan.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (loan.borrower_name || loan.applicant || '').toLowerCase().includes(term) ||
+        (loan.purpose || loan.description || '').toLowerCase().includes(term) ||
         loan.id.toString().includes(searchTerm)
       );
     }
@@ -56,7 +67,7 @@ function LoanApprovalsSection() {
   }, [loans, searchTerm, statusFilter]);
 
   // Handle approve action
-  const handleApprove = async (loanId) => {
+  const handleApprove = async (loanId: string | number) => {
     try {
       const response = await authService.approveLoan(loanId);
       if (response.success) {
@@ -67,13 +78,14 @@ function LoanApprovalsSection() {
       } else {
         alert('Failed to approve loan: ' + response.error);
       }
-    } catch (error) {
-      alert('Error approving loan: ' + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      alert('Error approving loan: ' + errorMessage);
     }
   };
 
   // Handle reject action
-  const handleReject = async (loanId) => {
+  const handleReject = async (loanId: string | number) => {
     try {
       const response = await authService.rejectLoan(loanId, actionNotes);
       if (response.success) {
@@ -84,85 +96,43 @@ function LoanApprovalsSection() {
       } else {
         alert('Failed to reject loan: ' + response.error);
       }
-    } catch (error) {
-      alert('Error rejecting loan: ' + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      alert('Error rejecting loan: ' + errorMessage);
     }
   };
 
   // Confirmation dialog component
-  const ConfirmDialog = ({ loan, action, onConfirm, onCancel }) => (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        background: 'white',
-        padding: '24px',
-        borderRadius: '12px',
-        maxWidth: '400px',
-        width: '90%',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
-      }}>
-        <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>
+  const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ loan, action, onConfirm, onCancel }) => (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h3 className="modal-title">
           Confirm {action === 'approve' ? 'Approval' : 'Rejection'}
         </h3>
-        <p style={{ margin: '0 0 16px 0', color: '#64748b' }}>
+        <p className="modal-body">
           Are you sure you want to {action} the loan application for{' '}
           <strong>{loan.borrower_name || loan.applicant || 'Unknown Applicant'}</strong>?
         </p>
         {action === 'reject' && (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+          <div className="form-group">
+            <label className="form-label">
               Rejection Notes (Optional):
             </label>
             <textarea
+              className="form-textarea"
               value={actionNotes}
               onChange={(e) => setActionNotes(e.target.value)}
               placeholder="Provide reason for rejection..."
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                minHeight: '60px',
-                fontFamily: 'inherit'
-              }}
             />
           </div>
         )}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '8px 16px',
-              background: '#f3f4f6',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
+        <div className="modal-footer">
+          <button className="btn btn-cancel" onClick={onCancel}>
             Cancel
           </button>
           <button
+            className={`btn ${action === 'approve' ? 'btn-approve' : 'btn-reject'}`}
             onClick={onConfirm}
-            style={{
-              padding: '8px 16px',
-              background: action === 'approve' ? '#10b981' : '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
           >
             {action === 'approve' ? 'Approve' : 'Reject'}
           </button>
@@ -173,71 +143,36 @@ function LoanApprovalsSection() {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '40px'
-      }}>
+      <div className="loading-container">
         <div>Loading loan applications...</div>
       </div>
     );
   }
 
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '16px',
-      padding: '30px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e2e8f0'
-    }}>
-      <h3 style={{
-        margin: '0 0 24px 0',
-        color: '#1e293b',
-        fontSize: '20px',
-        fontWeight: '600',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
+    <div className="loan-approvals-container">
+      <h3 className="loan-approvals-header">
         📋 Loan Approvals
       </h3>
 
       {/* Search and Filter Controls */}
-      <div style={{
-        display: 'flex',
-        gap: '16px',
-        marginBottom: '24px',
-        flexWrap: 'wrap'
-      }}>
-        <div style={{ flex: 1, minWidth: '200px' }}>
+      <div className="controls-container">
+        <div className="search-input-wrapper">
           <input
             type="text"
+            className="search-input"
             placeholder="Search by applicant name, purpose, or loan ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '8px',
-              fontSize: '14px'
-            }}
+            title="Search search-input"
           />
         </div>
-        <div style={{ minWidth: '150px' }}>
+        <div className="filter-select-wrapper">
           <select
+            className="filter-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '8px',
-              fontSize: '14px',
-              background: 'white'
-            }}
+            title="Filter by status"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -248,21 +183,14 @@ function LoanApprovalsSection() {
       </div>
 
       {/* Loan Applications List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="loans-list">
         {filteredLoans.length === 0 ? (
-          <div style={{
-            padding: '40px',
-            textAlign: 'center',
-            color: '#64748b',
-            background: '#f8fafc',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-            <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
+          <div className="empty-state">
+            <div className="empty-icon">📋</div>
+            <div className="empty-title">
               {loans.length === 0 ? 'No Pending Loans' : 'No Matching Loans'}
             </div>
-            <div style={{ fontSize: '14px' }}>
+            <div className="empty-desc">
               {loans.length === 0
                 ? 'All loan applications have been processed.'
                 : 'Try adjusting your search or filter criteria.'
@@ -271,79 +199,38 @@ function LoanApprovalsSection() {
           </div>
         ) : (
           filteredLoans.map((loan) => (
-            <div key={loan.id} style={{
-              padding: '20px',
-              background: '#f8fafc',
-              borderRadius: '12px',
-              border: '1px solid #e2e8f0',
-              display: 'grid',
-              gridTemplateColumns: '1fr auto',
-              gap: '20px',
-              alignItems: 'center'
-            }}>
+            <div key={loan.id} className="loan-card">
               <div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '8px'
-                }}>
-                  <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '16px' }}>
+                <div className="loan-info-header">
+                  <div className="borrower-name">
                     {loan.borrower_name || loan.applicant || 'Unknown Applicant'}
                   </div>
-                  <span style={{
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    background: loan.status === 'pending' ? '#fef3c7' :
-                               loan.status === 'approved' ? '#d1fae5' : '#fee2e2',
-                    color: loan.status === 'pending' ? '#92400e' :
-                           loan.status === 'approved' ? '#065f46' : '#991b1b'
-                  }}>
+                  <span className={`status-badge status-${loan.status || 'pending'}`}>
                     {loan.status?.toUpperCase() || 'PENDING'}
                   </span>
                 </div>
-                <div style={{ color: '#64748b', marginBottom: '4px' }}>
+                <div className="loan-purpose">
                   {loan.purpose || loan.description || 'No description provided'}
                 </div>
-                <div style={{ color: '#059669', fontWeight: '600', fontSize: '18px' }}>
+                <div className="loan-amount">
                   {formatCurrencyGHS(loan.amount || 0)}
                 </div>
-                <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
+                <div className="loan-date">
                   Applied: {loan.application_date ? new Date(loan.application_date).toLocaleDateString() : 'N/A'}
                 </div>
               </div>
 
               {loan.status === 'pending' && (
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="action-buttons">
                   <button
+                    className="btn btn-approve"
                     onClick={() => setShowConfirmDialog({ loan, action: 'approve' })}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
                   >
                     ✅ Approve
                   </button>
                   <button
+                    className="btn btn-reject"
                     onClick={() => setShowConfirmDialog({ loan, action: 'reject' })}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
                   >
                     ❌ Reject
                   </button>

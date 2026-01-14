@@ -4,16 +4,16 @@ import { authService } from '../services/api';
 interface Account {
   id: string;
   account_number: string;
-  type: string;
-  balance: number;
-  status: string;
-  owner: {
+  account_type: string;  // Backend returns account_type, not type
+  balance: string | number;  // Backend returns string
+  is_active: boolean;  // Backend returns is_active, not status
+  user?: {  // Backend returns user, not owner (made optional for safety)
     id: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;  // Backend returns full_name, not first_name/last_name
     email: string;
+    phone?: string;
   };
-  created_at: string;
+  created_at: string | null;
 }
 
 interface AccountSummary {
@@ -44,12 +44,12 @@ const AccountsTab: React.FC = () => {
       if (response.success) {
         // Handle paginated response structure
         const responseData = response.data || {};
-        const accountsList = Array.isArray(responseData) ? responseData : (responseData.results || []);
-        setAccounts(accountsList);
+        const accountsList = Array.isArray(responseData) ? responseData : ((responseData as { results?: Account[] }).results || []);
+        setAccounts(accountsList as Account[]);
       } else {
         setError(response.error || 'Failed to load accounts');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load accounts');
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ const AccountsTab: React.FC = () => {
       const response = await authService.getStaffAccountsSummary();
 
       if (response.success) {
-        setSummary(response.data);
+        setSummary(response.data as AccountSummary);
 
       } else {
         console.warn('AccountsTab: Failed to load summary:', response.error);
@@ -76,11 +76,12 @@ const AccountsTab: React.FC = () => {
   const filteredAccounts = accounts.filter(account => {
     const matchesSearch = searchTerm === '' ||
       account.account_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (account.owner?.first_name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
-      (account.owner?.last_name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
-      (account.owner?.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase());
+      (account.user?.full_name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (account.user?.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || account.status?.toLowerCase() === statusFilter.toLowerCase();
+    const matchesStatus = statusFilter === 'all' ||
+      (statusFilter === 'active' && account.is_active) ||
+      (statusFilter === 'inactive' && !account.is_active);
 
     return matchesSearch && matchesStatus;
   });
@@ -99,8 +100,8 @@ const AccountsTab: React.FC = () => {
   if (loading) {
 
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px', background: 'blue', color: 'white', padding: '20px' }}>
-        <div>LOADING ACCOUNTS... Please wait</div>
+      <div className="flex justify-center items-center h-48 bg-blue-600 text-white p-5 rounded-lg">
+        <div className="animate-pulse font-semibold">Loading accounts...</div>
       </div>
     );
   }
@@ -108,9 +109,9 @@ const AccountsTab: React.FC = () => {
   if (error) {
 
     return (
-      <div style={{ background: 'red', color: 'white', padding: '20px', border: '5px solid black' }}>
-        <h2>ACCOUNTS TAB ERROR</h2>
-        <p>Error: {error}</p>
+      <div className="bg-red-600 text-white p-5 border-4 border-red-800 rounded-lg">
+        <h2 className="text-lg font-bold mb-2">Error Loading Accounts</h2>
+        <p>{error}</p>
       </div>
     );
   }
@@ -230,7 +231,6 @@ const AccountsTab: React.FC = () => {
                 <option value="all">All Statuses</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
               </select>
             </div>
           </div>
@@ -264,30 +264,28 @@ const AccountsTab: React.FC = () => {
                         {account.account_number}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {account.owner?.first_name ?? ''} {account.owner?.last_name ?? ''} • {account.owner?.email ?? 'No email'}
+                        {account.user?.full_name ?? 'Unknown'} • {account.user?.email ?? 'No email'}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(account.balance)}
+                        {formatCurrency(Number(account.balance) || 0)}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {account.type}
+                        {account.account_type}
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${account.status === 'Active'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${account.is_active
                         ? 'bg-green-100 text-green-800'
-                        : account.status === 'Inactive'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                         }`}>
-                        {account.status}
+                        {account.is_active ? 'Active' : 'Inactive'}
                       </span>
                       <div className="text-sm text-gray-500 mt-1">
-                        Created {formatDate(account.created_at)}
+                        Created {account.created_at ? formatDate(account.created_at) : 'N/A'}
                       </div>
                     </div>
                   </div>

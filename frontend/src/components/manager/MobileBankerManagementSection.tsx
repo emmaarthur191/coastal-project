@@ -4,31 +4,89 @@ import { Button } from '../ui/Button';
 import { authService } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface MobileBankerManagementSectionProps {
+    // Props interface for MobileBankerManagementSection component
+    // No props required for this component
+}
+
+interface MobileBanker {
+    id: number;
+    name: string;
+    staff_id: string;
+    role?: string;
+}
+
+interface MobileBankerMetrics {
+    cash_collected: number;
+    visits_completed: number;
+    accounts_opened: number;
+}
+
+interface ClientAssignment {
+    id: number;
+    client_name: string;
+    location: string;
+    status: string;
+    priority: string;
+    amount_due?: string;
+    mobile_banker?: string | number;
+}
+
+interface Member {
+    id: number | string;
+    name: string;
+    email: string;
+    current_assignment?: {
+        id: number;
+        banker: {
+            id: number;
+            name: string;
+        } | null;
+    } | null;
 }
 
 const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps> = () => {
-    const [mobileBankers, setMobileBankers] = useState<any[]>([]);
+    const [mobileBankers, setMobileBankers] = useState<MobileBanker[]>([]);
     const [selectedBanker, setSelectedBanker] = useState<string>('');
-    const [metrics, setMetrics] = useState<any>(null);
-    const [assignments, setAssignments] = useState<any[]>([]);
+    const [metrics, setMetrics] = useState<MobileBankerMetrics | null>(null);
+    const [assignments, setAssignments] = useState<ClientAssignment[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingMetrics, setLoadingMetrics] = useState(false);
 
     // Modals state
     const [showReassignModal, setShowReassignModal] = useState(false);
-    const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+    const [selectedAssignment, setSelectedAssignment] = useState<ClientAssignment | null>(null);
     const [targetBankerId, setTargetBankerId] = useState('');
 
     // Assign Client Modal State
     const [showAssignModal, setShowAssignModal] = useState(false);
-    const [members, setMembers] = useState<any[]>([]);
+    const [members, setMembers] = useState<Member[]>([]);
     const [assignForm, setAssignForm] = useState({ client_id: '', priority: 'medium', location: '' });
 
     // Initial fetch of mobile bankers
     useEffect(() => {
+        const fetchMobileBankers = async () => {
+            setLoading(true);
+            // Fetch staff with role 'mobile_banker'
+            const response = await authService.getStaffIds({ role: 'mobile_banker' });
+            if (response.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const bankers = ((response.data as any).results || response.data || []) as MobileBanker[];
+                // Strictly filter to ensure only mobile_banker role appears (safety check)
+                // Note: The backend should already do this, but this guarantees "only mobile bankers"
+                const filteredBankers = bankers.filter(b => !b.role || b.role === 'mobile_banker');
+                setMobileBankers(filteredBankers);
+
+                // Auto-select the first banker for "easy access" if none selected
+                if (filteredBankers.length > 0 && !selectedBanker) {
+                    setSelectedBanker(String(filteredBankers[0].id));
+                }
+            }
+            setLoading(false);
+        };
         fetchMobileBankers();
-    }, []);
+    }, [selectedBanker]);
 
     // Fetch data when selected banker changes
     useEffect(() => {
@@ -40,31 +98,18 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
         }
     }, [selectedBanker]);
 
-    const fetchMobileBankers = async () => {
-        setLoading(true);
-        // Fetch staff with role 'mobile_banker'
-        const response = await authService.getStaffIds({ role: 'mobile_banker' });
-        if (response.success) {
-            const bankers = response.data.results || response.data || [];
-            setMobileBankers(bankers);
-            if (bankers.length > 0 && !selectedBanker) {
-                // Automatically select first if none selected, or leave empty to force choice?
-                // Let's leave empty to force explicit choice for clarity
-            }
-        }
-        setLoading(false);
-    };
 
-    const fetchBankerData = async (bankerId: string) => {
+
+    const fetchBankerData = async (_bankerId: string) => {
         setLoadingMetrics(true);
         try {
             const [metricsRes, assignmentsRes] = await Promise.all([
-                authService.getMobileBankerMetrics(bankerId),
-                authService.getClientAssignments({ mobile_banker: bankerId })
+                authService.getMobileBankerMetrics(),
+                authService.getAssignments({ mobile_banker: _bankerId })
             ]);
 
-            if (metricsRes.success) setMetrics(metricsRes.data);
-            if (assignmentsRes.success) setAssignments(assignmentsRes.data);
+            if (metricsRes.success) setMetrics(metricsRes.data as unknown as MobileBankerMetrics);
+            if (assignmentsRes.success) setAssignments(assignmentsRes.data as unknown as ClientAssignment[]);
         } catch (error) {
             console.error('Error fetching banker data:', error);
         } finally {
@@ -79,7 +124,7 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
         // Fetch candidates (members)
         if (members.length === 0) {
             const res = await authService.getMembers();
-            if (res.success) setMembers(res.data);
+            if (res.success) setMembers(res.data as Member[]);
         }
     };
 
@@ -89,11 +134,20 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
             return;
         }
 
+        // Frontend check: warn if client is already assigned to this banker
+        const existingAssignment = assignments.find(
+            a => String(a.mobile_banker) === String(selectedBanker) && String(a.id) === String(assignForm.client_id)
+        );
+        if (existingAssignment) {
+            alert(`This client is already assigned to the selected banker. Use 'Reassign' to change their banker.`);
+            return;
+        }
+
         const response = await authService.assignClient({
             mobile_banker: selectedBanker,
             client: assignForm.client_id,
             priority: assignForm.priority,
-            location: assignForm.location || 'Unknown' // Ideally link to profile address
+            location: assignForm.location || 'Unknown'
         });
 
         if (response.success) {
@@ -101,6 +155,25 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
             setShowAssignModal(false);
             fetchBankerData(selectedBanker); // Refresh list
         } else {
+            // Check if it's a "already assigned" error and offer a better path
+            if (response.error?.includes('already assigned')) {
+                const confirmReassign = window.confirm(`${response.error}\n\nWould you like to reassign them to the current banker instead?`);
+                if (confirmReassign) {
+                    // Find the existing assignment ID from members list
+                    const member = members.find(m => String(m.id) === String(assignForm.client_id));
+                    if (member?.current_assignment?.id) {
+                        const reassignRes = await authService.updateAssignment(member.current_assignment.id, {
+                            mobile_banker: selectedBanker
+                        });
+                        if (reassignRes.success) {
+                            alert('Client reassigned successfully!');
+                            setShowAssignModal(false);
+                            fetchBankerData(selectedBanker);
+                            return;
+                        }
+                    }
+                }
+            }
             alert('Failed to assign: ' + (response.error || 'Unknown error'));
         }
     };
@@ -112,7 +185,7 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
         }
 
         const response = await authService.updateAssignment(assignmentId, {
-            mobile_banker_id: targetBankerId
+            mobile_banker: targetBankerId
         });
 
         if (response.success) {
@@ -127,7 +200,7 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
     // Calculate total due for display
     const totalDue = assignments.reduce((sum, a) => {
         // Clean currency string "GHS 100.00" -> 100.00
-        const amount = a.amountDue ? parseFloat(a.amountDue.replace(/[^0-9.-]+/g, "")) : 0;
+        const amount = a.amount_due ? parseFloat(a.amount_due.replace(/[^0-9.-]+/g, "")) : 0;
         return sum + amount;
     }, 0);
 
@@ -141,8 +214,10 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                    <label className="text-sm font-medium text-secondary-700 whitespace-nowrap">Select Banker:</label>
+                    <label htmlFor="banker-select" className="text-sm font-medium text-secondary-700 whitespace-nowrap">Select Banker:</label>
                     <select
+                        id="banker-select"
+                        title="Select Mobile Banker"
                         className="w-full md:w-64 p-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         value={selectedBanker}
                         onChange={(e) => setSelectedBanker(e.target.value)}
@@ -157,7 +232,7 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                 </div>
             </div>
 
-            {loading && !metrics ? (
+            {(loading || loadingMetrics) && !metrics ? (
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="mt-2 text-secondary-500">Loading data...</p>
@@ -224,7 +299,7 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                                     {assignments.length > 0 ? (
                                         assignments.map((assignment) => (
                                             <tr key={assignment.id} className="hover:bg-secondary-50 transition-colors">
-                                                <td className="p-3 font-medium text-secondary-900">{assignment.name}</td>
+                                                <td className="p-3 font-medium text-secondary-900">{assignment.client_name}</td>
                                                 <td className="p-3 text-secondary-600">{assignment.location}</td>
                                                 <td className="p-3">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${assignment.status === 'Completed' ? 'bg-success-100 text-success-700' :
@@ -276,12 +351,14 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
                         <h3 className="text-xl font-bold mb-4">Reassign Client</h3>
                         <p className="text-secondary-600 mb-4">
-                            Reassign <strong>{selectedAssignment?.name}</strong> to:
+                            Reassign <strong>{selectedAssignment?.client_name}</strong> to:
                         </p>
 
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-secondary-700 mb-2">New Mobile Banker</label>
+                            <label htmlFor="reassign-banker-select" className="block text-sm font-medium text-secondary-700 mb-2">New Mobile Banker</label>
                             <select
+                                id="reassign-banker-select"
+                                title="Select New Mobile Banker"
                                 className="w-full p-2 border border-secondary-300 rounded-lg"
                                 value={targetBankerId}
                                 onChange={(e) => setTargetBankerId(e.target.value)}
@@ -315,8 +392,10 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
 
                         <div className="space-y-4 mb-6">
                             <div>
-                                <label className="block text-sm font-medium text-secondary-700 mb-1">Select Client (Customer)</label>
+                                <label htmlFor="assign-client-select" className="block text-sm font-medium text-secondary-700 mb-1">Select Client (Customer)</label>
                                 <select
+                                    id="assign-client-select"
+                                    title="Select Client"
                                     className="w-full p-2 border border-secondary-300 rounded-lg"
                                     value={assignForm.client_id}
                                     onChange={(e) => setAssignForm({ ...assignForm, client_id: e.target.value })}
@@ -328,11 +407,19 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                                         </option>
                                     ))}
                                 </select>
+                                {assignForm.client_id && members.find(m => String(m.id) === String(assignForm.client_id))?.current_assignment && (
+                                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                                        ⚠️ Note: This client is currently assigned to <strong>{members.find(m => String(m.id) === String(assignForm.client_id))?.current_assignment?.banker?.name || 'another banker'}</strong>.
+                                        Clicking "Assign" will prompt you to reassign them to the current banker.
+                                    </div>
+                                )}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-secondary-700 mb-1">Location Override</label>
+                                <label htmlFor="location-input" className="block text-sm font-medium text-secondary-700 mb-1">Location Override</label>
                                 <input
+                                    id="location-input"
+                                    title="Enter Location"
                                     type="text"
                                     className="w-full p-2 border border-secondary-300 rounded-lg"
                                     placeholder="Area/Town (Optional)"
@@ -342,8 +429,10 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-secondary-700 mb-1">Priority</label>
+                                <label htmlFor="priority-select" className="block text-sm font-medium text-secondary-700 mb-1">Priority</label>
                                 <select
+                                    id="priority-select"
+                                    title="Select Priority"
                                     className="w-full p-2 border border-secondary-300 rounded-lg"
                                     value={assignForm.priority}
                                     onChange={(e) => setAssignForm({ ...assignForm, priority: e.target.value })}

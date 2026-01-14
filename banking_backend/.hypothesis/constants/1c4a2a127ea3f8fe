@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\views\transactions.py
-# hypothesis_version: 6.148.7
-
-[100, 400, 404, 500, '-timestamp', 'Deposit', 'Invalid amount', 'Member not found', 'account_number', 'account_type', 'amount', 'code', 'count', 'create', 'customer', 'daily_susu', 'date_from', 'date_to', 'deposit', 'description', 'error', 'from_account', 'get', 'id', 'max_amount', 'member', 'member_id', 'message', 'min_amount', 'new_balance', 'post', 'reference', 'reference_number', 'results', 'status', 'success', 'timestamp', 'to_account', 'transaction_id', 'transaction_type', 'type', 'user_email', 'withdrawal']
