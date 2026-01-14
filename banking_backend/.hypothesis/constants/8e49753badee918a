@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\chat_views.py
-# hypothesis_version: 6.148.7
-
-[100, '-created_at', '-last_activity', '-updated_at', 'User', 'content', 'created_at', 'display_name', 'email', 'error', 'first_name', 'id', 'is_group', 'is_read', 'last_message', 'last_name', 'marked_read', 'member_ids', 'members', 'messages__created_at', 'name', 'request', 'room_id', 'sender', 'sender_name', 'timestamp', 'unread_count', 'updated_at']

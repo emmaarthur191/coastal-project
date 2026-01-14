@@ -5,7 +5,7 @@ This module contains views for managing fraud alerts and detection.
 
 import logging
 
-from rest_framework import mixins
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -13,9 +13,9 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import FraudAlert
+from core.models import FraudAlert, FraudRule
 from core.permissions import IsStaff
-from core.serializers import FraudAlertSerializer
+from core.serializers import FraudAlertSerializer, FraudRuleSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class FraudAlertViewSet(
             return [IsStaff()]
         return [IsStaffOrCustomer()]
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], url_path="dashboard-stats")
     def dashboard_stats(self, request):
         """Get fraud alert statistics for dashboard."""
         from django.db.models import Count
@@ -63,3 +63,30 @@ class FraudAlertViewSet(
                 "recent_alerts": FraudAlertSerializer(recent, many=True).data,
             }
         )
+
+
+class FraudRuleViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing fraud detection rules."""
+
+    queryset = FraudRule.objects.all()
+    serializer_class = FraudRuleSerializer
+    permission_classes = [IsStaff]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ["rule_type", "severity", "is_active"]
+    ordering_fields = ["created_at", "trigger_count", "name"]
+    ordering = ["-created_at"]
+
+    @action(detail=True, methods=["post"])
+    def toggle_active(self, request, pk=None):
+        """Toggle the active status of a fraud rule."""
+        rule = self.get_object()
+        rule.is_active = not rule.is_active
+        rule.save()
+        return Response({"status": "success", "is_active": rule.is_active})
+
+    @action(detail=False, methods=["get"])
+    def active_rules(self, request):
+        """Get all active fraud rules."""
+        active_rules = self.queryset.filter(is_active=True)
+        serializer = self.get_serializer(active_rules, many=True)
+        return Response(serializer.data)

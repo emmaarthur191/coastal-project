@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { Account } from './Account';
 export type PaginatedAccountList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<Account>;
+    results: Array<Account>;
 };
-

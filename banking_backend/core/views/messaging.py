@@ -50,7 +50,7 @@ class BankingMessageViewSet(
             return [IsStaff()]
         return [IsCustomer()]
 
-    @action(detail=True, methods=["post"], permission_classes=[IsCustomer])
+    @action(detail=True, methods=["post"], permission_classes=[IsCustomer], url_path="mark-read")
     def mark_read(self, request, pk=None):
         message = self.get_object()
         from core.services import MessagingService
@@ -123,7 +123,7 @@ class MessageThreadViewSet(ModelViewSet):
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
         """Send a message to a thread."""
         from core.models import Message
@@ -144,7 +144,7 @@ class MessageThreadViewSet(ModelViewSet):
 
         return Response({"status": "success", "message": MessageSerializer(message).data})
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="mark-as-read")
     def mark_as_read(self, request, pk=None):
         """Mark all messages in thread as read by current user."""
         thread = self.get_object()
@@ -183,7 +183,7 @@ class MessageViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
         """Set the sender to the current user when creating a message."""
         serializer.save(sender=self.request.user)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="add-reaction")
     def add_reaction(self, request, pk=None):
         """Add an emoji reaction to a message."""
         message = self.get_object()
@@ -195,7 +195,7 @@ class MessageViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
         # Simplified implementation
         return Response({"status": "success", "message": "Reaction added"})
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="remove-reaction")
     def remove_reaction(self, request, pk=None):
         """Remove a previously added emoji reaction from a message."""
         message = self.get_object()
@@ -205,7 +205,7 @@ class MessageViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
 
         return Response({"status": "success", "message": "Reaction removed"})
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="upload-media")
     def upload_media(self, request):
         """Placeholder for media upload."""
         return Response({"status": "not_implemented", "message": "Media upload is not yet supported."}, status=501)
@@ -259,7 +259,7 @@ class DeviceViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewS
             }
         )
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="sync-data")
     def sync_data(self, request):
         """Sync endpoint to check connection status."""
         return Response({"status": "connected", "timestamp": timezone.now().isoformat()})
@@ -272,9 +272,9 @@ class UserPreferencesView(APIView):
 
     def get(self, request):
         """Get current user's message preferences."""
-        from core.models import UserMessagePreferences
+        from core.models import UserMessagePreference
 
-        prefs, _ = UserMessagePreferences.objects.get_or_create(user=request.user)
+        prefs, _ = UserMessagePreference.objects.get_or_create(user=request.user)
         return Response(
             {
                 "notifications_enabled": prefs.notifications_enabled,
@@ -286,9 +286,9 @@ class UserPreferencesView(APIView):
 
     def post(self, request):
         """Update user's message preferences."""
-        from core.models import UserMessagePreferences
+        from core.models import UserMessagePreference
 
-        prefs, _ = UserMessagePreferences.objects.get_or_create(user=request.user)
+        prefs, _ = UserMessagePreference.objects.get_or_create(user=request.user)
 
         if "notifications_enabled" in request.data:
             prefs.notifications_enabled = request.data["notifications_enabled"]

@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\exceptions.py
-# hypothesis_version: 6.148.7
-
-['ACCOUNT_NOT_FOUND', 'ACCOUNT_SUSPENDED', 'BANKING_ERROR', 'INSUFFICIENT_FUNDS', 'INVALID_TRANSACTION', 'LIMIT_EXCEEDED', 'OPERATIONAL_ERROR']

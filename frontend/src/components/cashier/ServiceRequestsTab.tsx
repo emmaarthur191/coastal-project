@@ -22,22 +22,9 @@ const ServiceRequestsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showNewRequest, setShowNewRequest] = useState(false);
   const [newServiceRequest, setNewServiceRequest] = useState({
-    member_id: '',
-    service_type: 'checkbook',
-    priority: 'normal',
-    notes: '',
-    quantity: 1,
+    request_type: 'checkbook',
+    description: '',
     delivery_method: 'pickup',
-    delivery_address: '',
-    special_instructions: '',
-    statement_type: 'monthly',
-    delivery_method_statement: 'digital',
-    start_date: '',
-    end_date: '',
-    account_number: '',
-    info_type: 'balance',
-    delivery_method_loan: 'digital',
-    loan_account_number: ''
   });
   const [serviceRequestLoading, setServiceRequestLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -50,7 +37,7 @@ const ServiceRequestsTab: React.FC = () => {
   const fetchServiceRequests = async () => {
     try {
       setLoading(true);
-      const response = await api.get('services/requests/');
+      const response = await api.get<any>('services/requests/');
       const data = response.data?.results || response.data || [];
       setServiceRequests(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -64,7 +51,7 @@ const ServiceRequestsTab: React.FC = () => {
 
   const fetchServiceRequestStats = async () => {
     try {
-      const response = await api.get('services/stats/');
+      const response = await api.get<any>('services/stats/');
       setServiceRequestStats(response.data || {});
     } catch (error) {
       console.error('Error fetching service request stats:', error);
@@ -72,33 +59,20 @@ const ServiceRequestsTab: React.FC = () => {
   };
 
   const handleCreateServiceRequest = async () => {
-    if (!newServiceRequest.member_id) {
-      setMessage({ type: 'error', text: 'Please enter member ID' });
+    if (!newServiceRequest.request_type) {
+      setMessage({ type: 'error', text: 'Please select a request type' });
       return;
     }
 
     try {
       setServiceRequestLoading(true);
-      await api.post('services/requests/', newServiceRequest);
+      await api.post<any>('services/requests/', newServiceRequest);
       setMessage({ type: 'success', text: 'Service request created successfully' });
       setShowNewRequest(false);
       setNewServiceRequest({
-        member_id: '',
-        service_type: 'checkbook',
-        priority: 'normal',
-        notes: '',
-        quantity: 1,
+        request_type: 'checkbook',
+        description: '',
         delivery_method: 'pickup',
-        delivery_address: '',
-        special_instructions: '',
-        statement_type: 'monthly',
-        delivery_method_statement: 'digital',
-        start_date: '',
-        end_date: '',
-        account_number: '',
-        info_type: 'balance',
-        delivery_method_loan: 'digital',
-        loan_account_number: ''
       });
       fetchServiceRequests();
       fetchServiceRequestStats();
@@ -228,51 +202,45 @@ const ServiceRequestsTab: React.FC = () => {
 
             <div className="space-y-4">
               <Input
-                label="Member ID"
-                value={newServiceRequest.member_id}
-                onChange={(e) => setNewServiceRequest(prev => ({ ...prev, member_id: e.target.value }))}
-                placeholder="Enter member ID"
+                as="select"
+                label="Request Type"
+                id="request-type"
+                title="Select the type of service being requested"
+                value={newServiceRequest.request_type}
+                onChange={(e) => setNewServiceRequest(prev => ({ ...prev, request_type: e.target.value }))}
+              >
+                <option value="checkbook">Cheque Book</option>
+                <option value="statement">Account Statement</option>
+                <option value="card_replacement">Card Replacement</option>
+                <option value="account_closure">Account Closure</option>
+                <option value="address_change">Address Change</option>
+                <option value="other">Other</option>
+              </Input>
+
+              <Input
+                as="select"
+                label="Delivery Method"
+                id="delivery-method"
+                title="Select how to deliver this request"
+                value={newServiceRequest.delivery_method}
+                onChange={(e) => setNewServiceRequest(prev => ({ ...prev, delivery_method: e.target.value }))}
+              >
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="pickup">Branch Pickup</option>
+                <option value="mail">Postal Mail</option>
+              </Input>
+
+              <Input
+                as="textarea"
+                label="Description"
+                id="description"
+                title="Additional details for the service request"
+                value={newServiceRequest.description}
+                onChange={(e) => setNewServiceRequest(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Additional details..."
+                rows={3}
               />
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Service Type</label>
-                <select
-                  value={newServiceRequest.service_type || 'checkbook'}
-                  onChange={(e) => setNewServiceRequest(prev => ({ ...prev, service_type: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
-                >
-                  <option value="checkbook">Checkbook Request</option>
-                  <option value="statement">Account Statement</option>
-                  <option value="card">ATM Card</option>
-                  <option value="loan_info">Loan Information</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Priority</label>
-                <select
-                  value={newServiceRequest.priority}
-                  onChange={(e) => setNewServiceRequest(prev => ({ ...prev, priority: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Notes</label>
-                <textarea
-                  value={newServiceRequest.notes}
-                  onChange={(e) => setNewServiceRequest(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Additional notes..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                />
-              </div>
             </div>
 
             <div className="flex gap-3 justify-end mt-8 border-t border-gray-100 pt-4">

@@ -25,6 +25,13 @@ interface Transaction {
     } | null;
 }
 
+interface PaginatedTransactionResponse {
+    results: Transaction[];
+    count: number;
+    next: string | null;
+    previous: string | null;
+}
+
 const TransactionSearchTab: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(false);
@@ -48,7 +55,7 @@ const TransactionSearchTab: React.FC = () => {
                 if (value) params.append(key, value);
             });
 
-            const response = await api.get(`transactions/search/?${params.toString()}`);
+            const response = await api.get<PaginatedTransactionResponse>(`transactions/search/?${params.toString()}`);
             setTransactions(response.data?.results || []);
         } catch (error) {
             console.error('Error searching transactions:', error);
@@ -122,6 +129,7 @@ const TransactionSearchTab: React.FC = () => {
                             value={filters.type}
                             onChange={(e) => setFilters({ ...filters, type: e.target.value })}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
+                            aria-label="Transaction Type"
                         >
                             <option value="">All Types</option>
                             <option value="deposit">Deposit</option>
@@ -135,6 +143,7 @@ const TransactionSearchTab: React.FC = () => {
                             value={filters.status}
                             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
+                            aria-label="Transaction Status"
                         >
                             <option value="">All Statuses</option>
                             <option value="completed">Completed</option>

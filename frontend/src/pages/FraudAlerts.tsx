@@ -1,55 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { api, PaginatedResponse } from '../services/api';
+import { FraudAlert } from '../api/models/FraudAlert';
+import './FraudAlerts.css';
 
 interface FraudStats {
-  new_alerts?: number;
-  investigating?: number;
-  resolved?: number;
+  total?: number;
+  unresolved?: number;
+  by_severity?: { severity: string; count: number }[];
   critical_alerts?: number;
-  total_alerts?: number;
-  escalated?: number;
-  [key: string]: any;
 }
 
 const FraudAlerts = () => {
-  const { user } = useAuth();
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const [stats, setStats] = useState<FraudStats>({});
   const [loading, setLoading] = useState(true);
-  const [selectedAlert, setSelectedAlert] = useState(null);
+  const [_selectedAlert, setSelectedAlert] = useState<FraudAlert | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [actionTaken, setActionTaken] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    fetchAlerts();
-    fetchStats();
-  }, [filterStatus]);
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
-      const response = await api.get('/api/fraud/alerts/', {
+      const response = await api.get<PaginatedResponse<FraudAlert>>('/api/fraud/alerts/', {
         params: filterStatus !== 'all' ? { status: filterStatus } : {}
       });
-      setAlerts(response.data);
+      setAlerts(response.data.results || []);
     } catch (error) {
       console.error('Error fetching alerts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
-      const response = await api.get('/api/fraud/alerts/dashboard_stats/');
+      const response = await api.get<FraudStats>('/api/fraud/alerts/dashboard-stats/');
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, []);
 
-  const handleAssignToMe = async (alertId) => {
+  useEffect(() => {
+    fetchAlerts();
+    fetchStats();
+  }, [fetchAlerts, fetchStats]);
+
+  const handleAssignToMe = async (alertId: number) => {
     try {
       await api.post(`/api/fraud/alerts/${alertId}/assign_to_me/`);
       fetchAlerts();
@@ -58,7 +55,7 @@ const FraudAlerts = () => {
     }
   };
 
-  const handleResolve = async (alertId) => {
+  const handleResolve = async (alertId: number) => {
     try {
       await api.post(`/api/fraud/alerts/${alertId}/resolve/`, {
         resolution_notes: resolutionNotes,
@@ -74,7 +71,7 @@ const FraudAlerts = () => {
     }
   };
 
-  const handleEscalate = async (alertId, escalatedTo, reason) => {
+  const _handleEscalate = async (alertId: number, escalatedTo: string, reason: string) => {
     try {
       await api.post(`/api/fraud/alerts/${alertId}/escalate/`, {
         escalated_to: escalatedTo,
@@ -87,187 +84,96 @@ const FraudAlerts = () => {
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+  const getSeverityBadgeClass = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'fraud-alert-badge fraud-alert-badge--critical';
+      case 'high': return 'fraud-alert-badge fraud-alert-badge--high';
+      case 'medium': return 'fraud-alert-badge fraud-alert-badge--medium';
+      case 'low': return 'fraud-alert-badge fraud-alert-badge--low';
+      default: return 'fraud-alert-badge fraud-alert-badge--medium';
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'new': return 'bg-red-100 text-red-800';
-      case 'investigating': return 'bg-yellow-100 text-yellow-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'escalated': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const filteredAlerts = alerts.filter(alert =>
-    filterStatus === 'all' || alert.status === filterStatus
-  );
+  const filteredAlerts = alerts.filter(alert => {
+    if (filterStatus === 'all') return true;
+    if (filterStatus === 'resolved') return alert.is_resolved;
+    if (filterStatus === 'unresolved') return !alert.is_resolved;
+    return true;
+  });
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <div className="fraud-loading">Loading...</div>;
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>Fraud Detection Dashboard</h1>
-        <p style={{ color: '#64748b' }}>Monitor and manage suspicious transaction alerts</p>
+    <div className="fraud-alerts-container">
+      <div className="fraud-alerts-header">
+        <h1 className="fraud-alerts-title">Fraud Detection Dashboard</h1>
+        <p className="fraud-alerts-subtitle">Monitor and manage suspicious transaction alerts</p>
       </div>
 
       {/* Statistics Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#fee2e2',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+      <div className="fraud-stats-grid">
+        <div className="fraud-stat-card">
+          <div className="fraud-stat-content">
+            <div className="fraud-stat-icon fraud-stat-icon--danger">
               ⚠️
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.new_alerts || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>New Alerts</p>
+              <p className="fraud-stat-value">{stats.total || 0}</p>
+              <p className="fraud-stat-label">Total Alerts</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#fef3c7',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+        <div className="fraud-stat-card">
+          <div className="fraud-stat-content">
+            <div className="fraud-stat-icon fraud-stat-icon--warning">
               🕐
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.investigating || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Investigating</p>
+              <p className="fraud-stat-value">{stats.unresolved || 0}</p>
+              <p className="fraud-stat-label">Unresolved</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#d1fae5',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+        <div className="fraud-stat-card">
+          <div className="fraud-stat-content">
+            <div className="fraud-stat-icon fraud-stat-icon--success">
               ✅
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.resolved || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Resolved</p>
+              <p className="fraud-stat-value">{(stats.total || 0) - (stats.unresolved || 0)}</p>
+              <p className="fraud-stat-label">Resolved</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#e9d5ff',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+        <div className="fraud-stat-card">
+          <div className="fraud-stat-content">
+            <div className="fraud-stat-icon fraud-stat-icon--info">
               👁️
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.critical_alerts || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Critical</p>
+              <p className="fraud-stat-value">{stats.critical_alerts || 0}</p>
+              <p className="fraud-stat-label">Critical</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '4px',
-        marginBottom: '24px',
-        background: '#f1f5f9',
-        borderRadius: '12px',
-        padding: '4px'
-      }}>
+      <div className="fraud-filter-tabs">
         {[
-          { value: 'all', label: `All (${stats.total_alerts || 0})` },
-          { value: 'new', label: `New (${stats.new_alerts || 0})` },
-          { value: 'investigating', label: `Investigating (${stats.investigating || 0})` },
-          { value: 'resolved', label: `Resolved (${stats.resolved || 0})` },
-          { value: 'escalated', label: `Escalated (${stats.escalated || 0})` }
+          { value: 'all', label: `All (${stats.total || 0})` },
+          { value: 'unresolved', label: `Unresolved (${stats.unresolved || 0})` },
+          { value: 'resolved', label: `Resolved (${(stats.total || 0) - (stats.unresolved || 0)})` }
         ].map((tab) => (
           <button
             key={tab.value}
             onClick={() => setFilterStatus(tab.value)}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              background: filterStatus === tab.value ? 'white' : 'transparent',
-              border: 'none',
-              borderRadius: '8px',
-              color: filterStatus === tab.value ? '#1e293b' : '#64748b',
-              fontWeight: filterStatus === tab.value ? '600' : '500',
-              cursor: 'pointer',
-              boxShadow: filterStatus === tab.value ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-            }}
+            className={`fraud-filter-tab ${filterStatus === tab.value ? 'fraud-filter-tab--active' : ''}`}
           >
             {tab.label}
           </button>
@@ -275,179 +181,68 @@ const FraudAlerts = () => {
       </div>
 
       {/* Alerts List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="fraud-alerts-list">
         {filteredAlerts.map((alert) => (
-          <div key={alert.id} style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e2e8f0',
-            transition: 'box-shadow 0.2s'
-          }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: 'white',
-                    background: getPriorityColor(alert.priority).replace('bg-', '').replace('-500', '')
-                  }}>
-                    {alert.priority.toUpperCase()}
+          <div key={alert.id} className="fraud-alert-card">
+            <div className="fraud-alert-header">
+              <div className="fraud-alert-info">
+                <div className="fraud-alert-badges">
+                  <span className={getSeverityBadgeClass(alert.severity || 'medium')}>
+                    {(alert.severity || 'medium').toUpperCase()}
                   </span>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    ...(() => {
-                      const colors = getStatusColor(alert.status).split(' ');
-                      return {
-                        background: colors[0].replace('bg-', ''),
-                        color: colors[1].replace('text-', '').replace('-800', '')
-                      };
-                    })()
-                  }}>
-                    {alert.status}
-                  </span>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>
-                    Score: {alert.fraud_score}
+                  <span className={`fraud-alert-badge ${alert.is_resolved ? 'fraud-alert-badge--resolved' : 'fraud-alert-badge--pending'}`}>
+                    {alert.is_resolved ? 'Resolved' : 'Pending'}
                   </span>
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#1e293b' }}>{alert.title}</h3>
-                <p style={{ color: '#64748b', marginBottom: '8px' }}>{alert.description}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#64748b' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    👤 {alert.transaction_details?.member_name || 'Unknown'}
+                <h3 className="fraud-alert-title">
+                  {alert.message.split('\n')[0]}
+                </h3>
+                <p className="fraud-alert-message">{alert.message}</p>
+                <div className="fraud-alert-meta">
+                  <span className="fraud-alert-meta-item">
+                    👤 User ID: {alert.user}
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    💰 ${alert.transaction_details?.amount || 0}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="fraud-alert-meta-item">
                     📅 {new Date(alert.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {alert.status === 'new' && (
-                  <button
-                    onClick={() => handleAssignToMe(alert.id)}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: 'white',
-                      color: '#374151',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Assign to Me
-                  </button>
-                )}
-
-                {alert.status === 'investigating' && (
+              <div className="fraud-alert-actions">
+                {!alert.is_resolved && (
                   <>
                     <button
-                      onClick={() => {
-                        const action = prompt('Action Taken (approved/blocked/investigated/false_positive):', actionTaken);
-                        if (action) {
-                          setActionTaken(action);
-                          const notes = prompt('Resolution Notes:', resolutionNotes);
-                          if (notes !== null) {
-                            setResolutionNotes(notes);
-                            handleResolve(alert.id);
-                          }
-                        }
-                      }}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        background: 'white',
-                        color: '#374151',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
+                      onClick={() => handleAssignToMe(alert.id)}
+                      className="fraud-btn fraud-btn--primary"
                     >
-                      Resolve
+                      Assign to Me
                     </button>
-
                     <button
-                      onClick={() => handleEscalate(alert.id, 'manager', 'Requires manager review')}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        background: 'white',
-                        color: '#374151',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
+                      onClick={() => handleResolve(alert.id)}
+                      className="fraud-btn fraud-btn--secondary"
                     >
-                      Escalate
+                      Mark as Resolved
                     </button>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Alert Details */}
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
-                fontSize: '14px'
-              }}>
-                <div><strong>Transaction ID:</strong> {alert.transaction_details?.id || 'N/A'}</div>
-                <div><strong>Account:</strong> {alert.account_details?.account_number || 'N/A'}</div>
-                <div><strong>Type:</strong> {alert.transaction_details?.type || 'N/A'}</div>
-                <div><strong>Amount:</strong> ${alert.transaction_details?.amount || 0}</div>
+            {/* Alert Details Simplified */}
+            <div className="fraud-alert-details">
+              <div className="fraud-alert-details-grid">
+                <div><strong>Alert ID:</strong> {alert.id}</div>
+                <div><strong>Resolution:</strong> {alert.is_resolved ? 'Resolved' : 'Pending Action'}</div>
+                {alert.resolved_at && <div><strong>Resolved At:</strong> {new Date(alert.resolved_at).toLocaleString()}</div>}
               </div>
-              {alert.rule_details && (
-                <div style={{ marginTop: '16px' }}>
-                  <strong>Triggered Rules:</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                    {alert.rule_details.map((rule, index) => (
-                      <span key={index} style={{
-                        padding: '2px 8px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        background: '#f9fafb'
-                      }}>
-                        {rule.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         ))}
 
         {filteredAlerts.length === 0 && (
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '48px',
-            textAlign: 'center',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e2e8f0'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#1e293b' }}>No alerts found</h3>
-            <p style={{ color: '#64748b' }}>
+          <div className="fraud-empty-state">
+            <div className="fraud-empty-icon">⚠️</div>
+            <h3 className="fraud-empty-title">No alerts found</h3>
+            <p className="fraud-empty-message">
               {filterStatus === 'all'
                 ? 'There are currently no fraud alerts to review.'
                 : `No ${filterStatus} alerts found.`

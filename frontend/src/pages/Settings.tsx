@@ -1,11 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api';
+import { authService, SystemSettingData, ApiUsageData, RateLimitData, HealthCheckData } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/ui/modern/GlassCard';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import DashboardLayout from '../components/layout/DashboardLayout';
+
+// Extended interfaces to match backend response structure
+interface SystemSetting extends SystemSettingData {
+  setting_type?: string;
+}
+
+interface ApiUsage extends ApiUsageData {
+  request_count?: number;
+  endpoint: string;
+}
+
+interface RateLimit extends RateLimitData {
+  name?: string;
+  description?: string;
+  requests_per_hour?: number;
+}
+
+interface HealthCheck extends HealthCheckData {
+  name?: string;
+  last_check?: string;
+}
 
 function Settings() {
   const { user, logout } = useAuth();
@@ -15,11 +35,10 @@ function Settings() {
   const [loading, setLoading] = useState(true);
 
   // Settings data state
-  const [userSettings, setUserSettings] = useState<any[]>([]);
-  const [systemSettings, setSystemSettings] = useState<any[]>([]);
-  const [apiUsage, setApiUsage] = useState<any[]>([]);
-  const [rateLimits, setRateLimits] = useState<any[]>([]);
-  const [healthChecks, setHealthChecks] = useState<any[]>([]);
+  const [systemSettings, setSystemSettings] = useState<SystemSetting[]>([]);
+  const [apiUsage, setApiUsage] = useState<ApiUsage[]>([]);
+  const [rateLimits, setRateLimits] = useState<RateLimit[]>([]);
+  const [healthChecks, setHealthChecks] = useState<HealthCheck[]>([]);
 
   // Form states
   const [userSettingsForm, setUserSettingsForm] = useState({
@@ -63,16 +82,15 @@ function Settings() {
 
   const fetchUserSettings = async () => {
     const result = await authService.getUserSettings();
-    if (result.success) {
-      setUserSettings(result.data);
+    if (result.success && result.data) {
       // Update form with current settings
       if (result.data.length > 0) {
         const settings = result.data[0]; // Assuming first settings object
         setUserSettingsForm({
           theme: settings.theme || 'light',
           language: settings.language || 'en',
-          notifications: settings.notifications || true,
-          email_updates: settings.email_updates || false
+          notifications: settings.notifications ?? true,
+          email_updates: settings.email_updates ?? false
         });
       }
     }
@@ -80,28 +98,28 @@ function Settings() {
 
   const fetchSystemSettings = async () => {
     const result = await authService.getSystemSettings();
-    if (result.success) {
+    if (result.success && result.data) {
       setSystemSettings(result.data);
     }
   };
 
   const fetchApiUsage = async () => {
     const result = await authService.getApiUsage();
-    if (result.success) {
+    if (result.success && result.data) {
       setApiUsage(result.data);
     }
   };
 
   const fetchRateLimits = async () => {
     const result = await authService.getRateLimits();
-    if (result.success) {
+    if (result.success && result.data) {
       setRateLimits(result.data);
     }
   };
 
   const fetchHealthChecks = async () => {
     const result = await authService.getHealthChecks();
-    if (result.success) {
+    if (result.success && result.data) {
       setHealthChecks(result.data);
     }
   };
@@ -147,9 +165,10 @@ function Settings() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Theme</label>
+                <label htmlFor="theme-select" className="block text-sm font-bold text-gray-700 mb-2 ml-1">Theme</label>
                 <div className="relative">
                   <select
+                    id="theme-select"
                     value={userSettingsForm.theme}
                     onChange={(e) => setUserSettingsForm({ ...userSettingsForm, theme: e.target.value })}
                     className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all appearance-none font-medium text-gray-700"
@@ -163,9 +182,10 @@ function Settings() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Language</label>
+                <label htmlFor="language-select" className="block text-sm font-bold text-gray-700 mb-2 ml-1">Language</label>
                 <div className="relative">
                   <select
+                    id="language-select"
                     value={userSettingsForm.language}
                     onChange={(e) => setUserSettingsForm({ ...userSettingsForm, language: e.target.value })}
                     className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all appearance-none font-medium text-gray-700"
@@ -223,7 +243,7 @@ function Settings() {
           <GlassCard className="p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-6">System Configuration</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.isArray(systemSettings) && systemSettings.map((setting: any, index: number) => (
+              {Array.isArray(systemSettings) && systemSettings.map((setting, index) => (
                 <div key={index} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
@@ -246,7 +266,7 @@ function Settings() {
           <GlassCard className="p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-6">API Usage Statistics</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.isArray(apiUsage) && apiUsage.map((usage: any, index: number) => (
+              {Array.isArray(apiUsage) && apiUsage.map((usage, index) => (
                 <div key={index} className="p-6 rounded-2xl bg-white border border-gray-100 text-center relative overflow-hidden group">
                   {/* Background decoration */}
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
@@ -273,7 +293,7 @@ function Settings() {
           <GlassCard className="p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-6">Rate Limiting</h3>
             <div className="space-y-4">
-              {Array.isArray(rateLimits) && rateLimits.map((limit: any, index: number) => (
+              {Array.isArray(rateLimits) && rateLimits.map((limit, index) => (
                 <div key={index} className="flex flex-col md:flex-row justify-between items-center p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                   <div className="mb-4 md:mb-0 text-center md:text-left">
                     <h4 className="font-bold text-gray-800 text-lg mb-1">{limit.name}</h4>
@@ -300,7 +320,7 @@ function Settings() {
           <GlassCard className="p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-6">System Health</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.isArray(healthChecks) && healthChecks.map((check: any, index: number) => (
+              {Array.isArray(healthChecks) && healthChecks.map((check, index) => (
                 <div key={index} className={`
                     p-6 rounded-2xl border relative overflow-hidden
                     ${check.status === 'healthy' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}

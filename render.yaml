@@ -95,4 +95,4 @@ databases:
     databaseName: coastal_banking
     user: coastal_user
     region: frankfurt
-    postgresMajorVersion: "16"
+    postgresMajorVersion: "18"

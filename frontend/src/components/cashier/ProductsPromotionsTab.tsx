@@ -29,6 +29,20 @@ interface Promotion {
   is_active: boolean;
 }
 
+interface ProductsResponse {
+  results?: Product[];
+  data?: Product[];
+}
+
+interface PromotionsResponse {
+  results?: Promotion[];
+  data?: Promotion[];
+}
+
+interface EnrollmentResponse {
+  message?: string;
+}
+
 const ProductsPromotionsTab: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -47,7 +61,7 @@ const ProductsPromotionsTab: React.FC = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await api.get('products/products/');
+      const response = await api.get<ProductsResponse>('products/products/');
       const data = response.data?.results || response.data || [];
       setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -61,9 +75,9 @@ const ProductsPromotionsTab: React.FC = () => {
 
   const fetchPromotions = async () => {
     try {
-      const response = await api.get('products/promotions/');
+      const response = await api.get<PromotionsResponse>('products/promotions/');
       const data = response.data?.results || response.data || [];
-      const activePromos = (Array.isArray(data) ? data : []).filter((p: any) => p.is_active);
+      const activePromos = (Array.isArray(data) ? data : []).filter((p: Promotion) => p.is_active);
       setPromotions(activePromos);
     } catch (error) {
       console.error('Error fetching promotions:', error);
@@ -79,7 +93,7 @@ const ProductsPromotionsTab: React.FC = () => {
 
     try {
       setEnrollmentLoading(true);
-      await api.post('banking/account-openings/', {
+      await api.post<EnrollmentResponse>('banking/account-openings/', {
         user_id: selectedCustomer,
         product_id: selectedProduct,
         promotion_id: selectedPromotion || null,
@@ -90,9 +104,12 @@ const ProductsPromotionsTab: React.FC = () => {
       setSelectedCustomer('');
       setSelectedProduct('');
       setSelectedPromotion('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error enrolling product:', error);
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to enroll product/service' });
+      const errorMessage = error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined;
+      setMessage({ type: 'error', text: errorMessage || 'Failed to enroll product/service' });
     } finally {
       setEnrollmentLoading(false);
     }
@@ -131,10 +148,11 @@ const ProductsPromotionsTab: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+            <label htmlFor="product-select" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
               Select Product
             </label>
             <select
+              id="product-select"
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
@@ -148,10 +166,11 @@ const ProductsPromotionsTab: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+            <label htmlFor="promotion-select" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
               Promotion (Optional)
             </label>
             <select
+              id="promotion-select"
               value={selectedPromotion}
               onChange={(e) => setSelectedPromotion(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"

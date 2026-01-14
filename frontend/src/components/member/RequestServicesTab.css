@@ -1,0 +1,186 @@
+.request-services-container {
+    padding: 0;
+}
+
+.request-services-header {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 24px;
+}
+
+.message-box {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.message-box.success {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.message-box.error {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.tabs-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.tab-button.active {
+    background: #1e40af;
+    color: white;
+}
+
+.form-card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.form-card-description {
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.request-service-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    outline: none;
+}
+
+.request-service-input:focus {
+    border-color: #1e40af;
+    box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.1);
+}
+
+.request-service-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.date-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.request-service-button {
+    background: #1e40af;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.request-service-button:hover {
+    background: #1e3a8a;
+}
+
+.request-service-button:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
+
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.requests-table th {
+    background: #f8fafc;
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.requests-table td {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 12px 16px;
+}
+
+.requests-table .type-cell {
+    font-weight: 600;
+}
+
+.requests-table .meta-cell {
+    color: #64748b;
+}
+
+.requests-table .empty-state {
+    padding: 40px;
+    text-align: center;
+    color: #64748b;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-badge.pending {
+    background: #fef9c3;
+    color: #ca8a04;
+}
+
+.status-badge.processing {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status-badge.completed {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.status-badge.rejected {
+    background: #fee2e2;
+    color: #dc2626;
+}

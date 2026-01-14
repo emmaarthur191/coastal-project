@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { Device } from './Device';
 export type PaginatedDeviceList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<Device>;
+    results: Array<Device>;
 };
-

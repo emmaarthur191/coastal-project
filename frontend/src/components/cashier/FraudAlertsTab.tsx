@@ -49,7 +49,7 @@ const FraudAlertsTab: React.FC = () => {
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const response = await api.get('fraud/alerts/');
+      const response = await api.get<any>('fraud/alerts/');
       const data = response.data?.results || response.data || [];
       setAlerts(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -62,7 +62,7 @@ const FraudAlertsTab: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('fraud/alerts/dashboard_stats/');
+      const response = await api.get<any>('fraud/alerts/dashboard-stats/');
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching fraud stats:', error);
@@ -75,7 +75,7 @@ const FraudAlertsTab: React.FC = () => {
 
     setProcessing(true);
     try {
-      await api.patch(`fraud/alerts/${selectedAlert.id}/`, {
+      await api.patch<any>(`fraud/alerts/${selectedAlert.id}/`, {
         is_resolved: true,
         resolution_notes: resolutionNotes
       });
@@ -179,33 +179,35 @@ const FraudAlertsTab: React.FC = () => {
 
       {/* Filters */}
       <GlassCard className="p-4 flex flex-col md:flex-row gap-4 items-end">
-        <div className="w-full md:w-48">
-          <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Severity</label>
-          <select
-            value={filterSeverity}
-            onChange={(e) => setFilterSeverity(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 text-sm"
-          >
-            <option value="">All Severities</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
+        <Input
+          as="select"
+          label="Severity"
+          id="filter-severity"
+          title="Filter alerts by severity"
+          value={filterSeverity}
+          onChange={(e) => setFilterSeverity(e.target.value)}
+          className="md:w-48"
+        >
+          <option value="">All Severities</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </Input>
 
-        <div className="w-full md:w-48">
-          <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Status</label>
-          <select
-            value={filterResolved}
-            onChange={(e) => setFilterResolved(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50 text-sm"
-          >
-            <option value="">All</option>
-            <option value="false">Unresolved</option>
-            <option value="true">Resolved</option>
-          </select>
-        </div>
+        <Input
+          as="select"
+          label="Status"
+          id="filter-status"
+          title="Filter alerts by resolution status"
+          value={filterResolved}
+          onChange={(e) => setFilterResolved(e.target.value)}
+          className="md:w-48"
+        >
+          <option value="">All</option>
+          <option value="false">Unresolved</option>
+          <option value="true">Resolved</option>
+        </Input>
 
         <Button
           variant="ghost"
@@ -299,19 +301,17 @@ const FraudAlertsTab: React.FC = () => {
               </p>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">
-                Resolution Notes
-              </label>
-              <textarea
-                value={resolutionNotes}
-                onChange={(e) => setResolutionNotes(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                rows={4}
-                placeholder="Describe the investigation outcome and actions taken..."
-                autoFocus
-              />
-            </div>
+            <Input
+              as="textarea"
+              label="Resolution Notes"
+              id="resolution-notes"
+              title="Enter notes about how the fraud alert was resolved"
+              value={resolutionNotes}
+              onChange={(e) => setResolutionNotes(e.target.value)}
+              rows={4}
+              placeholder="Describe the investigation outcome and actions taken..."
+              autoFocus
+            />
 
             <div className="flex gap-3 justify-end">
               <Button

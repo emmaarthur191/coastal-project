@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 
@@ -39,12 +39,11 @@ function ClientRegistrationPage() {
     registrationId: null
   });
 
-  const [formErrors, setFormErrors] = useState({});
-  const [validationWarnings, setValidationWarnings] = useState({});
+  const [formErrors, setFormErrors] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Form, 2: OTP, 3: Success
   const [successMessage, setSuccessMessage] = useState('');
-  const [filePreviews, setFilePreviews] = useState({});
+  const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
 
   // Refs for accessibility
   const formRef = useRef(null);
@@ -52,58 +51,66 @@ function ClientRegistrationPage() {
   const navigate = useNavigate();
 
   // Validation rules
-  const validateField = useCallback((name, value, allData = formData) => {
+  const validateField = useCallback((name, value, _allData = formData) => {
     switch (name) {
       case 'firstName':
-      case 'lastName':
+      case 'lastName': {
         if (!value) return `${name === 'firstName' ? 'First' : 'Last'} name is required`;
         if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name must contain only letters and spaces';
         if (value.length < 2) return 'Name must be at least 2 characters';
         if (value.length > 100) return 'Name must be less than 100 characters';
         return null;
+      }
 
-      case 'dateOfBirth':
+      case 'dateOfBirth': {
         if (!value) return 'Date of birth is required';
         const birthDate = new Date(value);
         const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear() -
-          (today.getMonth() < birthDate.getMonth() ||
-            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()));
+        const ageDiff = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        const dayDiff = today.getDate() - birthDate.getDate();
+        const age = ageDiff - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
         if (age < 18) return 'You must be at least 18 years old';
         if (age > 120) return 'Please enter a valid date of birth';
         return null;
+      }
 
-      case 'phoneNumber':
+      case 'phoneNumber': {
         if (!value) return 'Phone number is required';
         // International format validation (basic)
         if (!/^\+?[1-9]\d{1,14}$/.test(value.replace(/\s/g, ''))) {
           return 'Please enter a valid international phone number';
         }
         return null;
+      }
 
-      case 'email':
+      case 'email': {
         if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           return 'Please enter a valid email address';
         }
         return null;
+      }
 
-      case 'idType':
+      case 'idType': {
         if (!value) return 'ID type is required';
         return null;
+      }
 
-      case 'idNumber':
+      case 'idNumber': {
         if (!value) return 'ID number is required';
         if (value.length < 5) return 'ID number must be at least 5 characters';
         return null;
+      }
 
       case 'occupation':
       case 'workAddress':
-      case 'position':
+      case 'position': {
         if (!value) return `${name.replace(/([A-Z])/g, ' $1').toLowerCase()} is required`;
         if (value.length < 2) return 'Must be at least 2 characters';
         return null;
+      }
 
-      case 'nextOfKin':
+      case 'nextOfKin': {
         const errors = [];
         value.forEach((kin, index) => {
           if (!kin.name && !kin.relationship && !kin.address && !kin.stakePercentage) {
@@ -133,22 +140,26 @@ function ClientRegistrationPage() {
         }
 
         return errors.length > 0 ? errors : null;
+      }
 
-      case 'passportPicture':
+      case 'passportPicture': {
         if (!value) return 'Passport picture is required';
         if (value.size > 5 * 1024 * 1024) return 'File size must be less than 5MB';
         if (!['image/jpeg', 'image/jpg', 'image/png'].includes(value.type)) {
           return 'File must be a JPG or PNG image';
         }
         return null;
+      }
 
-      case 'otpCode':
+      case 'otpCode': {
         if (!value) return 'OTP code is required';
         if (!/^\d{6}$/.test(value)) return 'OTP must be 6 digits';
         return null;
+      }
 
-      default:
+      default: {
         return null;
+      }
     }
   }, [formData]);
 
@@ -269,12 +280,12 @@ function ClientRegistrationPage() {
         }
       });
 
-      const result = await apiService.submitClientRegistration(submitData);
+      const result = await apiService.registerClient(submitData);
 
       if (result.success) {
         setFormData(prev => ({
           ...prev,
-          registrationId: result.data.id
+          registrationId: result.data && typeof result.data === 'object' && 'id' in result.data ? result.data.id : null
         }));
 
         setCurrentStep(2); // Move to OTP step
@@ -376,8 +387,8 @@ function ClientRegistrationPage() {
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-200 text-neutral-600'
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-neutral-200 text-neutral-600'
                   }`}>
                   {step}
                 </div>
@@ -408,7 +419,7 @@ function ClientRegistrationPage() {
                 <ul className="list-disc list-inside text-sm text-error-700 space-y-1">
                   {Object.entries(formErrors).map(([field, error]) => (
                     <li key={field}>
-                      {Array.isArray(error) ? error.join(', ') : error}
+                      {Array.isArray(error) ? error.join(', ') : String(error)}
                     </li>
                   ))}
                 </ul>
@@ -420,12 +431,14 @@ function ClientRegistrationPage() {
               <h2 className="text-xl font-semibold text-neutral-900 mb-4">Personal Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-neutral-700 mb-2">
                     First Name <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
+                    id="firstName"
                     name="firstName"
+                    title="First Name"
                     value={formData.firstName}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('firstName')}
@@ -434,12 +447,14 @@ function ClientRegistrationPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-neutral-700 mb-2">
                     Last Name <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
+                    id="lastName"
                     name="lastName"
+                    title="Last Name"
                     value={formData.lastName}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('lastName')}
@@ -448,12 +463,14 @@ function ClientRegistrationPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-neutral-700 mb-2">
                     Date of Birth <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="date"
+                    id="dateOfBirth"
                     name="dateOfBirth"
+                    title="Date of Birth"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('dateOfBirth')}
@@ -462,12 +479,14 @@ function ClientRegistrationPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-neutral-700 mb-2">
                     Phone Number <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="tel"
+                    id="phoneNumber"
                     name="phoneNumber"
+                    title="Phone Number"
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('phoneNumber')}
@@ -477,15 +496,18 @@ function ClientRegistrationPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
                     Email Address
                   </label>
                   <input
                     type="email"
+                    id="email"
                     name="email"
+                    title="Email Address"
                     value={formData.email}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('email')}
+                    placeholder="john.doe@example.com"
                     className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
                   />
                 </div>
@@ -497,11 +519,13 @@ function ClientRegistrationPage() {
               <h2 className="text-xl font-semibold text-neutral-900 mb-4">Identification</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="idType" className="block text-sm font-medium text-neutral-700 mb-2">
                     ID Type <span className="text-error-500">*</span>
                   </label>
                   <select
+                    id="idType"
                     name="idType"
+                    title="ID Type"
                     value={formData.idType}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('idType')}
@@ -515,11 +539,12 @@ function ClientRegistrationPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="idNumber" className="block text-sm font-medium text-neutral-700 mb-2">
                     ID Number <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
+                    id="idNumber"
                     name="idNumber"
                     value={formData.idNumber}
                     onChange={handleInputChange}
@@ -536,12 +561,14 @@ function ClientRegistrationPage() {
               <h2 className="text-xl font-semibold text-neutral-900 mb-4">Employment Information</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="occupation" className="block text-sm font-medium text-neutral-700 mb-2">
                     Occupation <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
+                    id="occupation"
                     name="occupation"
+                    title="Occupation"
                     value={formData.occupation}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('occupation')}
@@ -550,11 +577,13 @@ function ClientRegistrationPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="workAddress" className="block text-sm font-medium text-neutral-700 mb-2">
                     Work Address <span className="text-error-500">*</span>
                   </label>
                   <textarea
+                    id="workAddress"
                     name="workAddress"
+                    title="Work Address"
                     value={formData.workAddress}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('workAddress')}
@@ -564,12 +593,14 @@ function ClientRegistrationPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="position" className="block text-sm font-medium text-neutral-700 mb-2">
                     Position <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
+                    id="position"
                     name="position"
+                    title="Position"
                     value={formData.position}
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('position')}
@@ -612,21 +643,25 @@ function ClientRegistrationPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      <label htmlFor={`nextOfKin-name-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
                         Name <span className="text-error-500">*</span>
                       </label>
                       <input
                         type="text"
+                        id={`nextOfKin-name-${index}`}
+                        title={`Next of Kin ${index + 1} Name`}
                         value={kin.name}
                         onChange={(e) => handleNextOfKinChange(index, 'name', e.target.value)}
                         className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      <label htmlFor={`nextOfKin-relationship-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
                         Relationship <span className="text-error-500">*</span>
                       </label>
                       <select
+                        id={`nextOfKin-relationship-${index}`}
+                        title={`Next of Kin ${index + 1} Relationship`}
                         value={kin.relationship}
                         onChange={(e) => handleNextOfKinChange(index, 'relationship', e.target.value)}
                         className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
@@ -641,10 +676,12 @@ function ClientRegistrationPage() {
                       </select>
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      <label htmlFor={`nextOfKin-address-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
                         Address <span className="text-error-500">*</span>
                       </label>
                       <textarea
+                        id={`nextOfKin-address-${index}`}
+                        title={`Next of Kin ${index + 1} Address`}
                         value={kin.address}
                         onChange={(e) => handleNextOfKinChange(index, 'address', e.target.value)}
                         rows={2}
@@ -652,11 +689,13 @@ function ClientRegistrationPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      <label htmlFor={`nextOfKin-stake-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
                         Stake Percentage <span className="text-error-500">*</span>
                       </label>
                       <input
                         type="number"
+                        id={`nextOfKin-stake-${index}`}
+                        title={`Next of Kin ${index + 1} Stake Percentage`}
                         min="0"
                         max="100"
                         step="0.01"
@@ -675,12 +714,14 @@ function ClientRegistrationPage() {
               <h2 className="text-xl font-semibold text-neutral-900 mb-4">Document Upload</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="passportPicture" className="block text-sm font-medium text-neutral-700 mb-2">
                     Passport Picture <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="file"
+                    id="passportPicture"
                     name="passportPicture"
+                    title="Passport Picture"
                     accept="image/jpeg,image/jpg,image/png"
                     onChange={handleInputChange}
                     onFocus={() => clearFieldError('passportPicture')}
@@ -741,7 +782,7 @@ function ClientRegistrationPage() {
                   maxLength={6}
                 />
                 {formErrors.otp && (
-                  <p className="text-sm text-error-600 mt-1">{formErrors.otp}</p>
+                  <p className="text-sm text-error-600 mt-1">{formErrors.otp && String(formErrors.otp)}</p>
                 )}
               </div>
 

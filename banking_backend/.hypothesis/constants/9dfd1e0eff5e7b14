@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\migrations\0004_add_account_opening_request.py
-# hypothesis_version: 6.148.7
-
-[100, 254, '-created_at', 'Approved', 'Completed', 'Daily Susu', 'Gold Card', 'ID', 'Monthly Contribution', 'No Card Required', 'Pending Review', 'Platinum Card', 'Rejected', 'Shares', 'Standard Card', 'account_type', 'address', 'approved', 'approved_at', 'card_type', 'completed', 'core', 'core.account', 'created_account', 'created_at', 'daily_susu', 'date_of_birth', 'email', 'first_name', 'gold', 'id', 'last_name', 'monthly_contribution', 'nationality', 'none', 'notes', 'opening_request', 'ordering', 'pending', 'phone_number', 'photo', 'platinum', 'processed_by', 'rejected', 'rejection_reason', 'shares', 'standard', 'status', 'submitted_by', 'updated_at', 'verbose_name', 'verbose_name_plural']

@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\migrations\0003_update_account_types.py
-# hypothesis_version: 6.148.7
-
-['Daily Susu', 'Monthly Contribution', 'Shares', 'account', 'account_type', 'core', 'daily_susu', 'monthly_contribution', 'shares']

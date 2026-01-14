@@ -1,0 +1,305 @@
+.loan-approvals-container {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.loan-approvals-header {
+    margin: 0 0 24px 0;
+    color: #1e293b;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.controls-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-select-wrapper {
+    min-width: 150px;
+}
+
+.filter-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    outline: none;
+}
+
+.filter-select:focus {
+    border-color: #3b82f6;
+}
+
+.loans-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.loan-card {
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.loan-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.loan-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.borrower-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 16px;
+}
+
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.loan-purpose {
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.loan-amount {
+    color: #059669;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.loan-date {
+    color: #6b7280;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-approve {
+    background: #10b981;
+    color: white;
+}
+
+.btn-approve:hover {
+    background: #059669;
+}
+
+.btn-reject {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-reject:hover {
+    background: #dc2626;
+}
+
+.btn-cancel {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.empty-state {
+    padding: 40px;
+    text-align: center;
+    color: #64748b;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.empty-desc {
+    font-size: 14px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    animation: modalAppear 0.3s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-title {
+    margin: 0 0 16px 0;
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-body {
+    margin: 0 0 16px 0;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    min-height: 80px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+}
+
+.form-textarea:focus {
+    border-color: #3b82f6;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: #64748b;
+    font-weight: 500;
+}

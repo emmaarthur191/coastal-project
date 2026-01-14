@@ -163,6 +163,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Account'
           description: ''
+  /api/accounts/balance/:
+    get:
+      operationId: api_accounts_balance_retrieve
+      description: |-
+        GET /api/accounts/balance/
+
+        Returns account balance summary for the currently logged-in user.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/manager/overview/:
+    get:
+      operationId: api_accounts_manager_overview_retrieve
+      description: |-
+        GET /api/accounts/manager/overview/
+
+        Returns manager dashboard overview metrics.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/summary/:
+    get:
+      operationId: api_accounts_summary_retrieve
+      description: Get summary statistics for all accounts.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
   /api/audit/dashboard/:
     get:
       operationId: api_audit_dashboard_retrieve
@@ -440,8 +483,43 @@ paths:
   /api/banking/account-openings/{id}/approve/:
     post:
       operationId: api_banking_account_openings_approve_create
-      description: Approve an account opening request.
+      description: 'Stage 1: Approve an account opening request and create client
+        account.'
       summary: Approve an account opening request
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Account Opening Request.
+        required: true
+      tags:
+      - Account Openings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountOpeningRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountOpeningRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountOpeningRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountOpeningRequest'
+          description: ''
+  /api/banking/account-openings/{id}/dispatch-credentials/:
+    post:
+      operationId: api_banking_account_openings_dispatch_credentials_create
+      description: 'Stage 2: Approve and dispatch login credentials to the client.'
       parameters:
       - in: path
         name: id
@@ -507,7 +585,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AccountOpeningRequest'
           description: ''
-  /api/banking/account-openings/send_otp/:
+  /api/banking/account-openings/send-otp/:
     post:
       operationId: api_banking_account_openings_send_otp_create
       description: Send OTP to customer phone number for account opening verification.
@@ -534,7 +612,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AccountOpeningRequest'
           description: ''
-  /api/banking/account-openings/verify_and_submit/:
+  /api/banking/account-openings/verify-and-submit/:
     post:
       operationId: api_banking_account_openings_verify_and_submit_create
       description: Verify OTP and submit account opening request.
@@ -876,7 +954,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CashDrawer'
           description: ''
-  /api/banking/client-registrations/submit_registration/:
+  /api/banking/client-registrations/submit-registration/:
     post:
       operationId: api_banking_client_registrations_submit_registration_create
       description: Handle client registration form submission.
@@ -1173,7 +1251,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Device'
           description: ''
-  /api/banking/devices/sync_data/:
+  /api/banking/devices/sync-data/:
     post:
       operationId: api_banking_devices_sync_data_create
       description: Sync endpoint to check connection status.
@@ -1601,7 +1679,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageThread'
           description: ''
-  /api/banking/message-threads/{id}/mark_as_read/:
+  /api/banking/message-threads/{id}/mark-as-read/:
     post:
       operationId: api_banking_message_threads_mark_as_read_create
       description: Mark all messages in thread as read by current user.
@@ -1634,7 +1712,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageThread'
           description: ''
-  /api/banking/message-threads/{id}/send_message/:
+  /api/banking/message-threads/{id}/send-message/:
     post:
       operationId: api_banking_message_threads_send_message_create
       description: Send a message to a thread.
@@ -1736,7 +1814,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Message'
           description: ''
-  /api/banking/messages/{id}/add_reaction/:
+  /api/banking/messages/{id}/add-reaction/:
     post:
       operationId: api_banking_messages_add_reaction_create
       description: Add an emoji reaction to a message.
@@ -1769,7 +1847,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Message'
           description: ''
-  /api/banking/messages/{id}/remove_reaction/:
+  /api/banking/messages/{id}/remove-reaction/:
     post:
       operationId: api_banking_messages_remove_reaction_create
       description: Remove a previously added emoji reaction from a message.
@@ -1802,7 +1880,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Message'
           description: ''
-  /api/banking/messages/upload_media/:
+  /api/banking/messages/upload-media/:
     post:
       operationId: api_banking_messages_upload_media_create
       description: Placeholder for media upload.
@@ -2260,28 +2338,61 @@ paths:
           description: No response body
   /api/check-deposits/:
     get:
-      operationId: api_check_deposits_retrieve
+      operationId: api_check_deposits_list
       description: ViewSet for managing check deposits.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
       - api
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCheckDepositList'
+          description: ''
     post:
       operationId: api_check_deposits_create
       description: ViewSet for managing check deposits.
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+        required: true
       security:
       - jwtAuth: []
       responses:
         '201':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDeposit'
+          description: ''
   /api/check-deposits/{id}/:
     get:
-      operationId: api_check_deposits_retrieve_2
+      operationId: api_check_deposits_retrieve
       description: ViewSet for managing check deposits.
       parameters:
       - in: path
@@ -2295,7 +2406,11 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDeposit'
+          description: ''
   /api/check-deposits/{id}/approve/:
     post:
       operationId: api_check_deposits_approve_create
@@ -2308,11 +2423,27 @@ paths:
         required: true
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+        required: true
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDeposit'
+          description: ''
   /api/check-deposits/{id}/reject/:
     post:
       operationId: api_check_deposits_reject_create
@@ -2325,22 +2456,54 @@ paths:
         required: true
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+        required: true
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
-  /api/check-deposits/process_check_deposit/:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDeposit'
+          description: ''
+  /api/check-deposits/process-check-deposit/:
     post:
       operationId: api_check_deposits_process_check_deposit_create
       description: Process a check deposit from the cashier dashboard.
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckDeposit'
+        required: true
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDeposit'
+          description: ''
   /api/fraud-alerts/:
     get:
       operationId: api_fraud_alerts_list
@@ -2495,7 +2658,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/FraudAlert'
           description: ''
-  /api/fraud-alerts/dashboard_stats/:
+  /api/fraud-alerts/dashboard-stats/:
     get:
       operationId: api_fraud_alerts_dashboard_stats_retrieve
       description: Get fraud alert statistics for dashboard.
@@ -2664,7 +2827,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/FraudAlert'
           description: ''
-  /api/fraud/alerts/dashboard_stats/:
+  /api/fraud/alerts/dashboard-stats/:
     get:
       operationId: api_fraud_alerts_dashboard_stats_retrieve_2
       description: Get fraud alert statistics for dashboard.
@@ -3208,7 +3371,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClientAssignment'
           description: ''
-  /api/operations/assignments/{id}/update_status/:
+  /api/operations/assignments/{id}/update-status/:
     post:
       operationId: api_operations_assignments_update_status_create
       description: Update the status of a specific client assignment.
@@ -3241,7 +3404,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClientAssignment'
           description: ''
-  /api/operations/assignments/my_clients/:
+  /api/operations/assignments/my-clients/:
     get:
       operationId: api_operations_assignments_my_clients_retrieve
       description: Get all clients assigned to the current mobile banker.
@@ -3419,18 +3582,35 @@ paths:
           description: No response body
   /api/operations/payslips/:
     get:
-      operationId: api_operations_payslips_retrieve
+      operationId: api_operations_payslips_list
       description: ViewSet for managing staff payslips with PDF generation.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
       - api
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPayslipList'
+          description: ''
   /api/operations/payslips/{id}/:
     get:
-      operationId: api_operations_payslips_retrieve_2
+      operationId: api_operations_payslips_retrieve
       description: ViewSet for managing staff payslips with PDF generation.
       parameters:
       - in: path
@@ -3444,7 +3624,11 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payslip'
+          description: ''
   /api/operations/payslips/{id}/download/:
     get:
       operationId: api_operations_payslips_download_retrieve
@@ -3461,8 +3645,12 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
-  /api/operations/payslips/{id}/mark_paid/:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payslip'
+          description: ''
+  /api/operations/payslips/{id}/mark-paid/:
     post:
       operationId: api_operations_payslips_mark_paid_create
       description: Mark payslip as paid.
@@ -3474,11 +3662,27 @@ paths:
         required: true
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payslip'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Payslip'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Payslip'
+        required: true
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payslip'
+          description: ''
   /api/operations/payslips/my_payslips/:
     get:
       operationId: api_operations_payslips_my_payslips_retrieve
@@ -3489,8 +3693,12 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
-  /api/operations/process_deposit/:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payslip'
+          description: ''
+  /api/operations/process-deposit/:
     post:
       operationId: api_operations_process_deposit_create
       description: Process a deposit from mobile banker (permission check handled
@@ -3502,7 +3710,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/operations/process_withdrawal/:
+  /api/operations/process-withdrawal/:
     post:
       operationId: api_operations_process_withdrawal_create
       description: Process a withdrawal from mobile banker (permission check handled
@@ -3514,7 +3722,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/operations/schedule_visit/:
+  /api/operations/schedule-visit/:
     post:
       operationId: api_operations_schedule_visit_create
       description: Create a new visit schedule for a client (RPC-style action).
@@ -3548,18 +3756,35 @@ paths:
           description: No response body
   /api/operations/statements/:
     get:
-      operationId: api_operations_statements_retrieve
+      operationId: api_operations_statements_list
       description: ViewSet for auto-generated account statements.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
       - api
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAccountStatementList'
+          description: ''
   /api/operations/statements/{id}/:
     get:
-      operationId: api_operations_statements_retrieve_2
+      operationId: api_operations_statements_retrieve
       description: ViewSet for auto-generated account statements.
       parameters:
       - in: path
@@ -3573,7 +3798,11 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatement'
+          description: ''
   /api/operations/statements/{id}/download/:
     get:
       operationId: api_operations_statements_download_retrieve
@@ -3590,18 +3819,38 @@ paths:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
-  /api/operations/statements/request_statement/:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatement'
+          description: ''
+  /api/operations/statements/request-statement/:
     post:
       operationId: api_operations_statements_request_statement_create
       description: Request a new statement.
       tags:
       - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountStatement'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountStatement'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountStatement'
+        required: true
       security:
       - jwtAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatement'
+          description: ''
   /api/operations/system-alerts/:
     get:
       operationId: api_operations_system_alerts_retrieve
@@ -3614,7 +3863,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/operations/visit_schedules/:
+  /api/operations/visit-schedules/:
     get:
       operationId: api_operations_visit_schedules_list
       description: ViewSet for mobile banker visit schedules.
@@ -3674,11 +3923,33 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/performance/alerts/:
+    get:
+      operationId: api_performance_alerts_retrieve
+      description: Return recent system performance alerts.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/performance/chart/:
+    get:
+      operationId: api_performance_chart_retrieve
+      description: Return labels and datasets for performance charts.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/performance/dashboard-data/:
     get:
       operationId: api_performance_dashboard_data_retrieve
       description: Return system-level performance health and resource utilization
-        metrics (Stub).
+        metrics.
       tags:
       - api
       security:
@@ -3689,7 +3960,18 @@ paths:
   /api/performance/metrics/:
     get:
       operationId: api_performance_metrics_retrieve
-      description: Return detailed performance metrics over time (Stub).
+      description: Return detailed performance metrics over time.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/performance/recommendations/:
+    get:
+      operationId: api_performance_recommendations_retrieve
+      description: Return system recommendations based on performance analytics.
       tags:
       - api
       security:
@@ -3707,6 +3989,17 @@ paths:
       security:
       - jwtAuth: []
       - {}
+      responses:
+        '200':
+          description: No response body
+  /api/performance/volume/:
+    get:
+      operationId: api_performance_volume_retrieve
+      description: Return transaction volume aggregated by period.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
       responses:
         '200':
           description: No response body
@@ -4457,7 +4750,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReportSchedule'
           description: ''
-  /api/reports/schedules/{id}/toggle_active/:
+  /api/reports/schedules/{id}/toggle-active/:
     post:
       operationId: api_reports_schedules_toggle_active_create
       description: Toggle schedule active state.
@@ -4780,7 +5073,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
           description: ''
-  /api/services/requests/{id}/approve_checkbook/:
+  /api/services/requests/{id}/approve-checkbook/:
     post:
       operationId: api_services_requests_approve_checkbook_create
       description: Approve or reject a checkbook request (Operations Manager only).
@@ -4848,7 +5141,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
           description: ''
-  /api/services/requests/pending_checkbooks/:
+  /api/services/requests/pending-checkbooks/:
     get:
       operationId: api_services_requests_pending_checkbooks_retrieve
       description: Get all pending checkbook requests for Operations Manager approval.
@@ -4877,6 +5170,9 @@ paths:
   /api/transactions/:
     get:
       operationId: api_transactions_list
+      description: |-
+        Mixin to provide idempotency for ViewSet actions.
+        Expects 'X-Idempotency-Key' header in the request.
       parameters:
       - name: ordering
         required: false
@@ -4933,6 +5229,9 @@ paths:
           description: ''
     post:
       operationId: api_transactions_create
+      description: |-
+        Mixin to provide idempotency for ViewSet actions.
+        Expects 'X-Idempotency-Key' header in the request.
       tags:
       - api
       requestBody:
@@ -4959,6 +5258,9 @@ paths:
   /api/transactions/{id}/:
     get:
       operationId: api_transactions_retrieve
+      description: |-
+        Mixin to provide idempotency for ViewSet actions.
+        Expects 'X-Idempotency-Key' header in the request.
       parameters:
       - in: path
         name: id
@@ -5511,6 +5813,23 @@ components:
           format: email
           nullable: true
           maxLength: 254
+        occupation:
+          type: string
+          maxLength: 255
+        work_address:
+          type: string
+        position:
+          type: string
+          maxLength: 255
+        digital_address:
+          type: string
+          maxLength: 50
+        location:
+          type: string
+          maxLength: 255
+        next_of_kin_data:
+          type: object
+          nullable: true
         photo:
           type: string
           nullable: true
@@ -5529,6 +5848,16 @@ components:
           nullable: true
         created_account:
           type: integer
+          readOnly: true
+          nullable: true
+        credentials_approved_by:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Manager who approved the dispatch of login credentials
+        credentials_sent_at:
+          type: string
+          format: date-time
           readOnly: true
           nullable: true
         rejection_reason:
@@ -5554,6 +5883,8 @@ components:
       - approved_at
       - created_account
       - created_at
+      - credentials_approved_by
+      - credentials_sent_at
       - date_of_birth
       - first_name
       - id
@@ -5575,6 +5906,92 @@ components:
         * `daily_susu` - Daily Susu
         * `shares` - Shares
         * `monthly_contribution` - Monthly Contribution
+    AccountStatement:
+      type: object
+      description: Serializer for auto-generated account statements.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        account:
+          type: integer
+        account_number:
+          type: string
+          readOnly: true
+        account_type_display:
+          type: string
+          readOnly: true
+        requested_by:
+          type: integer
+        requested_by_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/AccountStatementStatusEnum'
+        status_display:
+          type: string
+          readOnly: true
+        pdf_file:
+          type: string
+          format: uri
+          nullable: true
+        download_url:
+          type: string
+          readOnly: true
+        transaction_count:
+          type: integer
+          readOnly: true
+        opening_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        closing_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        generated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - account
+      - account_number
+      - account_type_display
+      - closing_balance
+      - created_at
+      - download_url
+      - end_date
+      - generated_at
+      - id
+      - opening_balance
+      - requested_by
+      - requested_by_name
+      - start_date
+      - status_display
+      - transaction_count
+    AccountStatementStatusEnum:
+      enum:
+      - pending
+      - generated
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `generated` - Generated
+        * `failed` - Failed
     BlockedUser:
       type: object
       description: Serializer for blocked users.
@@ -5897,6 +6314,90 @@ components:
       - members
       - unread_count
       - updated_at
+    CheckDeposit:
+      type: object
+      description: Serializer for check deposits.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        account:
+          type: integer
+        account_number:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        check_number:
+          type: string
+          maxLength: 50
+        bank_name:
+          type: string
+          maxLength: 100
+        routing_number:
+          type: string
+          maxLength: 20
+        front_image:
+          type: string
+          format: uri
+          nullable: true
+        back_image:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          $ref: '#/components/schemas/CheckDepositStatusEnum'
+        rejection_reason:
+          type: string
+        processed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        processed_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cleared_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - account
+      - account_number
+      - amount
+      - bank_name
+      - check_number
+      - cleared_at
+      - created_at
+      - id
+      - processed_at
+      - processed_by
+      - processed_by_name
+    CheckDepositStatusEnum:
+      enum:
+      - pending
+      - processing
+      - approved
+      - rejected
+      - cleared
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `cleared` - Cleared
     ClientAssignment:
       type: object
       description: Serializer for client assignments to mobile bankers.
@@ -6214,6 +6715,12 @@ components:
         user:
           type: integer
           readOnly: true
+        borrower_name:
+          type: string
+          readOnly: true
+        borrower_email:
+          type: string
+          readOnly: true
         amount:
           type: string
           format: decimal
@@ -6227,6 +6734,10 @@ components:
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        purpose:
+          type: string
+          nullable: true
+          description: Purpose of the loan
         outstanding_balance:
           type: string
           format: decimal
@@ -6250,6 +6761,8 @@ components:
       required:
       - amount
       - approved_at
+      - borrower_email
+      - borrower_name
       - created_at
       - id
       - interest_rate
@@ -6457,6 +6970,9 @@ components:
         * `high` - High
     PaginatedAccountClosureRequestList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6477,6 +6993,9 @@ components:
             $ref: '#/components/schemas/AccountClosureRequest'
     PaginatedAccountList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6497,6 +7016,9 @@ components:
             $ref: '#/components/schemas/Account'
     PaginatedAccountOpeningRequestList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6515,8 +7037,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AccountOpeningRequest'
+    PaginatedAccountStatementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountStatement'
     PaginatedCashAdvanceList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6537,6 +7085,9 @@ components:
             $ref: '#/components/schemas/CashAdvance'
     PaginatedCashDrawerList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6557,6 +7108,9 @@ components:
             $ref: '#/components/schemas/CashDrawer'
     PaginatedChatMessageList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6577,6 +7131,9 @@ components:
             $ref: '#/components/schemas/ChatMessage'
     PaginatedChatRoomList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6595,8 +7152,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatRoom'
+    PaginatedCheckDepositList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckDeposit'
     PaginatedClientAssignmentList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6617,6 +7200,9 @@ components:
             $ref: '#/components/schemas/ClientAssignment'
     PaginatedComplaintList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6637,6 +7223,9 @@ components:
             $ref: '#/components/schemas/Complaint'
     PaginatedDeviceList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6657,6 +7246,9 @@ components:
             $ref: '#/components/schemas/Device'
     PaginatedFraudAlertList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6677,6 +7269,9 @@ components:
             $ref: '#/components/schemas/FraudAlert'
     PaginatedLoanList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6697,6 +7292,9 @@ components:
             $ref: '#/components/schemas/Loan'
     PaginatedMessageList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6717,6 +7315,9 @@ components:
             $ref: '#/components/schemas/Message'
     PaginatedMessageThreadList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6737,6 +7338,9 @@ components:
             $ref: '#/components/schemas/MessageThread'
     PaginatedOperationsMessageList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6755,8 +7359,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OperationsMessage'
+    PaginatedPayslipList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payslip'
     PaginatedProductList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6777,6 +7407,9 @@ components:
             $ref: '#/components/schemas/Product'
     PaginatedPromotionList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6797,6 +7430,9 @@ components:
             $ref: '#/components/schemas/Promotion'
     PaginatedRefundList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6817,6 +7453,9 @@ components:
             $ref: '#/components/schemas/Refund'
     PaginatedReportList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6837,6 +7476,9 @@ components:
             $ref: '#/components/schemas/Report'
     PaginatedReportScheduleList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6857,6 +7499,9 @@ components:
             $ref: '#/components/schemas/ReportSchedule'
     PaginatedReportTemplateList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6877,6 +7522,9 @@ components:
             $ref: '#/components/schemas/ReportTemplate'
     PaginatedServiceRequestList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6897,6 +7545,9 @@ components:
             $ref: '#/components/schemas/ServiceRequest'
     PaginatedTransactionList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6917,6 +7568,9 @@ components:
             $ref: '#/components/schemas/Transaction'
     PaginatedUserList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -6937,6 +7591,9 @@ components:
             $ref: '#/components/schemas/User'
     PaginatedVisitScheduleList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -7126,6 +7783,12 @@ components:
         user:
           type: integer
           readOnly: true
+        borrower_name:
+          type: string
+          readOnly: true
+        borrower_email:
+          type: string
+          readOnly: true
         amount:
           type: string
           format: decimal
@@ -7139,6 +7802,10 @@ components:
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        purpose:
+          type: string
+          nullable: true
+          description: Purpose of the loan
         outstanding_balance:
           type: string
           format: decimal
@@ -7456,6 +8123,132 @@ components:
           title: Superuser status
           description: Designates that this user has all permissions without explicitly
             assigning them.
+    Payslip:
+      type: object
+      description: Serializer for staff payslips.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        staff:
+          type: integer
+        staff_name:
+          type: string
+          readOnly: true
+        staff_id_display:
+          type: string
+          readOnly: true
+        month:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        year:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        month_name:
+          type: string
+          readOnly: true
+        pay_period_start:
+          type: string
+          format: date
+        pay_period_end:
+          type: string
+          format: date
+        base_pay:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        allowances:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        overtime_pay:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        bonuses:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        gross_pay:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        ssnit_contribution:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        tax_deduction:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        other_deductions:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_deductions:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        net_salary:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        pdf_file:
+          type: string
+          format: uri
+          nullable: true
+        download_url:
+          type: string
+          readOnly: true
+        generated_by:
+          type: integer
+          nullable: true
+        generated_by_name:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+        is_paid:
+          type: boolean
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - base_pay
+      - created_at
+      - download_url
+      - generated_by_name
+      - gross_pay
+      - id
+      - month
+      - month_name
+      - net_salary
+      - pay_period_end
+      - pay_period_start
+      - ssnit_contribution
+      - staff
+      - staff_id_display
+      - staff_name
+      - total_deductions
+      - updated_at
+      - year
     Priority5f3Enum:
       enum:
       - low

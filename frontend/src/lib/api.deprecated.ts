@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 
 class ApiClient {
-  instance;
+  instance: any;
 
   constructor(options: any) {
     this.instance = axios.create(options);
@@ -23,8 +23,37 @@ api.instance.interceptors.request.use((config) => {
   return config;
 });
 
+// Override deprecated methods to use new API service
+const originalPost = api.instance.post;
+api.instance.post = async function (url, data, config) {
+  // Route client registration requests to new API service
+  if (url.includes('client-registrations')) {
+    try {
+      // Import dynamically to avoid circular dependency
+      const { apiService } = await import('../services/api');
+
+      if (url.includes('submit-registration')) {
+        return apiService.submitClientRegistration(data);
+      } else if (url.includes('send-otp')) {
+        const registrationId = url.split('/')[2];
+        return apiService.sendClientRegistrationOTP(registrationId);
+      } else if (url.includes('verify-otp')) {
+        const registrationId = url.split('/')[2];
+        const otpCode = data?.otp_code;
+        return apiService.verifyClientRegistrationOTP(registrationId, otpCode);
+      }
+    } catch (error) {
+      console.error('[API DEPRECATED] Error redirecting to new API service:', error);
+      throw error;
+    }
+  }
+
+  // Fall back to original axios implementation for other requests
+  return originalPost.call(this, url, data, config);
+};
+
 // Add hooks
-(api as any).useGetTransactions = () => {
+export function useGetTransactions() {
   return useQuery({
     queryKey: ['transactions'],
     queryFn: async () => {
@@ -32,9 +61,9 @@ api.instance.interceptors.request.use((config) => {
       return response.data;
     },
   });
-};
+}
 
-(api as any).useGetAccounts = () => {
+export function useGetAccounts() {
   return useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
@@ -42,4 +71,4 @@ api.instance.interceptors.request.use((config) => {
       return response.data;
     },
   });
-};
+}

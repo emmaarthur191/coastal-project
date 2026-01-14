@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { api, PaginatedResponse } from '../services/api';
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  category: number;
+  is_featured: boolean;
+  product_type: string;
+  base_price: number;
+  interest_rate: number | null;
+}
 
 function Products() {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('');
 
@@ -14,8 +30,8 @@ function Products() {
 
   const loadProducts = async () => {
     try {
-      const response = await api.get('products/products/');
-      setProducts(response.data);
+      const response = await api.get<PaginatedResponse<Product>>('products/products/');
+      setProducts(response.data.results || []);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -25,7 +41,7 @@ function Products() {
 
   const loadCategories = async () => {
     try {
-      const response = await api.get('products/categories/');
+      const response = await api.get<Category[]>('products/categories/');
       setCategories(response.data);
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -60,11 +76,10 @@ function Products() {
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setSelectedCategory('')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedCategory === ''
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedCategory === ''
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               All Categories
             </button>
@@ -72,11 +87,10 @@ function Products() {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id.toString())}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedCategory === category.id.toString()
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedCategory === category.id.toString()
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {category.name}
               </button>

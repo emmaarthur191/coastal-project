@@ -13,12 +13,15 @@ from django.utils import timezone
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
+from core.mixins import IdempotencyMixin
 from core.models import Account, AccountClosureRequest, AccountOpeningRequest
 from core.permissions import IsCustomer, IsStaff
 from core.serializers import (
@@ -115,6 +118,8 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
                 | Q(user__email__icontains=search)
                 | Q(user__first_name__icontains=search)
                 | Q(user__last_name__icontains=search)
+                | Q(user__id_number__icontains=search)
+                | Q(opening_request__id_number__icontains=search)
             )
 
         # Apply account type filter
@@ -151,7 +156,7 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
 
         return Response({"count": len(data), "results": data})
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], url_path="summary")
     def summary(self, request):
         """Get summary statistics for all accounts."""
         from django.db.models import Count, Sum
@@ -178,7 +183,9 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
     approve=extend_schema(summary="Approve an account opening request", tags=["Account Openings"]),
     reject=extend_schema(summary="Reject an account opening request", tags=["Account Openings"]),
 )
-class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class AccountOpeningViewSet(
+    IdempotencyMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet
+):
     """ViewSet for handling account opening requests."""
 
     queryset = AccountOpeningRequest.objects.all()
@@ -203,7 +210,7 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
 
     @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):
-        """Approve an account opening request."""
+        """Stage 1: Approve an account opening request and create client account."""
         opening_request = self.get_object()
 
         if opening_request.status != "pending":
@@ -224,77 +231,161 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
 
         try:
             with transaction.atomic():
-                opening_request.status = "approved"
-                opening_request.approved_by = request.user
-                opening_request.processed_at = timezone.now()
-                opening_request.save()
+                # 1. Find or Create Client User
+                from django.contrib.auth import get_user_model
 
-                # Automated Account Creation upon approval
+                User = get_user_model()
+
+                user_email = opening_request.email
+                customer_user = None
+
+                if user_email:
+                    customer_user = User.objects.filter(email=user_email).first()
+
+                if not customer_user:
+                    # Generate username from email or phone
+                    username = user_email or f"user_{opening_request.phone_number}"
+                    # Initial random password (will be reset/resent in Stage 2)
+                    import secrets
+
+                    temp_initial_pwd = secrets.token_urlsafe(10)
+
+                    customer_user = User.objects.create_user(
+                        username=username,
+                        email=user_email or "",
+                        password=temp_initial_pwd,
+                        first_name=opening_request.first_name,
+                        last_name=opening_request.last_name,
+                        role="customer",
+                    )
+                    if hasattr(customer_user, "phone_number"):
+                        customer_user.phone_number = opening_request.phone_number
+
+                    # Copy ID Information
+                    customer_user.id_type = opening_request.id_type
+                    customer_user.id_number = opening_request.id_number
+                    customer_user.save()
+
+                # 2. Automated Account Creation for the CLIENT
                 new_account = AccountService.create_account(
-                    user=opening_request.submitted_by,
+                    user=customer_user,
                     account_type=opening_request.account_type,
                     initial_balance=opening_request.initial_deposit,
                 )
 
-                # Send welcome message with account number to the CUSTOMER (not the staff)
-                self._send_account_welcome_message(
-                    opening_request=opening_request,
-                    account=new_account,
-                )
+                # 3. Update Request Status
+                opening_request.status = "approved"
+                opening_request.processed_by = request.user
+                opening_request.approved_at = timezone.now()
+                opening_request.created_account = new_account
+                opening_request.save()
+
+                # 4. Send ONLY Account Number via SMS
+                self._send_account_number_sms(opening_request, new_account)
 
             return Response(
                 {
                     "status": "success",
-                    "message": "Account opening request approved and account created successfully",
+                    "message": "Step 1 Complete: Account created. Credentials must be approved separately.",
                     "data": AccountOpeningRequestSerializer(opening_request).data,
                 }
             )
         except Exception as e:
-            logger.error(f"Failed to process account approval for request {opening_request.id}: {e}")
+            logger.error(f"Failed Stage 1 approval for request {opening_request.id}: {e}")
             return Response(
-                {
-                    "status": "error",
-                    "message": f"Processing failed: {e!s}",
-                    "code": "APPROVAL_FAILED",
-                },
+                {"status": "error", "message": f"Step 1 failed: {e!s}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _send_account_welcome_message(self, opening_request, account):
-        """Send SMS welcome message with account number to the CUSTOMER."""
-        from users.services import SendexaService
+    @action(detail=True, methods=["post"], url_path="dispatch-credentials")
+    def dispatch_credentials(self, request, pk=None):
+        """Stage 2: Approve and dispatch login credentials to the client."""
+        opening_request = self.get_object()
+
+        if opening_request.status != "approved":
+            return Response(
+                {"status": "error", "message": "Credentials can only be dispatched for approved requests."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Maker-Checker: Credentials dispatch should be approved by someone other than the submitter
+        if opening_request.submitted_by == request.user:
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Maker-Checker Violation: You cannot dispatch credentials for a request you initiated.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
-            # Get CUSTOMER's phone number from the opening request (not the staff user)
-            phone = opening_request.phone or opening_request.alternate_phone
-            customer_name = f"{opening_request.first_name} {opening_request.last_name}"
-            
-            if not phone:
-                logger.info(f"No phone number for customer {customer_name}, skipping welcome SMS")
-                return
+            with transaction.atomic():
+                account = opening_request.created_account
+                if not account or not account.user:
+                    return Response({"status": "error", "message": "No associated client user found."}, status=404)
 
-            # Format account type display name
-            account_type_display = dict(Account.ACCOUNT_TYPES).get(account.account_type, account.account_type)
-            
-            # Create SMS message
-            message = (
-                f"Dear {opening_request.first_name}, welcome to Coastal Credit Union! "
-                f"Your {account_type_display} account is ready. "
-                f"Account No: {account.account_number}. "
-                f"Balance: GHS {account.balance:,.2f}. "
-                f"Thank you for choosing Coastal!"
+                client_user = account.user
+
+                # Generate new temporary password for dispatch
+                import secrets
+
+                temp_password = secrets.token_urlsafe(6)
+                client_user.set_password(temp_password)
+                client_user.save()
+
+                # Update tracking
+                opening_request.status = "completed"
+                opening_request.credentials_approved_by = request.user
+                opening_request.credentials_sent_at = timezone.now()
+                opening_request.save()
+
+                # Send credentials via SMS
+                self._send_credentials_sms(opening_request, client_user.username, temp_password)
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": "Step 2 Complete: Login credentials dispatched to client.",
+                    "data": AccountOpeningRequestSerializer(opening_request).data,
+                }
             )
-            
-            # Send SMS via Sendexa
-            success, result = SendexaService.send_sms(phone, message)
-            if success:
-                logger.info(f"Welcome SMS sent to {customer_name} ({phone}) for account {account.account_number}")
-            else:
-                logger.warning(f"Welcome SMS failed for {customer_name}: {result}")
-                
         except Exception as e:
-            # Don't fail account creation if SMS sending fails
-            logger.error(f"Failed to send welcome SMS: {e}")
+            logger.error(f"Failed Stage 2 dispatch for request {opening_request.id}: {e}")
+            return Response(
+                {"status": "error", "message": f"Step 2 failed: {e!s}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def _send_account_number_sms(self, opening_request, account):
+        """Step 1: Send Account Number only."""
+        from users.services import SendexaService
+
+        phone = opening_request.phone_number
+        if not phone:
+            return
+
+        message = (
+            f"Dear {opening_request.first_name}, your account at Coastal Credit Union has been created. "
+            f"Account Number: {account.account_number}. "
+            f"Login credentials will be sent separately once approved. Thank you!"
+        )
+        SendexaService.send_sms(phone, message)
+
+    def _send_credentials_sms(self, opening_request, username, password):
+        """Step 2: Send Login Credentials."""
+        from users.services import SendexaService
+
+        phone = opening_request.phone_number
+        if not phone:
+            return
+
+        message = (
+            f"Dear {opening_request.first_name}, your login credentials for Coastal CU are ready. "
+            f"Username: {username} "
+            f"Temporary Password: {password} "
+            f"Please change your password upon first login."
+        )
+        SendexaService.send_sms(phone, message)
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
@@ -320,7 +411,7 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
             }
         )
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="send-otp")
     def send_otp(self, request):
         """Send OTP to customer phone number for account opening verification."""
         phone_number = request.data.get("phone_number")
@@ -340,7 +431,7 @@ class AccountOpeningViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
 
         return Response({"success": True, "message": "OTP sent successfully", "phone_number": phone_number})
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="verify-and-submit")
     def verify_and_submit(self, request):
         """Verify OTP and submit account opening request."""
         phone_number = request.data.get("phone_number")
@@ -463,5 +554,47 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
                 "status": "success",
                 "message": "Account closure request rejected",
                 "data": AccountClosureRequestSerializer(closure_request).data,
+            }
+        )
+
+
+class AccountBalanceView(APIView):
+    """Returns aggregated account balance summary for the authenticated user.
+
+    This endpoint provides:
+    - total_balance: Sum of all active account balances
+    - available_balance: Balance available for transactions (same as total for now)
+    - accounts_count: Number of active accounts
+
+    Permissions:
+        - Any authenticated user can view their own balance
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """GET /api/accounts/balance/
+
+        Returns account balance summary for the currently logged-in user.
+        """
+        from decimal import Decimal
+
+        from django.db.models import Sum
+
+        # Only get active accounts for the authenticated user
+        accounts = Account.objects.filter(user=request.user, is_active=True)
+
+        # Calculate totals using database aggregation for efficiency
+        total = accounts.aggregate(total=Sum("balance"))["total"] or Decimal("0.00")
+
+        return Response(
+            {
+                "success": True,
+                "data": {
+                    "total_balance": str(total),
+                    "available_balance": str(total),  # Can add holds/pending logic later
+                    "accounts_count": accounts.count(),
+                    "currency": "GHS",
+                },
             }
         )

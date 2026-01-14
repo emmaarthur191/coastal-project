@@ -1,103 +1,99 @@
 import React from 'react';
-import { authService } from '../services/api.ts';
+import { authService, ExpenseData, ExpenseCategory } from '../services/api';
 import { formatCurrencyGHS } from '../utils/formatters';
+import './ExpensesSection.css';
 
-function ExpensesSection({ newExpense, setNewExpense, expenses, fetchExpenses }) {
+interface Expense {
+  category: string;
+  description: string;
+  date_incurred: string;
+  recorded_by_name: string;
+  amount: number | string;
+  is_approved: boolean;
+}
+
+interface NewExpense {
+  category: string;
+  amount: string;
+  description: string;
+  date_incurred: string;
+}
+
+interface ExpensesSectionProps {
+  newExpense: NewExpense;
+  setNewExpense: React.Dispatch<React.SetStateAction<NewExpense>>;
+  expenses: Expense[];
+  fetchExpenses: () => void;
+}
+
+const ExpensesSection: React.FC<ExpensesSectionProps> = ({
+  newExpense,
+  setNewExpense,
+  expenses,
+  fetchExpenses
+}) => {
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '16px',
-      padding: '30px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e2e8f0'
-    }}>
-      <h3 style={{
-        margin: '0 0 24px 0',
-        color: '#1e293b',
-        fontSize: '20px',
-        fontWeight: '600',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-         Company Expenses Management
+    <div className="expenses-container">
+      <h3 className="expenses-title">
+        Company Expenses Management
       </h3>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+      <div className="expenses-grid">
         {/* Add New Expense */}
-        <div style={{
-          background: '#f8fafc',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0'
-        }}>
-          <h4 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Record New Expense</h4>
+        <div className="expense-form-container">
+          <h4 className="section-subtitle">Record New Expense</h4>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="expense-form-stack">
             <select
               value={newExpense.category}
-              onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
-              style={{
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
+              onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+              className="expense-input"
+              title="Expense Category"
             >
               <option value="">Select Category</option>
-              <option value="office_supplies">Office Supplies</option>
-              <option value="utilities">Utilities</option>
-              <option value="rent">Rent</option>
-              <option value="salaries">Salaries</option>
-              <option value="marketing">Marketing</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="travel">Travel</option>
-              <option value="insurance">Insurance</option>
-              <option value="taxes">Taxes</option>
-              <option value="other">Other</option>
+              <option value="Operational">Operational</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Payroll">Payroll</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Other">Other</option>
             </select>
 
             <input
               type="number"
               placeholder="Amount (GHS)"
               value={newExpense.amount}
-              onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
-              style={{
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
+              onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+              className="expense-input"
+              title="Expense Amount"
             />
 
             <input
               type="date"
               value={newExpense.date_incurred}
-              onChange={(e) => setNewExpense({...newExpense, date_incurred: e.target.value})}
-              style={{
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
+              onChange={(e) => setNewExpense({ ...newExpense, date_incurred: e.target.value })}
+              className="expense-input"
+              title="Date Incurred"
             />
 
             <textarea
               placeholder="Description"
               value={newExpense.description}
-              onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
-              style={{
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                minHeight: '80px'
-              }}
+              onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+              className="expense-input expense-textarea"
+              title="Expense Description"
             />
 
             <button
               onClick={async () => {
-                const result = await authService.createExpense(newExpense);
+                const expenseData: ExpenseData = {
+                  category: newExpense.category as ExpenseCategory,
+                  amount: parseFloat(newExpense.amount) || 0,
+                  description: newExpense.description,
+                  date: newExpense.date_incurred // Map UI date_incurred to API date
+                };
+
+                const result = await authService.createExpense(expenseData);
                 if (result.success) {
                   alert('Expense recorded successfully!');
                   setNewExpense({
@@ -111,15 +107,7 @@ function ExpensesSection({ newExpense, setNewExpense, expenses, fetchExpenses })
                   alert('Failed to record expense: ' + result.error);
                 }
               }}
-              style={{
-                padding: '12px',
-                background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
+              className="record-button"
             >
               Record Expense
             </button>
@@ -128,41 +116,29 @@ function ExpensesSection({ newExpense, setNewExpense, expenses, fetchExpenses })
 
         {/* Expenses List */}
         <div>
-          <h4 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Recent Expenses</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto' }}>
+          <h4 className="expense-title-list">Recent Expenses</h4>
+          <div className="expense-list">
             {expenses.map((expense, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                background: expense.is_approved ? '#f0fdf4' : '#fef3c7',
-                borderRadius: '8px',
-                border: `1px solid ${expense.is_approved ? '#bbf7d0' : '#fde68a'}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
+              <div
+                key={index}
+                className={`expense-card ${expense.is_approved ? 'approved' : 'pending'}`}
+              >
                 <div>
-                  <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                  <div className="expense-category">
                     {expense.category.replace('_', ' ').toUpperCase()}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '14px' }}>
+                  <div className="expense-description">
                     {expense.description}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '12px' }}>
+                  <div className="expense-meta">
                     {expense.date_incurred} • {expense.recorded_by_name}
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: '700', color: '#dc2626', fontSize: '16px' }}>
+                <div className="expense-amount-status">
+                  <div className="expense-amount">
                     {formatCurrencyGHS(expense.amount)}
                   </div>
-                  <div style={{
-                    padding: '4px 8px',
-                    background: expense.is_approved ? '#10b981' : '#f59e0b',
-                    color: 'white',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600'
-                  }}>
+                  <div className={`status-badge ${expense.is_approved ? 'approved' : 'pending'}`}>
                     {expense.is_approved ? 'Approved' : 'Pending'}
                   </div>
                 </div>
@@ -170,11 +146,7 @@ function ExpensesSection({ newExpense, setNewExpense, expenses, fetchExpenses })
             ))}
 
             {expenses.length === 0 && (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px',
-                color: '#64748b'
-              }}>
+              <div className="no-expenses">
                 No expenses recorded yet.
               </div>
             )}

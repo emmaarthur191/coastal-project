@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { authService } from '../services/api.ts';
+import { authService } from '../services/api';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import GlassCard from './ui/modern/GlassCard';
@@ -29,6 +29,7 @@ interface UserFormData {
   account_number: string;
   branch_code: string;
   routing_number: string;
+  [key: string]: string | number | boolean | File | null | undefined;
 }
 
 interface FormErrors {
@@ -56,7 +57,6 @@ interface EnhancedUserManagementFormProps {
   otpLoading?: boolean;
   handleSendOTP: () => void;
   handleVerifyOTP: () => void;
-  handleCreateUser: (e: React.FormEvent) => void;
   staffMembers: StaffMember[];
   fetchStaffMembers: () => void;
 }
@@ -74,7 +74,6 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
   setOtpExpiresIn,
   handleSendOTP,
   handleVerifyOTP,
-  handleCreateUser,
   staffMembers,
   fetchStaffMembers,
   otpLoading = false
@@ -224,20 +223,20 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
                 className="mb-2"
               />
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-gray-700 ml-1">Role *</label>
-                <select
-                  value={formData.role || 'cashier'}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                >
-                  <option value="cashier">Cashier</option>
-                  <option value="mobile_banker">Mobile Banker</option>
-                  <option value="operations_manager">Operations Manager</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
+              <Input
+                as="select"
+                label="Role *"
+                id="user-role"
+                title="Select the user's role in the system"
+                value={formData.role || 'cashier'}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                required
+              >
+                <option value="cashier">Cashier</option>
+                <option value="mobile_banker">Mobile Banker</option>
+                <option value="operations_manager">Operations Manager</option>
+                <option value="manager">Manager</option>
+              </Input>
             </div>
           </div>
 
@@ -245,28 +244,28 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
           <div>
             <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">🏠 Address Information</h4>
             <div className="grid grid-cols-1 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">House Address *</label>
-                <textarea
-                  value={formData.house_address || ''}
-                  onChange={(e) => setFormData({ ...formData, house_address: e.target.value })}
-                  rows={3}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                />
-                {errors.house_address && <div className="text-red-500 text-sm mt-1">{errors.house_address}</div>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Contact Address *</label>
-                <textarea
-                  value={formData.contact_address || ''}
-                  onChange={(e) => setFormData({ ...formData, contact_address: e.target.value })}
-                  rows={3}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:bg-white focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                />
-                {errors.contact_address && <div className="text-red-500 text-sm mt-1">{errors.contact_address}</div>}
-              </div>
+              <Input
+                as="textarea"
+                label="House Address *"
+                id="house-address"
+                title="Enter the residential address"
+                value={formData.house_address || ''}
+                onChange={(e) => setFormData({ ...formData, house_address: e.target.value })}
+                rows={3}
+                required
+                error={errors.house_address || undefined}
+              />
+              <Input
+                as="textarea"
+                label="Contact Address *"
+                id="contact-address"
+                title="Enter the contact or mailing address"
+                value={formData.contact_address || ''}
+                onChange={(e) => setFormData({ ...formData, contact_address: e.target.value })}
+                rows={3}
+                required
+                error={errors.contact_address || undefined}
+              />
             </div>
           </div>
 
@@ -298,25 +297,22 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
             <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📁 Document Uploads</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FileUploadComponent
-                label="Passport Picture (JPEG/PNG, ≤2MB) *"
+                label="Passport Picture *"
                 accept="image/jpeg,image/jpg,image/png"
-                maxSize={2}
                 onFileChange={(file) => setFormData({ ...formData, passport_picture: file })}
                 error={errors.passport_picture}
                 currentFile={formData.passport_picture}
               />
               <FileUploadComponent
-                label="Application Letter (PDF, ≤5MB) *"
+                label="Application Letter *"
                 accept="application/pdf"
-                maxSize={5}
                 onFileChange={(file) => setFormData({ ...formData, application_letter: file })}
                 error={errors.application_letter}
                 currentFile={formData.application_letter}
               />
               <FileUploadComponent
-                label="Appointment Letter (PDF, ≤5MB) *"
+                label="Appointment Letter *"
                 accept="application/pdf"
-                maxSize={5}
                 onFileChange={(file) => setFormData({ ...formData, appointment_letter: file })}
                 error={errors.appointment_letter}
                 currentFile={formData.appointment_letter}
@@ -459,9 +455,9 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
 
 // Enhanced File Upload Component (Modernized)
 const FileUploadComponent = ({
-  label, accept, maxSize, onFileChange, error, currentFile
+  label, accept, onFileChange, error, currentFile
 }: {
-  label: string; accept: string; maxSize: number;
+  label: string; accept: string;
   onFileChange: (file: File | null) => void; error: string | null; currentFile?: File | null;
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -469,7 +465,6 @@ const FileUploadComponent = ({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    /* Validation Logic Skipped for brevity, can implement same rules */
     const file = e.target.files?.[0] || null;
     if (file) {
       setIsUploading(true);
@@ -477,7 +472,6 @@ const FileUploadComponent = ({
     } else { onFileChange(null); }
   };
 
-  // Basic logic wrapper for drag/drop
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
   const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); };
   const handleDrop = (e: React.DragEvent) => {
@@ -486,9 +480,21 @@ const FileUploadComponent = ({
     if (file) { setIsUploading(true); setTimeout(() => { onFileChange(file); setIsUploading(false); }, 500); }
   };
 
+  const inputId = label.replace(/\s+/g, '-').toLowerCase();
+
   return (
     <div className="flex flex-col">
-      <label className="text-sm font-semibold text-gray-700 mb-1.5 ml-1">{label}</label>
+      <label htmlFor={inputId} className="text-sm font-semibold text-gray-700 mb-1.5 ml-1">{label}</label>
+      {/* Hidden file input moved outside interactive div to fix accessibility issue */}
+      <input
+        ref={fileInputRef}
+        id={inputId}
+        type="file"
+        accept={accept}
+        onChange={handleFileChange}
+        className="hidden"
+        title={label}
+      />
       <div
         className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer bg-gray-50
             ${isDragOver ? 'border-coastal-primary bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
@@ -498,16 +504,18 @@ const FileUploadComponent = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        aria-label={`Upload ${label}`}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
       >
-        <input ref={fileInputRef} type="file" accept={accept} onChange={handleFileChange} className="hidden" />
-
         {isUploading ? (
           <div className="text-gray-500"><span className="animate-spin inline-block mr-2">⏳</span> Processing...</div>
         ) : currentFile ? (
           <div className="flex flex-col items-center">
             <div className="text-2xl mb-2">{currentFile.type.startsWith('image/') ? '🖼️' : '📄'}</div>
             <div className="text-sm font-bold text-gray-700 truncate max-w-[200px]">{currentFile.name}</div>
-            <button type="button" onClick={(e) => { e.stopPropagation(); onFileChange(null); }} className="text-red-500 text-xs font-bold mt-2 hover:underline">Remove</button>
+            <div className="text-xs text-coastal-primary mt-1">Click to change</div>
           </div>
         ) : (
           <div className="text-gray-500">
@@ -516,6 +524,13 @@ const FileUploadComponent = ({
           </div>
         )}
       </div>
+      {currentFile && (
+        <div className="flex justify-end mt-1">
+          <button type="button" onClick={() => onFileChange(null)} className="text-red-500 text-xs font-bold hover:underline flex items-center gap-1">
+            <span>🗑️</span> Remove {label}
+          </button>
+        </div>
+      )}
       {error && <div className="text-red-500 text-sm mt-1">{error}</div>}
     </div>
   );

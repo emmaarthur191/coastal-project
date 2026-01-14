@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { ServiceRequest } from './ServiceRequest';
 export type PaginatedServiceRequestList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<ServiceRequest>;
+    results: Array<ServiceRequest>;
 };
-

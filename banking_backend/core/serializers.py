@@ -86,21 +86,68 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 
 class LoanSerializer(serializers.ModelSerializer):
+    borrower_name = serializers.SerializerMethodField()
+    borrower_email = serializers.SerializerMethodField()
+
     class Meta:
         model = Loan
         fields = [
             "id",
             "user",
+            "borrower_name",
+            "borrower_email",
             "amount",
             "interest_rate",
             "term_months",
+            "purpose",
+            "date_of_birth",
+            "id_type",
+            "id_number",
+            "digital_address",
+            "town",
+            "city",
+            "next_of_kin_1_name",
+            "next_of_kin_1_relationship",
+            "next_of_kin_1_phone",
+            "next_of_kin_1_address",
+            "next_of_kin_2_name",
+            "next_of_kin_2_relationship",
+            "next_of_kin_2_phone",
+            "next_of_kin_2_address",
+            "guarantor_1_name",
+            "guarantor_1_id_type",
+            "guarantor_1_id_number",
+            "guarantor_1_phone",
+            "guarantor_1_address",
+            "guarantor_2_name",
+            "guarantor_2_id_type",
+            "guarantor_2_id_number",
+            "guarantor_2_phone",
+            "guarantor_2_address",
+            "monthly_income",
+            "employment_status",
             "outstanding_balance",
             "status",
             "approved_at",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "outstanding_balance", "approved_at", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "user",
+            "outstanding_balance",
+            "approved_at",
+            "created_at",
+            "updated_at",
+            "borrower_name",
+            "borrower_email",
+        ]
+
+    def get_borrower_name(self, obj):
+        return obj.user.get_full_name() if obj.user else "Unknown"
+
+    def get_borrower_email(self, obj):
+        return obj.user.email if obj.user else ""
 
     def validate_amount(self, value):
         if value <= 0:
@@ -128,6 +175,34 @@ class FraudAlertSerializer(serializers.ModelSerializer):
         if validated_data.get("is_resolved") and not instance.is_resolved:
             validated_data["resolved_at"] = timezone.now()
         return super().update(instance, validated_data)
+
+
+class FraudRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import FraudRule
+
+        model = FraudRule
+        fields = [
+            "id",
+            "name",
+            "description",
+            "rule_type",
+            "severity",
+            "field",
+            "operator",
+            "value",
+            "additional_conditions",
+            "is_active",
+            "auto_block",
+            "require_approval",
+            "escalation_threshold",
+            "trigger_count",
+            "false_positive_count",
+            "last_triggered",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "trigger_count", "false_positive_count", "last_triggered", "created_at", "updated_at"]
 
 
 class BankingMessageSerializer(serializers.ModelSerializer):
@@ -276,11 +351,19 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             "address",
             "phone_number",
             "email",
+            "occupation",
+            "work_address",
+            "position",
+            "digital_address",
+            "location",
+            "next_of_kin_data",
             "photo",
             "status",
             "processed_by",
             "submitted_by",
             "created_account",
+            "credentials_approved_by",
+            "credentials_sent_at",
             "rejection_reason",
             "notes",
             "created_at",
@@ -293,6 +376,8 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             "processed_by",
             "submitted_by",
             "created_account",
+            "credentials_approved_by",
+            "credentials_sent_at",
             "rejection_reason",
             "notes",
             "created_at",
@@ -464,12 +549,9 @@ class MessageThreadSerializer(serializers.ModelSerializer):
         last = obj.last_message
         if last:
             content_preview = (last.content or last.encrypted_content or "")[:100]
-            return {
-                "content": content_preview,
-                "sender_name": last.sender.get_full_name() if last.sender else "System",
-                "created_at": last.created_at.isoformat(),
-            }
-        return None
+            # Ensure we return a string prefix if needed, or stick to object but ensure Swagger docs are clear
+            return f"{last.sender.get_full_name() if last.sender else 'System'}: {content_preview}"
+        return ""
 
     def get_created_by_name(self, obj):
         return obj.created_by.get_full_name() if obj.created_by else None
@@ -682,6 +764,7 @@ class ReportTemplateSerializer(serializers.ModelSerializer):
     """Serializer for report templates."""
 
     report_type_display = serializers.CharField(source="get_report_type_display", read_only=True)
+    type = serializers.CharField(source="report_type", read_only=True)
 
     class Meta:
         from .models import ReportTemplate
@@ -691,6 +774,7 @@ class ReportTemplateSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "report_type",
+            "type",
             "report_type_display",
             "description",
             "default_parameters",
@@ -708,7 +792,9 @@ class ReportSerializer(serializers.ModelSerializer):
     generated_by_name = serializers.SerializerMethodField()
     format_display = serializers.CharField(source="get_format_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
-    report_url = serializers.CharField(source="file_url", read_only=True)  # Alias for frontend compatibility
+    report_url = serializers.CharField(source="file_url", read_only=True)
+    type = serializers.CharField(source="report_type", read_only=True)
+    generated_at = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
         from .models import Report
@@ -726,6 +812,8 @@ class ReportSerializer(serializers.ModelSerializer):
             "status_display",
             "file_url",
             "report_url",
+            "type",
+            "generated_at",
             "file_path",
             "file_size",
             "generated_by",
@@ -814,13 +902,13 @@ class SystemHealthSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "checked_at"]
 
 
-class UserMessagePreferencesSerializer(serializers.ModelSerializer):
+class UserMessagePreferenceSerializer(serializers.ModelSerializer):
     """Serializer for user message preferences."""
 
     class Meta:
-        from .models import UserMessagePreferences
+        from .models import UserMessagePreference
 
-        model = UserMessagePreferences
+        model = UserMessagePreference
         fields = [
             "id",
             "user",
@@ -901,6 +989,26 @@ class ClientAssignmentSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+        # Disable built-in unique_together validators so we can provide a custom message
+        validators = []
+
+    def validate(self, attrs):
+        """Check for duplicate assignment and return a user-friendly error."""
+        from .models import ClientAssignment
+
+        mobile_banker = attrs.get("mobile_banker")
+        client = attrs.get("client")
+
+        # Only check on create (self.instance is None)
+        if self.instance is None and mobile_banker and client:
+            if ClientAssignment.objects.filter(mobile_banker=mobile_banker, client=client).exists():
+                client_name = client.get_full_name() or client.email
+                banker_name = mobile_banker.get_full_name() or mobile_banker.email
+                raise serializers.ValidationError(
+                    f"Client '{client_name}' is already assigned to banker '{banker_name}'. "
+                    "Please reassign instead of creating a new assignment."
+                )
+        return attrs
 
     def get_mobile_banker_name(self, obj):
         return obj.mobile_banker.get_full_name() if obj.mobile_banker else None
@@ -975,22 +1083,39 @@ class PayslipSerializer(serializers.ModelSerializer):
         ]
 
     def get_staff_name(self, obj):
-        return obj.staff.get_full_name() if obj.staff else None
+        try:
+            return obj.staff.get_full_name() if obj.staff else "Unknown Staff"
+        except Exception:
+            return "Error Loading Name"
 
     def get_staff_id_display(self, obj):
-        return obj.staff.staff_id if obj.staff else None
+        try:
+            return obj.staff.staff_id if obj.staff else "N/A"
+        except Exception:
+            return "N/A"
 
     def get_generated_by_name(self, obj):
-        return obj.generated_by.get_full_name() if obj.generated_by else None
+        try:
+            return obj.generated_by.get_full_name() if obj.generated_by else "System"
+        except Exception:
+            return "System"
 
     def get_month_name(self, obj):
         import calendar
 
-        return f"{calendar.month_name[obj.month]} {obj.year}"
+        try:
+            if obj.month and 1 <= obj.month <= 12:
+                return f"{calendar.month_name[obj.month]} {obj.year or ''}"
+        except (AttributeError, TypeError, IndexError, KeyError):
+            pass
+        return f"Month {obj.month} ({obj.year})" if obj.month else "Invalid Date"
 
     def get_download_url(self, obj):
-        if obj.pdf_file:
-            return obj.pdf_file.url
+        try:
+            if obj.pdf_file:
+                return obj.pdf_file.url
+        except (AttributeError, ValueError):
+            pass
         return None
 
 

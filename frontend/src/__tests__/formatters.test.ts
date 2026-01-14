@@ -23,8 +23,7 @@ describe('Formatters Utility', () => {
             // formatters.js hardcodes 'GHS 0.00' for null/undefined
             expect(formatCurrencyGHS(null)).toBe('GHS 0.00');
             expect(formatCurrencyGHS(undefined)).toBe('GHS 0.00');
-            // @ts-expect-error - testing invalid input
-            expect(formatCurrencyGHS('invalid')).toBe('GHS 0.00');
+            expect(formatCurrencyGHS('invalid' as unknown as number)).toBe('GHS 0.00');
         });
     });
 

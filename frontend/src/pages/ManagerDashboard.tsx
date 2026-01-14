@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProductsServicesManagement from '../components/manager/ProductsServicesManagement';
-import { formatCurrencyGHS } from '../utils/formatters';
-import { authService } from '../services/api.ts';
+import { formatCurrencyGHS as _formatCurrencyGHS } from '../utils/formatters';
+import { authService, ServiceCharge } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '../utils/logger';
 
-import DashboardLayout from '../components/layout/DashboardLayout.tsx'; // Unified Layout
+import DashboardLayout from '../components/layout/DashboardLayout'; // Unified Layout
 import OverviewSection from '../components/manager/OverviewSection';
 import MessagingSection from '../components/manager/MessagingSection';
 import UserManagementSection from '../components/manager/UserManagementSection';
@@ -23,6 +24,8 @@ import AccountsTab from '../components/AccountsTab';
 import SecuritySection from '../components/manager/SecuritySection';
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 import AccountOpeningsSection from '../components/manager/AccountOpeningsSection';
+import PerformanceMonitoringSection from '../components/manager/PerformanceMonitoringSection';
+import ReportsSection from '../components/manager/ReportsSection';
 
 function ManagerDashboard() {
 
@@ -51,6 +54,8 @@ function ManagerDashboard() {
     { id: 'commission', name: 'Commission', icon: '🤝' },
     { id: 'statements', name: 'Statements', icon: '📜' },
     { id: 'expenses', name: 'Expenses', icon: '📉' },
+    { id: 'performance', name: 'Performance', icon: '📈' },
+    { id: 'reports', name: 'Reports', icon: '📑' },
     { id: 'security', name: 'Security', icon: '🛡️' }
   ], []);
 
@@ -58,14 +63,13 @@ function ManagerDashboard() {
   const [activeView, setActiveView] = useState('overview');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState<any>({});
-  const [transactions, setTransactions] = useState([]);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [_transactions, setTransactions] = useState([]);
   const [loans, setLoans] = useState([]);
   const [cashFlow, setCashFlow] = useState(null);
   const [interestData, setInterestData] = useState(null);
   const [commissionData, setCommissionData] = useState(null);
-  const [serviceCharges, setServiceCharges] = useState([]);
-  const [newCharge, setNewCharge] = useState({
+  const [newCharge, setNewCharge] = useState<ServiceCharge>({
     name: '', description: '', charge_type: 'percentage', rate: '', applicable_to: []
   });
   const [serviceChargeCalculation, setServiceChargeCalculation] = useState(null);
@@ -109,14 +113,13 @@ function ManagerDashboard() {
   }, []);
 
   const fetchTransactions = async () => { const r = await authService.getAllTransactions(); if (r.success) setTransactions(Array.isArray(r.data) ? r.data : []); };
-  const fetchLoans = async () => { const r = await authService.getPendingLoans(); if (r.success) setLoans(r.data); };
+  const fetchLoans = async () => { const r = await authService.getPendingLoans(); if (r.success && r.data) setLoans(r.data.results || []); };
   const fetchCashFlow = async () => { const r = await authService.getCashFlow(); if (r.success) setCashFlow(r.data); };
   const fetchInterest = async () => { const r = await authService.calculateInterest({}); if (r.success) setInterestData(r.data); };
   const fetchCommission = async () => { const r = await authService.calculateCommission({}); if (r.success) setCommissionData(r.data); };
-  const fetchServiceCharges = async () => { const r = await authService.getServiceCharges(); if (r.success) setServiceCharges(r.data); };
-  const fetchStaffMembers = async () => { const r = await authService.getAllStaff(); if (r.success) setStaffMembers(r.data); };
-  const fetchExpenses = async () => { const r = await authService.getExpenses(); if (r.success) setExpenses(r.data); };
-  const fetchStaffIds = async () => { const r = await authService.getStaffIds(staffIdFilters); if (r.success) setStaffIds(r.data.results || r.data); };
+  const fetchStaffMembers = async () => { const r = await authService.getAllStaff(); if (r.success) setStaffMembers(r.data as never[]); };
+  const fetchExpenses = async () => { const r = await authService.getExpenses(); if (r.success) setExpenses(r.data as never[]); };
+  const fetchStaffIds = async () => { const r = await authService.getStaffIds(staffIdFilters); if (r.success) setStaffIds(((r.data as { results?: never[] })?.results || r.data) as never[]); };
 
   useEffect(() => {
     if (activeView === 'transactions') fetchTransactions();
@@ -124,10 +127,10 @@ function ManagerDashboard() {
     if (activeView === 'cashflow') fetchCashFlow();
     if (activeView === 'interest') fetchInterest();
     if (activeView === 'commission') fetchCommission();
-    if (activeView === 'charges') fetchServiceCharges();
     if (activeView === 'users' || activeView === 'payslip') fetchStaffMembers();
     if (activeView === 'staff-ids') fetchStaffIds();
     if (activeView === 'expenses') fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView, staffIdFilters]);
 
   // --- HANDLERS ---
@@ -136,7 +139,7 @@ function ManagerDashboard() {
   const handleSendOTP = async () => {
     // Prevent double-clicks
     if (otpLoading) {
-      console.log('[OTP] Request already in progress, ignoring');
+      logger.debug('[OTP] Request already in progress, ignoring');
       return;
     }
 
@@ -149,15 +152,12 @@ function ManagerDashboard() {
 
     // Set loading state to prevent duplicate requests
     setOtpLoading(true);
-    console.log('[OTP] Sending OTP to phone:', phoneNumber);
+    logger.debug('[OTP] Sending OTP to phone:', phoneNumber);
 
     try {
-      const response = await authService.sendOTP({
-        phone_number: phoneNumber,
-        verification_type: 'user_creation'
-      });
+      const response = await authService.sendOTP(formData.phone) as { success: boolean; error?: string; data?: { test_mode?: boolean; otp_code?: string } };
 
-      console.log('[OTP] Response:', response);
+      logger.debug('[OTP] Response received');  // Do NOT log actual response - contains sensitive OTP data
 
       if (response.success) {
         setOtpSent(true);
@@ -187,11 +187,7 @@ function ManagerDashboard() {
   const handleVerifyOTP = async () => {
     if (!otpCode) { alert('Please enter the OTP code'); return; }
     const phoneNumber = formData.phone?.trim();
-    const response = await authService.verifyOTP({
-      phone_number: phoneNumber,
-      otp_code: otpCode,
-      verification_type: 'user_creation'
-    });
+    const response = await authService.verifyOTP(otpCode, phoneNumber) as { success: boolean; error?: string };
     if (response.success) {
       setPhoneVerified(true);
       setOtpSent(false);
@@ -201,17 +197,17 @@ function ManagerDashboard() {
     }
   };
 
-  const handleCreateUser = async (e: any) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneVerified) { alert('Please verify your phone number with OTP before creating the user.'); return; }
-    const response = await authService.createUser(formData);
+    const response = await (authService as unknown as { createUser: (data: Record<string, string>) => Promise<{ success: boolean; error?: string; data?: { staff_id?: string } }> }).createUser(formData);
     if (response.success) {
       alert(`User created! ID: ${response.data.staff_id || 'N/A'}`);
       setFormData({}); setOtpCode(''); setPhoneVerified(false); setOtpSent(false);
     } else { alert('Failed to create user: ' + response.error); }
   };
 
-  const handleApproveLoan = async (loanId: any) => {
+  const handleApproveLoan = async (loanId: string | number) => {
     const response = await authService.approveLoan(loanId);
     if (response.success) { alert('Loan approved successfully!'); fetchLoans(); }
     else { alert('Failed to approve loan: ' + response.error); }
@@ -219,13 +215,13 @@ function ManagerDashboard() {
 
   const handleGeneratePayslip = async () => {
     const response = await authService.generatePayslip(formData);
-    if (response.success) { alert('Payslip generated successfully!'); console.log(response.data); }
+    if (response.success) { alert('Payslip generated successfully!'); logger.debug('[Payslip] Generated:', response.data); }
     else { alert('Failed to generate payslip: ' + response.error); }
   };
 
   const handleGenerateStatement = async () => {
     const response = await authService.generateStatement(formData);
-    if (response.success) { alert('Statement generated successfully!'); console.log(response.data); }
+    if (response.success) { alert('Statement generated successfully!'); logger.debug('[Statement] Generated:', response.data); }
     else { alert('Failed to generate statement: ' + response.error); }
   };
 
@@ -282,12 +278,11 @@ function ManagerDashboard() {
           newCharge={newCharge} setNewCharge={setNewCharge}
           serviceChargeCalculation={serviceChargeCalculation}
           setServiceChargeCalculation={setServiceChargeCalculation}
-          serviceCharges={serviceCharges} fetchServiceCharges={fetchServiceCharges}
         />
       );
       case 'payslip': return (
         <PayslipSection
-          formData={formData} setFormData={setFormData}
+          formData={formData as never} setFormData={setFormData as never}
           handleGeneratePayslip={handleGeneratePayslip}
           staffMembers={staffMembers}
         />
@@ -304,10 +299,12 @@ function ManagerDashboard() {
       );
       case 'expenses': return (
         <ExpensesSection
-          newExpense={newExpense} setNewExpense={setNewExpense}
+          newExpense={newExpense as never} setNewExpense={setNewExpense as never}
           expenses={expenses} fetchExpenses={fetchExpenses}
         />
       );
+      case 'performance': return <PerformanceMonitoringSection />;
+      case 'reports': return <ReportsSection />;
       case 'security': return <SecuritySection />;
       default: return null;
     }

@@ -114,7 +114,7 @@ class Message(models.Model):
         return self.read_by.exists()
 
 
-class UserMessagePreferences(models.Model):
+class UserMessagePreference(models.Model):
     """User preferences for messaging notifications."""
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="message_preferences")

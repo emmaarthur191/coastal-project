@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
+import { AxiosError } from 'axios';
 
 interface Complaint {
   id: string;
@@ -65,15 +66,10 @@ const ComplaintsTab: React.FC = () => {
 
   // Form state
   const [formData, setFormData] = useState({
-    account_id: '',
-    related_transaction_id: '',
-    complaint_type: '',
+    category: '',
     priority: 'medium',
     subject: '',
     description: '',
-    follow_up_required: false,
-    follow_up_date: '',
-    attachments: [] as File[]
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,7 +81,7 @@ const ComplaintsTab: React.FC = () => {
   const fetchComplaints = async () => {
     try {
       setLoading(true);
-      const response = await api.get('banking/complaints/');
+      const response = await api.get<any>('banking/complaints/');
       const data = response.data?.results || response.data || [];
       setComplaints(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -99,8 +95,8 @@ const ComplaintsTab: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('banking/complaints/reports/summary/');
-      setStats(response.data.summary);
+      const response = await api.get<any>('banking/complaints/reports/summary/');
+      setStats(response.data?.summary || null);
     } catch (error) {
       console.error('Error fetching stats:', error);
       setStats({
@@ -117,7 +113,7 @@ const ComplaintsTab: React.FC = () => {
 
   const handleSubmitComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.account_id || !formData.complaint_type || !formData.subject || !formData.description) {
+    if (!formData.category || !formData.subject || !formData.description) {
       setMessage({ type: 'error', text: 'Please fill in all required fields' });
       return;
     }
@@ -125,35 +121,30 @@ const ComplaintsTab: React.FC = () => {
     try {
       setSubmitting(true);
       const submitData = {
-        account_id: formData.account_id,
-        complaint_type: formData.complaint_type,
+        category: formData.category,
         priority: formData.priority,
         subject: formData.subject,
         description: formData.description,
-        follow_up_required: formData.follow_up_required,
-        follow_up_date: formData.follow_up_date || null,
-        ...(formData.related_transaction_id && { related_transaction_id: formData.related_transaction_id })
       };
 
-      await api.post('banking/complaints/', submitData);
+      await api.post<any>('banking/complaints/', submitData);
       setMessage({ type: 'success', text: 'Complaint submitted successfully' });
       setShowForm(false);
       setFormData({
-        account_id: '',
-        related_transaction_id: '',
-        complaint_type: '',
+        category: '',
         priority: 'medium',
         subject: '',
         description: '',
-        follow_up_required: false,
-        follow_up_date: '',
-        attachments: []
       });
       fetchComplaints();
       fetchStats();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting complaint:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to submit complaint' });
+      if (error instanceof AxiosError) {
+        setMessage({ type: 'error', text: error.message || 'Failed to submit complaint' });
+      } else {
+        setMessage({ type: 'error', text: 'Failed to submit complaint' });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -193,12 +184,12 @@ const ComplaintsTab: React.FC = () => {
   });
 
   const complaintTypes = [
-    { value: 'product_issue', label: 'Product Issue' },
-    { value: 'service_delay', label: 'Service Delay' },
-    { value: 'billing_error', label: 'Billing Error' },
-    { value: 'account_access', label: 'Account Access' },
-    { value: 'transaction_error', label: 'Transaction Error' },
-    { value: 'staff_behavior', label: 'Staff Behavior' },
+    { value: 'account', label: 'Account Issues' },
+    { value: 'transaction', label: 'Transaction Issues' },
+    { value: 'service', label: 'Service Quality' },
+    { value: 'staff', label: 'Staff Behavior' },
+    { value: 'technical', label: 'Technical Issues' },
+    { value: 'fees', label: 'Fees and Charges' },
     { value: 'other', label: 'Other' }
   ];
 
@@ -275,46 +266,34 @@ const ComplaintsTab: React.FC = () => {
         <GlassCard className="p-6 border-2 border-coastal-primary/10">
           <h3 className="text-lg font-bold text-gray-800 mb-6">Submit New Complaint</h3>
           <form onSubmit={handleSubmitComplaint} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Account ID *"
-                value={formData.account_id}
-                onChange={(e) => setFormData({ ...formData, account_id: e.target.value })}
-                placeholder="Enter account UUID"
+                as="select"
+                label="Category *"
+                id="category"
+                title="Select complaint category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
-              />
+              >
+                <option value="">Select category...</option>
+                {complaintTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </Input>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
-                  Complaint Type *
-                </label>
-                <select
-                  value={formData.complaint_type}
-                  onChange={(e) => setFormData({ ...formData, complaint_type: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
-                >
-                  <option value="">Select type...</option>
-                  {complaintTypes.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
-                  Priority
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
-                >
-                  {priorities.map(priority => (
-                    <option key={priority.value} value={priority.value}>{priority.label}</option>
-                  ))}
-                </select>
-              </div>
+              <Input
+                as="select"
+                label="Priority"
+                id="priority"
+                title="Select priority level"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+              >
+                {priorities.map(priority => (
+                  <option key={priority.value} value={priority.value}>{priority.label}</option>
+                ))}
+              </Input>
             </div>
 
             <Input
@@ -325,42 +304,17 @@ const ComplaintsTab: React.FC = () => {
               required
             />
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
-                Description *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Detailed description..."
-                rows={4}
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-center bg-gray-50 p-4 rounded-xl">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={formData.follow_up_required}
-                  onChange={(e) => setFormData({ ...formData, follow_up_required: e.target.checked })}
-                  className="w-5 h-5 rounded border-gray-300 text-coastal-primary focus:ring-coastal-primary"
-                />
-                <span className="text-gray-700 font-medium">Follow-up required</span>
-              </label>
-
-              {formData.follow_up_required && (
-                <div className="flex-1">
-                  <Input
-                    type="date"
-                    value={formData.follow_up_date}
-                    onChange={(e) => setFormData({ ...formData, follow_up_date: e.target.value })}
-                    className="bg-white"
-                  />
-                </div>
-              )}
-            </div>
+            <Input
+              as="textarea"
+              label="Description *"
+              id="description"
+              title="Detailed description of the complaint"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Detailed description..."
+              rows={4}
+              required
+            />
 
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
               <Button onClick={() => setShowForm(false)} variant="secondary" disabled={submitting}>
@@ -386,18 +340,18 @@ const ComplaintsTab: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
-            >
-              {statuses.map(status => (
-                <option key={status.value} value={status.value}>{status.label}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            as="select"
+            label="Status"
+            id="status-filter"
+            title="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            {statuses.map(status => (
+              <option key={status.value} value={status.value}>{status.label}</option>
+            ))}
+          </Input>
 
           <Button
             onClick={() => { setSearchTerm(''); setStatusFilter(''); setDateFilter(''); }}

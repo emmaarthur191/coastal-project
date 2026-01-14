@@ -5,10 +5,12 @@
 import type { Account } from '../models/Account';
 import type { AccountClosureRequest } from '../models/AccountClosureRequest';
 import type { AccountOpeningRequest } from '../models/AccountOpeningRequest';
+import type { AccountStatement } from '../models/AccountStatement';
 import type { BlockedUser } from '../models/BlockedUser';
 import type { CashAdvance } from '../models/CashAdvance';
 import type { CashDrawer } from '../models/CashDrawer';
 import type { ChatRoom } from '../models/ChatRoom';
+import type { CheckDeposit } from '../models/CheckDeposit';
 import type { ClientAssignment } from '../models/ClientAssignment';
 import type { Complaint } from '../models/Complaint';
 import type { Device } from '../models/Device';
@@ -19,10 +21,12 @@ import type { MessageThread } from '../models/MessageThread';
 import type { OperationsMessage } from '../models/OperationsMessage';
 import type { PaginatedAccountClosureRequestList } from '../models/PaginatedAccountClosureRequestList';
 import type { PaginatedAccountList } from '../models/PaginatedAccountList';
+import type { PaginatedAccountStatementList } from '../models/PaginatedAccountStatementList';
 import type { PaginatedCashAdvanceList } from '../models/PaginatedCashAdvanceList';
 import type { PaginatedCashDrawerList } from '../models/PaginatedCashDrawerList';
 import type { PaginatedChatMessageList } from '../models/PaginatedChatMessageList';
 import type { PaginatedChatRoomList } from '../models/PaginatedChatRoomList';
+import type { PaginatedCheckDepositList } from '../models/PaginatedCheckDepositList';
 import type { PaginatedClientAssignmentList } from '../models/PaginatedClientAssignmentList';
 import type { PaginatedComplaintList } from '../models/PaginatedComplaintList';
 import type { PaginatedDeviceList } from '../models/PaginatedDeviceList';
@@ -31,6 +35,7 @@ import type { PaginatedLoanList } from '../models/PaginatedLoanList';
 import type { PaginatedMessageList } from '../models/PaginatedMessageList';
 import type { PaginatedMessageThreadList } from '../models/PaginatedMessageThreadList';
 import type { PaginatedOperationsMessageList } from '../models/PaginatedOperationsMessageList';
+import type { PaginatedPayslipList } from '../models/PaginatedPayslipList';
 import type { PaginatedProductList } from '../models/PaginatedProductList';
 import type { PaginatedPromotionList } from '../models/PaginatedPromotionList';
 import type { PaginatedRefundList } from '../models/PaginatedRefundList';
@@ -51,6 +56,7 @@ import type { PatchedRefund } from '../models/PatchedRefund';
 import type { PatchedReportSchedule } from '../models/PatchedReportSchedule';
 import type { PatchedServiceRequest } from '../models/PatchedServiceRequest';
 import type { PatchedUser } from '../models/PatchedUser';
+import type { Payslip } from '../models/Payslip';
 import type { Product } from '../models/Product';
 import type { Promotion } from '../models/Promotion';
 import type { Refund } from '../models/Refund';
@@ -67,6 +73,43 @@ import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class ApiService {
+    /**
+     * GET /api/accounts/balance/
+     *
+     * Returns account balance summary for the currently logged-in user.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiAccountsBalanceRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/accounts/balance/',
+        });
+    }
+    /**
+     * GET /api/accounts/manager/overview/
+     *
+     * Returns manager dashboard overview metrics.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiAccountsManagerOverviewRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/accounts/manager/overview/',
+        });
+    }
+    /**
+     * Get summary statistics for all accounts.
+     * @returns Account
+     * @throws ApiError
+     */
+    public static apiAccountsSummaryRetrieve(): CancelablePromise<Account> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/accounts/summary/',
+        });
+    }
     /**
      * Retrieve audit logs and summary events for the specified time range.
      * @returns any No response body
@@ -190,7 +233,7 @@ export class ApiService {
     ): CancelablePromise<AccountOpeningRequest> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/account-openings/send_otp/',
+            url: '/api/banking/account-openings/send-otp/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -206,7 +249,7 @@ export class ApiService {
     ): CancelablePromise<AccountOpeningRequest> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/account-openings/verify_and_submit/',
+            url: '/api/banking/account-openings/verify-and-submit/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -430,7 +473,7 @@ export class ApiService {
     public static apiBankingClientRegistrationsSubmitRegistrationCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/client-registrations/submit_registration/',
+            url: '/api/banking/client-registrations/submit-registration/',
         });
     }
     /**
@@ -625,7 +668,7 @@ export class ApiService {
     ): CancelablePromise<Device> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/devices/sync_data/',
+            url: '/api/banking/devices/sync-data/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -917,7 +960,7 @@ export class ApiService {
     ): CancelablePromise<MessageThread> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/message-threads/{id}/mark_as_read/',
+            url: '/api/banking/message-threads/{id}/mark-as-read/',
             path: {
                 'id': id,
             },
@@ -938,7 +981,7 @@ export class ApiService {
     ): CancelablePromise<MessageThread> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/message-threads/{id}/send_message/',
+            url: '/api/banking/message-threads/{id}/send-message/',
             path: {
                 'id': id,
             },
@@ -1009,7 +1052,7 @@ export class ApiService {
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/messages/{id}/add_reaction/',
+            url: '/api/banking/messages/{id}/add-reaction/',
             path: {
                 'id': id,
             },
@@ -1030,7 +1073,7 @@ export class ApiService {
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/messages/{id}/remove_reaction/',
+            url: '/api/banking/messages/{id}/remove-reaction/',
             path: {
                 'id': id,
             },
@@ -1049,7 +1092,7 @@ export class ApiService {
     ): CancelablePromise<Message> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/messages/upload_media/',
+            url: '/api/banking/messages/upload-media/',
             formData: formData,
             mediaType: 'multipart/form-data',
         });
@@ -1242,7 +1285,7 @@ export class ApiService {
     public static apiBankingStaffAccountsSummaryRetrieve(): CancelablePromise<Account> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/accounts/summary/',
+            url: '/api/banking/staff-accounts/summary/',
         });
     }
     /**
@@ -1354,35 +1397,49 @@ export class ApiService {
     }
     /**
      * ViewSet for managing check deposits.
-     * @returns any No response body
+     * @param ordering Which field to use when ordering the results.
+     * @param page A page number within the paginated result set.
+     * @returns PaginatedCheckDepositList
      * @throws ApiError
      */
-    public static apiCheckDepositsRetrieve(): CancelablePromise<any> {
+    public static apiCheckDepositsList(
+        ordering?: string,
+        page?: number,
+    ): CancelablePromise<PaginatedCheckDepositList> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/check-deposits/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+            },
         });
     }
     /**
      * ViewSet for managing check deposits.
-     * @returns any No response body
+     * @param requestBody
+     * @returns CheckDeposit
      * @throws ApiError
      */
-    public static apiCheckDepositsCreate(): CancelablePromise<any> {
+    public static apiCheckDepositsCreate(
+        requestBody: CheckDeposit,
+    ): CancelablePromise<CheckDeposit> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * ViewSet for managing check deposits.
      * @param id
-     * @returns any No response body
+     * @returns CheckDeposit
      * @throws ApiError
      */
-    public static apiCheckDepositsRetrieve2(
+    public static apiCheckDepositsRetrieve(
         id: string,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<CheckDeposit> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/check-deposits/{id}/',
@@ -1394,46 +1451,59 @@ export class ApiService {
     /**
      * Approve a check deposit and credit the account.
      * @param id
-     * @returns any No response body
+     * @param requestBody
+     * @returns CheckDeposit
      * @throws ApiError
      */
     public static apiCheckDepositsApproveCreate(
         id: string,
-    ): CancelablePromise<any> {
+        requestBody: CheckDeposit,
+    ): CancelablePromise<CheckDeposit> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/{id}/approve/',
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * Reject a check deposit.
      * @param id
-     * @returns any No response body
+     * @param requestBody
+     * @returns CheckDeposit
      * @throws ApiError
      */
     public static apiCheckDepositsRejectCreate(
         id: string,
-    ): CancelablePromise<any> {
+        requestBody: CheckDeposit,
+    ): CancelablePromise<CheckDeposit> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/check-deposits/{id}/reject/',
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * Process a check deposit from the cashier dashboard.
-     * @returns any No response body
+     * @param requestBody
+     * @returns CheckDeposit
      * @throws ApiError
      */
-    public static apiCheckDepositsProcessCheckDepositCreate(): CancelablePromise<any> {
+    public static apiCheckDepositsProcessCheckDepositCreate(
+        requestBody: CheckDeposit,
+    ): CancelablePromise<CheckDeposit> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/check-deposits/process_check_deposit/',
+            url: '/api/check-deposits/process-check-deposit/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -1543,7 +1613,7 @@ export class ApiService {
     public static apiFraudAlertsDashboardStatsRetrieve(): CancelablePromise<FraudAlert> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/fraud-alerts/dashboard_stats/',
+            url: '/api/fraud-alerts/dashboard-stats/',
         });
     }
     /**
@@ -1653,7 +1723,7 @@ export class ApiService {
     public static apiFraudAlertsDashboardStatsRetrieve2(): CancelablePromise<FraudAlert> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/fraud/alerts/dashboard_stats/',
+            url: '/api/fraud/alerts/dashboard-stats/',
         });
     }
     /**
@@ -2039,7 +2109,7 @@ export class ApiService {
     ): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/assignments/{id}/update_status/',
+            url: '/api/operations/assignments/{id}/update-status/',
             path: {
                 'id': id,
             },
@@ -2055,7 +2125,7 @@ export class ApiService {
     public static apiOperationsAssignmentsMyClientsRetrieve(): CancelablePromise<ClientAssignment> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/operations/assignments/my_clients/',
+            url: '/api/operations/assignments/my-clients/',
         });
     }
     /**
@@ -2203,24 +2273,33 @@ export class ApiService {
     }
     /**
      * ViewSet for managing staff payslips with PDF generation.
-     * @returns any No response body
+     * @param ordering Which field to use when ordering the results.
+     * @param page A page number within the paginated result set.
+     * @returns PaginatedPayslipList
      * @throws ApiError
      */
-    public static apiOperationsPayslipsRetrieve(): CancelablePromise<any> {
+    public static apiOperationsPayslipsList(
+        ordering?: string,
+        page?: number,
+    ): CancelablePromise<PaginatedPayslipList> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+            },
         });
     }
     /**
      * ViewSet for managing staff payslips with PDF generation.
      * @param id
-     * @returns any No response body
+     * @returns Payslip
      * @throws ApiError
      */
-    public static apiOperationsPayslipsRetrieve2(
+    public static apiOperationsPayslipsRetrieve(
         id: string,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<Payslip> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/{id}/',
@@ -2232,12 +2311,12 @@ export class ApiService {
     /**
      * Download payslip PDF.
      * @param id
-     * @returns any No response body
+     * @returns Payslip
      * @throws ApiError
      */
     public static apiOperationsPayslipsDownloadRetrieve(
         id: string,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<Payslip> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/{id}/download/',
@@ -2249,26 +2328,30 @@ export class ApiService {
     /**
      * Mark payslip as paid.
      * @param id
-     * @returns any No response body
+     * @param requestBody
+     * @returns Payslip
      * @throws ApiError
      */
     public static apiOperationsPayslipsMarkPaidCreate(
         id: string,
-    ): CancelablePromise<any> {
+        requestBody: Payslip,
+    ): CancelablePromise<Payslip> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/payslips/{id}/mark_paid/',
+            url: '/api/operations/payslips/{id}/mark-paid/',
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * Get current user's payslips.
-     * @returns any No response body
+     * @returns Payslip
      * @throws ApiError
      */
-    public static apiOperationsPayslipsMyPayslipsRetrieve(): CancelablePromise<any> {
+    public static apiOperationsPayslipsMyPayslipsRetrieve(): CancelablePromise<Payslip> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/payslips/my_payslips/',
@@ -2282,7 +2365,7 @@ export class ApiService {
     public static apiOperationsProcessDepositCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/process_deposit/',
+            url: '/api/operations/process-deposit/',
         });
     }
     /**
@@ -2293,7 +2376,7 @@ export class ApiService {
     public static apiOperationsProcessWithdrawalCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/process_withdrawal/',
+            url: '/api/operations/process-withdrawal/',
         });
     }
     /**
@@ -2304,7 +2387,7 @@ export class ApiService {
     public static apiOperationsScheduleVisitCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/schedule_visit/',
+            url: '/api/operations/schedule-visit/',
         });
     }
     /**
@@ -2331,24 +2414,33 @@ export class ApiService {
     }
     /**
      * ViewSet for auto-generated account statements.
-     * @returns any No response body
+     * @param ordering Which field to use when ordering the results.
+     * @param page A page number within the paginated result set.
+     * @returns PaginatedAccountStatementList
      * @throws ApiError
      */
-    public static apiOperationsStatementsRetrieve(): CancelablePromise<any> {
+    public static apiOperationsStatementsList(
+        ordering?: string,
+        page?: number,
+    ): CancelablePromise<PaginatedAccountStatementList> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/statements/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+            },
         });
     }
     /**
      * ViewSet for auto-generated account statements.
      * @param id
-     * @returns any No response body
+     * @returns AccountStatement
      * @throws ApiError
      */
-    public static apiOperationsStatementsRetrieve2(
+    public static apiOperationsStatementsRetrieve(
         id: string,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<AccountStatement> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/statements/{id}/',
@@ -2360,12 +2452,12 @@ export class ApiService {
     /**
      * Download statement PDF.
      * @param id
-     * @returns any No response body
+     * @returns AccountStatement
      * @throws ApiError
      */
     public static apiOperationsStatementsDownloadRetrieve(
         id: string,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<AccountStatement> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/operations/statements/{id}/download/',
@@ -2376,13 +2468,18 @@ export class ApiService {
     }
     /**
      * Request a new statement.
-     * @returns any No response body
+     * @param requestBody
+     * @returns AccountStatement
      * @throws ApiError
      */
-    public static apiOperationsStatementsRequestStatementCreate(): CancelablePromise<any> {
+    public static apiOperationsStatementsRequestStatementCreate(
+        requestBody: AccountStatement,
+    ): CancelablePromise<AccountStatement> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/statements/request_statement/',
+            url: '/api/operations/statements/request-statement/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -2407,7 +2504,7 @@ export class ApiService {
     ): CancelablePromise<PaginatedVisitScheduleList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/operations/visit_schedules/',
+            url: '/api/operations/visit-schedules/',
             query: {
                 'page': page,
             },
@@ -2424,7 +2521,7 @@ export class ApiService {
     ): CancelablePromise<VisitSchedule> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/operations/visit_schedules/',
+            url: '/api/operations/visit-schedules/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -2441,7 +2538,29 @@ export class ApiService {
         });
     }
     /**
-     * Return system-level performance health and resource utilization metrics (Stub).
+     * Return recent system performance alerts.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiPerformanceAlertsRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/performance/alerts/',
+        });
+    }
+    /**
+     * Return labels and datasets for performance charts.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiPerformanceChartRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/performance/chart/',
+        });
+    }
+    /**
+     * Return system-level performance health and resource utilization metrics.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2452,7 +2571,7 @@ export class ApiService {
         });
     }
     /**
-     * Return detailed performance metrics over time (Stub).
+     * Return detailed performance metrics over time.
      * @returns any No response body
      * @throws ApiError
      */
@@ -2460,6 +2579,17 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/performance/metrics/',
+        });
+    }
+    /**
+     * Return system recommendations based on performance analytics.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiPerformanceRecommendationsRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/performance/recommendations/',
         });
     }
     /**
@@ -2471,6 +2601,17 @@ export class ApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/performance/system-health/',
+        });
+    }
+    /**
+     * Return transaction volume aggregated by period.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static apiPerformanceVolumeRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/performance/volume/',
         });
     }
     /**
@@ -2979,7 +3120,7 @@ export class ApiService {
     ): CancelablePromise<ReportSchedule> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/reports/schedules/{id}/toggle_active/',
+            url: '/api/reports/schedules/{id}/toggle-active/',
             path: {
                 'id': id,
             },
@@ -3181,7 +3322,7 @@ export class ApiService {
     ): CancelablePromise<ServiceRequest> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/services/requests/{id}/approve_checkbook/',
+            url: '/api/services/requests/{id}/approve-checkbook/',
             path: {
                 'id': id,
             },
@@ -3218,7 +3359,7 @@ export class ApiService {
     public static apiServicesRequestsPendingCheckbooksRetrieve(): CancelablePromise<ServiceRequest> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/services/requests/pending_checkbooks/',
+            url: '/api/services/requests/pending-checkbooks/',
         });
     }
     /**
@@ -3233,6 +3374,8 @@ export class ApiService {
         });
     }
     /**
+     * Mixin to provide idempotency for ViewSet actions.
+     * Expects 'X-Idempotency-Key' header in the request.
      * @param ordering Which field to use when ordering the results.
      * @param page A page number within the paginated result set.
      * @param status * `pending` - Pending
@@ -3265,6 +3408,8 @@ export class ApiService {
         });
     }
     /**
+     * Mixin to provide idempotency for ViewSet actions.
+     * Expects 'X-Idempotency-Key' header in the request.
      * @param requestBody
      * @returns Transaction
      * @throws ApiError
@@ -3280,6 +3425,8 @@ export class ApiService {
         });
     }
     /**
+     * Mixin to provide idempotency for ViewSet actions.
+     * Expects 'X-Idempotency-Key' header in the request.
      * @param id A unique integer value identifying this transaction.
      * @returns Transaction
      * @throws ApiError

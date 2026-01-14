@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { VisitSchedule } from './VisitSchedule';
 export type PaginatedVisitScheduleList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<VisitSchedule>;
+    results: Array<VisitSchedule>;
 };
-

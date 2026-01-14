@@ -2,6 +2,9 @@
 import { formatCurrencyGHS } from '../utils/formatters';
 import { sanitizeUserInput } from '../utils/sanitizer';
 import { apiService } from '../services/api';
+import { Account } from '../api/models/Account';
+import { Input } from '../components/ui/Input';
+import './Transfer.css';
 
 function Transfer() {
   const [formData, setFormData] = useState({
@@ -15,22 +18,17 @@ function Transfer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const data = await apiService.getAccounts();
-        if (Array.isArray(data)) {
-          setAccounts(data);
-        } else if ((data as any).results && Array.isArray((data as any).results)) {
-          setAccounts((data as any).results);
+        const result = await apiService.getAccounts();
+        if (result.success && result.data) {
+          setAccounts(result.data);
         }
       } catch (err) {
         console.error("Failed to fetch accounts", err);
-      } finally {
-        setAccountsLoading(false);
       }
     };
     fetchAccounts();
@@ -75,76 +73,35 @@ function Transfer() {
     setShowConfirmation(false);
   };
 
-  const selectedFromAccount = accounts.find(acc => acc.id === formData.fromAccount);
+  const selectedFromAccount = accounts.find(acc => acc.id === Number(formData.fromAccount));
   const transferFee = 1.50; // GHS
-  const totalAmount = parseFloat(formData.amount || 0) + transferFee;
+  const totalAmount = parseFloat(formData.amount || "0") + transferFee;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '20px'
-    }}>
+    <div className="transfer-page">
       {/* Header */}
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '30px',
-        marginBottom: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+      <div className="transfer-header-section">
+        <div className="header-content">
           <div>
-            <h1 style={{
-              margin: '0 0 8px 0',
-              color: '#1e293b',
-              fontSize: '28px',
-              fontWeight: '700'
-            }}>
+            <h1 className="header-title">
               Transfer Funds
             </h1>
-            <p style={{
-              margin: 0,
-              color: '#64748b',
-              fontSize: '16px'
-            }}>
+            <p className="header-subtitle">
               Send money securely to other accounts
             </p>
           </div>
           {/* Progress Steps */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div className="progress-steps">
             {[1, 2].map((stepNumber) => (
-              <div key={stepNumber} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  background: step >= stepNumber ? '#3b82f6' : '#e2e8f0',
-                  color: step >= stepNumber ? 'white' : '#64748b',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: '600',
-                  fontSize: '14px'
-                }}>
+              <div key={stepNumber} className="step-item">
+                <div className={`step-badge ${step >= stepNumber ? 'active' : ''}`}>
                   {stepNumber}
                 </div>
-                <div style={{
-                  color: step >= stepNumber ? '#3b82f6' : '#64748b',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  whiteSpace: 'nowrap'
-                }}>
+                <div className={`step-label ${step >= stepNumber ? 'active' : ''}`}>
                   {stepNumber === 1 ? 'Details' : 'Confirm'}
                 </div>
                 {stepNumber < 2 && (
-                  <div style={{
-                    width: '20px',
-                    height: '2px',
-                    background: step > stepNumber ? '#3b82f6' : '#e2e8f0',
-                    marginLeft: '8px'
-                  }}></div>
+                  <div className={`step-connector ${step > stepNumber ? 'active' : ''}`}></div>
                 )}
               </div>
             ))}
@@ -152,325 +109,159 @@ function Transfer() {
         </div>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 400px',
-        gap: '24px'
-      }}>
+      <div className="transfer-main-grid">
         {/* Transfer Form */}
-        <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '30px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
+        <div className="transfer-card">
           {!showConfirmation ? (
             <form onSubmit={handleSubmit}>
               {step === 1 ? (
                 <>
-                  <h3 style={{
-                    margin: '0 0 24px 0',
-                    color: '#1e293b',
-                    fontSize: '20px',
-                    fontWeight: '600'
-                  }}>
+                  <h3 className="section-title">
                     Transfer Details
                   </h3>
 
                   {/* From Account */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      color: '#374151',
-                      fontWeight: '500',
-                      fontSize: '14px'
-                    }}>
-                      From Account
-                    </label>
-                    <select
+                  <div className="form-group">
+                    <Input
+                      as="select"
+                      label="From Account"
                       name="fromAccount"
+                      id="fromAccount"
+                      title="Select source account"
                       value={formData.fromAccount}
                       onChange={handleInputChange}
                       required
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        background: 'white'
-                      }}
                     >
                       <option value="">Select source account</option>
                       {accounts.map(account => (
                         <option key={account.id} value={account.id}>
-                          {account.name} ({account.number}) - {formatCurrencyGHS(account.balance)}
+                          Account {account.account_number} - {formatCurrencyGHS(parseFloat(account.balance || "0"))}
                         </option>
                       ))}
-                    </select>
+                    </Input>
                   </div>
 
+
                   {/* To Account */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      color: '#374151',
-                      fontWeight: '500',
-                      fontSize: '14px'
-                    }}>
-                      To Account
-                    </label>
-                    <input
-                      type="text"
+                  <div className="form-group">
+                    <Input
+                      label="To Account"
                       name="toAccount"
+                      id="toAccount"
+                      title="Enter recipient account number or member name"
                       value={formData.toAccount}
                       onChange={handleInputChange}
                       placeholder="Enter account number or member name"
                       required
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px'
-                      }}
                     />
                   </div>
 
+
                   {/* Amount */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      color: '#374151',
-                      fontWeight: '500',
-                      fontSize: '14px'
-                    }}>
-                      Amount (GHS)
-                    </label>
-                    <input
+                  <div className="form-group">
+                    <Input
                       type="number"
+                      label="Amount (GHS)"
                       name="amount"
+                      id="amount"
+                      title="Enter transfer amount"
                       value={formData.amount}
                       onChange={handleInputChange}
                       placeholder="0.00"
-                      min="0.01"
-                      step="0.01"
                       required
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: '600'
-                      }}
                     />
                   </div>
 
+
                   {/* Description */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      color: '#374151',
-                      fontWeight: '500',
-                      fontSize: '14px'
-                    }}>
-                      Description
-                    </label>
-                    <input
-                      type="text"
+                  <div className="form-group">
+                    <Input
+                      label="Description"
                       name="description"
+                      id="description"
+                      title="Enter a description for the transfer"
                       value={formData.description}
                       onChange={handleInputChange}
-                      placeholder="Add a note for this transfer"
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '14px'
-                      }}
+                      placeholder="e.g. For project expenses"
+                      required
                     />
                   </div>
+
 
                   <button
                     type="submit"
-                    style={{
-                      width: '100%',
-                      padding: '16px',
-                      background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                      border: 'none',
-                      borderRadius: '10px',
-                      color: 'white',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 15px rgba(59, 130, 246, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
+                    className="btn-continue"
                   >
                     Continue to Review
                   </button>
                 </>
               ) : (
                 <>
-                  <h3 style={{
-                    margin: '0 0 24px 0',
-                    color: '#1e293b',
-                    fontSize: '20px',
-                    fontWeight: '600'
-                  }}>
+                  <h3 className="section-title">
                     Confirm Transfer
                   </h3>
 
                   {/* Transfer Summary */}
-                  <div style={{
-                    background: '#f8fafc',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    marginBottom: '24px',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{ color: '#64748b', fontSize: '14px' }}>From Account</div>
-                      <div style={{ color: '#1e293b', fontWeight: '600', textAlign: 'right' }}>
-                        {selectedFromAccount?.name}<br />
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>{selectedFromAccount?.number}</span>
-                      </div>
+                  <div className="confirm-summary">
+                    <div className="summary-row-value summary-align-right">
+                      <div>{selectedFromAccount && `Account ${selectedFromAccount.account_number}`}</div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{ color: '#64748b', fontSize: '14px' }}>To Account</div>
-                      <div style={{ color: '#1e293b', fontWeight: '600' }}>{sanitizeUserInput(formData.toAccount)}</div>
+                    <div className="summary-row">
+                      <div className="summary-row-label">To Account</div>
+                      <div className="summary-row-value">{sanitizeUserInput(formData.toAccount)}</div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{ color: '#64748b', fontSize: '14px' }}>Amount</div>
-                      <div style={{ color: '#dc2626', fontWeight: '700', fontSize: '18px' }}>
+                    <div className="summary-row">
+                      <div className="summary-row-label">Amount</div>
+                      <div className="summary-row-value amount">
                         -{formatCurrencyGHS(parseFloat(formData.amount))}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{ color: '#64748b', fontSize: '14px' }}>Transfer Fee</div>
-                      <div style={{ color: '#64748b', fontWeight: '600' }}>{formatCurrencyGHS(transferFee)}</div>
+                    <div className="summary-row">
+                      <div className="summary-row-label">Transfer Fee</div>
+                      <div className="summary-row-value">{formatCurrencyGHS(transferFee)}</div>
                     </div>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingTop: '16px',
-                      borderTop: '1px solid #e2e8f0'
-                    }}>
-                      <div style={{ color: '#1e293b', fontSize: '16px', fontWeight: '600' }}>Total</div>
-                      <div style={{ color: '#dc2626', fontWeight: '700', fontSize: '20px' }}>
-                        -{formatCurrencyGHS(totalAmount)}
+                    <div className="summary-row total">
+                      <div className="summary-row-label">Total</div>
+                      <div className="summary-row-value total">
+                        {formatCurrencyGHS(totalAmount)}
                       </div>
                     </div>
                   </div>
 
                   {/* PIN Verification */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '8px',
-                      color: '#374151',
-                      fontWeight: '500',
-                      fontSize: '14px'
-                    }}>
-                      Enter PIN for Authorization
-                    </label>
-                    <input
+                  <div className="form-group">
+                    <Input
                       type="password"
+                      label="Enter PIN for Authorization"
                       name="pin"
+                      id="pin"
+                      title="Enter your 4-digit security PIN"
                       value={formData.pin}
                       onChange={handleInputChange}
                       placeholder="Enter your 4-digit PIN"
-                      maxLength="4"
+                      maxLength={4}
                       required
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        textAlign: 'center',
-                        letterSpacing: '8px'
-                      }}
+                      className="text-center pin-input"
                     />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px' }}>
+
+                  <div className="btn-group">
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      style={{
-                        flex: 1,
-                        padding: '16px',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '10px',
-                        color: '#374151',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#e2e8f0';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f8fafc';
-                      }}
+                      className="btn-back"
                     >
                       Back
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      style={{
-                        flex: 2,
-                        padding: '16px',
-                        background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                        border: 'none',
-                        borderRadius: '10px',
-                        color: 'white',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSubmitting) {
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 8px 15px rgba(5, 150, 105, 0.3)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSubmitting) {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
-                      }}
+                      className="btn-confirm"
                     >
                       {isSubmitting ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                          <div style={{
-                            width: '16px',
-                            height: '16px',
-                            border: '2px solid transparent',
-                            borderTop: '2px solid white',
-                            borderRadius: '50%',
-                            animation: 'spin 1s linear infinite'
-                          }}></div>
+                        <div className="spinner-wrapper">
+                          <div className="spinner"></div>
                           Processing...
                         </div>
                       ) : (
@@ -483,81 +274,37 @@ function Transfer() {
             </form>
           ) : (
             /* Success Confirmation */
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <div style={{
-                width: '80px',
-                height: '80px',
-                background: '#d1fae5',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '32px',
-                color: '#059669',
-                margin: '0 auto 24px'
-              }}>
-
+            <div className="success-section">
+              <div className="success-icon-badge">
+                {/* Icon placeholder or SVG can go here */}
               </div>
-              <h3 style={{
-                margin: '0 0 12px 0',
-                color: '#1e293b',
-                fontSize: '24px',
-                fontWeight: '700'
-              }}>
+              <h3 className="section-title">
                 Transfer Successful!
               </h3>
-              <p style={{
-                margin: '0 0 24px 0',
-                color: '#64748b',
-                fontSize: '16px'
-              }}>
+              <p className="header-subtitle success-subtitle">
                 Your transfer of {formatCurrencyGHS(parseFloat(formData.amount))} has been processed successfully.
               </p>
-              <div style={{
-                background: '#f8fafc',
-                borderRadius: '12px',
-                padding: '20px',
-                marginBottom: '24px',
-                textAlign: 'left'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#64748b' }}>Reference:</span>
-                  <span style={{ fontWeight: '600', fontFamily: 'monospace' }}>TX-987654</span>
+              <div className="success-summary-box">
+                <div className="success-row">
+                  <span className="success-row-label">Reference:</span>
+                  <span className="mono">TX-987654</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#64748b' }}>Date:</span>
-                  <span style={{ fontWeight: '600' }}>{new Date().toLocaleDateString()}</span>
+                <div className="success-row">
+                  <span className="success-row-label">Date:</span>
+                  <span>{new Date().toLocaleDateString()}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Status:</span>
-                  <span style={{ color: '#059669', fontWeight: '600' }}>Completed</span>
+                <div className="success-row">
+                  <span className="success-row-label">Status:</span>
+                  <span className="status">Completed</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  color: '#374151',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}>
+              <div className="receipt-btn-group">
+                <button className="btn-receipt">
                   Download Receipt
                 </button>
                 <button
                   onClick={handleNewTransfer}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: 'white',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
+                  className="btn-new-transfer"
                 >
                   New Transfer
                 </button>
@@ -567,109 +314,37 @@ function Transfer() {
         </div>
 
         {/* Transfer History */}
-        <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '24px',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e2e8f0',
-          alignSelf: 'flex-start'
-        }}>
-          <h4 style={{
-            margin: '0 0 20px 0',
-            color: '#1e293b',
-            fontSize: '18px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+        <div className="history-card">
+          <h4 className="section-title history-title">
             Recent Transfers
           </h4>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="history-list">
             {transferHistory.map((transfer, index) => (
-              <div key={index} style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px',
-                background: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0'
-              }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  background: '#dbeafe',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  color: '#1e40af',
-                  marginRight: '12px'
-                }}>
+              <div key={index} className="history-item">
+                <div className="history-icon">
                   ↗
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    color: '#1e293b',
-                    fontWeight: '600',
-                    fontSize: '14px'
-                  }}>
+                <div className="history-details">
+                  <div className="history-name">
                     {sanitizeUserInput(transfer.to)}
                   </div>
-                  <div style={{
-                    color: '#64748b',
-                    fontSize: '12px'
-                  }}>
+                  <div className="history-date">
                     {transfer.date}
                   </div>
                 </div>
-                <div style={{
-                  color: transfer.amount < 0 ? '#dc2626' : '#059669',
-                  fontWeight: '700',
-                  fontSize: '14px'
-                }}>
+                <div className={`history-amount ${transfer.amount < 0 ? 'amount-negative' : 'amount-positive'}`}>
                   {formatCurrencyGHS(transfer.amount)}
                 </div>
               </div>
             ))}
           </div>
 
-          <button style={{
-            width: '100%',
-            padding: '12px',
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            color: '#374151',
-            fontWeight: '600',
-            marginTop: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#3b82f6';
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#f8fafc';
-              e.currentTarget.style.color = '#374151';
-            }}>
+          <button className="btn-history-view">
             View Full History
           </button>
         </div>
       </div>
-
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
     </div>
   );
 }

@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\users\services.py
-# hypothesis_version: 6.148.7
-
-[200, 201, '+', '+233', '0', '00', '233', 'Authorization', 'CACCU', 'Content-Type', 'SENDEXA_API_URL', 'SENDEXA_AUTH_TOKEN', 'SENDEXA_SENDER_ID', '[^\\d+]', 'application/json', 'message', 'sender', 'to']

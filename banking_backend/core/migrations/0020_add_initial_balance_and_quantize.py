@@ -7,167 +7,28 @@ from django.conf import settings
 from django.db import migrations, models
 
 
-def table_exists(connection, table_name):
-    """Check if a table exists in the database."""
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = %s
-            )
-        """, [table_name])
-        return cursor.fetchone()[0]
-
-
-def create_bankingmessage_if_not_exists(apps, schema_editor):
-    """Create BankingMessage table only if it doesn't exist."""
-    connection = schema_editor.connection
-    if table_exists(connection, 'core_bankingmessage'):
-        return  # Table already exists, skip
-    
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE core_bankingmessage (
-                id BIGSERIAL PRIMARY KEY,
-                subject VARCHAR(255) NOT NULL,
-                body TEXT NOT NULL,
-                is_read BOOLEAN NOT NULL DEFAULT FALSE,
-                read_at TIMESTAMP WITH TIME ZONE NULL,
-                thread_id VARCHAR(100) NULL,
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                parent_message_id BIGINT NULL REFERENCES core_bankingmessage(id) ON DELETE CASCADE,
-                user_id BIGINT NOT NULL REFERENCES users_user(id) ON DELETE CASCADE
-            )
-        """)
-        cursor.execute("CREATE INDEX core_bankingmessage_user_id_idx ON core_bankingmessage(user_id)")
-        cursor.execute("CREATE INDEX core_bankingmessage_parent_message_id_idx ON core_bankingmessage(parent_message_id)")
-
-
-def create_messagethread_if_not_exists(apps, schema_editor):
-    """Create MessageThread table only if it doesn't exist."""
-    connection = schema_editor.connection
-    if table_exists(connection, 'core_messagethread'):
-        return
-    
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE core_messagethread (
-                id BIGSERIAL PRIMARY KEY,
-                subject VARCHAR(255) NOT NULL,
-                thread_type VARCHAR(20) NOT NULL DEFAULT 'staff_to_staff',
-                is_archived BOOLEAN NOT NULL DEFAULT FALSE,
-                is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
-                last_message_at TIMESTAMP WITH TIME ZONE NULL,
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                created_by_id BIGINT NULL REFERENCES users_user(id) ON DELETE SET NULL
-            )
-        """)
-        # Create many-to-many table for participants
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS core_messagethread_participants (
-                id BIGSERIAL PRIMARY KEY,
-                messagethread_id BIGINT NOT NULL REFERENCES core_messagethread(id) ON DELETE CASCADE,
-                user_id BIGINT NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
-                UNIQUE(messagethread_id, user_id)
-            )
-        """)
-
-
-def create_message_if_not_exists(apps, schema_editor):
-    """Create Message table only if it doesn't exist."""
-    connection = schema_editor.connection
-    if table_exists(connection, 'core_message'):
-        return
-    
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE core_message (
-                id BIGSERIAL PRIMARY KEY,
-                content TEXT NULL,
-                encrypted_content TEXT NULL,
-                iv VARCHAR(255) NULL,
-                auth_tag VARCHAR(255) NULL,
-                message_type VARCHAR(50) NOT NULL DEFAULT 'text',
-                is_system_message BOOLEAN NOT NULL DEFAULT FALSE,
-                attachment_url VARCHAR(200) NULL,
-                attachment_name VARCHAR(255) NULL,
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                edited_at TIMESTAMP WITH TIME ZONE NULL,
-                reactions JSONB NOT NULL DEFAULT '{}',
-                sender_id BIGINT NULL REFERENCES users_user(id) ON DELETE SET NULL,
-                thread_id BIGINT NOT NULL REFERENCES core_messagethread(id) ON DELETE CASCADE
-            )
-        """)
-        # Create many-to-many table for read_by
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS core_message_read_by (
-                id BIGSERIAL PRIMARY KEY,
-                message_id BIGINT NOT NULL REFERENCES core_message(id) ON DELETE CASCADE,
-                user_id BIGINT NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
-                UNIQUE(message_id, user_id)
-            )
-        """)
-
-
-def create_usermessagepreferences_if_not_exists(apps, schema_editor):
-    """Create UserMessagePreferences table only if it doesn't exist."""
-    connection = schema_editor.connection
-    if table_exists(connection, 'core_usermessagepreferences'):
-        return
-    
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE core_usermessagepreferences (
-                id BIGSERIAL PRIMARY KEY,
-                sound_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                notification_sound VARCHAR(50) NOT NULL DEFAULT 'default',
-                read_receipts_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                typing_indicators_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                last_seen_visible BOOLEAN NOT NULL DEFAULT TRUE,
-                auto_delete_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-                auto_delete_days INTEGER NOT NULL DEFAULT 30,
-                markdown_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                emoji_shortcuts_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                font_size VARCHAR(10) NOT NULL DEFAULT 'medium',
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                user_id BIGINT NOT NULL UNIQUE REFERENCES users_user(id) ON DELETE CASCADE
-            )
-        """)
-
-
-def create_blockeduser_if_not_exists(apps, schema_editor):
-    """Create BlockedUser table only if it doesn't exist."""
-    connection = schema_editor.connection
-    if table_exists(connection, 'core_blockeduser'):
-        return
-    
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE core_blockeduser (
-                id BIGSERIAL PRIMARY KEY,
-                reason TEXT NULL,
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                blocked_id BIGINT NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
-                blocker_id BIGINT NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
-                UNIQUE(blocker_id, blocked_id)
-            )
-        """)
-
-
 def add_initial_balance_if_not_exists(apps, schema_editor):
     """Add initial_balance column to account if it doesn't exist."""
     connection = schema_editor.connection
     with connection.cursor() as cursor:
+        if connection.vendor == 'postgresql':
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'core_account' AND column_name = 'initial_balance'
+            """)
+            if cursor.fetchone():
+                return
+        elif connection.vendor == 'sqlite':
+            cursor.execute("PRAGMA table_info(core_account)")
+            columns = [column[1] for column in cursor.fetchall()]
+            if 'initial_balance' in columns:
+                return
+        else:
+            # Fallback for other vendors or unexpected state
+            return
+
         cursor.execute("""
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_name = 'core_account' AND column_name = 'initial_balance'
-        """)
-        if cursor.fetchone():
-            return  # Column already exists
-        cursor.execute("""
-            ALTER TABLE core_account 
+            ALTER TABLE core_account
             ADD COLUMN initial_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00
         """)
 
@@ -185,11 +46,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Make all operations idempotent using RunPython
+        # Make initial balance idempotent
         migrations.RunPython(add_initial_balance_if_not_exists, reverse_code=noop),
-        migrations.RunPython(create_bankingmessage_if_not_exists, reverse_code=noop),
-        migrations.RunPython(create_messagethread_if_not_exists, reverse_code=noop),
-        migrations.RunPython(create_message_if_not_exists, reverse_code=noop),
-        migrations.RunPython(create_usermessagepreferences_if_not_exists, reverse_code=noop),
-        migrations.RunPython(create_blockeduser_if_not_exists, reverse_code=noop),
     ]

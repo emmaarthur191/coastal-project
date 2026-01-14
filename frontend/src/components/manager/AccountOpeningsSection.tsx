@@ -7,6 +7,14 @@ interface AccountOpeningsSectionProps {
     onRefreshDashboard?: () => void;
 }
 
+interface NextOfKin {
+    name: string;
+    relationship: string;
+    address: string;
+    stakePercentage?: string;
+    stake_percentage?: string;
+}
+
 const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefreshDashboard }) => {
     const [requests, setRequests] = useState<AccountOpeningRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,7 +62,6 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
 
             await AccountOpeningsService.apiBankingAccountOpeningsApproveCreate(request.id!, request);
 
-            // alert('Account opening approved successfully!'); // Removed alert
             await fetchRequests();
             onRefreshDashboard?.();
             setSelectedRequest(null);
@@ -80,13 +87,35 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                 rejection_reason: reason
             });
 
-            // alert('Account opening rejected'); // Removed alert
             await fetchRequests();
             onRefreshDashboard?.();
             setSelectedRequest(null);
         } catch (error: unknown) {
             console.error('Failed to reject:', error);
             const msg = error instanceof Error ? error.message : 'Failed to reject account opening';
+            setError(msg);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDispatchCredentials = async (request: AccountOpeningRequest) => {
+        if (!confirm(`Dispatch login credentials for ${request.first_name || ''} ${request.last_name || 'Unknown'}?`)) {
+            return;
+        }
+
+        try {
+            setActionLoading(true);
+            setError(null);
+
+            await AccountOpeningsService.apiBankingAccountOpeningsDispatchCredentialsCreate(request.id!);
+
+            await fetchRequests();
+            onRefreshDashboard?.();
+            setSelectedRequest(null);
+        } catch (error: unknown) {
+            console.error('Failed to dispatch credentials:', error);
+            const msg = error instanceof Error ? error.message : 'Failed to dispatch credentials';
             setError(msg);
         } finally {
             setActionLoading(false);
@@ -143,10 +172,11 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                 <p><span className="text-slate-500">Card Type:</span> {selectedRequest.card_type || 'N/A'}</p>
                                 <p><span className="text-slate-500">Status:</span>
                                     <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${selectedRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        selectedRequest.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                            'bg-red-100 text-red-800'
+                                        selectedRequest.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                                            selectedRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                'bg-red-100 text-red-800'
                                         }`}>
-                                        {selectedRequest.status}
+                                        {selectedRequest.status === 'approved' ? 'Awaiting Dispatch' : selectedRequest.status}
                                     </span>
                                 </p>
                             </div>
@@ -159,6 +189,71 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                 <p><span className="text-slate-500">ID Number:</span> {selectedRequest.id_number || 'N/A'}</p>
                             </div>
                         </div>
+
+                        <div>
+                            <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-3">Location Details</h4>
+                            <div className="space-y-2 text-sm">
+                                <p><span className="text-slate-500">Digital Address:</span> {selectedRequest.digital_address || 'N/A'}</p>
+                                <p><span className="text-slate-500">Location:</span> {selectedRequest.location || 'N/A'}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-3">Employment Details</h4>
+                            <div className="space-y-2 text-sm">
+                                <p><span className="text-slate-500">Occupation:</span> {selectedRequest.occupation || 'N/A'}</p>
+                                <p><span className="text-slate-500">Work Address:</span> {selectedRequest.work_address || 'N/A'}</p>
+                                <p><span className="text-slate-500">Position:</span> {selectedRequest.position || 'N/A'}</p>
+                            </div>
+                        </div>
+
+                        {selectedRequest.next_of_kin_data && (
+                            <div className="md:col-span-2">
+                                <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-3">Next of Kin Details</h4>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                                        <thead>
+                                            <tr className="text-left text-xs font-semibold text-slate-500 uppercase">
+                                                <th className="pb-2">Name</th>
+                                                <th className="pb-2">Relationship</th>
+                                                <th className="pb-2">Address</th>
+                                                <th className="pb-2">Stake %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {Array.isArray(selectedRequest.next_of_kin_data) ? (
+                                                (selectedRequest.next_of_kin_data as unknown as NextOfKin[]).map((kin, idx) => (
+                                                    <tr key={idx} className="text-sm">
+                                                        <td className="py-2 text-slate-800 dark:text-slate-200">{kin.name || 'N/A'}</td>
+                                                        <td className="py-2 text-slate-600 dark:text-slate-400">{kin.relationship || 'N/A'}</td>
+                                                        <td className="py-2 text-slate-600 dark:text-slate-400">{kin.address || 'N/A'}</td>
+                                                        <td className="py-2 text-slate-600 dark:text-slate-400">{kin.stakePercentage || kin.stake_percentage || 'N/A'}%</td>
+                                                    </tr>
+                                                ))
+                                            ) : typeof selectedRequest.next_of_kin_data === 'string' ? (
+                                                (() => {
+                                                    try {
+                                                        const kinArray = JSON.parse(selectedRequest.next_of_kin_data) as NextOfKin[];
+                                                        return kinArray.map((kin, idx) => (
+                                                            <tr key={idx} className="text-sm">
+                                                                <td className="py-2">{kin.name || 'N/A'}</td>
+                                                                <td className="py-2">{kin.relationship || 'N/A'}</td>
+                                                                <td className="py-2">{kin.address || 'N/A'}</td>
+                                                                <td className="py-2">{kin.stakePercentage || kin.stake_percentage || 'N/A'}%</td>
+                                                            </tr>
+                                                        ));
+                                                    } catch {
+                                                        return <tr><td colSpan={4} className="py-2 text-slate-500 italic">Error parsing next of kin data</td></tr>;
+                                                    }
+                                                })()
+                                            ) : (
+                                                <tr><td colSpan={4} className="py-2 text-slate-500 italic">No next of kin details available</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {selectedRequest.notes && (
@@ -175,7 +270,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                 disabled={actionLoading}
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
                             >
-                                {actionLoading ? 'Processing...' : 'Approve Request'}
+                                {actionLoading ? 'Processing...' : 'Approve & Create Account'}
                             </button>
                             <button
                                 onClick={() => handleReject(selectedRequest)}
@@ -184,6 +279,21 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                             >
                                 Reject Request
                             </button>
+                        </div>
+                    )}
+
+                    {selectedRequest.status === 'approved' && (
+                        <div className="mt-8">
+                            <button
+                                onClick={() => handleDispatchCredentials(selectedRequest)}
+                                disabled={actionLoading}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
+                            >
+                                {actionLoading ? 'Dispatching...' : 'Dispatch Login Credentials'}
+                            </button>
+                            <p className="text-center text-xs text-slate-500 mt-2">
+                                Stage 2: This will generate a temporary password and send login details via SMS.
+                            </p>
                         </div>
                     )}
                 </GlassCard>
@@ -196,7 +306,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Account Opening Requests</h2>
                 <div className="flex gap-2">
-                    {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
+                    {(['all', 'pending', 'approved', 'rejected', 'completed'] as const).map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
@@ -247,10 +357,11 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                         </td>
                                         <td className="py-3">
                                             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                                request.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                                request.status === 'approved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                    request.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                                 }`}>
-                                                {request.status}
+                                                {request.status === 'approved' ? 'Awaiting Dispatch' : request.status}
                                             </span>
                                         </td>
                                         <td className="py-3 text-sm text-slate-500 dark:text-slate-400">

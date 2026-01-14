@@ -2,19 +2,14 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
-
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-}
+import { User as Member } from '../../api/models/User';
 
 interface DepositTabProps {
   depositAmount: string;
   setDepositAmount: React.Dispatch<React.SetStateAction<string>>;
   depositMemberId: string;
   setDepositMemberId: React.Dispatch<React.SetStateAction<string>>;
-  members: Member[];
+  members?: Member[];
   loading: boolean;
   handleTransactionSubmit: (e: React.FormEvent, type: string) => void;
 }
@@ -24,7 +19,6 @@ const DepositTab: React.FC<DepositTabProps> = ({
   setDepositAmount,
   depositMemberId,
   setDepositMemberId,
-  members,
   loading,
   handleTransactionSubmit
 }) => {

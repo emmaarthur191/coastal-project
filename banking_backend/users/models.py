@@ -16,6 +16,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, blank=False)
     phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     staff_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    id_type = models.CharField(max_length=50, null=True, blank=True)
+    id_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
 
     # Security: Account lockout fields
     failed_login_attempts = models.PositiveIntegerField(default=0)

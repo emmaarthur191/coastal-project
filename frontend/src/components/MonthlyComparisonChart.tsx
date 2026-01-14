@@ -1,6 +1,8 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrencyGHS } from '../utils/formatters';
+import './MonthlyComparisonChart.css';
+
 
 const MonthlyComparisonChart = ({ data }) => {
   // Show empty state if no data provided
@@ -14,23 +16,23 @@ const MonthlyComparisonChart = ({ data }) => {
 
   const chartData = data;
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-neutral-200 rounded-lg shadow-lg">
           <p className="font-medium text-neutral-900 mb-2">{label}</p>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2 text-sm">
-              <div
-                className="w-3 h-3 rounded"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-neutral-700">{entry.name}:</span>
-              <span className="font-medium" style={{ color: entry.color }}>
-                {formatCurrencyGHS(entry.value)}
-              </span>
-            </div>
-          ))}
+          {payload.map((entry, index) => {
+            const categoryClass = entry.name.toLowerCase();
+            return (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <div className={`tooltip-indicator ${categoryClass}`} />
+                <span className="text-neutral-700">{entry.name}:</span>
+                <span className={`tooltip-value ${categoryClass}`}>
+                  {formatCurrencyGHS(entry.value)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       );
     }

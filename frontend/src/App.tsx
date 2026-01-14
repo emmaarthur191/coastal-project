@@ -36,6 +36,7 @@ import ProtectedStaffRoute from './components/ProtectedStaffRoute'
 import StaffVerificationPanel from './components/StaffVerificationPanel'
 import PageLoading from './components/PageLoading'
 import ErrorBoundary from './components/ErrorBoundary'
+import NetworkStatusIndicator from './components/NetworkStatusIndicator'
 
 // Protected route component - MUST wait for auth loading before checking
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -116,6 +117,7 @@ function AppContent() {
 
   return (
     <Router>
+      <NetworkStatusIndicator />
       <ErrorBoundary>
         <div className="App">
           <Routes>
@@ -191,7 +193,7 @@ function AppContent() {
               </ProtectedStaffRoute>
             } />
             <Route path="/mobile-banker-dashboard" element={
-              <ProtectedStaffRoute allowedRoles={['mobile_banker']}>
+              <ProtectedStaffRoute allowedRoles={['mobile_banker', 'manager', 'operations_manager']}>
                 <Suspense fallback={<PageLoading />}>
                   <MobileBankerDashboard />
                 </Suspense>

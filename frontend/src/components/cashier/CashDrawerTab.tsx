@@ -16,6 +16,25 @@ interface CashDrawer {
   opened_by: string;
 }
 
+interface CashDrawerResponse {
+  results?: CashDrawer[];
+}
+
+interface Denominations {
+  '100.00': number;
+  '50.00': number;
+  '20.00': number;
+  '10.00': number;
+  '5.00': number;
+  '2.00': number;
+  '1.00': number;
+  '0.50': number;
+  '0.25': number;
+  '0.10': number;
+  '0.05': number;
+  '0.01': number;
+}
+
 const CashDrawerTab: React.FC = () => {
   const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
   const [currentDrawer, setCurrentDrawer] = useState<CashDrawer | null>(null);
@@ -26,10 +45,11 @@ const CashDrawerTab: React.FC = () => {
   const [showReconcile, setShowReconcile] = useState(false);
   const [openingBalance, setOpeningBalance] = useState('');
   const [closingBalance, setClosingBalance] = useState('');
-  const [denominations, setDenominations] = useState({
+  const [denominations, setDenominations] = useState<Denominations>({
     '100.00': 0, '50.00': 0, '20.00': 0, '10.00': 0, '5.00': 0, '2.00': 0, '1.00': 0,
     '0.50': 0, '0.25': 0, '0.10': 0, '0.05': 0, '0.01': 0
   });
+  const [reconcileNotes, setReconcileNotes] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -39,8 +59,9 @@ const CashDrawerTab: React.FC = () => {
   const fetchCashDrawers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('banking/cash-drawers/');
-      const data = response.data?.results || response.data || [];
+      const response = await api.get<CashDrawer[] | CashDrawerResponse>('banking/cash-drawers/');
+      const responseData = response.data;
+      const data = (responseData && 'results' in responseData) ? responseData.results : responseData;
       const drawersArray = Array.isArray(data) ? data : [];
       setCashDrawers(drawersArray);
       const openDrawer = drawersArray.find((drawer: CashDrawer) => drawer.status === 'open');
@@ -63,7 +84,7 @@ const CashDrawerTab: React.FC = () => {
 
     try {
       setDrawerLoading(true);
-      await api.post('banking/cash-drawers/open/', {
+      await api.post<CashDrawer>('banking/cash-drawers/open/', {
         opening_balance: parseFloat(openingBalance)
       });
       setMessage({ type: 'success', text: 'Cash drawer opened successfully' });
@@ -86,7 +107,7 @@ const CashDrawerTab: React.FC = () => {
 
     try {
       setDrawerLoading(true);
-      await api.post(`banking/cash-drawers/${currentDrawer?.id}/close/`, {
+      await api.post<CashDrawer>(`banking/cash-drawers/${currentDrawer?.id}/close/`, {
         closing_balance: parseFloat(closingBalance),
         denominations: denominations
       });
@@ -106,9 +127,27 @@ const CashDrawerTab: React.FC = () => {
     }
   };
 
+  const handleReconcile = async () => {
+    try {
+      setDrawerLoading(true);
+      await api.post(`banking/cash-drawers/${currentDrawer?.id}/reconcile/`, {
+        notes: reconcileNotes
+      });
+      setMessage({ type: 'success', text: 'Cash drawer reconciled successfully' });
+      setShowReconcile(false);
+      setReconcileNotes('');
+      fetchCashDrawers();
+    } catch (error) {
+      console.error('Error reconciling drawer:', error);
+      setMessage({ type: 'error', text: 'Failed to reconcile cash drawer' });
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
   const calculateTotalFromDenominations = () => {
     return Object.entries(denominations).reduce((total, [denom, count]) => {
-      return total + (parseFloat(denom) * count);
+      return total + (parseFloat(denom) * (count as number));
     }, 0);
   };
 
@@ -178,19 +217,18 @@ const CashDrawerTab: React.FC = () => {
           <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              {!currentDrawer || currentDrawer.status !== 'open' ? (
+              {!currentDrawer || (currentDrawer.status !== 'open' && currentDrawer.status !== 'closed') ? (
                 <Button onClick={() => setShowOpenDrawer(true)} variant="success" className="w-full justify-center py-4 text-lg shadow-lg shadow-green-200">
                   Open Drawer 🚪
                 </Button>
+              ) : currentDrawer.status === 'open' ? (
+                <Button onClick={() => setShowCloseDrawer(true)} variant="danger" className="w-full justify-center py-4 text-lg shadow-lg shadow-red-200">
+                  Close Drawer 🔒
+                </Button>
               ) : (
-                <>
-                  <Button onClick={() => setShowCloseDrawer(true)} variant="danger" className="w-full justify-center py-4 text-lg shadow-lg shadow-red-200">
-                    Close Drawer 🔒
-                  </Button>
-                  <Button onClick={() => setShowReconcile(true)} variant="primary" className="w-full justify-center py-3">
-                    Reconcile 💰
-                  </Button>
-                </>
+                <Button onClick={() => setShowReconcile(true)} variant="primary" className="w-full justify-center py-4 text-lg shadow-lg shadow-blue-200">
+                  Reconcile 💰
+                </Button>
               )}
             </div>
           </GlassCard>
@@ -209,8 +247,10 @@ const CashDrawerTab: React.FC = () => {
           {cashDrawers.map((drawer) => (
             <div key={drawer.id} className="p-4 border-b border-gray-50 flex justify-between items-center last:border-0 hover:bg-gray-50">
               <div>
-                <div className="font-mono font-bold text-gray-600 text-sm">#{drawer.id.slice(-8)}</div>
-                <div className="text-xs text-gray-400 mt-1">{new Date(drawer.opened_at).toLocaleDateString()}</div>
+                <div className="font-mono font-bold text-gray-600 text-sm">#{String(drawer.id).slice(-8)}</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {drawer.opened_at ? new Date(drawer.opened_at).toLocaleDateString() : 'N/A'}
+                </div>
               </div>
               <div className="text-right">
                 <div className="font-bold text-gray-800">{formatCurrencyGHS(drawer.opening_balance)}</div>
@@ -282,11 +322,12 @@ const CashDrawerTab: React.FC = () => {
                   <input
                     type="number"
                     min="0"
-                    value={count}
+                    value={count as number}
                     onChange={(e) => setDenominations(prev => ({
                       ...prev,
                       [denom]: parseInt(e.target.value) || 0
                     }))}
+                    aria-label={`Count of ₵${denom} denomination`}
                     className="w-full p-2 border border-gray-200 rounded-lg text-center font-mono focus:border-coastal-primary focus:ring-2 focus:ring-coastal-primary/20 outline-none transition-all"
                   />
                 </div>
@@ -306,12 +347,35 @@ const CashDrawerTab: React.FC = () => {
       {/* Reconcile Modal */}
       {showReconcile && currentDrawer && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <div className="text-4xl mb-2">💰</div>
-            <h3 className="text-xl font-bold mb-2">Reconcile Cash Drawer</h3>
-            <p className="text-gray-600 mb-4">Current Balance: <span className="font-bold">{formatCurrencyGHS(currentDrawer.current_balance)}</span></p>
-            <p className="text-sm text-gray-400 italic mb-6">This feature is currently under development.</p>
-            <Button onClick={() => setShowReconcile(false)} variant="primary" className="w-full">Close</Button>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-2">💰</div>
+              <h3 className="text-xl font-bold">Reconcile Cash Drawer</h3>
+              <p className="text-gray-500">Verify and finalize the drawer status.</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="bg-gray-50 p-4 rounded-xl flex justify-between items-center">
+                <span className="text-gray-600">Expected Balance</span>
+                <span className="font-bold text-gray-900">{formatCurrencyGHS(currentDrawer.current_balance)}</span>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Reconciliation Notes</label>
+                <textarea
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-coastal-primary/20 focus:border-coastal-primary outline-none min-h-[100px] transition-all"
+                  placeholder="Enter any notes or observations about the reconciliation..."
+                  value={reconcileNotes}
+                  onChange={(e) => setReconcileNotes(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <Button variant="secondary" onClick={() => setShowReconcile(false)} disabled={drawerLoading}>Cancel</Button>
+              <Button variant="primary" onClick={handleReconcile} disabled={drawerLoading}>
+                {drawerLoading ? 'Processing...' : 'Complete Reconciliation'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
