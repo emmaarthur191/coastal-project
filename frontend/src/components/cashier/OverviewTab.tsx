@@ -1,11 +1,7 @@
 import React from 'react';
 import GlassCard from '../ui/modern/GlassCard';
 import { formatCurrencyGHS } from '../../utils/formatters';
-
-interface Transaction {
-  id: string;
-  amount: number;
-}
+import { Transaction } from '../../api/models/Transaction';
 
 interface OverviewTabProps {
   dailySummary: {

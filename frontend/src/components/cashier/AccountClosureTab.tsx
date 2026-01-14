@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
+import { AxiosError } from 'axios';
 
 const AccountClosureTab: React.FC = () => {
   const [accountClosureData, setAccountClosureData] = useState({
@@ -32,10 +33,10 @@ const AccountClosureTab: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await api.get(`accounts/${accountClosureData.account_id}/`);
+      const response = await api.get<any>(`accounts/${accountClosureData.account_id}/`);
       setAccountDetails(response.data);
       // Auto-fill phone number from account if available
-      if (response.data.phone_number) {
+      if (response.data && response.data.phone_number) {
         setAccountClosureData(prev => ({ ...prev, phone_number: response.data.phone_number }));
       }
       setMessage({ type: 'success', text: 'Account details loaded successfully' });
@@ -57,13 +58,13 @@ const AccountClosureTab: React.FC = () => {
 
     try {
       setOtpLoading(true);
-      const response = await api.post('banking/account-openings/send_otp/', {
+      const response = await api.post<any>('banking/account-openings/send-otp/', {
         phone_number: accountClosureData.phone_number,
         operation_type: 'account_closure'
       });
 
       setOtpSent(true);
-      setDebugOtp(response.data.debug_otp || '');
+      setDebugOtp(response.data?.debug_otp || '');
       setMessage({ type: 'success', text: `OTP sent to ${accountClosureData.phone_number}` });
     } catch (error) {
       console.error('Error sending OTP:', error);
@@ -84,14 +85,14 @@ const AccountClosureTab: React.FC = () => {
       setOtpLoading(true);
 
       // First verify OTP
-      const verifyResponse = await api.post('users/verify-otp/', {
+      const verifyResponse = await api.post<any>('users/verify-otp/', {
         phone_number: accountClosureData.phone_number,
         otp_code: otpCode,
         verification_type: 'account_closure'
       });
 
       // If verification successful, proceed with closure
-      if (verifyResponse.data.success || verifyResponse.data.verified) {
+      if (verifyResponse.data?.success || verifyResponse.data?.verified) {
         const closureData = {
           account_id: accountClosureData.account_id,
           closure_reason: accountClosureData.closure_reason,
@@ -121,9 +122,13 @@ const AccountClosureTab: React.FC = () => {
       } else {
         setMessage({ type: 'error', text: 'OTP verification failed' });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error verifying OTP:', error);
-      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to verify OTP. Please try again.' });
+      if (error instanceof AxiosError) {
+        setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to verify OTP. Please try again.' });
+      } else {
+        setMessage({ type: 'error', text: 'Failed to verify OTP. Please try again.' });
+      }
     } finally {
       setOtpLoading(false);
     }
@@ -251,23 +256,21 @@ const AccountClosureTab: React.FC = () => {
               placeholder="+233 XX XXX XXXX"
             />
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
-                Reason for Closure *
-              </label>
-              <select
-                value={accountClosureData.closure_reason}
-                onChange={(e) => setAccountClosureData(prev => ({ ...prev, closure_reason: e.target.value }))}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none bg-white"
-              >
-                <option value="">Select reason...</option>
-                <option value="customer_request">Customer Request</option>
-                <option value="account_inactive">Account Inactive</option>
-                <option value="fraud_suspected">Fraud Suspected</option>
-                <option value="compliance">Compliance Issue</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+            <Input
+              as="select"
+              label="Reason for Closure *"
+              id="closure-reason-select"
+              title="Select the reason for account closure"
+              value={accountClosureData.closure_reason}
+              onChange={(e) => setAccountClosureData(prev => ({ ...prev, closure_reason: e.target.value }))}
+            >
+              <option value="">Select reason...</option>
+              <option value="customer_request">Customer Request</option>
+              <option value="account_inactive">Account Inactive</option>
+              <option value="fraud_suspected">Fraud Suspected</option>
+              <option value="compliance">Compliance Issue</option>
+              <option value="other">Other</option>
+            </Input>
 
             {accountClosureData.closure_reason === 'other' && (
               <Input

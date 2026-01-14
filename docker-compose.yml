@@ -1,0 +1,107 @@
+version: "3.9"
+
+services:
+  # ==========================================================================
+  # Backend: Django API (Daphne ASGI Server)
+  # ==========================================================================
+  backend:
+    build:
+      context: ./banking_backend
+      dockerfile: Dockerfile
+    container_name: coastal-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      # SECURITY: Create a .env file with your actual secrets (see .env.example)
+      - SECRET_KEY=${SECRET_KEY:-docker-dev-only-key-change-in-production}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - REDIS_URL=redis://redis:6379/0
+      # PRODUCTION FIX: Use PostgreSQL instead of SQLite for production parity
+      - DATABASE_URL=postgres://coastal_user:coastal_password@postgres:5432/coastal_db
+      # SMS Gateway - set these in your .env file
+      - SENDEXA_AUTH_TOKEN=${SENDEXA_AUTH_TOKEN:-}
+      - SENDEXA_SENDER_ID=${SENDEXA_SENDER_ID:-CACCU}
+      - SENDEXA_API_URL=https://api.sendexa.co/v1/sms/send
+    volumes:
+      - ./banking_backend:/app
+      - backend_static:/app/staticfiles
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================================================
+  # PostgreSQL: Primary Database (Production-Parity)
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: coastal-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=coastal_db
+      - POSTGRES_USER=coastal_user
+      - POSTGRES_PASSWORD=coastal_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U coastal_user -d coastal_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # Frontend: React App (Vite Dev Server)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: coastal-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_BACKEND_URL=http://backend:8000
+      - NODE_ENV=development
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Redis: Message Broker & Cache
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: coastal-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  backend_static:
+  redis_data:
+  postgres_data:

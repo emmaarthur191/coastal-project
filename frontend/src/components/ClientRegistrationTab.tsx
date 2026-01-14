@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
-import { apiService } from '../services/api';
-import CameraCapture from './shared/CameraCapture.tsx';
+import { api, authService } from '../services/api';
+import CameraCapture from './shared/CameraCapture';
+import { Input } from './ui/Input';
+
 
 // TypeScript Interfaces
 interface NextOfKin {
@@ -83,7 +85,7 @@ function ClientRegistrationTab() {
   const errorSummaryRef = useRef<HTMLDivElement>(null);
 
   // Validation rules
-  const validateField = useCallback((name: string, value: any, _allData: FormData = formData): string | string[] | null => {
+  const validateField = useCallback((name: string, value: unknown, _allData: FormData = formData): string | string[] | null => {
     // Helper to safely convert value to string
     const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
     const asFile = (v: unknown): File | null => (v instanceof File ? v : null);
@@ -326,9 +328,9 @@ function ClientRegistrationTab() {
         }
       });
 
-      const result = await apiService.submitClientRegistration(submitData);
+      const result = await authService.submitClientRegistration(submitData);
 
-      if (result.success) {
+      if (result.success && result.data) {
         setFormData(prev => ({
           ...prev,
           registrationId: result.data.id
@@ -357,7 +359,7 @@ function ClientRegistrationTab() {
 
     setIsLoading(true);
     try {
-      const result = await apiService.sendClientRegistrationOTP(String(formData.registrationId));
+      const result = await authService.sendClientRegistrationOTP(String(formData.registrationId));
       if (result.success) {
         setSuccessMessage('OTP sent successfully to your phone number.');
       } else {
@@ -383,11 +385,11 @@ function ClientRegistrationTab() {
 
     setIsLoading(true);
     try {
-      const result = await apiService.verifyClientRegistrationOTP(String(formData.registrationId), formData.otpCode);
+      const result = await authService.verifyClientRegistrationOTP(String(formData.registrationId), formData.otpCode);
 
-      if (result.success) {
+      if (result.success && result.data) {
         setCurrentStep(3); // Move to success step
-        const accountNumber = result.data?.account_number;
+        const accountNumber = result.data.account_number;
         if (accountNumber) {
           setSuccessMessage(`Registration completed successfully! Account Number: ${accountNumber}. Your account will be reviewed by our team.`);
         } else {
@@ -482,85 +484,64 @@ function ClientRegistrationTab() {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  placeholder="Enter first name"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('firstName')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  placeholder="Enter last name"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('lastName')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  title="Select your date of birth"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('dateOfBirth')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('phoneNumber')}
-                  placeholder="+233 XXX XXX XXX"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="email@example.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('email')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                />
-              </div>
+              <Input
+                label="First Name *"
+                id="firstName"
+                name="firstName"
+                placeholder="Enter first name"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('firstName')}
+                required
+                error={Array.isArray(formErrors.firstName) ? formErrors.firstName[0] : formErrors.firstName}
+              />
+              <Input
+                label="Last Name *"
+                id="lastName"
+                name="lastName"
+                placeholder="Enter last name"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('lastName')}
+                required
+                error={Array.isArray(formErrors.lastName) ? formErrors.lastName[0] : formErrors.lastName}
+              />
+              <Input
+                label="Date of Birth *"
+                type="date"
+                id="dateOfBirth"
+                name="dateOfBirth"
+                title="Select date of birth"
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('dateOfBirth')}
+                required
+                error={Array.isArray(formErrors.dateOfBirth) ? formErrors.dateOfBirth[0] : formErrors.dateOfBirth}
+              />
+              <Input
+                label="Phone Number *"
+                type="tel"
+                id="phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('phoneNumber')}
+                placeholder="+233 XXX XXX XXX"
+                required
+                error={Array.isArray(formErrors.phoneNumber) ? formErrors.phoneNumber[0] : formErrors.phoneNumber}
+              />
+              <Input
+                label="Email Address"
+                type="email"
+                id="email"
+                name="email"
+                placeholder="email@example.com"
+                value={formData.email}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('email')}
+                className="md:col-span-2"
+                error={Array.isArray(formErrors.email) ? formErrors.email[0] : formErrors.email}
+              />
             </div>
           </div>
 
@@ -568,38 +549,34 @@ function ClientRegistrationTab() {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Identification</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ID Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="idType"
-                  value={formData.idType}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('idType')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Select ID Type</option>
-                  <option value="passport">Passport</option>
-                  <option value="national_id">National ID</option>
-                  <option value="drivers_license">Driver's License</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ID Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="idNumber"
-                  value={formData.idNumber}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('idNumber')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
+              <Input
+                as="select"
+                label="ID Type *"
+                id="idType"
+                name="idType"
+                title="Select the type of ID provided"
+                value={formData.idType}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('idType')}
+                required
+                error={Array.isArray(formErrors.idType) ? formErrors.idType[0] : formErrors.idType}
+              >
+                <option value="">Select ID Type</option>
+                <option value="passport">Passport</option>
+                <option value="national_id">National ID</option>
+                <option value="drivers_license">Driver's License</option>
+              </Input>
+              <Input
+                label="ID Number *"
+                id="idNumber"
+                name="idNumber"
+                title="Enter the ID document number"
+                value={formData.idNumber}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('idNumber')}
+                required
+                error={Array.isArray(formErrors.idNumber) ? formErrors.idNumber[0] : formErrors.idNumber}
+              />
             </div>
           </div>
 
@@ -607,48 +584,38 @@ function ClientRegistrationTab() {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Employment Information</h3>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Occupation <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="occupation"
-                  value={formData.occupation}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('occupation')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Work Address <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="workAddress"
-                  value={formData.workAddress}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('workAddress')}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Position <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('position')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                  required
-                />
-              </div>
+              <Input
+                label="Occupation *"
+                id="occupation"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('occupation')}
+                required
+                error={Array.isArray(formErrors.occupation) ? formErrors.occupation[0] : formErrors.occupation}
+              />
+              <Input
+                as="textarea"
+                label="Work Address *"
+                id="workAddress"
+                name="workAddress"
+                value={formData.workAddress}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('workAddress')}
+                rows={3}
+                required
+                error={Array.isArray(formErrors.workAddress) ? formErrors.workAddress[0] : formErrors.workAddress}
+              />
+              <Input
+                label="Position *"
+                id="position"
+                name="position"
+                value={formData.position}
+                onChange={handleInputChange}
+                onFocus={() => clearFieldError('position')}
+                required
+                error={Array.isArray(formErrors.position) ? formErrors.position[0] : formErrors.position}
+              />
             </div>
           </div>
 
@@ -683,60 +650,50 @@ function ClientRegistrationTab() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={kin.name}
-                      onChange={(e) => handleNextOfKinChange(index, 'name', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Relationship <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={kin.relationship}
-                      onChange={(e) => handleNextOfKinChange(index, 'relationship', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                    >
-                      <option value="">Select Relationship</option>
-                      <option value="spouse">Spouse</option>
-                      <option value="parent">Parent</option>
-                      <option value="child">Child</option>
-                      <option value="sibling">Sibling</option>
-                      <option value="friend">Friend</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Address <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={kin.address}
-                      onChange={(e) => handleNextOfKinChange(index, 'address', e.target.value)}
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stake Percentage <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={kin.stakePercentage}
-                      onChange={(e) => handleNextOfKinChange(index, 'stakePercentage', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500"
-                    />
-                  </div>
+                  <Input
+                    label="Name *"
+                    id={`kin-name-${index}`}
+                    value={kin.name}
+                    onChange={(e) => handleNextOfKinChange(index, 'name', e.target.value)}
+                    title={`Enter name for next of kin ${index + 1}`}
+                  />
+                  <Input
+                    as="select"
+                    label="Relationship *"
+                    id={`kin-relationship-${index}`}
+                    value={kin.relationship}
+                    onChange={(e) => handleNextOfKinChange(index, 'relationship', e.target.value)}
+                    title={`Select relationship for next of kin ${index + 1}`}
+                  >
+                    <option value="">Select Relationship</option>
+                    <option value="spouse">Spouse</option>
+                    <option value="parent">Parent</option>
+                    <option value="child">Child</option>
+                    <option value="sibling">Sibling</option>
+                    <option value="friend">Friend</option>
+                    <option value="other">Other</option>
+                  </Input>
+                  <Input
+                    as="textarea"
+                    label="Address *"
+                    id={`kin-address-${index}`}
+                    value={kin.address}
+                    onChange={(e) => handleNextOfKinChange(index, 'address', e.target.value)}
+                    rows={2}
+                    className="md:col-span-2"
+                    title={`Enter address for next of kin ${index + 1}`}
+                  />
+                  <Input
+                    label="Stake Percentage *"
+                    type="number"
+                    id={`kin-stake-${index}`}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={kin.stakePercentage}
+                    onChange={(e) => handleNextOfKinChange(index, 'stakePercentage', e.target.value)}
+                    title={`Enter stake percentage for next of kin ${index + 1}`}
+                  />
                 </div>
               </div>
             ))}

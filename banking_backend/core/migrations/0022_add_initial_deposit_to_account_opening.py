@@ -7,52 +7,69 @@ from django.db import migrations, models
 
 def add_initial_deposit_if_not_exists(apps, schema_editor):
     """Add initial_deposit column only if it doesn't already exist."""
-    from django.db import connection
-    
+    connection = schema_editor.connection
+
     with connection.cursor() as cursor:
-        # Check if column already exists
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'core_accountopeningrequest' 
-            AND column_name = 'initial_deposit'
-        """)
-        if cursor.fetchone():
-            # Column already exists, skip
+        if connection.vendor == 'postgresql':
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'core_accountopeningrequest'
+                AND column_name = 'initial_deposit'
+            """)
+            if cursor.fetchone():
+                return
+        elif connection.vendor == 'sqlite':
+            cursor.execute("PRAGMA table_info(core_accountopeningrequest)")
+            columns = [column[1] for column in cursor.fetchall()]
+            if 'initial_deposit' in columns:
+                return
+        else:
             return
-    
-    # Column doesn't exist, add it using schema_editor
-    AccountOpeningRequest = apps.get_model('core', 'AccountOpeningRequest')
-    field = models.DecimalField(
-        decimal_places=2,
-        default=Decimal("0.00"),
-        max_digits=15,
-    )
-    field.set_attributes_from_name('initial_deposit')
-    
-    with schema_editor.connection.cursor() as cursor:
-        cursor.execute("""
-            ALTER TABLE core_accountopeningrequest 
-            ADD COLUMN initial_deposit NUMERIC(15, 2) DEFAULT 0.00 NOT NULL
-        """)
+
+    with connection.cursor() as cursor:
+        if connection.vendor == 'postgresql':
+            cursor.execute("""
+                ALTER TABLE core_accountopeningrequest
+                ADD COLUMN initial_deposit NUMERIC(15, 2) DEFAULT 0.00 NOT NULL
+            """)
+        else:
+            cursor.execute("""
+                ALTER TABLE core_accountopeningrequest
+                ADD COLUMN initial_deposit NUMERIC(15, 2) DEFAULT 0.00
+            """)
 
 
 def reverse_migration(apps, schema_editor):
     """Remove the column if it exists."""
-    from django.db import connection
-    
+    connection = schema_editor.connection
+
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'core_accountopeningrequest' 
-            AND column_name = 'initial_deposit'
-        """)
-        if cursor.fetchone():
+        if connection.vendor == 'postgresql':
             cursor.execute("""
-                ALTER TABLE core_accountopeningrequest 
-                DROP COLUMN initial_deposit
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'core_accountopeningrequest'
+                AND column_name = 'initial_deposit'
             """)
+            if not cursor.fetchone():
+                return
+        elif connection.vendor == 'sqlite':
+            cursor.execute("PRAGMA table_info(core_accountopeningrequest)")
+            columns = [column[1] for column in cursor.fetchall()]
+            if 'initial_deposit' not in columns:
+                return
+        else:
+            return
+            if connection.vendor == 'postgresql':
+                cursor.execute("""
+                    ALTER TABLE core_accountopeningrequest
+                    DROP COLUMN initial_deposit
+                """)
+            else:
+                # SQLite doesn't support DROP COLUMN easily, but we can skip it or use Django's schema_editor
+                # Since this is a manual idempotent migration, we'll just skip to avoid complex SQLite logic
+                pass
 
 
 class Migration(migrations.Migration):

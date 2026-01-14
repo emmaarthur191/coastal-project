@@ -1,0 +1,90 @@
+.op-dashboard-app-bar {
+    margin-bottom: 24px;
+    padding: 24px;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.3s ease;
+}
+
+.op-dashboard-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.op-dashboard-title {
+    color: var(--md-sys-color-on-surface);
+    margin-bottom: 4px;
+}
+
+.op-dashboard-subtitle {
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.op-dashboard-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.op-dashboard-chip {
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-on-tertiary-container);
+    border: none;
+}
+
+.op-dashboard-logout-btn {
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+
+.op-dashboard-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px;
+    background: var(--md-sys-color-surface-container-highest);
+    border-radius: var(--md-sys-shape-corner-large);
+    position: relative;
+    z-index: 1;
+}
+
+.op-dashboard-nav-item {
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-radius: var(--md-sys-shape-corner-medium);
+    color: var(--md-sys-color-on-surface-variant);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    box-shadow: none;
+}
+
+.op-dashboard-nav-item:hover {
+    background: var(--md-sys-color-surface-container-high);
+    transform: translateY(-2px);
+    box-shadow: var(--md-sys-elevation-2);
+}
+
+.op-dashboard-nav-item--active {
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-weight: 600;
+    box-shadow: var(--md-sys-elevation-1);
+}
+
+.op-dashboard-icon {
+    font-size: 18px;
+}

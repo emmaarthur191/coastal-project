@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\views\__init__.py
-# hypothesis_version: 6.148.7
-
-['AccountViewSet', 'AuditDashboardView', 'BlockedUsersViewSet', 'BranchActivityView', 'CashAdvanceViewSet', 'CashDrawerViewSet', 'CashFlowView', 'CheckDepositViewSet', 'ComplaintViewSet', 'DeviceViewSet', 'ExpensesView', 'FraudAlertViewSet', 'GeneratePayslipView', 'GenerateReportView', 'HealthCheckView', 'LoanViewSet', 'MemberViewSet', 'MessageThreadViewSet', 'MessageViewSet', 'PayslipViewSet', 'ProductViewSet', 'PromotionViewSet', 'RefundViewSet', 'ReportAnalyticsView', 'ReportViewSet', 'ServiceChargesView', 'ServiceStatsView', 'StaffAccountsViewSet', 'SystemAlertsView', 'SystemHealthView', 'TransactionViewSet', 'UserPreferencesView', 'VisitScheduleViewSet', 'WorkflowStatusView']

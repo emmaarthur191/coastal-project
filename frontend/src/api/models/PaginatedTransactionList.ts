@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { Transaction } from './Transaction';
 export type PaginatedTransactionList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<Transaction>;
+    results: Array<Transaction>;
 };
-

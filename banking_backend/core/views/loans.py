@@ -5,8 +5,10 @@ This module contains views for managing loan applications and approvals.
 
 import logging
 
-from rest_framework import mixins, status
+from django.db import transaction
+from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -14,7 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from core.models import Loan
-from core.permissions import IsCustomer, IsStaff
+from core.permissions import STAFF_ROLES, IsCustomer, IsStaff
 from core.serializers import LoanSerializer
 from core.services import LoanService
 
@@ -42,11 +44,40 @@ class LoanViewSet(
         """Map loan-related actions to their required permission classes."""
         if self.action in ["update", "partial_update", "approve", "pending"]:
             return [IsStaff()]
+        if self.action == "create":
+            from core.permissions import IsStaffOrCustomer
+
+            return [IsStaffOrCustomer()]
         return [IsCustomer()]
 
     def perform_create(self, serializer):
-        """Set the applicant (user) when creating a new loan."""
-        serializer.save(user=self.request.user)
+        """Set the applicant (user) when creating a new loan.
+        Staff can specify a user, customers apply for themselves.
+        """
+        user_id = self.request.data.get("user")
+        if user_id and (self.request.user.role in STAFF_ROLES or self.request.user.is_staff):
+            from django.contrib.auth import get_user_model
+
+            User = get_user_model()
+            try:
+                applicant = User.objects.get(id=user_id)
+
+                # SECURITY FIX (CVE-COASTAL-04): Verify staff has authority over this customer
+                # Mobile bankers can only create loans for their assigned clients
+                if self.request.user.role == "mobile_banker":
+                    from core.models_legacy import ClientAssignment
+
+                    is_assigned = ClientAssignment.objects.filter(
+                        mobile_banker=self.request.user, client=applicant, is_active=True
+                    ).exists()
+                    if not is_assigned:
+                        raise serializers.ValidationError({"user": "You are not assigned to this customer."})
+
+                serializer.save(user=applicant)
+            except User.DoesNotExist:
+                raise serializers.ValidationError({"user": "Specified user does not exist."})
+        else:
+            serializer.save(user=self.request.user)
 
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def approve(self, request, pk=None):
@@ -71,13 +102,26 @@ class LoanViewSet(
             return Response(
                 {"status": "success", "message": "Loan approved and disbursed.", "data": LoanSerializer(loan).data}
             )
+        except (PermissionDenied, serializers.ValidationError) as e:
+            # Handle DRF-style exceptions if they occur directly
+            raise e
         except Exception as e:
+            # Handle Django-style or other exceptions
+            from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
+            from django.core.exceptions import ValidationError as DjangoValidationError
+
+            if isinstance(e, DjangoPermissionDenied):
+                return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            if isinstance(e, DjangoValidationError):
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
             logger.error(f"Loan approval failed for loan {loan.id}: {e}")
             return Response(
                 {
                     "status": "error",
                     "message": "Failed to approve loan",
                     "code": "LOAN_APPROVAL_FAILED",
+                    "detail": str(e),
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

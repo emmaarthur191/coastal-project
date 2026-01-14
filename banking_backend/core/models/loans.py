@@ -20,6 +20,7 @@ class Loan(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2)  # Annual interest rate
     term_months = models.PositiveIntegerField()  # Loan term in months
+    purpose = models.TextField(blank=True, null=True, help_text="Purpose of the loan")
     outstanding_balance = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     approved_at = models.DateTimeField(null=True, blank=True)

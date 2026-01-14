@@ -1,15 +1,16 @@
 #!/usr/bin/env python
-"""
-Database repair script for production deployment.
+"""Database repair script for production deployment.
 Adds missing columns that migrations should have created but didn't due to faking.
 This runs BEFORE migrations to prepare the database.
 """
+
 import os
 import sys
+
 import django
 
 # Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 django.setup()
 
@@ -20,18 +21,32 @@ def add_initial_balance_if_missing():
     """Add initial_balance column to core_account if it doesn't exist."""
     with connection.cursor() as cursor:
         # Check if column exists
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'core_account' 
-            AND column_name = 'initial_balance';
-        """)
-        result = cursor.fetchone()
-        
+        if connection.vendor == "postgresql":
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'core_account'
+                AND column_name = 'initial_balance';
+            """)
+        elif connection.vendor == "sqlite":
+            cursor.execute("PRAGMA table_info(core_account)")
+            columns = [column[1] for column in cursor.fetchall()]
+            if "initial_balance" in columns:
+                result = True
+            else:
+                result = False
+        else:
+            print(f"  ⚠️ Unsupported database vendor: {connection.vendor}")
+            return
+
+        # Handle postgres result format
+        if connection.vendor == "postgresql":
+            result = cursor.fetchone()
+
         if not result:
             print("  Adding initial_balance column to core_account...")
             cursor.execute("""
-                ALTER TABLE core_account 
+                ALTER TABLE core_account
                 ADD COLUMN initial_balance NUMERIC(15, 2) DEFAULT 0.00 NOT NULL;
             """)
             print("  ✅ Column added successfully")

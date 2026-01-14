@@ -31,6 +31,12 @@ class Account(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        # Database indexes for query optimization
+        indexes = [
+            models.Index(fields=["user", "-created_at"], name="account_user_created_idx"),
+            models.Index(fields=["account_type", "is_active"], name="account_type_active_idx"),
+            models.Index(fields=["is_active", "-balance"], name="account_active_balance_idx"),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.account_number} ({self.account_type})"

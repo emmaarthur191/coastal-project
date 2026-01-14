@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import './FraudCases.css';
 
 interface CaseStats {
   open_cases?: number;
@@ -8,51 +9,82 @@ interface CaseStats {
   closed_cases?: number;
   total_cases?: number;
   escalated_cases?: number;
-  [key: string]: any;
+  [key: string]: number | undefined;
+}
+
+interface PaginatedCasesResponse {
+  results: CaseData[];
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
+interface CaseData {
+  id: number;
+  status: string;
+  priority: string;
+  case_number: string;
+  title: string;
+  description: string;
+  created_at: string;
+  primary_account_details?: { owner_name?: string; account_number?: string };
+  primary_transaction_details?: { id?: string; amount?: number };
+  estimated_loss?: number;
+  assigned_investigator_name?: string;
+  investigation_notes?: string;
+  evidence?: Array<{ type: string; description: string }>;
 }
 
 const FraudCases = () => {
   const { user } = useAuth();
-  const [cases, setCases] = useState<any[]>([]);
+  const [cases, setCases] = useState<CaseData[]>([]);
   const [stats, setStats] = useState<CaseStats>({});
   const [loading, setLoading] = useState(true);
-  const [selectedCase, setSelectedCase] = useState(null);
+  const [_selectedCase, setSelectedCase] = useState<CaseData | null>(null);
   const [resolutionType, setResolutionType] = useState('');
   const [resolutionDetails, setResolutionDetails] = useState('');
   const [evidenceType, setEvidenceType] = useState('');
   const [evidenceData, setEvidenceData] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    fetchCases();
-    fetchStats();
-  }, [filterStatus]);
-
-  const fetchCases = async () => {
+  const fetchCases = useCallback(async () => {
     try {
-      const response = await api.get('/api/fraud/cases/', {
+      const response = await api.get<PaginatedCasesResponse | CaseData[]>('/fraud/cases/', {
         params: filterStatus !== 'all' ? { status: filterStatus } : {}
       });
-      setCases(response.data);
+      // Handle both paginated results and raw arrays
+      const data = response.data;
+      if (data && typeof data === 'object' && 'results' in data) {
+        setCases(data.results);
+      } else if (Array.isArray(data)) {
+        setCases(data);
+      } else {
+        setCases([]);
+      }
     } catch (error) {
       console.error('Error fetching cases:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
-      const response = await api.get('/api/fraud/cases/case_stats/');
-      setStats(response.data);
+      const response = await api.get<CaseStats>('/fraud/cases/case_stats/');
+      setStats(response.data || {});
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, []);
 
-  const handleAssignInvestigator = async (caseId, investigatorId) => {
+  useEffect(() => {
+    fetchCases();
+    fetchStats();
+  }, [fetchCases, fetchStats]);
+
+  const handleAssignInvestigator = async (caseId: string | number, investigatorId: string | number) => {
     try {
-      await api.post(`/api/fraud/cases/${caseId}/assign_investigator/`, {
+      await api.post(`/fraud/cases/${caseId}/assign_investigator/`, {
         investigator_id: investigatorId
       });
       fetchCases();
@@ -61,9 +93,9 @@ const FraudCases = () => {
     }
   };
 
-  const handleCloseCase = async (caseId) => {
+  const handleCloseCase = async (caseId: string | number) => {
     try {
-      await api.post(`/api/fraud/cases/${caseId}/close_case/`, {
+      await api.post(`/fraud/cases/${caseId}/close_case/`, {
         resolution_type: resolutionType,
         resolution_details: resolutionDetails
       });
@@ -77,9 +109,9 @@ const FraudCases = () => {
     }
   };
 
-  const handleAddEvidence = async (caseId) => {
+  const handleAddEvidence = async (caseId: string | number) => {
     try {
-      await api.post(`/api/fraud/cases/${caseId}/add_evidence/`, {
+      await api.post(`/fraud/cases/${caseId}/add_evidence/`, {
         evidence_type: evidenceType,
         evidence_data: evidenceData
       });
@@ -91,23 +123,23 @@ const FraudCases = () => {
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+  const getPriorityClass = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'critical': return 'fraud-cases-priority-badge--critical';
+      case 'high': return 'fraud-cases-priority-badge--high';
+      case 'medium': return 'fraud-cases-priority-badge--medium';
+      case 'low': return 'fraud-cases-priority-badge--low';
+      default: return 'fraud-cases-priority-badge--default';
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'open': return 'bg-red-100 text-red-800';
-      case 'investigating': return 'bg-yellow-100 text-yellow-800';
-      case 'closed': return 'bg-green-100 text-green-800';
-      case 'escalated': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getStatusClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'open': return 'fraud-cases-status-badge--open';
+      case 'investigating': return 'fraud-cases-status-badge--investigating';
+      case 'closed': return 'fraud-cases-status-badge--closed';
+      case 'escalated': return 'fraud-cases-status-badge--escalated';
+      default: return 'fraud-cases-status-badge--default';
     }
   };
 
@@ -116,141 +148,69 @@ const FraudCases = () => {
   );
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <div className="fraud-cases-loading">Loading...</div>;
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>Fraud Case Management</h1>
-        <p style={{ color: '#64748b' }}>Manage and track fraud investigation cases</p>
+    <div className="fraud-cases-container">
+      <div className="fraud-cases-header">
+        <h1 className="fraud-cases-title">Fraud Case Management</h1>
+        <p className="fraud-cases-subtitle">Manage and track fraud investigation cases</p>
       </div>
 
       {/* Statistics Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#fee2e2',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+      <div className="fraud-cases-stats-grid">
+        <div className="fraud-cases-stat-card">
+          <div className="fraud-cases-stat-content">
+            <div className="fraud-cases-stat-icon fraud-cases-stat-icon--open">
               ⚠️
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.open_cases || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Open Cases</p>
+              <p className="fraud-cases-stat-value">{stats.open_cases || 0}</p>
+              <p className="fraud-cases-stat-label">Open Cases</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#fef3c7',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+        <div className="fraud-cases-stat-card">
+          <div className="fraud-cases-stat-content">
+            <div className="fraud-cases-stat-icon fraud-cases-stat-icon--investigating">
               🕐
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.investigating || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Investigating</p>
+              <p className="fraud-cases-stat-value">{stats.investigating || 0}</p>
+              <p className="fraud-cases-stat-label">Investigating</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#d1fae5',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+        <div className="fraud-cases-stat-card">
+          <div className="fraud-cases-stat-content">
+            <div className="fraud-cases-stat-icon fraud-cases-stat-icon--closed">
               ✅
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.closed_cases || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Closed Cases</p>
+              <p className="fraud-cases-stat-value">{stats.closed_cases || 0}</p>
+              <p className="fraud-cases-stat-label">Closed Cases</p>
             </div>
           </div>
         </div>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#dbeafe',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '12px'
-            }}>
+        <div className="fraud-cases-stat-card">
+          <div className="fraud-cases-stat-content">
+            <div className="fraud-cases-stat-icon fraud-cases-stat-icon--total">
               📄
             </div>
             <div>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>{stats.total_cases || 0}</p>
-              <p style={{ fontSize: '14px', color: '#64748b' }}>Total Cases</p>
+              <p className="fraud-cases-stat-value">{stats.total_cases || 0}</p>
+              <p className="fraud-cases-stat-label">Total Cases</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '4px',
-        marginBottom: '24px',
-        background: '#f1f5f9',
-        borderRadius: '12px',
-        padding: '4px'
-      }}>
+      <div className="fraud-cases-filter-tabs">
         {[
           { value: 'all', label: `All (${stats.total_cases || 0})` },
           { value: 'open', label: `Open (${stats.open_cases || 0})` },
@@ -261,17 +221,7 @@ const FraudCases = () => {
           <button
             key={tab.value}
             onClick={() => setFilterStatus(tab.value)}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              background: filterStatus === tab.value ? 'white' : 'transparent',
-              border: 'none',
-              borderRadius: '8px',
-              color: filterStatus === tab.value ? '#1e293b' : '#64748b',
-              fontWeight: filterStatus === tab.value ? '600' : '500',
-              cursor: 'pointer',
-              boxShadow: filterStatus === tab.value ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-            }}
+            className={`fraud-cases-filter-tab ${filterStatus === tab.value ? 'fraud-cases-filter-tab--active' : ''}`}
           >
             {tab.label}
           </button>
@@ -279,79 +229,41 @@ const FraudCases = () => {
       </div>
 
       {/* Cases List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="fraud-cases-list">
         {filteredCases.map((caseItem) => (
-          <div key={caseItem.id} style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e2e8f0',
-            transition: 'box-shadow 0.2s'
-          }}
-            onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: 'white',
-                    background: getPriorityColor(caseItem.priority).replace('bg-', '').replace('-500', '')
-                  }}>
-                    {caseItem.priority.toUpperCase()}
+          <div key={caseItem.id} className="fraud-cases-case-card">
+            <div className="fraud-cases-case-header">
+              <div className="fraud-cases-case-info">
+                <div className="fraud-cases-case-badges">
+                  <span className={`fraud-cases-priority-badge ${getPriorityClass(caseItem.priority)}`}>
+                    {caseItem.priority?.toUpperCase()}
                   </span>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    ...(() => {
-                      const colors = getStatusColor(caseItem.status).split(' ');
-                      return {
-                        background: colors[0].replace('bg-', ''),
-                        color: colors[1].replace('text-', '').replace('-800', '')
-                      };
-                    })()
-                  }}>
+                  <span className={`fraud-cases-status-badge ${getStatusClass(caseItem.status)}`}>
                     {caseItem.status}
                   </span>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>
+                  <span className="fraud-cases-case-number">
                     Case #{caseItem.case_number}
                   </span>
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#1e293b' }}>{caseItem.title}</h3>
-                <p style={{ color: '#64748b', marginBottom: '8px' }}>{caseItem.description}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#64748b' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <h3 className="fraud-cases-case-title">{caseItem.title}</h3>
+                <p className="fraud-cases-case-description">{caseItem.description}</p>
+                <div className="fraud-cases-case-meta">
+                  <span className="fraud-cases-case-meta-item">
                     👤 {caseItem.primary_account_details?.owner_name || 'Unknown'}
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="fraud-cases-case-meta-item">
                     💰 ${caseItem.estimated_loss || 0}
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="fraud-cases-case-meta-item">
                     📅 {new Date(caseItem.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="fraud-cases-case-actions">
                 {caseItem.status === 'open' && (
                   <button
-                    onClick={() => handleAssignInvestigator(caseItem.id, user.id)}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: 'white',
-                      color: '#374151',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
+                    onClick={() => handleAssignInvestigator(caseItem.id, user?.id || '')}
+                    className="fraud-cases-btn"
                   >
                     Assign to Me
                   </button>
@@ -371,16 +283,7 @@ const FraudCases = () => {
                           }
                         }
                       }}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        background: 'white',
-                        color: '#374151',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
+                      className="fraud-cases-btn"
                     >
                       Add Evidence
                     </button>
@@ -397,16 +300,7 @@ const FraudCases = () => {
                           }
                         }
                       }}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        background: '#1e40af',
-                        color: 'white',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
+                      className="fraud-cases-btn fraud-cases-btn--primary"
                     >
                       Close Case
                     </button>
@@ -416,14 +310,8 @@ const FraudCases = () => {
             </div>
 
             {/* Case Details */}
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
-                fontSize: '14px',
-                marginBottom: '16px'
-              }}>
+            <div className="fraud-cases-case-details">
+              <div className="fraud-cases-details-grid">
                 <div>
                   <strong>Primary Transaction:</strong>
                   <p>{caseItem.primary_transaction_details?.id || 'N/A'}</p>
@@ -441,24 +329,18 @@ const FraudCases = () => {
               </div>
 
               {caseItem.investigation_notes && (
-                <div style={{ marginBottom: '16px' }}>
+                <div className="fraud-cases-investigation-notes">
                   <strong>Investigation Notes:</strong>
-                  <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>{caseItem.investigation_notes}</p>
+                  <p className="fraud-cases-notes-text">{caseItem.investigation_notes}</p>
                 </div>
               )}
 
               {caseItem.evidence && caseItem.evidence.length > 0 && (
                 <div>
                   <strong>Evidence ({caseItem.evidence.length}):</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                    {caseItem.evidence.map((evidence, index) => (
-                      <span key={index} style={{
-                        padding: '2px 8px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        background: '#f9fafb'
-                      }}>
+                  <div className="fraud-cases-evidence-list">
+                    {caseItem.evidence.map((evidence: { type: string; description: string }, index: number) => (
+                      <span key={index} className="fraud-cases-evidence-tag">
                         {evidence.type}: {evidence.description}
                       </span>
                     ))}
@@ -470,17 +352,10 @@ const FraudCases = () => {
         ))}
 
         {filteredCases.length === 0 && (
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '48px',
-            textAlign: 'center',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e2e8f0'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📄</div>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#1e293b' }}>No cases found</h3>
-            <p style={{ color: '#64748b' }}>
+          <div className="fraud-cases-empty-state">
+            <div className="fraud-cases-empty-icon">📄</div>
+            <h3 className="fraud-cases-empty-title">No cases found</h3>
+            <p className="fraud-cases-empty-text">
               {filterStatus === 'all'
                 ? 'There are currently no fraud cases to review.'
                 : `No ${filterStatus} cases found.`

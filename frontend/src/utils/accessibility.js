@@ -15,7 +15,7 @@ class AccessibilityTester {
    * Run all accessibility tests
    */
   async runAllTests() {
-    console.log(' Starting Accessibility Testing...');
+    console.warn(' Starting Accessibility Testing...');
 
     // Core WCAG 2.1 AA tests
     await this.testColorContrast();
@@ -36,7 +36,7 @@ class AccessibilityTester {
    * Test color contrast ratios (WCAG 2.1 AA - 4.5:1 for normal text, 3:1 for large text)
    */
   async testColorContrast() {
-    console.log(' Testing color contrast ratios...');
+    console.warn(' Testing color contrast ratios...');
 
     const elements = document.querySelectorAll('*');
     const colorTests = [
@@ -76,7 +76,7 @@ class AccessibilityTester {
    * Test keyboard navigation (WCAG 2.1.1)
    */
   async testKeyboardNavigation() {
-    console.log('⌨ Testing keyboard navigation...');
+    console.warn('⌨ Testing keyboard navigation...');
 
     const focusableElements = document.querySelectorAll(
       'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -118,7 +118,7 @@ class AccessibilityTester {
    * Test screen reader compatibility (WCAG 2.1.2)
    */
   async testScreenReaderCompatibility() {
-    console.log(' Testing screen reader compatibility...');
+    console.warn(' Testing screen reader compatibility...');
 
     const elements = document.querySelectorAll('img, svg, [aria-label], [aria-labelledby]');
     const imageAltTests = [];
@@ -172,7 +172,7 @@ class AccessibilityTester {
    * Test focus management (WCAG 2.4.3, 2.4.7)
    */
   async testFocusManagement() {
-    console.log(' Testing focus management...');
+    console.warn(' Testing focus management...');
 
     const focusableElements = document.querySelectorAll(
       'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -211,7 +211,7 @@ class AccessibilityTester {
    * Test semantic HTML structure (WCAG 1.3.1)
    */
   async testSemanticHTML() {
-    console.log(' Testing semantic HTML...');
+    console.warn(' Testing semantic HTML...');
 
     const semanticElements = {
       'h1, h2, h3, h4, h5, h6': document.querySelectorAll('h1, h2, h3, h4, h5, h6'),
@@ -244,7 +244,7 @@ class AccessibilityTester {
    * Test ARIA implementation (WCAG 4.1.2)
    */
   async testARIA() {
-    console.log(' Testing ARIA implementation...');
+    console.warn(' Testing ARIA implementation...');
 
     const ariaElements = document.querySelectorAll('[role], [aria-*]');
     const invalidRoles = [];
@@ -288,7 +288,7 @@ class AccessibilityTester {
    * Test form accessibility (WCAG 3.3.1, 3.3.2)
    */
   async testFormAccessibility() {
-    console.log(' Testing form accessibility...');
+    console.warn(' Testing form accessibility...');
 
     const forms = document.querySelectorAll('form');
     const formTests = [];
@@ -329,7 +329,7 @@ class AccessibilityTester {
    * Test motion preferences (WCAG 2.3.3)
    */
   async testMotionPreferences() {
-    console.log(' Testing motion preferences...');
+    console.warn(' Testing motion preferences...');
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const animationElements = document.querySelectorAll('[class*="animate"], [style*="animation"]');
@@ -354,7 +354,7 @@ class AccessibilityTester {
    * Test touch target sizes (WCAG 2.5.5)
    */
   async testTouchTargets() {
-    console.log(' Testing touch targets...');
+    console.warn(' Testing touch targets...');
 
     const interactiveElements = document.querySelectorAll(
       'a, button, input[type="checkbox"], input[type="radio"], input[type="range"], select'
@@ -394,7 +394,7 @@ class AccessibilityTester {
    * Test responsive design accessibility
    */
   async testResponsiveDesign() {
-    console.log(' Testing responsive design...');
+    console.warn(' Testing responsive design...');
 
     const viewport = document.querySelector('meta[name="viewport"]');
     const hasViewport = !!viewport;
@@ -612,64 +612,64 @@ class AccessibilityTester {
    * Generate comprehensive accessibility report
    */
   generateReport() {
-    console.log('\n ACCESSIBILITY TEST RESULTS\n' + '='.repeat(50));
+    console.warn('\n ACCESSIBILITY TEST RESULTS\n' + '='.repeat(50));
 
     // Summary
     const passedTests = this.results.filter(r => r.passed).length;
     const totalTests = this.results.length;
 
-    console.log(` Passed: ${passedTests}/${totalTests} tests`);
-    console.log(` Errors: ${this.errors.length}`);
-    console.log(` Warnings: ${this.warnings.length}`);
-    console.log(` Violations: ${this.violations.length}`);
+    console.warn(` Passed: ${passedTests}/${totalTests} tests`);
+    console.warn(` Errors: ${this.errors.length}`);
+    console.warn(` Warnings: ${this.warnings.length}`);
+    console.warn(` Violations: ${this.violations.length}`);
 
     // Detailed results
-    console.log('\n DETAILED RESULTS:');
+    console.warn('\n DETAILED RESULTS:');
     this.results.forEach((result, index) => {
       const status = result.passed ? '' : '';
-      console.log(`${status} ${result.test}: ${result.details}`);
+      console.warn(`${status} ${result.test}: ${result.details}`);
     });
 
     // Issues
     if (this.errors.length > 0) {
-      console.log('\n ERRORS:');
-      this.errors.forEach(error => console.log(`• ${error}`));
+      console.warn('\n ERRORS:');
+      this.errors.forEach(error => console.warn(`• ${error}`));
     }
 
     if (this.warnings.length > 0) {
-      console.log('\n WARNINGS:');
-      this.warnings.forEach(warning => console.log(`• ${warning}`));
+      console.warn('\n WARNINGS:');
+      this.warnings.forEach(warning => console.warn(`• ${warning}`));
     }
 
     if (this.violations.length > 0) {
-      console.log('\n VIOLATIONS:');
-      this.violations.forEach(violation => console.log(`• ${violation}`));
+      console.warn('\n VIOLATIONS:');
+      this.violations.forEach(violation => console.warn(`• ${violation}`));
     }
 
     // WCAG 2.1 AA Score
     const complianceScore = Math.round((passedTests / totalTests) * 100);
-    console.log(`\n WCAG 2.1 AA COMPLIANCE: ${complianceScore}%`);
+    console.warn(`\n WCAG 2.1 AA COMPLIANCE: ${complianceScore}%`);
 
     if (complianceScore >= 95) {
-      console.log(' Excellent! Meets WCAG 2.1 AA standards');
+      console.warn(' Excellent! Meets WCAG 2.1 AA standards');
     } else if (complianceScore >= 80) {
-      console.log(' Good! Minor improvements needed');
+      console.warn(' Good! Minor improvements needed');
     } else {
-      console.log(' Needs improvement to meet WCAG 2.1 AA standards');
+      console.warn(' Needs improvement to meet WCAG 2.1 AA standards');
     }
 
     // Recommendations
-    console.log('\n RECOMMENDATIONS:');
+    console.warn('\n RECOMMENDATIONS:');
     if (this.errors.length > 0) {
-      console.log('• Fix critical errors first to achieve basic accessibility');
+      console.warn('• Fix critical errors first to achieve basic accessibility');
     }
     if (this.warnings.length > 0) {
-      console.log('• Address warnings to improve user experience');
+      console.warn('• Address warnings to improve user experience');
     }
     if (complianceScore < 100) {
-      console.log('• Consider running automated testing tools like axe-core or WAVE');
-      console.log('• Test with actual assistive technologies (screen readers, keyboard only)');
-      console.log('• Conduct user testing with people with disabilities');
+      console.warn('• Consider running automated testing tools like axe-core or WAVE');
+      console.warn('• Test with actual assistive technologies (screen readers, keyboard only)');
+      console.warn('• Conduct user testing with people with disabilities');
     }
 
     // Save results
@@ -692,7 +692,7 @@ class AccessibilityTester {
     };
 
     // Log the report for now - in production, send to analytics/monitoring
-    console.log(' Accessibility Report:', report);
+    console.warn(' Accessibility Report:', report);
 
     // Store in localStorage for debugging
     if (typeof localStorage !== 'undefined') {

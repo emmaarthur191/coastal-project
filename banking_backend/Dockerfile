@@ -1,4 +1,4 @@
-# Use Python 3.12 slim image
+# Use Python 3.12 slim image for production stability
 FROM python:3.12-slim
 
 # Set environment variables

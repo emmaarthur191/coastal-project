@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { authService } from '../../services/api';
+import { authService, AccountWithDetails } from '../../services/api';
 import GlassCard from '../ui/modern/GlassCard';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
 interface StatementsSectionProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: Record<string, string>;
+  setFormData: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   handleGenerateStatement: () => void;
 }
 
@@ -16,7 +16,7 @@ const StatementsSection: React.FC<StatementsSectionProps> = ({
   handleGenerateStatement
 }) => {
   const [generating, setGenerating] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<AccountWithDetails[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
 
   useEffect(() => {
@@ -24,9 +24,7 @@ const StatementsSection: React.FC<StatementsSectionProps> = ({
       try {
         const response = await authService.getStaffAccounts();
         if (response.success && response.data) {
-          // Handle both paginated and list responses
-          const accountData = response.data.results || response.data;
-          setAccounts(Array.isArray(accountData) ? accountData : []);
+          setAccounts(response.data);
         }
       } catch (error) {
         console.error('Error fetching accounts for statements:', error);
@@ -66,11 +64,16 @@ const StatementsSection: React.FC<StatementsSectionProps> = ({
 
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+              <label
+                htmlFor="account_number"
+                className="block text-sm font-semibold text-gray-700 mb-1 ml-1"
+              >
                 Select Account
               </label>
               <select
+                id="account_number"
                 name="account_number"
+                title="Select Account"
                 value={formData.account_number || ''}
                 onChange={handleChange}
                 disabled={loadingAccounts}
@@ -81,7 +84,7 @@ const StatementsSection: React.FC<StatementsSectionProps> = ({
                 </option>
                 {accounts.map((account) => (
                   <option key={account.id} value={account.account_number}>
-                    {account.account_number} - {account.owner?.first_name} {account.owner?.last_name} ({account.type})
+                    {account.account_number} - {account.user?.full_name} ({account.account_type})
                   </option>
                 ))}
               </select>

@@ -1,0 +1,342 @@
+/* FraudCases Component Styles */
+
+.fraud-cases-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.fraud-cases-header {
+    margin-bottom: 24px;
+}
+
+.fraud-cases-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #1e293b;
+}
+
+.fraud-cases-subtitle {
+    color: #64748b;
+}
+
+/* Statistics Cards Grid */
+.fraud-cases-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.fraud-cases-stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.fraud-cases-stat-content {
+    display: flex;
+    align-items: center;
+}
+
+.fraud-cases-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.fraud-cases-stat-icon--open {
+    background: #fee2e2;
+}
+
+.fraud-cases-stat-icon--investigating {
+    background: #fef3c7;
+}
+
+.fraud-cases-stat-icon--closed {
+    background: #d1fae5;
+}
+
+.fraud-cases-stat-icon--total {
+    background: #dbeafe;
+}
+
+.fraud-cases-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+.fraud-cases-stat-label {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* Filter Tabs */
+.fraud-cases-filter-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.fraud-cases-filter-tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fraud-cases-filter-tab--active {
+    background: white;
+    color: #1e293b;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Cases List */
+.fraud-cases-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fraud-cases-case-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    transition: box-shadow 0.2s;
+}
+
+.fraud-cases-case-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fraud-cases-case-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.fraud-cases-case-info {
+    flex: 1;
+}
+
+.fraud-cases-case-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.fraud-cases-priority-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+.fraud-cases-priority-badge--critical {
+    background: #ef4444;
+}
+
+.fraud-cases-priority-badge--high {
+    background: #f97316;
+}
+
+.fraud-cases-priority-badge--medium {
+    background: #eab308;
+}
+
+.fraud-cases-priority-badge--low {
+    background: #3b82f6;
+}
+
+.fraud-cases-priority-badge--default {
+    background: #6b7280;
+}
+
+.fraud-cases-status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fraud-cases-status-badge--open {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.fraud-cases-status-badge--investigating {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.fraud-cases-status-badge--closed {
+    background: #d1fae5;
+    color: #166534;
+}
+
+.fraud-cases-status-badge--escalated {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+.fraud-cases-status-badge--default {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.fraud-cases-case-number {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.fraud-cases-case-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #1e293b;
+}
+
+.fraud-cases-case-description {
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.fraud-cases-case-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.fraud-cases-case-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fraud-cases-case-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.fraud-cases-btn {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fraud-cases-btn:hover {
+    background: #f9fafb;
+}
+
+.fraud-cases-btn--primary {
+    background: #1e40af;
+    color: white;
+    border-color: #1e40af;
+}
+
+.fraud-cases-btn--primary:hover {
+    background: #1e3a8a;
+}
+
+/* Case Details Section */
+.fraud-cases-case-details {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 16px;
+}
+
+.fraud-cases-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.fraud-cases-investigation-notes {
+    margin-bottom: 16px;
+}
+
+.fraud-cases-notes-text {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.fraud-cases-evidence-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.fraud-cases-evidence-tag {
+    padding: 2px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #f9fafb;
+}
+
+/* Empty State */
+.fraud-cases-empty-state {
+    background: white;
+    border-radius: 12px;
+    padding: 48px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.fraud-cases-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.fraud-cases-empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1e293b;
+}
+
+.fraud-cases-empty-text {
+    color: #64748b;
+}
+
+/* Loading State */
+.fraud-cases-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 256px;
+}

@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\users\serializers.py
-# hypothesis_version: 6.148.7
-
-['-', 'Invalid credentials.', '^[A-Z][0-9]{12}$', 'confirm_password', 'email', 'first_name', 'id', 'is_active', 'is_staff', 'is_superuser', 'last_name', 'name', 'new_password', 'password', 'password_confirm', 'phone_number', 'read_only', 'role', 'staff_id', 'user', 'username']

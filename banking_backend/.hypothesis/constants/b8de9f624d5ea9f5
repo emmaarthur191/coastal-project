@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\migrations\0013_expense.py
-# hypothesis_version: 6.148.7
-
-['Cancelled', 'Expense', 'ID', 'Maintenance', 'Marketing', 'Operational', 'Other', 'Paid', 'Payroll', 'Pending', 'Utilities', 'amount', 'cancelled', 'category', 'core', 'core.transaction', 'created_at', 'date', 'description', 'expense', 'id', 'paid', 'pending', 'status', 'transaction', 'updated_at']

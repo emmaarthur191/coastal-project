@@ -1,5 +1,4 @@
-"""
-Service-related views for Coastal Banking.
+"""Service-related views for Coastal Banking.
 
 This module contains views for managing service charges, service requests,
 refunds, and complaints.
@@ -9,6 +8,8 @@ import logging
 from decimal import Decimal
 
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -30,6 +31,7 @@ from core.serializers import (
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(cache_page(60 * 15), name="get")
 class ServiceChargesView(APIView):
     """View for managing service charges."""
 
@@ -76,7 +78,11 @@ class ServiceChargesView(APIView):
         except Exception as e:
             logger.error(f"Failed to create service charge: {e}")
             return Response(
-                {"status": "error", "message": str(e), "code": "CREATE_CHARGE_FAILED"},
+                {
+                    "status": "error",
+                    "message": "Failed to create service charge. Please check your input and try again.",
+                    "code": "CREATE_CHARGE_FAILED",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -159,6 +165,7 @@ class ServiceRequestViewSet(
 
     def get_permissions(self):
         from ..permissions import IsStaffOrCustomer
+
         """Map service request actions to their required permission levels."""
         if self.action in ["process", "pending_checkbooks", "approve_checkbook"]:
             return [IsStaff()]
@@ -195,12 +202,16 @@ class ServiceRequestViewSet(
             }
         )
 
-    @action(detail=False, methods=["get"], permission_classes=[IsStaff])
+    @action(detail=False, methods=["get"], permission_classes=[IsStaff], url_path="pending-checkbooks")
     def pending_checkbooks(self, request):
         """Get all pending checkbook requests for Operations Manager approval."""
         if request.user.role not in ["operations_manager", "manager"]:
             return Response(
-                {"status": "error", "message": "Only Operations Manager can view pending checkbooks", "code": "PERMISSION_DENIED"},
+                {
+                    "status": "error",
+                    "message": "Only Operations Manager can view pending checkbooks",
+                    "code": "PERMISSION_DENIED",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -208,7 +219,7 @@ class ServiceRequestViewSet(
 
         return Response({"count": pending.count(), "requests": ServiceRequestSerializer(pending, many=True).data})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff], url_path="approve-checkbook")
     def approve_checkbook(self, request, pk=None):
         """Approve or reject a checkbook request (Operations Manager only)."""
         if request.user.role not in ["operations_manager", "manager"]:
@@ -217,7 +228,11 @@ class ServiceRequestViewSet(
         service_request = self.get_object()
         if service_request.request_type != "checkbook":
             return Response(
-                {"status": "error", "message": "This action is only for checkbook requests", "code": "INVALID_REQUEST_TYPE"},
+                {
+                    "status": "error",
+                    "message": "This action is only for checkbook requests",
+                    "code": "INVALID_REQUEST_TYPE",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -282,6 +297,7 @@ class RefundViewSet(
 
     def get_permissions(self):
         from ..permissions import IsStaffOrCustomer
+
         """Map refund actions to their required permission levels."""
         if self.action in ["approve", "reject", "update", "partial_update"]:
             return [IsStaff()]

@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\ml\fraud_detector.py
-# hypothesis_version: 6.148.7
-
-[-0.8, -0.5, 0.0, 0.01, 1.0, 7.0, 100, 365, 3650, 10000, 86400, '-timestamp', '100', 'account_age_days', 'amount', 'amount_vs_avg_ratio', 'anomaly_threshold', 'avg', 'completed', 'created_at', 'critical', 'day_of_week', 'error', 'estimators_', 'features', 'high', 'hour_of_day', 'is_anomaly', 'is_fitted', 'is_weekend', 'last_trained', 'low', 'mean_', 'medium', 'message', 'ml_models', 'model_exists', 'model_path', 'raw_score', 'risk_level', 'risk_score', 'samples_available', 'samples_used', 'scaler.joblib', 'success', 'timestamp', 'unknown', 'velocity_score']

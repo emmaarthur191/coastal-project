@@ -78,6 +78,7 @@ describe('AuthContext', () => {
             authenticated: false,
         });
         (authService.login as ReturnType<typeof vi.fn>).mockResolvedValue({
+            success: true,
             user: mockUser,
         });
 

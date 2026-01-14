@@ -22,6 +22,12 @@ export type AccountOpeningRequest = {
     address?: string;
     phone_number: string;
     email?: string | null;
+    occupation?: string;
+    work_address?: string;
+    position?: string;
+    digital_address?: string;
+    location?: string;
+    next_of_kin_data?: Record<string, any> | null;
     /**
      * Base64 encoded photo or file path
      */
@@ -30,10 +36,14 @@ export type AccountOpeningRequest = {
     readonly processed_by: number | null;
     readonly submitted_by: number | null;
     readonly created_account: number | null;
+    /**
+     * Manager who approved the dispatch of login credentials
+     */
+    readonly credentials_approved_by: number | null;
+    readonly credentials_sent_at: string | null;
     readonly rejection_reason: string;
     readonly notes: string;
     readonly created_at: string;
     readonly updated_at: string;
     readonly approved_at: string | null;
 };
-

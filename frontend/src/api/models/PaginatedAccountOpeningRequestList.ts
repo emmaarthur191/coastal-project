@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { AccountOpeningRequest } from './AccountOpeningRequest';
 export type PaginatedAccountOpeningRequestList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<AccountOpeningRequest>;
+    results: Array<AccountOpeningRequest>;
 };
-

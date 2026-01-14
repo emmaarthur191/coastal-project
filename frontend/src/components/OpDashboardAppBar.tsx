@@ -1,7 +1,9 @@
 import React from 'react';
+import './OpDashboardAppBar.css';
+import { Button } from './ui/Button';
 
 interface OpDashboardAppBarProps {
-  user: any;
+  user: { name?: string; id?: number | string; role?: string } | null;
   activeView: string;
   setActiveView: React.Dispatch<React.SetStateAction<string>>;
   handleLogout: () => void;
@@ -18,69 +20,52 @@ const navItems = [
 
 const OpDashboardAppBar: React.FC<OpDashboardAppBarProps> = ({ user, activeView, setActiveView, handleLogout }) => {
   return (
-    <header className="md-elevated-card md-animate-slide-in-down" style={{
-      marginBottom: '24px',
-      padding: '20px 24px'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+    <header className="op-dashboard-app-bar glass-card transition-all duration-500">
+      <div className="op-dashboard-header-container">
         <div>
-          <h1 className="md-typescale-headline-medium" style={{ color: 'var(--md-sys-color-on-surface)', marginBottom: '4px' }}>
-            Operations Management
+          <h1 className="op-dashboard-title text-2xl font-black tracking-tight text-white drop-shadow-md">
+            Operations Portal
           </h1>
-          <p className="md-typescale-body-medium" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-              Welcome, <strong>{user?.name || 'User'}</strong>
+          <p className="op-dashboard-subtitle text-white/70 font-medium">
+            System Administrator: <span className="text-white font-bold">{user?.name || 'Administrator'}</span>
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="md-chip" style={{
-            background: 'var(--md-sys-color-tertiary-container)',
-            color: 'var(--md-sys-color-on-tertiary-container)',
-            border: 'none'
-          }}>
-            OPERATIONS MANAGER
+        <div className="op-dashboard-actions">
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-md">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-xs font-bold text-white/90 uppercase tracking-widest">
+              {user?.role || 'OPS_ADMIN'}
+            </span>
           </div>
-          <button
+          <Button
             onClick={handleLogout}
-            className="md-filled-button md-ripple"
-            style={{
-              background: 'var(--md-sys-color-error)',
-              color: 'var(--md-sys-color-on-error)'
-            }}
+            className="op-dashboard-logout-btn bg-red-500/80 hover:bg-red-600 transition-all duration-300 shadow-xl shadow-red-900/20"
           >
-            Logout
-          </button>
+            Sign Out 👋
+          </Button>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <nav style={{
-        display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px',
-        background: 'var(--md-sys-color-surface-container-highest)',
-        borderRadius: 'var(--md-sys-shape-corner-large)', position: 'relative', zIndex: 1
-      }}>
+      <nav className="op-dashboard-nav mt-6 bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-sm">
         {navItems.map((view) => (
           <button
             key={view.id}
             onClick={() => setActiveView(view.id)}
-            className="md-ripple"
-            style={{
-              padding: '10px 16px',
-              background: activeView === view.id ? 'var(--md-sys-color-surface)' : 'transparent',
-              border: 'none',
-              borderRadius: 'var(--md-sys-shape-corner-medium)',
-              color: activeView === view.id ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
-              fontWeight: activeView === view.id ? '600' : '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              whiteSpace: 'nowrap',
-              transition: 'all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard)',
-              boxShadow: activeView === view.id ? 'var(--md-sys-elevation-1)' : 'none'
-            }}
+            className={`
+              flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all duration-500 group relative
+              ${activeView === view.id
+                ? 'bg-white text-gray-900 shadow-lg scale-105 z-10'
+                : 'text-white/60 hover:bg-white/10 hover:text-white'}
+            `}
           >
-            <span style={{ fontSize: '18px' }}>{view.icon}</span>
-            <span className="md-typescale-label-large">{view.name}</span>
+            <span className={`transition-transform duration-500 group-hover:scale-120 ${activeView === view.id ? 'scale-110' : ''}`}>
+              {view.icon}
+            </span>
+            <span className="font-bold text-sm tracking-wide">{view.name}</span>
+            {activeView === view.id && (
+              <div className="absolute bottom-1 left-1.2 right-1/2 translate-x-1/2 w-1.5 h-1 bg-gray-900 rounded-full" />
+            )}
           </button>
         ))}
       </nav>

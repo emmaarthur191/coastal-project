@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api';
+import { authService, PerformanceDashboardData, SystemHealthData, SystemHealthComponent, PerformanceMetric, PerformanceAlert, PerformanceRecommendation, TransactionVolumeSummary, PerformanceChartData } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/ui/modern/GlassCard';
 import { Button } from '../components/ui/Button';
@@ -14,13 +14,13 @@ function PerformanceDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Performance data state
-  const [dashboardData, setDashboardData] = useState<any[]>([]);
-  const [systemHealth, setSystemHealth] = useState<any>({});
-  const [metrics, setMetrics] = useState<any[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [transactionVolume, setTransactionVolume] = useState<any>({});
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<PerformanceDashboardData[]>([]);
+  const [systemHealth, setSystemHealth] = useState<Partial<SystemHealthData>>({});
+  const [metrics, setMetrics] = useState<PerformanceMetric[]>([]);
+  const [alerts, setAlerts] = useState<PerformanceAlert[]>([]);
+  const [recommendations, setRecommendations] = useState<PerformanceRecommendation[]>([]);
+  const [transactionVolume, setTransactionVolume] = useState<Partial<TransactionVolumeSummary>>({});
+  const [chartData, setChartData] = useState<Partial<PerformanceChartData>>({});
 
   useEffect(() => {
     fetchData();
@@ -59,35 +59,35 @@ function PerformanceDashboard() {
 
   const fetchDashboardData = async () => {
     const result = await authService.getPerformanceDashboardData();
-    if (result.success) {
+    if (result.success && result.data) {
       setDashboardData(result.data);
     }
   };
 
   const fetchSystemHealth = async () => {
     const result = await authService.getSystemHealth();
-    if (result.success) {
+    if (result.success && result.data) {
       setSystemHealth(result.data);
     }
   };
 
   const fetchMetrics = async () => {
     const result = await authService.getPerformanceMetrics();
-    if (result.success) {
+    if (result.success && result.data) {
       setMetrics(result.data);
     }
   };
 
   const fetchAlerts = async () => {
     const result = await authService.getPerformanceAlerts();
-    if (result.success) {
+    if (result.success && result.data) {
       setAlerts(result.data);
     }
   };
 
   const fetchRecommendations = async () => {
     const result = await authService.getPerformanceRecommendations();
-    if (result.success) {
+    if (result.success && result.data) {
       setRecommendations(result.data);
     }
   };
@@ -98,10 +98,10 @@ function PerformanceDashboard() {
       authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' })
     ]);
 
-    if (volumeResult.success) {
-      setTransactionVolume(volumeResult.data);
+    if (volumeResult.success && volumeResult.data) {
+      setTransactionVolume(volumeResult.data as unknown as TransactionVolumeSummary);
     }
-    if (chartResult.success) {
+    if (chartResult.success && chartResult.data) {
       setChartData(chartResult.data);
     }
   };
@@ -175,7 +175,7 @@ function PerformanceDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {systemHealth.components && systemHealth.components.map((component: any, index: number) => (
+              {systemHealth.components && systemHealth.components.map((component: SystemHealthComponent, index: number) => (
                 <div key={index} className={`
                     p-5 rounded-2xl border bg-white
                     ${component.status === 'healthy' ? 'border-gray-100' : 'border-red-100 shadow-red-50'}
@@ -251,11 +251,11 @@ function PerformanceDashboard() {
                           {alert.severity === 'critical' ? '🚨' : alert.severity === 'warning' ? '⚠️' : 'ℹ️'}
                         </span>
                         <h4 className={`font-bold ${alert.severity === 'critical' ? 'text-red-900' :
-                            alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
+                          alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
                           }`}>{alert.title}</h4>
                       </div>
                       <p className={`text-sm ml-8 ${alert.severity === 'critical' ? 'text-red-700' :
-                          alert.severity === 'warning' ? 'text-amber-700' : 'text-blue-700'
+                        alert.severity === 'warning' ? 'text-amber-700' : 'text-blue-700'
                         }`}>{alert.message}</p>
                       <p className="text-xs opacity-60 ml-8 mt-1">
                         {new Date(alert.timestamp).toLocaleString()}
@@ -341,7 +341,7 @@ function PerformanceDashboard() {
                 <div className="text-center">
                   <div className="text-4xl mb-2 opacity-20">📉</div>
                   <p className="text-gray-400 font-medium">Chart Visualization Placeholder</p>
-                  <p className="text-xs text-gray-300 mt-1">{chartData.length} data points available</p>
+                  <p className="text-xs text-gray-300 mt-1">{(chartData.datasets?.length || 0)} data points available</p>
                 </div>
               </div>
             </GlassCard>

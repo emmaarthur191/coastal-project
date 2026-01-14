@@ -4,9 +4,8 @@
 /* eslint-disable */
 import type { CashAdvance } from './CashAdvance';
 export type PaginatedCashAdvanceList = {
-    count?: number;
+    count: number;
     next?: string | null;
     previous?: string | null;
-    results?: Array<CashAdvance>;
+    results: Array<CashAdvance>;
 };
-

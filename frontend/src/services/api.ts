@@ -1,22 +1,115 @@
-import { Account } from '../api/models/Account';
-import { Transaction } from '../api/models/Transaction';
-import { User } from '../api/models/User';
+/// <reference types="vite/client" />
+import type { Account } from '../api/models/Account';
+import type { AccountAccountTypeEnum } from '../api/models/AccountAccountTypeEnum';
+import type { CashAdvance } from '../api/models/CashAdvance';
+import type { Complaint } from '../api/models/Complaint';
+import type { FraudAlert } from '../api/models/FraudAlert';
+import type { Loan } from '../api/models/Loan';
+import type { Message } from '../api/models/Message';
+import type { MessageThread } from '../api/models/MessageThread';
+import type { Refund } from '../api/models/Refund';
+import type { Report } from '../api/models/Report';
+import type { ReportSchedule } from '../api/models/ReportSchedule';
+import type { ReportTemplate } from '../api/models/ReportTemplate';
+import type { Transaction } from '../api/models/Transaction';
+import type { User } from '../api/models/User';
+
+export type {
+  Account,
+  AccountAccountTypeEnum,
+  CashAdvance,
+  Complaint,
+  FraudAlert,
+  Loan,
+  Message,
+  MessageThread,
+  Refund,
+  Report,
+  ReportSchedule,
+  ReportTemplate,
+  Transaction,
+  User
+};
+
+/**
+ * Extended Loan interface including fields returned by the backend but missing in the generated model.
+ */
+export interface LoanExtended extends Omit<Loan, 'user' | 'borrower_name' | 'borrower_email' | 'purpose'> {
+  purpose?: string;
+  borrower_name?: string;
+  borrower_email?: string;
+  applicant?: string;
+  description?: string;
+  application_date?: string;
+  user?: number | { id: number; name: string; email: string; full_name?: string };
+  // Some parts of the app use 'data' wrapper if double wrapped by accident
+  data?: LoanExtended[];
+}
+
+/**
+ * Extended Message Thread interface including fields returned by the backend but missing in the generated model.
+ */
+export interface MessageThreadExtended extends Omit<MessageThread, 'participants' | 'messages' | 'unread_count'> {
+  participants?: number[] | string[];
+  messages?: Message[];
+  unread_count?: number;
+}
+
+export interface MessageExtended extends Message {
+  is_me?: boolean;
+}
+
+/**
+ * Interface for the new Chat API rooms.
+ */
+export interface ChatRoomData {
+  id: number;
+  name: string | null;
+  display_name: string;
+  is_group: boolean;
+  members: User[];
+  last_message: {
+    content: string;
+    sender_name: string;
+    timestamp: string;
+  } | null;
+  unread_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Interface for the new Chat API messages.
+ */
+export interface ChatMessageData {
+  id: number;
+  sender: number;
+  sender_name: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
 
 /**
  * Standard API response wrapper that mirrors the backend's consistent response structure.
  * @template T - The type of the data payload.
  */
 export interface ApiResponse<T = unknown> {
-  /** The primary data payload of the response. */
   data: T;
-  /** Indicates if the operation was successful. */
   success?: boolean;
-  /** A human-readable error message, if applicable. */
   error?: string;
-  /** A general message or success detail. */
   message?: string;
-  /** A standardized error or status code for programmatic handling. */
   code?: string;
+}
+
+/**
+ * Standard paginated response from the backend.
+ */
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 /**
@@ -45,6 +138,378 @@ export interface AccountSummary {
   total_loans?: number;
   available_balance?: number;
   monthly_contributions?: number;
+}
+
+/**
+ * Summary statistics for staff account view
+ */
+export interface StaffAccountSummary {
+  total_accounts: number;
+  active_accounts: number;
+  total_balance: number;
+  recent_accounts: number;
+}
+
+export interface AccountUser {
+  id: number | string;
+  full_name: string;
+  email: string;
+  phone?: string;
+}
+
+/**
+ * Extended Account interface including expanded user details
+ */
+export interface AccountWithDetails extends Omit<Account, 'user' | 'account_type'> {
+  user?: AccountUser;
+  // backend sometimes returns different types than the strict generated model
+  account_type?: AccountAccountTypeEnum | string; // Keep permissive if needed, or align with Enum if strictly matching
+}
+
+/**
+ * Expense category options matching backend CATEGORY_CHOICES
+ */
+export type ExpenseCategory = 'Operational' | 'Utilities' | 'Payroll' | 'Maintenance' | 'Marketing' | 'Other';
+
+/**
+ * Expense status options matching backend STATUS_CHOICES
+ */
+export type ExpenseStatus = 'pending' | 'paid' | 'cancelled';
+
+/**
+ * Input data for creating a new expense
+ */
+export interface ExpenseData {
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  date?: string; // ISO date format, defaults to today on backend
+  status?: ExpenseStatus;
+}
+
+/**
+ * Expense response from the API
+ */
+export interface Expense {
+  id: number;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  date: string;
+  status: ExpenseStatus;
+  transaction?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ManagerOverviewData {
+  pendingApprovals: number;
+  totalMembers: number;
+  dailyTransactions: number;
+  systemHealth: number;
+}
+
+/**
+ * User settings and preferences
+ */
+export interface UserSettings {
+  notifications_enabled?: boolean;
+  email_notifications?: boolean;
+  sms_notifications?: boolean;
+  notifications?: boolean;
+  email_updates?: boolean;
+  theme?: 'light' | 'dark' | 'system';
+  language?: string;
+  two_factor_enabled?: boolean;
+  timezone?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Pagination information for paginated API responses
+ */
+export interface PaginationInfo {
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
+/**
+ * Input data for creating a new loan
+ */
+export interface CreateLoanData {
+  user?: number;
+  amount: string;
+  interest_rate?: string;
+  term_months: number | string;
+  purpose?: string;
+  account?: string | number;
+}
+
+/**
+ * Input data for creating a complaint
+ */
+export interface CreateComplaintData {
+  category: string;
+  subject: string;
+  description: string;
+  priority?: string;
+}
+
+/**
+ * Input data for creating a message thread
+ */
+export interface CreateMessageThreadData {
+  subject: string;
+  thread_type?: string;
+  participant_ids?: (number | string)[];
+  participants?: (number | string)[]; // Add for compatibility
+}
+
+/**
+ * Input data for sending a message
+ */
+export interface SendMessageData {
+  thread: number | string;
+  content: string;
+  message_type?: string; // Add for compatibility
+}
+
+/**
+ * Performance dashboard analytics data
+ */
+export interface PerformanceDashboardData {
+  metric: string;
+  value: string | number;
+  unit?: string;
+  icon?: string;
+  trend?: 'up' | 'down' | 'stable';
+  [key: string]: unknown;
+}
+
+/**
+ * Transaction volume analytics data
+ */
+export interface TransactionVolumeData {
+  period: string;
+  volume: number;
+  count: number;
+}
+
+export interface TransactionVolumeSummary {
+  total: number;
+  success_rate: number;
+  avg_response_time: number;
+}
+
+/**
+ * Performance chart data structure
+ */
+export interface PerformanceChartData {
+  labels?: string[];
+  datasets?: Array<{ label: string; data: number[] }>;
+  [key: string]: unknown;
+}
+
+/**
+ * System health status data
+ */
+export interface SystemHealthComponent {
+  name: string;
+  status: 'healthy' | 'degraded' | 'down';
+  message: string;
+  last_check: string;
+}
+
+export interface SystemHealthData {
+  status: string;
+  uptime: string;
+  memory_usage: number;
+  cpu_usage: number;
+  database_connected: boolean;
+  components?: SystemHealthComponent[];
+}
+
+/**
+ * Performance alert notification
+ */
+export interface PerformanceAlert {
+  id: number | string;
+  type: string;
+  title?: string; // Frontend usage
+  message: string;
+  severity: 'critical' | 'warning' | 'info' | string;
+  created_at?: string;
+  timestamp?: string; // Frontend usage
+}
+
+/**
+ * Performance recommendation item
+ */
+export interface PerformanceRecommendation {
+  id: number;
+  title: string;
+  description: string;
+  priority: string;
+  category?: string;
+  impact?: string;
+  effort?: string;
+}
+
+/**
+ * Performance metric score
+ */
+export interface PerformanceMetric {
+  name: string;
+  score?: number; // Keep for backward compatibility
+  value: string | number;
+  unit: string;
+  status: 'good' | 'warning' | 'critical';
+  description: string;
+}
+
+/**
+ * Date range filter parameters
+ */
+export interface DateRangeParams {
+  start_date?: string;
+  end_date?: string;
+  period?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Input data for creating a report template
+ */
+import { ReportTypeEnum } from '../api/models/ReportTypeEnum';
+
+export interface CreateReportTemplateData {
+  name: string;
+  description?: string;
+  report_type: ReportTypeEnum;
+  template_format?: string;
+  parameters?: Record<string, unknown>;
+}
+
+/**
+ * Input data for creating a new user/staff member
+ */
+export interface CreateUserData {
+  email: string;
+  first_name: string;
+  last_name: string;
+  role?: string;
+  phone_number?: string;
+  password?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Input data for creating a service request
+ */
+export interface CreateServiceRequestData {
+  request_type: string;
+  account_id?: number | string;
+  notes?: string;
+  priority?: string;
+  quantity?: number;
+  delivery_method?: string;
+  [key: string]: string | number | undefined;
+}
+
+
+
+/**
+ * Input data for creating a report schedule
+ */
+export interface CreateReportScheduleData {
+  template: number | string;
+  schedule_type: string;
+  frequency?: string;
+  next_run?: string;
+  recipients?: string[];
+  is_active?: boolean;
+}
+
+/**
+ * Report analytics data structure
+ */
+export interface ReportAnalytics {
+  total_reports: number;
+  reports_by_type: Record<string, number>;
+  generation_stats: {
+    total_generated: number;
+    avg_generation_time: number;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Generated report response
+ */
+export interface GeneratedReport {
+  id: number | string;
+  report_url?: string;
+  status: string;
+  generated_at?: string;
+}
+
+/**
+ * API usage statistics
+ */
+export interface ApiUsageData {
+  endpoint: string;
+  method: string;
+  count: number;
+  avg_response_time?: number;
+}
+
+/**
+ * Rate limit information
+ */
+export interface RateLimitData {
+  endpoint: string;
+  limit: number;
+  remaining: number;
+  reset_time?: string;
+}
+
+/**
+ * Health check result
+ */
+export interface HealthCheckData {
+  service: string;
+  status: 'healthy' | 'warning' | 'critical' | 'unknown';
+  latency_ms?: number;
+  last_checked?: string;
+  message?: string;
+}
+
+/**
+ * System setting
+ */
+export interface SystemSettingData {
+  key: string;
+  value: string | number | boolean;
+  category?: string;
+  description?: string;
+}
+
+/**
+ * Audit dashboard data
+ */
+export interface AuditData {
+  total_events: number;
+  events_by_type: Record<string, number>;
+  events_by_user: Record<string, number>;
+  recent_events: Array<{
+    id: number;
+    event_type: string;
+    description: string;
+    user_name: string;
+    timestamp: string;
+    ip_address?: string;
+  }>;
 }
 
 // Logging utility for API debugging - PRODUCTION SAFE (no output in production)
@@ -116,8 +581,8 @@ const getApiBaseUrl = () => {
 
 // Request configuration type
 interface RequestConfig extends RequestInit {
-  method: string;
-  url: string;
+  method?: string;
+  url?: string;
   data?: unknown;
   headers?: HeadersInit | Record<string, string>;
   params?: Record<string, string | number | boolean | undefined>;
@@ -148,19 +613,17 @@ if (import.meta.env.DEV) {
 // DEPRECATED: This function is no longer used with httpOnly cookie-based authentication
 // Tokens are now managed securely by the backend in httpOnly cookies
 // @deprecated Use backend-managed httpOnly cookies instead
-function setStoredTokens(_access: string, _refresh: string) {
+function _setStoredTokens(_access: string, _refresh: string) {
   // No-op: tokens are handled by backend httpOnly cookies
   logger.warn('setStoredTokens is deprecated. Tokens are now managed by backend httpOnly cookies.');
 }
 
-
-
-function getStoredTokens() {
+export function _getStoredTokens(): { accessToken: string | null; refreshToken: string | null } {
   // Tokens are now stored in httpOnly cookies by the backend
   // Frontend cannot read httpOnly cookies, so we return null
   // Authentication is handled via cookies automatically by the browser
   logger.debug('getStoredTokens: tokens are managed by backend httpOnly cookies');
-  return { access: null, refresh: null };
+  return { accessToken: null, refreshToken: null };
 }
 
 /**
@@ -168,7 +631,7 @@ function getStoredTokens() {
  * @param token - JWT token string
  * @returns boolean indicating if token is expired
  */
-function isTokenExpired(token: string): boolean {
+export function _isTokenExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Date.now() / 1000;
@@ -180,13 +643,7 @@ function isTokenExpired(token: string): boolean {
 
 // Helper function to refresh access token
 async function refreshAccessToken() {
-  const { refresh } = getStoredTokens();
-  if (!refresh || isTokenExpired(refresh)) {
-    logger.warn('Token refresh failed: No valid refresh token available');
-    return null;
-  }
-
-  logger.debug('Attempting token refresh');
+  logger.debug('Attempting token refresh via cookies');
 
   try {
     const response = await fetch(`${API_BASE_URL}users/auth/refresh/`, {
@@ -194,12 +651,17 @@ async function refreshAccessToken() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refresh }),
+      // Credentials 'include' ensures cookies are sent with the request
+      credentials: 'include',
+      // No body needed as the refresh token is in the cookie
+      body: JSON.stringify({}),
     });
 
     if (response.ok) {
       const data = await response.json();
-      setStoredTokens(data.access, data.refresh || refresh);
+      // Even though we use cookies, we might still receive tokens in the response body
+      // depending on backend implementation. We update stores just in case.
+      _setStoredTokens(data.access, data.refresh);
       logger.info('Token refreshed successfully');
       return data.access;
     } else {
@@ -355,10 +817,26 @@ async function getCsrfToken(): Promise<string | null> {
 }
 
 /**
+ * Generate a unique idempotency key for requests.
+ * Uses crypto.randomUUID if available, else a simple random string.
+ */
+function generateIdempotencyKey(): string {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+/**
  * Core API caller with retry logic, interceptors, and error handling
  */
-async function apiCall<T = unknown>(method: string, url: string, data?: unknown, config?: RequestConfig, retryCount = 0): Promise<{ data: T }> {
+async function apiCall<T = unknown>(method: string, url: string, data?: unknown, config?: RequestConfig, retryCount = 0, idempotencyKey?: string): Promise<{ data: T }> {
   const startTime = Date.now();
+
+  // For state-changing requests, ensure we have an idempotency key that persists across retries
+  const isStateChanging = ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase());
+  const effectiveIdempotencyKey = (isStateChanging && !idempotencyKey) ? generateIdempotencyKey() : idempotencyKey;
+
   const requestConfig = { method, url, data, ...config } as RequestConfig;
 
   logger.debug(`API call: ${method} ${url} (attempt ${retryCount + 1})`, { data: data, config });
@@ -387,6 +865,8 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
       ...(data instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       // Include CSRF token for state-changing operations
       ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+      // Include Idempotency key for protection against duplicate processed requests
+      ...(effectiveIdempotencyKey && { 'X-Idempotency-Key': effectiveIdempotencyKey }),
       // Authorization is handled by HttpOnly cookies automatically
       ...configHeaders,
     };
@@ -422,8 +902,10 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
         let errorData = {};
         try {
           const contentType = processedResponse.headers.get('content-type');
+          console.warn('[DEBUG] Response Content-Type:', contentType);
           if (contentType && contentType.includes('application/json')) {
             errorData = await processedResponse.json();
+            console.warn('[DEBUG] Parsed JSON errorData:', errorData);
           } else if (contentType && contentType.includes('text/html')) {
             // HTML response typically means wrong backend URL or server error page
             const textPreview = await processedResponse.text();
@@ -436,23 +918,27 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
           } else {
             // Handle non-JSON error responses gracefully
             const textResponse = await processedResponse.text();
+            console.warn('[DEBUG] Non-JSON text response:', textResponse);
             errorData = { detail: textResponse || `HTTP error! status: ${processedResponse.status}` };
           }
-        } catch {
+        } catch (parseError) {
           // If response parsing fails, create a generic error
+          console.warn('[DEBUG] Response parsing failed:', parseError);
           errorData = { detail: `HTTP error! status: ${processedResponse.status}` };
         }
 
         // Extract the actual error details from the backend response
         const status = processedResponse.status;
         const responseBodyData = errorData as Record<string, unknown>;
-        const msg = responseBodyData?.detail || responseBodyData?.error || responseBodyData?.message || `HTTP error! status: ${status}`;
+        // Check for DRF's non_field_errors (array) first, then detail, error, message
+        const nonFieldErrors = responseBodyData?.non_field_errors as string[] | undefined;
+        console.warn('[DEBUG] nonFieldErrors:', nonFieldErrors);
+        const msg = nonFieldErrors?.[0] || responseBodyData?.detail || responseBodyData?.error || responseBodyData?.message || `HTTP error! status: ${status}`;
         logger.error(`[API ERROR ${status}]`, msg);
-        logger.debug("Full data:", responseBodyData);
 
         // Throw specialized error for better handling
         const apiError: ApiError = new Error(
-          sanitizeErrorMessage((errorData as Record<string, unknown>).error as string || (errorData as Record<string, unknown>).detail as string || `HTTP error! status: ${processedResponse.status}`)
+          sanitizeErrorMessage(nonFieldErrors?.[0] as string || (errorData as Record<string, unknown>).error as string || (errorData as Record<string, unknown>).detail as string || `HTTP error! status: ${processedResponse.status}`)
         ) as ApiError;
         apiError.status = processedResponse.status;
         apiError.data = errorData;
@@ -474,8 +960,8 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
           // Token might be expired, try to refresh
           const refreshResult = await refreshToken();
           if (refreshResult) {
-            // Refresh successful, retry the request
-            return apiCall(method, url, data, config, retryCount);
+            // Refresh successful, retry the request with the SAME idempotency key
+            return apiCall(method, url, data, config, retryCount, effectiveIdempotencyKey);
           } else {
             // Refresh failed, don't retry
             throw apiError;
@@ -487,7 +973,7 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
           const delay = getRetryDelay(retryCount);
           logger.warn(`Retrying ${method} ${url} in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
           await sleep(delay);
-          return apiCall(method, url, data, config, retryCount + 1);
+          return apiCall(method, url, data, config, retryCount + 1, effectiveIdempotencyKey);
         }
 
         throw apiError;
@@ -507,10 +993,8 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
           try {
             responseData = await processedResponse.json();
           } catch (parseError) {
-            const preview = await processedResponse.clone().text().then(t => t.substring(0, 100));
             logger.error('[API] Failed to parse JSON response:', parseError);
-            logger.error('[API] Raw response preview:', preview);
-            responseData = preview as unknown as T;
+            responseData = {} as T;
           }
         }
       }
@@ -543,7 +1027,7 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
           const delay = getRetryDelay(retryCount);
           logger.warn(`Retrying ${method} ${url} after timeout in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
           await sleep(delay);
-          return apiCall(method, url, data, config, retryCount + 1);
+          return apiCall(method, url, data, config, retryCount + 1, effectiveIdempotencyKey);
         }
 
         throw timeoutError;
@@ -554,7 +1038,7 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
         const delay = getRetryDelay(retryCount);
         logger.warn(`Retrying ${method} ${url} after network error in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
         await sleep(delay);
-        return apiCall(method, url, data, config, retryCount + 1);
+        return apiCall(method, url, data, config, retryCount + 1, effectiveIdempotencyKey);
       }
 
       logger.error(`API call failed: ${method} ${url} (${duration}ms)`, fetchError);
@@ -677,11 +1161,16 @@ export const cacheUtils = {
 // Banking API service
 // Compatibility layer for existing components that expect an axios-like API
 export const api = {
-  get: <T = unknown>(url: string, config: RequestConfig = { method: 'GET', url: '' }): Promise<{ data: T }> => apiCall<T>('GET', url, undefined, config),
-  post: <T = unknown>(url: string, data?: unknown, config: RequestConfig = { method: 'POST', url: '' }): Promise<{ data: T }> => apiCall<T>('POST', url, data, config),
-  put: <T = unknown>(url: string, data?: unknown, config: RequestConfig = { method: 'PUT', url: '' }): Promise<{ data: T }> => apiCall<T>('PUT', url, data, config),
-  patch: <T = unknown>(url: string, data?: unknown, config: RequestConfig = { method: 'PATCH', url: '' }): Promise<{ data: T }> => apiCall<T>('PATCH', url, data, config),
-  delete: <T = unknown>(url: string, config: RequestConfig = { method: 'DELETE', url: '' }): Promise<{ data: T }> => apiCall<T>('DELETE', url, undefined, config),
+  get: <T = unknown>(url: string, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
+    apiCall<T>('GET', url, undefined, { ...config }),
+  post: <T = unknown>(url: string, data?: unknown, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
+    apiCall<T>('POST', url, data, { ...config }),
+  put: <T = unknown>(url: string, data?: unknown, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
+    apiCall<T>('PUT', url, data, { ...config }),
+  patch: <T = unknown>(url: string, data?: unknown, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
+    apiCall<T>('PATCH', url, data, { ...config }),
+  delete: <T = unknown>(url: string, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
+    apiCall<T>('DELETE', url, undefined, { ...config }),
 };
 
 export interface WorkflowStatus {
@@ -748,14 +1237,63 @@ export interface OperationsMetrics {
 }
 
 export interface ServiceCharge {
-  id: number;
+  id?: number;
   name: string;
   description: string;
-  charge_type: 'percentage' | 'fixed';
-  rate: string;
+  charge_type: 'percentage' | 'fixed' | string;
+  rate: string | number;
   applicable_to: string[];
-  is_active: boolean;
-  created_at: string;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+export interface ChargeBreakdownItem {
+  name: string;
+  amount: number;
+  type: string;
+  rate: number;
+}
+
+export interface InterestCalculationResult {
+  principal: number;
+  annual_rate: number;
+  time_period_months: number;
+  compounding_frequency: string;
+  interest_amount: number;
+  final_amount: number;
+  account_type: string;
+  monthly_payment?: number;
+}
+
+export interface CommissionSummaryGroup {
+  total: number;
+  by_type: Record<string, string | number>;
+}
+
+export interface CommissionCalculationResult {
+  all_time_total: number;
+  daily: CommissionSummaryGroup;
+  weekly: CommissionSummaryGroup;
+  monthly: CommissionSummaryGroup;
+}
+
+export interface ServiceChargeCalculation {
+  transaction_type?: string;
+  amount?: number;
+  transaction_amount?: number;
+  total_service_charge?: number;
+  net_amount?: number;
+  charge_breakdown?: ChargeBreakdownItem[];
+  interestCalculation?: InterestCalculationResult;
+  commissionCalculation?: CommissionCalculationResult;
+}
+
+export interface CreateServiceChargeData {
+  name: string;
+  description: string;
+  charge_type: string;
+  rate: string | number;
+  applicable_to: string[];
 }
 
 // Mobile Banker Types
@@ -778,19 +1316,49 @@ export interface MobileMessage {
 export interface VisitSchedule {
   id: number;
   client_name: string;
-  visit_date: string;
+  scheduled_time: string;
   purpose: string;
   status: 'scheduled' | 'completed' | 'cancelled';
   location?: string;
+  type?: string;
+}
+
+export interface ScheduleVisitResponse {
+  status: string;
+  visit_id: number;
 }
 
 export interface AssignedClient {
   id: number;
-  name: string;
-  account_number: string;
-  phone: string;
+  client_id?: string | number;
+  client_name: string;
+  account_number?: string;
+  phone?: string;
   address?: string;
-  balance?: string;
+  balance?: number;
+  status?: string;
+  location?: string;
+  amount_due?: string | number | null;
+  next_visit?: string;
+  priority?: string;
+}
+
+export interface ServiceRequest {
+  id: string | number;
+  request_type: string;
+  subject?: string;
+  description: string;
+  status: string;
+  priority: string;
+  delivery_method?: string;
+  admin_notes?: string;
+  member?: {
+    email: string;
+    first_name?: string;
+    last_name?: string;
+  };
+  created_at: string;
+  updated_at?: string;
 }
 
 export const apiService = {
@@ -799,48 +1367,16 @@ export const apiService = {
       const response = await api.get<MemberDashboardData>('users/member-dashboard/');
       return response.data;
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Unknown error fetching dashboard data';
       logger.error('Error fetching dashboard data:', error);
-
-      // Handle specific error cases
-      if (msg.includes('Access denied') || msg.includes('Members only')) {
-        // Trigger re-authentication or redirect
-        throw new Error('Member access required. Please ensure your membership is active.');
-      }
-
-      // Return fallback data for development
       return {
-        account_balance: 15000.50,
-        recent_transactions: [
-          { id: 1, timestamp: '2024-01-15T12:00:00Z', processed_at: '2024-01-15T12:05:00Z', description: 'Loan Payment', amount: '-500.00', transaction_type: 'withdrawal', status: 'completed' },
-          { id: 2, timestamp: '2024-01-10T10:00:00Z', processed_at: '2024-01-10T10:05:00Z', description: 'Deposit', amount: '2000.00', transaction_type: 'deposit', status: 'completed' },
-        ] as Transaction[],
-        loan_balance: 5000.00,
-        savings_balance: 10000.50,
-        available_tabs: [
-          { id: 'overview', name: 'Overview', icon: '📊', enabled: true, description: 'Financial overview and quick stats' },
-          { id: 'accounts', name: 'Accounts', icon: '🏦', enabled: true, description: 'Manage your bank accounts' },
-          { id: 'transactions', name: 'Transactions', icon: '💳', enabled: true, description: 'View transaction history' },
-          { id: 'transfers', name: 'Transfers', icon: '↗', enabled: true, description: 'Send money and manage transfers' },
-          { id: 'loans', name: 'Loans', icon: '💰', enabled: false, description: 'Loan services not available' },
-          { id: 'profile', name: 'Profile', icon: '👤', enabled: true, description: 'Manage your account settings' }
-        ],
-        user_permissions: {
-          can_view_accounts: true,
-          can_make_transfers: true,
-          can_apply_loans: false,
-          can_view_reports: true,
-          can_manage_profile: true,
-          can_access_support: true,
-        },
-        membership_status: {
-          is_active_member: true,
-          account_count: 2,
-          has_recent_activity: true,
-          membership_level: 'standard',
-          days_since_join: 30,
-        },
-      } as MemberDashboardData;
+        account_balance: 0,
+        recent_transactions: [],
+        loan_balance: 0,
+        savings_balance: 0,
+        available_tabs: [],
+        user_permissions: {},
+        membership_status: {},
+      };
     }
   },
 
@@ -851,112 +1387,95 @@ export const apiService = {
     } catch (error: unknown) {
       logger.error('Error fetching account summary:', error);
       return {
-        total_savings: 25000.75,
-        total_loans: 15000.00,
-        available_balance: 10000.75,
-        monthly_contributions: 500.00,
-        total_balance: 40000.75,
+        total_savings: 0,
+        total_loans: 0,
+        available_balance: 0,
+        monthly_contributions: 0,
+        total_balance: 0,
         accounts: [],
       };
     }
   },
 
-  async getAccounts(): Promise<Account[]> {
+  async getAccounts(): Promise<{ success: boolean; data: Account[]; error?: string }> {
     try {
-      const response = await api.get('accounts/');
+      const response = await api.get<Account[] | { results: Account[] }>('accounts/');
       const data = response.data;
-      // Handle paginated response (results array) or direct array
-      if (Array.isArray(data)) {
-        return data;
+      if (Array.isArray(data)) return { success: true, data };
+      if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+        return { success: true, data: data.results };
       }
-      if (data && typeof data === 'object' && Array.isArray((data as { results?: Account[] }).results)) {
-        return (data as { results: Account[] }).results;
-      }
-      // Return empty array if unexpected format
-      logger.warn('Unexpected accounts response format:', data);
-      return [];
-    } catch (error) {
+      return { success: true, data: [] };
+    } catch (error: unknown) {
       logger.error('Error fetching accounts:', error);
-      return [];
+      return { success: false, data: [], error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getTransactions(): Promise<Transaction[]> {
+  async createUser(userData: CreateUserData | FormData): Promise<{ success: boolean; data?: { staff_id: string }; error?: string }> {
     try {
-      const response = await api.get('transactions/');
-      const data = response.data;
-      // Log full response in debug mode
-      logger.debug('Full transactions response:', data);
-      if (data && typeof data === 'object') {
-        logger.debug('Response keys:', Object.keys(data));
-      }
+      // Use any for userData to accommodate FormData or objects if needed, but return typed
+      const response = await api.post<{ staff_id: string }>('users/staff/create/', userData);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      return { success: false, error: errorMessage };
+    }
+  },
 
-      // Check common patterns for array data in objects
-      if (data && typeof data === 'object') {
-        const d = data as Record<string, unknown>;
-        logger.debug('data.results:', d.results);
-        logger.debug('data.transactions:', d.transactions);
-        logger.debug('data.data:', d.data);
-        logger.debug('data.items:', d.items);
-      }
+  async createExpense(expenseData: ExpenseData): Promise<{ success: boolean; data?: Expense; error?: string }> {
+    try {
+      const response = await api.post<Expense>('operations/expenses/', expenseData);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to record expense';
+      return { success: false, error: errorMessage };
+    }
+  },
 
-      let transactionsArray: Transaction[] = [];
+  async getTransactions(params: Record<string, string | number | boolean | undefined> = {}): Promise<{ success: boolean; data?: PaginatedResponse<Transaction>; error?: string }> {
+    try {
+      const response = await api.get<PaginatedResponse<Transaction>>('transactions/', { params });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
 
-      // Handle different possible response structures
-      if (Array.isArray(data)) {
-        // Case 1: Direct array response
-        transactionsArray = data as Transaction[];
-      } else if (data && typeof data === 'object') {
-        // Case 2: Object with nested array
-        if (Array.isArray((data as { results?: Transaction[] }).results)) {
-          // Django REST framework pagination style
-          transactionsArray = (data as { results: Transaction[] }).results;
-          logger.debug('Using paginated results:', { count: transactionsArray.length });
-        } else if ((data as Record<string, unknown>).transactions) {
-          logger.debug('data.transactions exists:', (data as Record<string, unknown>).transactions);
-          const txs = (data as Record<string, unknown>).transactions;
-          if (Array.isArray(txs)) {
-            transactionsArray = txs as Transaction[];
-            logger.debug('Using transactions array:', { count: transactionsArray.length });
-          } else if (txs && typeof txs === 'object' && Array.isArray((txs as { results?: Transaction[] }).results)) {
-            transactionsArray = (txs as { results: Transaction[] }).results;
-            logger.debug('Using transactions.results array:', { count: transactionsArray.length });
-          } else if (txs && typeof txs === 'object' && Array.isArray((txs as { data?: Transaction[] }).data)) {
-            transactionsArray = (txs as { data: Transaction[] }).data;
-            logger.debug('Using transactions.data array:', { count: transactionsArray.length });
-          } else {
-            logger.warn('transactions property exists but no array found inside it.');
+  async getAllTransactions(params?: Record<string, string | number | boolean | undefined>): Promise<{ success: boolean; data: { transactions: Transaction[]; pagination: { count: number; next: string | null; previous: string | null } }; error?: string }> {
+    try {
+      const result = await this.getTransactions(params);
+      if (result.success && result.data) {
+        return {
+          success: true,
+          data: {
+            transactions: result.data.results,
+            pagination: {
+              count: result.data.count,
+              next: result.data.next,
+              previous: result.data.previous
+            }
           }
-        } else if (Array.isArray((data as { data?: Transaction[] }).data)) {
-          // Common data key
-          transactionsArray = (data as { data: Transaction[] }).data;
-          logger.debug('Using data array:', { count: transactionsArray.length });
-        } else if (Array.isArray((data as Record<string, unknown>).items)) {
-          // Another common pattern
-          transactionsArray = (data as { items: Transaction[] }).items;
-          logger.debug('Using items array:', { count: transactionsArray.length });
-        } else {
-          // If no array found, check if we can use object values
-          const values = Object.values(data as object);
-          if (values.length > 0 && Array.isArray(values[0])) {
-            transactionsArray = values[0] as Transaction[];
-            logger.debug('Using first array value:', { count: transactionsArray.length });
-          } else {
-            logger.warn('No array found in response object. Available keys:', { keys: Object.keys(data as object) });
-            transactionsArray = [];
-          }
-        }
-      } else {
-        logger.warn('Unexpected response type:', typeof data);
-        transactionsArray = [];
+        };
       }
+      return {
+        success: false,
+        data: { transactions: [], pagination: { count: 0, next: null, previous: null } },
+        error: result.error || 'Failed to fetch transactions'
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transactions';
+      return { success: false, data: { transactions: [], pagination: { count: 0, next: null, previous: null } }, error: errorMessage };
+    }
+  },
 
-      logger.debug('Final transactions array:', transactionsArray);
-      return transactionsArray;
-
-    } catch (error) {
-      logger.error('Error fetching transactions:', error);
-      return [];
+  async getBalanceInquiry(): Promise<{ success: boolean; data?: { available_balance: number; total_balance: number }; error?: string }> {
+    try {
+      const response = await api.get<{ available_balance: number; total_balance: number }>('accounts/balance/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      logger.error('Error fetching balance:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Balance query failed' };
     }
   },
 
@@ -965,262 +1484,385 @@ export const apiService = {
       await api.post('users/change-password/', data);
       return { success: true };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Password change failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Password change failed' };
     }
   },
 
-  async createServiceRequest(data: { request_type: string; description?: string; delivery_method: string }): Promise<{ success: boolean; error?: string }> {
+  async createServiceRequest(data: CreateServiceRequestData): Promise<{ success: boolean; data?: ServiceRequest; error?: string }> {
     try {
-      // For now, this will need to be implemented in the backend
-      // We'll use a placeholder endpoint that doesn't exist yet
-      await api.post('users/service-requests/', data);
+      const response = await api.post<ServiceRequest>('users/service-requests/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Service request failed' };
+    }
+  },
+
+  async getServiceRequests(): Promise<{ success: boolean; data?: PaginatedResponse<ServiceRequest>; error?: string }> {
+    try {
+      const response = await api.get<PaginatedResponse<ServiceRequest>>('services/requests/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async enable2FA(data: { otp: string; secret?: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+      await api.post('users/verify-otp/', { ...data, verification_type: '2fa_setup' });
       return { success: true };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Service request failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : '2FA enablement failed' };
     }
   },
 
-  async getServiceRequests(): Promise<unknown[]> {
+  async submitClientRegistration(formData: FormData): Promise<{ success: boolean; data?: { id: number }; error?: string }> {
     try {
-      const response = await api.get('services/requests/');
-      const data = response.data as { results?: unknown[] } | unknown[];
-      // Handle paginated response (results array) or direct array
-      if (Array.isArray(data)) {
-        return data;
-      }
-      if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
-        return data.results;
-      }
-      // Return empty array if unexpected format
-      logger.warn('Unexpected service requests response format:', data);
-      return [];
-    } catch (error) {
-      logger.error('Error fetching service requests:', error);
-      return [];
-    }
-  },
-
-  async enable2FA(data: { phone_number: string; otp_code: string }): Promise<{ success: boolean; error?: string }> {
-    try {
-      // First verify OTP, then enable 2FA
-      await api.post('users/verify-otp/', {
-        phone_number: data.phone_number,
-        otp_code: data.otp_code,
-        verification_type: '2fa_setup'
-      });
-      return { success: true };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : '2FA enablement failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  // Client Registration API Methods
-  async submitClientRegistration(formData: FormData): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      // Don't set Content-Type header - browser will set it with proper boundary for FormData
-      const response = await api.post<unknown>('banking/client-registrations/submit_registration/', formData);
+      const response = await api.post<{ id: number }>('banking/client-registrations/submit-registration/', formData);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Registration submission failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Registration failed' };
     }
   },
 
-  async sendClientRegistrationOTP(registrationId: string): Promise<{ success: boolean; error?: string }> {
+  async registerClient(data: FormData | Record<string, unknown>): Promise<{ success: boolean; data?: { id: string | number } | unknown; error?: string }> {
     try {
-      await api.post(`banking/client-registrations/${registrationId}/send_otp/`, {});
-      return { success: true };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'OTP sending failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async verifyClientRegistrationOTP(registrationId: string, otpCode: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post<unknown>(`banking/client-registrations/${registrationId}/verify_otp/`, {
-        otp_code: otpCode
-      });
+      const response = await api.post('banking/client-registrations/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'OTP verification failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Client registration failed' };
     }
   },
 
-  async getFraudAlerts(filters: Record<string, any> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async sendClientRegistrationOTP(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const queryParams = new URLSearchParams(filters).toString();
-      const url = `fraud/alerts/${queryParams ? '?' + queryParams : ''}`;
-      const response = await api.get(url);
-      const data = response.data as { results?: unknown[] } | unknown[];
-      // Handle both paginated and list responses
-      const results = Array.isArray(data) ? data : (data as { results: unknown[] }).results || [];
-      return { success: true, data: results };
+      const response = await api.post<{ message: string }>('banking/client-registrations/send-otp/', { email });
+      return { success: true, message: response.data.message };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Fraud alerts fetch failed';
-      logger.error('Error fetching fraud alerts:', error);
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'OTP sending failed' };
     }
   },
 
-  // Banking Operations APIs
-  async getLoans(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async verifyClientRegistrationOTP(email: string, otp: string): Promise<{ success: boolean; data?: { account_number: string }; error?: string }> {
     try {
-      const response = await api.get('banking/loans/');
+      const response = await api.post<{ account_number: string }>('banking/client-registrations/verify-otp/', { email, otp });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Loans fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Verification failed' };
     }
   },
 
-  async createLoan(loanData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getFraudAlerts(): Promise<{ success: boolean; data?: PaginatedResponse<FraudAlert>; error?: string }> {
     try {
-      const response = await api.post('banking/loans/', loanData);
+      const response = await api.get<PaginatedResponse<FraudAlert>>('banking/fraud-alerts/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Loan creation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async approveLoan(loanId: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getLoans(): Promise<{ success: boolean; data?: PaginatedResponse<Loan>; error?: string }> {
     try {
-      const response = await api.post(`banking/loans/${loanId}/approve/`, {});
+      const response = await api.get<PaginatedResponse<Loan>>('banking/loans/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Loan approval failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getPendingLoans(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async createLoan(data: CreateLoanData): Promise<{ success: boolean; data?: Loan; error?: string }> {
     try {
-      const response = await api.get('banking/loans/pending/');
+      const response = await api.post<Loan>('banking/loans/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Pending loans fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Creation failed' };
     }
   },
 
-  async getComplaints(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async approveLoan(loanId: string | number): Promise<{ success: boolean; data?: Loan; error?: string }> {
     try {
-      const response = await api.get('banking/complaints/');
+      const response = await api.post<Loan>(`banking/loans/${loanId}/approve/`, {});
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Complaints fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
     }
   },
 
-  async createComplaint(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async rejectLoan(loanId: string | number, notes?: string): Promise<{ success: boolean; data?: Loan; error?: string }> {
     try {
-      const response = await api.post('banking/complaints/', data);
+      const response = await api.post<Loan>(`banking/loans/${loanId}/reject/`, { notes });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Complaint creation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 
-  async getCashAdvances(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getPendingLoans(): Promise<{ success: boolean; data?: PaginatedResponse<LoanExtended>; error?: string }> {
     try {
-      const response = await api.get('banking/cash-advances/');
+      const response = await api.get<PaginatedResponse<LoanExtended>>('banking/loans/pending/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Cash advances fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getRefunds(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getComplaints(): Promise<{ success: boolean; data?: PaginatedResponse<Complaint>; error?: string }> {
     try {
-      const response = await api.get('banking/refunds/');
+      const response = await api.get<PaginatedResponse<Complaint>>('banking/complaints/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Refunds fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getMessageThreads(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async createComplaint(data: CreateComplaintData): Promise<{ success: boolean; data?: Complaint; error?: string }> {
     try {
-      const response = await api.get('banking/message-threads/');
+      const response = await api.post<Complaint>('banking/complaints/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Message threads fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Creation failed' };
     }
   },
 
-  async createMessageThread(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getCashAdvances(): Promise<{ success: boolean; data?: PaginatedResponse<CashAdvance>; error?: string }> {
     try {
-      const response = await api.post('banking/message-threads/', data);
+      const response = await api.get<PaginatedResponse<CashAdvance>>('banking/cash-advances/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Message thread creation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getThreadMessages(threadId: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getRefunds(): Promise<{ success: boolean; data?: PaginatedResponse<Refund>; error?: string }> {
     try {
-      const response = await api.get(`banking/message-threads/${threadId}/messages/`);
+      const response = await api.get<PaginatedResponse<Refund>>('banking/refunds/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Thread messages fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async sendMessage(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getMessageThreads(): Promise<{ success: boolean; data?: PaginatedResponse<MessageThreadExtended>; error?: string }> {
     try {
-      const response = await api.post('banking/messages/', data);
+      const response = await api.get<PaginatedResponse<MessageThreadExtended>>('banking/message-threads/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Message sending failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getAllTransactions(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async createMessageThread(data: CreateMessageThreadData): Promise<{ success: boolean; data?: MessageThreadExtended; error?: string }> {
     try {
-      const response = await api.get('transactions/');
+      const response = await api.post<MessageThreadExtended>('banking/message-threads/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'All transactions fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Creation failed' };
     }
   },
 
-  async getPerformanceMetrics(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getThreadMessages(threadId: string | number): Promise<{ success: boolean; data?: MessageExtended[]; error?: string }> {
     try {
-      const response = await api.get('analytics/performance/');
-      return { success: true, data: response.data };
-    } catch {
-      // Mock data if API fails to avoid breaking UI in dev/demo
-      return {
-        success: true,
-        data: [
-          { name: 'Service Quality', score: 95 },
-          { name: 'Response Time', score: 88 }
-        ]
-      };
-    }
-  },
-
-  async createServiceCharge(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post('operations/service-charges/', data);
+      const response = await api.get<MessageExtended[]>(`banking/message-threads/${threadId}/messages/`);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Service charge creation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async sendMessage(data: SendMessageData): Promise<{ success: boolean; data?: MessageExtended; error?: string }> {
+    try {
+      const response = await api.post<MessageExtended>('banking/messages/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Send failed' };
+    }
+  },
+
+  async getTransactionsList(): Promise<{ success: boolean; data?: Transaction[]; error?: string }> {
+    try {
+      const response = await api.get<Transaction[]>('transactions/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getPerformanceMetrics(): Promise<{ success: boolean; data?: PerformanceMetric[]; error?: string }> {
+    try {
+      const response = await api.get<PerformanceMetric[]>('performance/metrics/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getPerformanceDashboardData(): Promise<{ success: boolean; data?: PerformanceDashboardData[]; error?: string }> {
+    try {
+      const response = await api.get<PerformanceDashboardData[]>('performance/dashboard-data/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getTransactionVolume(params?: DateRangeParams): Promise<{ success: boolean; data?: TransactionVolumeData[]; error?: string }> {
+    try {
+      const response = await api.get<TransactionVolumeData[]>('performance/volume/', { params });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getPerformanceChartData(params?: DateRangeParams): Promise<{ success: boolean; data?: PerformanceChartData; error?: string }> {
+    try {
+      const response = await api.get<PerformanceChartData>('performance/chart/', { params });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getSystemHealth(): Promise<{ success: boolean; data?: SystemHealthData; error?: string }> {
+    try {
+      const response = await api.get<SystemHealthData>('performance/system-health/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getPerformanceAlerts(): Promise<{ success: boolean; data?: PerformanceAlert[]; error?: string }> {
+    try {
+      const response = await api.get<PerformanceAlert[]>('performance/alerts/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getPerformanceRecommendations(): Promise<{ success: boolean; data?: PerformanceRecommendation[]; error?: string }> {
+    try {
+      const response = await api.get<PerformanceRecommendation[]>('performance/recommendations/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getReports(): Promise<{ success: boolean; data?: Report[]; error?: string }> {
+    try {
+      const response = await api.get<Report[]>('reports/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getReportTemplates(): Promise<{ success: boolean; data?: ReportTemplate[]; error?: string }> {
+    try {
+      const response = await api.get<ReportTemplate[]>('reports/templates/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getReportSchedules(): Promise<{ success: boolean; data?: ReportSchedule[]; error?: string }> {
+    try {
+      const response = await api.get<ReportSchedule[]>('reports/schedules/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async createReportTemplate(data: CreateReportTemplateData): Promise<{ success: boolean; data?: ReportTemplate; error?: string }> {
+    try {
+      const response = await api.post<ReportTemplate>('reports/templates/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Template creation failed' };
+    }
+  },
+
+  async createReportSchedule(data: CreateReportScheduleData): Promise<{ success: boolean; data?: ReportSchedule; error?: string }> {
+    try {
+      const response = await api.post<ReportSchedule>('reports/schedules/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Schedule creation failed' };
+    }
+  },
+
+  async getReportAnalytics(): Promise<{ success: boolean; data?: ReportAnalytics; error?: string }> {
+    try {
+      const response = await api.get<ReportAnalytics>('reports/analytics/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Analytics fetch failed' };
+    }
+  },
+
+  async generateReport(templateId: string | number): Promise<{ success: boolean; data?: GeneratedReport; error?: string }> {
+    try {
+      const response = await api.post<GeneratedReport>(`reporting/reports/generate/`, { template: templateId });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Generation failed' };
+    }
+  },
+
+  async getApiUsage(): Promise<{ success: boolean; data?: ApiUsageData[]; error?: string }> {
+    try {
+      const response = await api.get<ApiUsageData[]>('system/api-usage/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Usage fetch failed' };
+    }
+  },
+
+  async getRateLimits(): Promise<{ success: boolean; data?: RateLimitData[]; error?: string }> {
+    try {
+      const response = await api.get<RateLimitData[]>('system/rate-limits/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Rate limits fetch failed' };
+    }
+  },
+
+  async getHealthChecks(): Promise<{ success: boolean; data?: HealthCheckData[]; error?: string }> {
+    try {
+      const response = await api.get<HealthCheckData[]>('performance/system-health/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Health check failed' };
+    }
+  },
+
+  async getSystemSettings(): Promise<{ success: boolean; data?: SystemSettingData[]; error?: string }> {
+    try {
+      const response = await api.get<SystemSettingData[]>('system/settings/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Settings fetch failed' };
+    }
+  },
+
+  async updateUserSettings(data: Record<string, unknown>): Promise<{ success: boolean; data?: UserSettings; error?: string }> {
+    try {
+      const response = await api.put<UserSettings>('users/settings/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Settings update failed' };
+    }
+  },
+
+  async getUserSettings(): Promise<{ success: boolean; data?: UserSettings[]; error?: string }> {
+    try {
+      const response = await api.get<UserSettings[]>('users/settings/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Settings fetch failed' };
     }
   },
 
@@ -1229,8 +1871,7 @@ export const apiService = {
       const response = await api.post('operations/calculate-service-charge/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Service charge calculation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Service charge calculation failed' };
     }
   },
 
@@ -1239,8 +1880,7 @@ export const apiService = {
       const response = await api.post('operations/calculate-commission/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Commission calculation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Commission calculation failed' };
     }
   },
 
@@ -1249,39 +1889,30 @@ export const apiService = {
       const response = await api.post('operations/calculate-interest/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Interest calculation failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Interest calculation failed' };
     }
   },
 
   async exportTransactions(params: Record<string, unknown>): Promise<Blob> {
-    const config: RequestConfig = {
-      method: 'GET',
-      url: 'transactions/export/',
+    const response = await api.get<Blob>('transactions/export/', {
       params: params as Record<string, string | number | boolean>,
       responseType: 'blob'
-    };
-    const response = await apiCall<Blob>('GET', config.url, undefined, config);
+    });
     return response.data;
   },
 
   async generateReceipt(transactionId: string): Promise<Blob> {
-    const config: RequestConfig = {
-      method: 'GET',
-      url: `transactions/${transactionId}/receipt/`,
+    const response = await api.get<Blob>(`transactions/${transactionId}/receipt/`, {
       responseType: 'blob'
-    };
-    const response = await apiCall<Blob>('GET', config.url, undefined, config);
+    });
     return response.data;
   },
 
-  // Authentication & Management Methods (Restored)
   async checkAuth(): Promise<{ authenticated: boolean; user?: User }> {
     try {
       const response = await api.get<{ authenticated: boolean; user?: User }>('users/auth/check/');
       return response.data;
     } catch {
-      // Don't log 401/403 errors as they are expected when not logged in
       return { authenticated: false };
     }
   },
@@ -1297,25 +1928,16 @@ export const apiService = {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Login failed';
       logger.error('Login error:', error);
-      return {
-        success: false,
-        error: msg
-      };
+      return { success: false, error: msg };
     }
   },
 
   async logout(): Promise<{ success: boolean; error?: string }> {
     try {
-      // Call backend to invalidate session and clear httpOnly cookies
       await api.post('users/auth/logout/', {});
     } catch {
-      // Logout is always considered successful client-side
-      // Even if the API call fails, the user should be logged out locally
-      // The backend cookies will expire eventually, and we're clearing client state
       logger.warn('Logout API call failed, but proceeding with client-side logout');
     }
-    // Always return success - the key is clearing local state
-    // Cookie invalidation happens via the response's Set-Cookie headers
     return { success: true };
   },
 
@@ -1329,9 +1951,15 @@ export const apiService = {
     }
   },
 
-  async verifyOTP(email: string, otp: string): Promise<{ success: boolean; error?: string;[key: string]: unknown }> {
+  async verifyOTP(payload: string | { email?: string; phone_number?: string; otp_code?: string; otp?: string; verification_type?: string }, phone_number?: string): Promise<{ success: boolean; error?: string;[key: string]: unknown }> {
     try {
-      const response = await api.post<Record<string, unknown>>('users/verify-otp/', { email, otp });
+      let data: { email?: string; phone_number?: string; otp_code?: string; otp?: string; verification_type?: string };
+      if (typeof payload === 'string') {
+        data = { email: payload, otp: phone_number }; // legacy mismatch handling
+      } else {
+        data = payload;
+      }
+      const response = await api.post<Record<string, unknown>>('users/verify-otp/', data);
       return { success: true, ...response.data };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'OTP verification failed';
@@ -1349,7 +1977,6 @@ export const apiService = {
     }
   },
 
-  // Manager Methods
   async createAccount(accountData: Record<string, unknown>): Promise<{ success: boolean; account?: Account; error?: string }> {
     try {
       const response = await api.post<Account>('accounts/create_account/', accountData);
@@ -1360,15 +1987,14 @@ export const apiService = {
     }
   },
 
-  async getManagerOverview(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getManagerOverview(): Promise<{ success: boolean; data?: ManagerOverviewData; error?: string }> {
     try {
-      const response = await api.get('accounts/manager/overview/');
+      const response = await api.get<ManagerOverviewData>('accounts/manager/overview/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const status = (error as ApiError).status;
       const msg = error instanceof Error ? error.message : 'Overview fetch failed';
-      // Fallback for demo if endpoint not ready
-      if (status === 404) {
+      const axiosError = error as { status?: number };
+      if (axiosError.status === 404) {
         return {
           success: true,
           data: {
@@ -1383,157 +2009,48 @@ export const apiService = {
     }
   },
 
-  // Reports & Settings Methods
-  async getReports(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async sendOTP(payload: string | { email?: string; phone_number?: string; verification_type?: string }): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const response = await api.get('reports/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Reports fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async getReportSchedules(): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.get('reports/schedules/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Report schedules fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async createReportTemplate(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post('reports/templates/', data);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Template creation failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async createReportSchedule(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post('reports/schedules/', data);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Schedule creation failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async getReportAnalytics(): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.get('reports/analytics/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Analytics fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async generateReport(reportId: string, params: Record<string, unknown>): Promise<Blob> {
-    const config: RequestConfig = {
-      method: 'POST',
-      url: `reports/${reportId}/generate/`,
-      data: params,
-      responseType: 'blob'
-    };
-    const response = await apiCall<Blob>('POST', config.url, params, config);
-    return response.data;
-  },
-
-  // Settings & System
-  async getApiUsage(): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.get('system/api-usage/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Usage fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async getRateLimits(): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.get('system/rate-limits/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Rate limits fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async getHealthChecks(): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.get('performance/system-health/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Health check failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async getSystemSettings(): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.get('system/settings/');
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Settings fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async updateUserSettings(data: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      const response = await api.post('users/settings/', data);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Settings update failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  // OTP
-  async sendOTP(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
-    try {
-      const response = await api.post<{ message: string }>('users/send-otp/', { email });
+      const data = typeof payload === 'string' ? { email: payload } : payload;
+      const response = await api.post<{ message: string }>('users/send-otp/', data);
       return { success: true, message: response.data.message };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'OTP sending failed';
       return { success: false, error: msg };
     }
   },
+
   async getServiceCharges(): Promise<{ success: boolean; data?: ServiceCharge[]; error?: string }> {
     try {
-      const response = await api.get('operations/service-charges/');
-      return { success: true, data: response.data as ServiceCharge[] };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Service charges fetch failed';
-      return { success: false, error: msg };
-    }
-  },
-
-  async getStaffIds(filters: Record<string, any> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
-    try {
-      // Manually construct query string since apiCall/fetch might not handle 'params' correctly
-      const queryParams = new URLSearchParams(filters).toString();
-      const url = `users/staff-ids/${queryParams ? '?' + queryParams : ''}`;
-      const response = await api.get(url);
+      const response = await api.get<ServiceCharge[]>('operations/service-charges/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Staff IDs fetch failed';
-      return { success: false, error: msg };
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  // Operations Manager Dashboard Methods
+  async createServiceCharge(data: CreateServiceChargeData | Record<string, unknown>): Promise<{ success: boolean; data?: ServiceCharge; error?: string }> {
+    try {
+      const response = await api.post<ServiceCharge>('operations/service-charges/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to create service charge' };
+    }
+  },
+
+  async getStaffIds(filters: Record<string, string | number | boolean | undefined> = {}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.get('users/staff-ids/', { params: filters });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
   async getOperationalMetrics(): Promise<{ success: boolean; data?: OperationsMetrics; error?: string }> {
     try {
-      const response = await api.get('operations/metrics/');
-      return { success: true, data: response.data as OperationsMetrics };
+      const response = await api.get<OperationsMetrics>('operations/metrics/');
+      return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch metrics' };
     }
@@ -1544,7 +2061,7 @@ export const apiService = {
       const response = await api.get('operations/branch-activity/');
       return { success: true, data: response.data as BranchActivity[] };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch branch activity' };
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch activity' };
     }
   },
 
@@ -1553,16 +2070,16 @@ export const apiService = {
       const response = await api.get('operations/system-alerts/');
       return { success: true, data: response.data as SystemAlert[] };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch system alerts' };
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch alerts' };
     }
   },
 
   async getWorkflowStatus(): Promise<{ success: boolean; data?: WorkflowStatus; error?: string }> {
     try {
-      const response = await api.get('operations/workflow-status/');
-      return { success: true, data: response.data as WorkflowStatus };
+      const response = await api.get<WorkflowStatus>('operations/workflow-status/');
+      return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch workflow status' };
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch status' };
     }
   },
 
@@ -1575,7 +2092,6 @@ export const apiService = {
     }
   },
 
-  // Mobile Banker Dashboard Methods
   async getMobileBankerMetrics(): Promise<{ success: boolean; data?: MobileBankerMetric; error?: string }> {
     try {
       const response = await api.get('operations/mobile-banker-metrics/');
@@ -1587,70 +2103,62 @@ export const apiService = {
 
   async getVisits(): Promise<{ success: boolean; data?: VisitSchedule[]; error?: string }> {
     try {
-      const response = await api.get('operations/visit_schedules/');
-      return { success: true, data: response.data as VisitSchedule[] };
+      const response = await api.get<PaginatedResponse<VisitSchedule> | VisitSchedule[]>('operations/visit-schedules/');
+      const data = Array.isArray(response.data) ? response.data : (response.data as PaginatedResponse<VisitSchedule>).results;
+      return { success: true, data: data as VisitSchedule[] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch visits' };
     }
   },
 
-  async getAssignments(): Promise<{ success: boolean; data?: AssignedClient[]; error?: string }> {
+  async getAssignments(params: Record<string, string | number | boolean | undefined> = {}): Promise<{ success: boolean; data: AssignedClient[]; error?: string }> {
     try {
-      const response = await api.get('operations/assignments/my_clients/');
-      return { success: true, data: response.data as AssignedClient[] };
+      const response = await api.get<PaginatedResponse<AssignedClient> | AssignedClient[]>('operations/assignments/my-clients/', { params });
+      const data = Array.isArray(response.data) ? response.data : (response.data as PaginatedResponse<AssignedClient>).results;
+      return { success: true, data: (data || []) as AssignedClient[] };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch assignments' };
+      return { success: false, data: [], error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
   async getMobileMessages(): Promise<{ success: boolean; data?: MobileMessage[]; error?: string }> {
     try {
-      const response = await api.get('operations/messages/');
-      return { success: true, data: response.data as MobileMessage[] };
+      const response = await api.get<PaginatedResponse<MobileMessage> | MobileMessage[]>('operations/messages/');
+      const data = Array.isArray(response.data) ? response.data : (response.data as PaginatedResponse<MobileMessage>).results;
+      return { success: true, data: data as MobileMessage[] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch messages' };
     }
   },
 
-  /**
-   * Fetches all accounts for staff viewing (Manager/Admin).
-   */
-  async getStaffAccounts(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getStaffAccounts(): Promise<{ success: boolean; data?: AccountWithDetails[]; error?: string }> {
     try {
-      const response = await api.get('banking/staff-accounts/');
-      return { success: true, data: response.data };
+      const response = await api.get<PaginatedResponse<AccountWithDetails> | AccountWithDetails[]>('banking/staff-accounts/'); // Response might be paginated
+      const accounts = Array.isArray(response.data) ? response.data : response.data.results;
+      return { success: true, data: accounts || [] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch accounts' };
     }
   },
 
-  /**
-   * Fetches account summary statistics for staff dashboards.
-   */
-  async getStaffAccountsSummary(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getStaffAccountsSummary(): Promise<{ success: boolean; data?: StaffAccountSummary; error?: string }> {
     try {
-      const response = await api.get('accounts/summary/');
+      const response = await api.get<StaffAccountSummary>('accounts/summary/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch account summary' };
     }
   },
 
-  /**
-   * Fetches all staff members for manager dashboards.
-   */
-  async getAllStaff(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async getAllStaff(): Promise<{ success: boolean; data?: User[]; error?: string }> {
     try {
-      const response = await api.get('users/staff/');
+      const response = await api.get<User[]>('users/staff/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch staff members' };
     }
   },
 
-  /**
-   * Fetches cash flow data for manager dashboards.
-   */
   async getCashFlow(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.get('operations/cash-flow/');
@@ -1660,9 +2168,6 @@ export const apiService = {
     }
   },
 
-  /**
-   * Fetches expense data for manager dashboards.
-   */
   async getExpenses(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.get('operations/expenses/');
@@ -1672,9 +2177,6 @@ export const apiService = {
     }
   },
 
-  /**
-   * Generates a payslip.
-   */
   async generatePayslip(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post('operations/generate-payslip/', formData);
@@ -1684,15 +2186,142 @@ export const apiService = {
     }
   },
 
-  /**
-   * Generates an account statement.
-   */
   async generateStatement(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post('banking/generate-statement/', formData);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to generate statement' };
+    }
+  },
+
+  async getMembers(): Promise<{ success: boolean; data?: unknown[]; error?: string }> {
+    try {
+      const response = await api.get('users/members/');
+      return { success: true, data: response.data as unknown[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch members' };
+    }
+  },
+
+  async assignClient(data: { mobile_banker: string; client: string; priority: string; location: string }): Promise<{ success: boolean; data?: AssignedClient; error?: string }> {
+    try {
+      const response = await api.post<AssignedClient>('operations/assignments/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      // Extract detailed error message from DRF response (supports field-specific and non_field_errors)
+      const apiError = error as ApiError;
+      const errorData = apiError.data as Record<string, unknown> | undefined;
+
+      let errorMsg = 'Failed to assign client';
+      if (errorData) {
+        // Check non_field_errors first
+        const nonFieldErrors = errorData.non_field_errors as string[] | undefined;
+        if (nonFieldErrors?.[0]) {
+          errorMsg = nonFieldErrors[0];
+        }
+        // Check detail field
+        else if (errorData.detail) {
+          errorMsg = String(errorData.detail);
+        }
+        // Check field-specific errors (e.g., {mobile_banker: ["error msg"]})
+        else {
+          const fieldErrors: string[] = [];
+          for (const [key, value] of Object.entries(errorData)) {
+            if (key !== 'status' && Array.isArray(value) && value.length > 0) {
+              fieldErrors.push(`${key}: ${value[0]}`);
+            }
+          }
+          if (fieldErrors.length > 0) {
+            errorMsg = fieldErrors.join(', ');
+          }
+        }
+      }
+
+      return { success: false, error: errorMsg };
+    }
+  },
+
+  async getChatRooms(): Promise<{ success: boolean; data?: ChatRoomData[]; error?: string }> {
+    try {
+      const response = await api.get<PaginatedResponse<ChatRoomData> | ChatRoomData[]>('chat/rooms/');
+      const data = 'results' in response.data ? response.data.results : response.data;
+      return { success: true, data: data as ChatRoomData[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async createChatRoom(memberIds: (number | string)[], name = '', isGroup = false): Promise<{ success: boolean; data?: ChatRoomData; error?: string }> {
+    try {
+      const response = await api.post<ChatRoomData>('chat/rooms/create/', { member_ids: memberIds, name, is_group: isGroup });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Creation failed' };
+    }
+  },
+
+  async getChatMessages(roomId: number | string): Promise<{ success: boolean; data?: ChatMessageData[]; error?: string }> {
+    try {
+      const response = await api.get<PaginatedResponse<ChatMessageData> | ChatMessageData[]>(`chat/rooms/${roomId}/messages/`);
+      const data = 'results' in response.data ? response.data.results : response.data;
+      return { success: true, data: Array.isArray(data) ? [...data].reverse() : data as ChatMessageData[] };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async sendChatMessage(roomId: number | string, content: string): Promise<{ success: boolean; data?: ChatMessageData; error?: string }> {
+    try {
+      const response = await api.post<ChatMessageData>(`chat/rooms/${roomId}/messages/send/`, { content });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Send failed' };
+    }
+  },
+
+  async getStaffUsers(): Promise<{ success: boolean; data?: User[]; error?: string }> {
+    try {
+      const response = await api.get<User[]>('users/staff/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async updateAssignment(id: number | string, data: Partial<AssignedClient> & { mobile_banker?: string }): Promise<{ success: boolean; data?: AssignedClient; error?: string }> {
+    try {
+      const response = await api.patch<AssignedClient>(`operations/assignments/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update assignment' };
+    }
+  },
+
+  async scheduleVisit(data: { client_name: string; location: string; scheduled_time: string; notes?: string }): Promise<{ success: boolean; data?: ScheduleVisitResponse; error?: string }> {
+    try {
+      const response = await api.post<ScheduleVisitResponse>('operations/schedule-visit/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to schedule visit' };
+    }
+  },
+
+  async completeVisit(id: number | string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post(`operations/visit-schedules/${id}/complete/`);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to complete visit' };
+    }
+  },
+
+  async completeAssignment(id: number | string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post(`operations/assignments/${id}/complete/`);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to complete assignment' };
     }
   },
 

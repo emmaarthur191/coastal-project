@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\users\migrations\0005_security_fields.py
-# hypothesis_version: 6.148.7
-
-[0.0, 10000.0, '0004_user_staff_id', 'last_failed_login', 'locked_until', 'user', 'users']

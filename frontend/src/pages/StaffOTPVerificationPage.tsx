@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Phone, AlertCircle, CheckCircle, RefreshCw, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/api.ts';
+import { authService } from '../services/api';
 
 /**
  * StaffOTPVerificationPage - First-login OTP verification for new staff members

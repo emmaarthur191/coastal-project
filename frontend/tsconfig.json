@@ -65,9 +65,7 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "src/api",
-    "src/services/api.ts"
+    "dist"
   ],
   "references": [
     {

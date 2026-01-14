@@ -3,24 +3,15 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
 
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-}
-
 interface CheckDepositTabProps {
   checkDepositAmount: string;
   setCheckDepositAmount: React.Dispatch<React.SetStateAction<string>>;
   checkDepositMemberId: string;
   setCheckDepositMemberId: React.Dispatch<React.SetStateAction<string>>;
-  checkDepositAccountType: string;
-  setCheckDepositAccountType: React.Dispatch<React.SetStateAction<string>>;
   frontImage: File | null;
   setFrontImage: React.Dispatch<React.SetStateAction<File | null>>;
   backImage: File | null;
   setBackImage: React.Dispatch<React.SetStateAction<File | null>>;
-  members: Member[];
   loading: boolean;
   handleCheckDepositSubmit: (e: React.FormEvent) => void;
 }
@@ -30,13 +21,10 @@ const CheckDepositTab: React.FC<CheckDepositTabProps> = ({
   setCheckDepositAmount,
   checkDepositMemberId,
   setCheckDepositMemberId,
-  checkDepositAccountType,
-  setCheckDepositAccountType,
   frontImage,
   setFrontImage,
   backImage,
   setBackImage,
-  members,
   loading,
   handleCheckDepositSubmit
 }) => {
@@ -110,6 +98,8 @@ const CheckDepositTab: React.FC<CheckDepositTabProps> = ({
               onChange={e => setFrontImage(e.target.files?.[0] || null)}
               className="hidden"
               accept="image/*"
+              title="Check Front Image"
+              placeholder="Select front image"
             />
             <div className="text-4xl mb-3">{frontImage ? '✅' : '📷'}</div>
             <div className="font-bold text-gray-700">{frontImage ? 'Front Image Selected' : 'Upload Front of Check'}</div>
@@ -129,6 +119,8 @@ const CheckDepositTab: React.FC<CheckDepositTabProps> = ({
               onChange={e => setBackImage(e.target.files?.[0] || null)}
               className="hidden"
               accept="image/*"
+              title="Check Back Image"
+              placeholder="Select back image"
             />
             <div className="text-4xl mb-3">{backImage ? '✅' : '🔄'}</div>
             <div className="font-bold text-gray-700">{backImage ? 'Back Image Selected' : 'Upload Back of Check'}</div>

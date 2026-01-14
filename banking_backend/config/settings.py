@@ -215,6 +215,14 @@ WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+# =============================================================================
+# File Upload Security Settings
+# =============================================================================
+# Prevent disk exhaustion attacks and enforce upload limits
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB for form data
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB for file uploads
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000  # Prevent form field DoS
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -239,6 +247,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     # =========================================================================
     # Throttling Configuration - Production Security Best Practice
     # =========================================================================
@@ -471,6 +480,7 @@ RENDER_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 CSRF_TRUSTED_ORIGINS = [
     "https://coastal-web.onrender.com",
     "https://coastal-project.onrender.com",
+    "https://*.onrender.com",  # Allow Render subdomains for PR previews
 ]
 
 # Add Render's dynamic hostname if available
@@ -508,7 +518,7 @@ CSRF_COOKIE_SAMESITE = (
 SESSION_COOKIE_SAMESITE = "Lax"  # 'Strict' can break OAuth redirection flows if any used
 
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
     SECURE_REDIRECT_EXEMPT = [r"^$", r"^api/health/simple/$", r"^api/performance/system-health/$"]
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -557,28 +567,10 @@ CORS_ALLOW_HEADERS = [
     "origin",
     "user-agent",
     "x-csrftoken",
+    "x-idempotency-key",  # For idempotent POST/PUT/PATCH requests
     "x-requested-with",
 ]
 
-# CSRF trusted origins (for form submissions)
-# Extend existing CSRF_TRUSTED_ORIGINS instead of overwriting
-# Ensure all required origins are present, including the project domain
-CSRF_TRUSTED_ORIGINS += [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://coastal-web.onrender.com",
-    "https://coastal-project.onrender.com",
-    "https://*.onrender.com",  # Allow ANY Render subdomain (including dynamic PR previews)
-    "http://localhost:5173",
-]
-
-# Add production CSRF trusted origins from environment
-# In Render, set CSRF_TRUSTED_ORIGINS to your frontend URL (e.g., https://coastal-web.onrender.com)
-if env.list("CSRF_TRUSTED_ORIGINS", default=[]):
-    CSRF_TRUSTED_ORIGINS += env.list("CSRF_TRUSTED_ORIGINS")
-
-# Also add CORS origins as CSRF trusted origins (they should match for API)
-if env.list("CORS_ALLOWED_ORIGINS", default=[]):
-    for origin in env.list("CORS_ALLOWED_ORIGINS"):
-        if origin not in CSRF_TRUSTED_ORIGINS:
-            CSRF_TRUSTED_ORIGINS.append(origin)
+# Note: CSRF_TRUSTED_ORIGINS is configured above (lines 472-499)
+# CORS_ALLOWED_ORIGINS should sync with CSRF origins for API compatibility
+# This is handled via environment variables in production

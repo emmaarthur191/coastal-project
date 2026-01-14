@@ -38,7 +38,8 @@ export default defineConfig({
     sourcemap: false,  // Disable sourcemaps in production for smaller bundles
   },
   server: {
-    host: 'localhost',  // Only bind to localhost (not 0.0.0.0)
+    host: '0.0.0.0', // Bind to all interfaces for Docker
+    // Only bind to localhost (not 0.0.0.0)
     port: 3000,
     strictPort: true,   // Fail if port 3000 is already in use
     watch: {
@@ -49,12 +50,14 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
+
         changeOrigin: true,
         secure: false,  // HTTP only, no HTTPS
       },
       '/media': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
+
         changeOrigin: true,
         secure: false,
       },

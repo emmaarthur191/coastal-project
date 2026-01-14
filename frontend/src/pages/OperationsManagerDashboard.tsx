@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authService, OperationsMetrics, BranchActivity, SystemAlert, WorkflowStatus, ServiceCharge } from '../services/api.ts';
+import { authService, OperationsMetrics, BranchActivity, SystemAlert, WorkflowStatus, ServiceCharge } from '../services/api';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -9,13 +9,13 @@ import { Button } from '../components/ui/Button';
 // Import Sub-components
 import OverviewTab from '../components/OverviewTab';
 import ServiceChargesTab from '../components/ServiceChargesTab';
-import ReportsTab from '../components/cashier/ReportsTab';
+import ReportsSection from '../components/manager/ReportsSection';
 import LoanApprovalsSection from '../components/LoanApprovalsSection';
 import ClientRegistrationTab from '../components/ClientRegistrationTab';
 import AccountsTab from '../components/AccountsTab';
 
 import StaffIdsSection from '../components/manager/StaffIdsSection';
-import MobileBankerManagementSection from '../components/manager/MobileBankerManagementSection.tsx';
+import MobileBankerManagementSection from '../components/manager/MobileBankerManagementSection';
 import ProductsServicesManagement from '../components/manager/ProductsServicesManagement';
 import SecuritySection from '../components/manager/SecuritySection';
 
@@ -23,6 +23,20 @@ import SecuritySection from '../components/manager/SecuritySection';
 // Local WorkflowStatus interface removed in favor of imported one
 
 type ActiveView = 'overview' | 'accounts' | 'client-registration' | 'loan-approvals' | 'staff-ids' | 'mobile-banker-management' | 'branches' | 'reports' | 'alerts' | 'charges' | 'messaging' | 'products-services' | 'security';
+
+interface StaffId {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  staff_id: string;
+  employment_date: string;
+  is_active: boolean;
+  date_joined: string;
+}
+
+type StaffIdApiResponse = StaffId[] | { results: StaffId[] };
 
 function OperationsManagerDashboard() {
   const { user, logout } = useAuth();
@@ -54,13 +68,13 @@ function OperationsManagerDashboard() {
   const [serviceChargeCalculation, setServiceChargeCalculation] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [reportData, setReportData] = useState<unknown>(null);
-  const [staffIds, setStaffIds] = useState([]);
+  const [staffIds, setStaffIds] = useState<StaffId[]>([]);
   const [staffIdFilters, setStaffIdFilters] = useState({});
 
   // --- HANDLERS ---
   const handleLogout = useCallback(async () => { await logout(); navigate('/login'); }, [logout, navigate]);
 
-  const handleGenerateReport = useCallback(async (reportType: string) => {
+  const _handleGenerateReport = useCallback(async (reportType: string) => {
     const today = new Date().toISOString().split('T')[0];
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const reportDataPayload = { type: reportType, date_from: lastWeek, date_to: today };
@@ -104,7 +118,8 @@ function OperationsManagerDashboard() {
   const fetchStaffIds = useCallback(async () => {
     const result = await authService.getStaffIds(staffIdFilters);
     if (result.success) {
-      setStaffIds(result.data?.results || result.data || []);
+      const data = result.data as StaffIdApiResponse;
+      setStaffIds(Array.isArray(data) ? data : data?.results || []);
     }
   }, [staffIdFilters]);
 
@@ -181,7 +196,7 @@ function OperationsManagerDashboard() {
       case 'reports':
         return (
           <Card>
-            <ReportsTab />
+            <ReportsSection />
           </Card>
         );
       case 'alerts':

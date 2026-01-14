@@ -77,7 +77,7 @@ export class AccountOpeningsService {
     }
     /**
      * Approve an account opening request
-     * Approve an account opening request.
+     * Stage 1: Approve an account opening request and create client account.
      * @param id A unique integer value identifying this Account Opening Request.
      * @param requestBody
      * @returns AccountOpeningRequest
@@ -90,6 +90,27 @@ export class AccountOpeningsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/account-openings/{id}/approve/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Stage 2: Approve and dispatch login credentials to the client.
+     * @param id A unique integer value identifying this Account Opening Request.
+     * @param requestBody
+     * @returns AccountOpeningRequest
+     * @throws ApiError
+     */
+    public static apiBankingAccountOpeningsDispatchCredentialsCreate(
+        id: number,
+        requestBody: AccountOpeningRequest,
+    ): CancelablePromise<AccountOpeningRequest> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/account-openings/{id}/dispatch-credentials/',
             path: {
                 'id': id,
             },

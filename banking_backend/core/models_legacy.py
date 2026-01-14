@@ -68,6 +68,7 @@ class Transaction(models.Model):
         ("withdrawal", "Withdrawal"),
         ("transfer", "Transfer"),
         ("payment", "Payment"),
+        ("repayment", "Loan Repayment"),
         ("fee", "Fee"),
     ]
 
@@ -112,6 +113,45 @@ class Loan(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2)  # Annual interest rate
     term_months = models.PositiveIntegerField()  # Loan term in months
+    purpose = models.TextField(blank=True, null=True, help_text="Purpose of the loan")
+
+    # RESTORED DETAILED FIELDS
+    date_of_birth = models.DateField(null=True, blank=True)
+    id_type = models.CharField(max_length=50, default="ghana_card")
+    id_number = models.CharField(max_length=50, blank=True)
+    digital_address = models.CharField(max_length=100, blank=True)
+    town = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+
+    # Next of Kin 1
+    next_of_kin_1_name = models.CharField(max_length=255, blank=True)
+    next_of_kin_1_relationship = models.CharField(max_length=100, blank=True)
+    next_of_kin_1_phone = models.CharField(max_length=20, blank=True)
+    next_of_kin_1_address = models.TextField(blank=True)
+
+    # Next of Kin 2
+    next_of_kin_2_name = models.CharField(max_length=255, blank=True)
+    next_of_kin_2_relationship = models.CharField(max_length=100, blank=True)
+    next_of_kin_2_phone = models.CharField(max_length=20, blank=True)
+    next_of_kin_2_address = models.TextField(blank=True)
+
+    # Guarantor 1
+    guarantor_1_name = models.CharField(max_length=255, blank=True)
+    guarantor_1_id_type = models.CharField(max_length=50, default="ghana_card")
+    guarantor_1_id_number = models.CharField(max_length=50, blank=True)
+    guarantor_1_phone = models.CharField(max_length=20, blank=True)
+    guarantor_1_address = models.TextField(blank=True)
+
+    # Guarantor 2
+    guarantor_2_name = models.CharField(max_length=255, blank=True)
+    guarantor_2_id_type = models.CharField(max_length=50, default="ghana_card")
+    guarantor_2_id_number = models.CharField(max_length=50, blank=True)
+    guarantor_2_phone = models.CharField(max_length=20, blank=True)
+    guarantor_2_address = models.TextField(blank=True)
+
+    # Financial Info
+    monthly_income = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    employment_status = models.CharField(max_length=50, default="employed")
     outstanding_balance = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -134,6 +174,9 @@ class FraudAlert(models.Model):
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fraud_alerts")
+    transaction = models.ForeignKey(
+        "Transaction", on_delete=models.SET_NULL, null=True, blank=True, related_name="fraud_alerts"
+    )
     message = models.TextField()
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default="medium")
     is_resolved = models.BooleanField(default=False)
@@ -145,6 +188,49 @@ class FraudAlert(models.Model):
 
     def __str__(self):
         return f"Fraud Alert - {self.user.username} ({self.severity})"
+
+
+class FraudRule(models.Model):
+    RULE_TYPE_CHOICES = [
+        ("transaction_amount", "Transaction Amount"),
+        ("velocity", "Velocity"),
+        ("geographic", "Geographic"),
+        ("time_based", "Time Based"),
+        ("account_activity", "Account Activity"),
+    ]
+
+    SEVERITY_CHOICES = [
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+        ("critical", "Critical"),
+    ]
+
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    rule_type = models.CharField(max_length=30, choices=RULE_TYPE_CHOICES, default="transaction_amount")
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default="medium")
+    field = models.CharField(max_length=50, help_text="Transaction field to evaluate")
+    operator = models.CharField(max_length=20, help_text="Comparison operator (e.g., >, <, ==)")
+    value = models.CharField(max_length=255, help_text="Threshold value for the rule")
+    additional_conditions = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    auto_block = models.BooleanField(default=False)
+    require_approval = models.BooleanField(default=False)
+    escalation_threshold = models.PositiveIntegerField(default=0)
+    trigger_count = models.PositiveIntegerField(default=0)
+    false_positive_count = models.PositiveIntegerField(default=0)
+    last_triggered = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Fraud Rule"
+        verbose_name_plural = "Fraud Rules"
+
+    def __str__(self):
+        return f"Rule: {self.name} ({self.rule_type})"
 
 
 class BankingMessage(models.Model):
@@ -398,6 +484,18 @@ class AccountOpeningRequest(models.Model):
     phone_number = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)
 
+    # Employment Information
+    occupation = models.CharField(max_length=255, blank=True)
+    work_address = models.TextField(blank=True)
+    position = models.CharField(max_length=255, blank=True)
+
+    # Location Information
+    digital_address = models.CharField(max_length=50, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+
+    # Next of Kin Details (Stored as JSON string or JSONField)
+    next_of_kin_data = models.JSONField(null=True, blank=True)
+
     # Photo (stored as base64 or file path)
     photo = models.TextField(blank=True, null=True, help_text="Base64 encoded photo or file path")
 
@@ -422,6 +520,17 @@ class AccountOpeningRequest(models.Model):
     created_account = models.ForeignKey(
         Account, on_delete=models.SET_NULL, null=True, blank=True, related_name="opening_request"
     )
+
+    # Credential Dispatch Tracking
+    credentials_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="credential_approvals",
+        help_text="Manager who approved the dispatch of login credentials",
+    )
+    credentials_sent_at = models.DateTimeField(null=True, blank=True)
 
     # Notes
     rejection_reason = models.TextField(blank=True)
@@ -631,6 +740,14 @@ class CashAdvance(models.Model):
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cash_advances")
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submitted_cash_advances",
+        help_text="Staff member who created this cash advance request",
+    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
@@ -986,7 +1103,7 @@ class SystemHealth(models.Model):
         return f"{self.service_name}: {self.status}"
 
 
-class UserMessagePreferences(models.Model):
+class UserMessagePreference(models.Model):
     """User preferences for messaging features."""
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="message_preferences")
@@ -1021,7 +1138,8 @@ class UserMessagePreferences(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "User Message Preferences"
+        db_table = "user_message_preference"
+        verbose_name = "User Message Preference"
         verbose_name_plural = "User Message Preferences"
 
     def __str__(self):
@@ -1103,6 +1221,10 @@ class VisitSchedule(models.Model):
     def __str__(self):
         return f"Visit to {self.client_name} by {self.mobile_banker.username} on {self.scheduled_time}"
 
+    class Meta:
+        db_table = "visit_schedule"
+        ordering = ["-scheduled_time"]
+
 
 class OperationsMessage(models.Model):
     """Model for messages between operations and staff."""
@@ -1125,6 +1247,10 @@ class OperationsMessage(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.priority}"
+
+    class Meta:
+        db_table = "operations_message"
+        ordering = ["-created_at"]
 
 
 class ClientAssignment(models.Model):
@@ -1169,6 +1295,7 @@ class ClientAssignment(models.Model):
         ordering = ["-priority", "next_visit"]
         verbose_name = "Client Assignment"
         verbose_name_plural = "Client Assignments"
+        db_table = "client_assignment"
         unique_together = ["mobile_banker", "client"]
 
     def __str__(self):
@@ -1332,3 +1459,72 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"{self.sender}: {self.content[:50]}"
+
+
+class ClientRegistration(models.Model):
+    """Model for tracking client registration applications submitted by mobile bankers."""
+
+    STATUS_CHOICES = [
+        ("pending_verification", "Pending Verification"),
+        ("under_review", "Under Review"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    ACCOUNT_TYPE_CHOICES = [
+        ("daily_susu", "Daily Savings"),
+        ("member_savings", "Member Savings"),
+        ("youth_savings", "Youth Savings"),
+        ("shares", "Shares"),
+    ]
+
+    ID_TYPE_CHOICES = [
+        ("ghana_card", "Ghana Card"),
+        ("voters_id", "Voter's ID"),
+        ("passport", "Passport"),
+        ("drivers_license", "Driver's License"),
+    ]
+
+    registration_id = models.CharField(max_length=20, unique=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="submitted_registrations",
+    )
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    date_of_birth = models.DateField(null=True, blank=True)
+    email = models.EmailField(blank=True)
+    phone_number = models.CharField(max_length=20)
+    id_type = models.CharField(max_length=20, choices=ID_TYPE_CHOICES, default="ghana_card")
+    id_number = models.CharField(max_length=50, blank=True)
+    occupation = models.CharField(max_length=100, blank=True)
+    work_address = models.TextField(blank=True)
+    position = models.CharField(max_length=100, blank=True)
+    account_type = models.CharField(max_length=25, choices=ACCOUNT_TYPE_CHOICES, default="daily_susu")
+    digital_address = models.CharField(max_length=50, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    next_of_kin_data = models.JSONField(null=True, blank=True)
+    id_document = models.FileField(upload_to="registration/ids/", null=True, blank=True)
+    passport_picture = models.ImageField(upload_to="registration/passports/", null=True, blank=True)
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default="pending_verification")
+    notes = models.TextField(blank=True)
+    # Link to User once approved
+    created_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="registration_record",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Client Registration"
+        verbose_name_plural = "Client Registrations"
+        db_table = "client_registration"
+
+    def __str__(self):
+        return f"{self.registration_id}: {self.first_name} {self.last_name}"

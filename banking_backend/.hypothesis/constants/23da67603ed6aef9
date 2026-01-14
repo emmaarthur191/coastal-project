@@ -1,4 +1,0 @@
-# file: E:\coastal\banking_backend\core\views\products.py
-# hypothesis_version: 6.148.7
-
-[400, 404, '-start_date', 'Promotion not found', 'create', 'created_at', 'destroy', 'end_date', 'error', 'get', 'is_active', 'message', 'name', 'partial_update', 'post', 'product_type', 'start_date', 'status', 'success', 'update']

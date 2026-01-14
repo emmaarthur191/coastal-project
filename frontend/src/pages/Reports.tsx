@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api.ts';
+import { authService, CreateReportTemplateData, CreateReportScheduleData } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/ui/modern/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { ReportTypeEnum } from '../api/models/ReportTypeEnum';
+import { ReportTemplate } from '../api/models/ReportTemplate';
+import { Report } from '../api/models/Report';
+import { ReportSchedule } from '../api/models/ReportSchedule';
+
+interface ReportAnalyticsItem {
+    icon?: string;
+    metric: string;
+    value: string | number;
+}
 
 function Reports() {
     const { user, logout } = useAuth();
@@ -13,24 +23,23 @@ function Reports() {
 
     const [activeView, setActiveView] = useState('templates');
     const [loading, setLoading] = useState(true);
-    const [reportTemplates, setReportTemplates] = useState<any[]>([]);
-    const [reports, setReports] = useState<any[]>([]);
-    const [reportSchedules, setReportSchedules] = useState<any[]>([]);
-    const [analytics, setAnalytics] = useState<any[]>([]);
+    const [reportTemplates, setReportTemplates] = useState<ReportTemplate[]>([]);
+    const [reports, setReports] = useState<Report[]>([]);
+    const [reportSchedules, setReportSchedules] = useState<ReportSchedule[]>([]);
+    const [analytics, setAnalytics] = useState<ReportAnalyticsItem[]>([]);
 
     // Form states
-    const [newTemplate, setNewTemplate] = useState({
+    const [newTemplate, setNewTemplate] = useState<CreateReportTemplateData>({
         name: '',
         description: '',
-        template_type: 'financial',
-        config: {}
+        report_type: ReportTypeEnum.FINANCIAL,
+        parameters: {}
     });
 
-    const [newSchedule, setNewSchedule] = useState({
+    const [newSchedule, setNewSchedule] = useState<CreateReportScheduleData>({
         template: '',
-        name: '',
         schedule_type: 'daily',
-        config: {}
+        is_active: true
     });
 
     useEffect(() => {
@@ -64,29 +73,49 @@ function Reports() {
 
     const fetchTemplates = async () => {
         const result = await authService.getReportTemplates();
-        if (result.success) setReportTemplates(result.data);
+        if (result.success && result.data) setReportTemplates(result.data);
     };
 
     const fetchReports = async () => {
         const result = await authService.getReports();
-        if (result.success) setReports(result.data);
+        if (result.success && result.data) setReports(result.data);
     };
 
     const fetchSchedules = async () => {
         const result = await authService.getReportSchedules();
-        if (result.success) setReportSchedules(result.data);
+        if (result.success && result.data) setReportSchedules(result.data);
     };
 
     const fetchAnalytics = async () => {
         const result = await authService.getReportAnalytics();
-        if (result.success) setAnalytics(result.data);
+        if (result.success && result.data) {
+            // Transform ReportAnalytics object into ReportAnalyticsItem array
+            const analyticsItems: ReportAnalyticsItem[] = [
+                {
+                    icon: '📊',
+                    metric: 'Total Reports',
+                    value: result.data.total_reports
+                },
+                {
+                    icon: '⚡',
+                    metric: 'Reports Generated',
+                    value: result.data.generation_stats.total_generated
+                },
+                {
+                    icon: '⏱️',
+                    metric: 'Avg Generation Time',
+                    value: `${result.data.generation_stats.avg_generation_time.toFixed(2)}s`
+                }
+            ];
+            setAnalytics(analyticsItems);
+        }
     };
 
     const handleCreateTemplate = async () => {
         const result = await authService.createReportTemplate(newTemplate);
-        if (result.success) {
+        if (result.success && result.data) {
             setReportTemplates([...reportTemplates, result.data]);
-            setNewTemplate({ name: '', description: '', template_type: 'financial', config: {} });
+            setNewTemplate({ name: '', description: '', report_type: ReportTypeEnum.FINANCIAL, parameters: {} });
             alert('Report template created successfully!');
         } else {
             alert('Failed to create template: ' + result.error);
@@ -95,9 +124,9 @@ function Reports() {
 
     const handleCreateSchedule = async () => {
         const result = await authService.createReportSchedule(newSchedule);
-        if (result.success) {
+        if (result.success && result.data) {
             setReportSchedules([...reportSchedules, result.data]);
-            setNewSchedule({ template: '', name: '', schedule_type: 'daily', config: {} });
+            setNewSchedule({ template: '', schedule_type: 'daily', is_active: true });
             alert('Report schedule created successfully!');
         } else {
             alert('Failed to create schedule: ' + result.error);
@@ -105,8 +134,8 @@ function Reports() {
     };
 
 
-    const handleGenerateReport = async (templateId: string) => {
-        const result = await authService.generateReport({ template: templateId });
+    const handleGenerateReport = async (templateId: string | number) => {
+        const result = await authService.generateReport(templateId);
         if (result.success) {
             alert('Report generated successfully!');
             fetchReports();
@@ -154,17 +183,17 @@ function Reports() {
                                     onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
                                 />
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">Type</label>
+                                    <label htmlFor="report-type-select" className="block text-sm font-bold text-gray-700 mb-1 ml-1">Type</label>
                                     <div className="relative">
                                         <select
-                                            value={newTemplate.template_type}
-                                            onChange={(e) => setNewTemplate({ ...newTemplate, template_type: e.target.value })}
+                                            id="report-type-select"
+                                            value={newTemplate.report_type}
+                                            onChange={(e) => setNewTemplate({ ...newTemplate, report_type: e.target.value as ReportTypeEnum })}
                                             className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-emerald-50 focus:border-emerald-400 outline-none transition-all appearance-none font-medium text-gray-700"
                                         >
-                                            <option value="financial">Financial</option>
-                                            <option value="operational">Operational</option>
-                                            <option value="compliance">Compliance</option>
-                                            <option value="custom">Custom</option>
+                                            {Object.values(ReportTypeEnum).map((type) => (
+                                                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                                            ))}
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                                     </div>
@@ -195,7 +224,7 @@ function Reports() {
                                             <div className="flex justify-between items-start mb-2">
                                                 <h4 className="font-bold text-gray-800 text-lg">{template.name}</h4>
                                                 <span className="px-2 py-1 rounded-lg bg-gray-100 text-xs font-bold uppercase text-gray-500">
-                                                    {template.template_type}
+                                                    {template.report_type_display}
                                                 </span>
                                             </div>
                                             <p className="text-gray-600 text-sm mb-4 line-clamp-2">{template.description}</p>
@@ -232,10 +261,10 @@ function Reports() {
                                         <div className="mb-4 md:mb-0">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-2xl">📄</span>
-                                                <h4 className="font-bold text-gray-800 text-lg">{report.name}</h4>
+                                                <h4 className="font-bold text-gray-800 text-lg">{report.template_name}</h4>
                                             </div>
                                             <p className="text-sm text-gray-500 ml-8 mt-1">
-                                                Generated: <span className="font-medium text-gray-700">{new Date(report.created_at).toLocaleDateString()}</span>
+                                                Generated: <span className="font-medium text-gray-700">{report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}</span>
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -266,11 +295,12 @@ function Reports() {
                     <div className="space-y-6">
                         <GlassCard className="p-6 border-t-[6px] border-t-amber-400">
                             <h3 className="text-2xl font-bold text-gray-800 mb-6">Schedule New Report</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">Template</label>
+                                    <label htmlFor="template-select" className="block text-sm font-bold text-gray-700 mb-1 ml-1">Template</label>
                                     <div className="relative">
                                         <select
+                                            id="template-select"
                                             value={newSchedule.template}
                                             onChange={(e) => setNewSchedule({ ...newSchedule, template: e.target.value })}
                                             className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-amber-50 focus:border-amber-400 outline-none transition-all appearance-none font-medium text-gray-700"
@@ -284,18 +314,11 @@ function Reports() {
                                     </div>
                                 </div>
 
-                                <Input
-                                    label="Schedule Name"
-                                    type="text"
-                                    placeholder="e.g. Daily Operations"
-                                    value={newSchedule.name}
-                                    onChange={(e) => setNewSchedule({ ...newSchedule, name: e.target.value })}
-                                />
-
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">Frequency</label>
+                                    <label htmlFor="frequency-select" className="block text-sm font-bold text-gray-700 mb-1 ml-1">Frequency</label>
                                     <div className="relative">
                                         <select
+                                            id="frequency-select"
                                             value={newSchedule.schedule_type}
                                             onChange={(e) => setNewSchedule({ ...newSchedule, schedule_type: e.target.value })}
                                             className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-amber-50 focus:border-amber-400 outline-none transition-all appearance-none font-medium text-gray-700"
@@ -321,9 +344,9 @@ function Reports() {
                                         <div>
                                             <h4 className="font-bold text-gray-800 text-lg mb-1">{schedule.name}</h4>
                                             <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-xs font-bold">{schedule.schedule_type}</span>
+                                                <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-xs font-bold">{schedule.frequency_display}</span>
                                                 <span>•</span>
-                                                <span>Next run: {new Date(schedule.next_run).toLocaleDateString()}</span>
+                                                <span>Next run: {schedule.next_run ? new Date(schedule.next_run).toLocaleDateString() : 'Never'}</span>
                                             </div>
                                         </div>
                                         <div className={`

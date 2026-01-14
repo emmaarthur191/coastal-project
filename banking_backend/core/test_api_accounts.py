@@ -204,26 +204,55 @@ class TestAccountOpeningWorkflow:
         # Should create a pending request
         assert response.status_code in [status.HTTP_201_CREATED, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
-    def test_approve_account_opening_as_manager(self, api_client, manager_user, customer_user):
-        """Manager can approve account opening."""
+    def test_approve_account_opening_two_stage_process(self, api_client, manager_user, staff_user):
+        """Manager can approve account opening and then dispatch credentials."""
         from datetime import date
 
-        # Create a pending opening request with required customer details
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        # 1. Submission (by staff)
         opening_request = AccountOpeningRequest.objects.create(
-            first_name="John",
-            last_name="Doe",
-            date_of_birth=date(1990, 1, 1),  # Required in migration
-            phone_number="0241234567",
-            email="john@example.com",  # Required in migration
-            account_type="member_savings",
+            first_name="Jane",
+            last_name="Smith",
+            date_of_birth=date(1992, 5, 15),
+            phone_number="0247654321",
+            email="janesmith@example.com",
+            account_type="daily_susu",
             status="pending",
+            submitted_by=staff_user,
         )
 
+        # 2. Stage 1: Account Approval (by manager)
         api_client.force_authenticate(user=manager_user)
         response = api_client.post(f"/api/banking/account-openings/{opening_request.id}/approve/")
 
-        # Should succeed or return 404/400 if endpoint implementation incomplete
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND, status.HTTP_400_BAD_REQUEST]
+        assert response.status_code == status.HTTP_200_OK
+        opening_request.refresh_from_db()
+        assert opening_request.status == "approved"
+        assert opening_request.created_account is not None
+
+        # Verify a new user was created for the client
+        client_user = User.objects.get(email="janesmith@example.com")
+        assert client_user.role == "customer"
+        assert opening_request.created_account.user == client_user
+
+        # 3. Stage 2: Credential Dispatch (by manager)
+        # Verify maker-checker: staff who submitted cannot dispatch credentials
+        api_client.force_authenticate(user=staff_user)
+        dispatch_response = api_client.post(f"/api/banking/account-openings/{opening_request.id}/dispatch-credentials/")
+        assert dispatch_response.status_code == status.HTTP_403_FORBIDDEN
+
+        # Dispatch as manager
+        api_client.force_authenticate(user=manager_user)
+        dispatch_response = api_client.post(f"/api/banking/account-openings/{opening_request.id}/dispatch-credentials/")
+
+        assert dispatch_response.status_code == status.HTTP_200_OK
+        opening_request.refresh_from_db()
+        assert opening_request.status == "completed"
+        assert opening_request.credentials_approved_by == manager_user
+        assert opening_request.credentials_sent_at is not None
 
     def test_customer_cannot_approve_account_opening(self, api_client, customer_user):
         """Customer cannot approve account openings."""

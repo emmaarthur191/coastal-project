@@ -36,7 +36,7 @@ const CashAdvancesTab: React.FC = () => {
   const fetchAdvances = async () => {
     setLoading(true);
     try {
-      const response = await api.get('banking/cash-advances/');
+      const response = await api.get<any>('banking/cash-advances/');
       const data = response.data?.results || response.data || [];
       setAdvances(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -56,7 +56,7 @@ const CashAdvancesTab: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.post('banking/cash-advances/', {
+      await api.post<any>('banking/cash-advances/', {
         member_id: formData.member_id,
         amount: parseFloat(formData.amount),
         reason: formData.reason,
@@ -168,32 +168,32 @@ const CashAdvancesTab: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Reason</label>
-              <select
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
-              >
-                <option value="">Select reason</option>
-                <option value="emergency">Emergency</option>
-                <option value="medical">Medical Expenses</option>
-                <option value="education">Education</option>
-                <option value="business">Business</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+            <Input
+              as="select"
+              label="Reason"
+              id="reason"
+              title="Reason for cash advance"
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+            >
+              <option value="">Select reason</option>
+              <option value="emergency">Emergency</option>
+              <option value="medical">Medical Expenses</option>
+              <option value="education">Education</option>
+              <option value="business">Business</option>
+              <option value="other">Other</option>
+            </Input>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
-                rows={3}
-                placeholder="Additional notes..."
-              />
-            </div>
+            <Input
+              as="textarea"
+              label="Notes"
+              id="notes"
+              title="Additional notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              placeholder="Additional notes..."
+            />
 
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
               <Button type="button" variant="secondary" onClick={() => setShowNewAdvance(false)} disabled={submitting}>
@@ -248,7 +248,7 @@ const CashAdvancesTab: React.FC = () => {
                       {advance.status === 'pending' && (
                         <div className="flex justify-end gap-2">
                           <Button variant="success" size="sm" className="h-8 px-2 text-xs">Approve</Button>
-                          <Button variant="danger" size="sm" className="h-8 px-2 text-xs">Reject</Button>
+                          <Button variant="danger" size="sm" className="h-8 Poi-2 text-xs">Reject</Button>
                         </div>
                       )}
                       {advance.status === 'approved' && (

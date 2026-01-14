@@ -10,6 +10,8 @@ Usage:
 
 # Import everything from the legacy models file for full backward compatibility
 # This ensures all existing code continues to work without changes
+# Import reliability models for the new resilience system
+from core.models.reliability import IdempotencyKey, SmsOutbox
 from core.models_legacy import *  # noqa: F403
 
 # Note: The modular files (accounts.py, transactions.py, etc.) contain the same

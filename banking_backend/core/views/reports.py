@@ -295,7 +295,8 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
             )
 
         except Exception as e:
-            return Response({"error": str(e)}, status=500)
+            logger.error(f"Error generating report: {e}")
+            return Response({"error": "An error occurred while generating the report. Please try again."}, status=500)
 
 
 class ReportTemplateViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
@@ -353,7 +354,7 @@ class ReportScheduleViewSet(
             return [IsStaff()]
         return super().get_permissions()
 
-    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff], url_path="toggle-active")
     def toggle_active(self, request, pk=None):
         """Toggle schedule active state."""
         try:
@@ -375,14 +376,54 @@ class ReportScheduleViewSet(
 
 
 class ReportAnalyticsView(APIView):
-    """Stub view for report analytics."""
+    """View for report analytics (now using real data)."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """Retrieve aggregated report analytics data."""
+        from django.db import models
+        from django.db.models import Avg, Count, ExpressionWrapper, F
+
+        now = timezone.now()
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # 1. Basic Counts
+        total_reports = Report.objects.count()
+        reports_this_month = Report.objects.filter(created_at__gte=start_of_month).count()
+
+        # 2. Reports by Type
+        type_counts = Report.objects.values("report_type").annotate(count=Count("report_type"))
+        reports_by_type = {item["report_type"]: item["count"] for item in type_counts}
+
+        # 3. Generation Stats (Successful reports only)
+        successful_reports = Report.objects.filter(status="completed", completed_at__isnull=False)
+        total_generated = successful_reports.count()
+
+        # Average generation time (duration in seconds)
+        avg_gen_time = successful_reports.annotate(
+            duration=ExpressionWrapper(F("completed_at") - F("created_at"), output_field=models.DurationField())
+        ).aggregate(avg=Avg("duration"))["avg"]
+
+        avg_seconds = round(avg_gen_time.total_seconds(), 2) if avg_gen_time else 0
+
+        popular_templates = list(
+            ReportTemplate.objects.filter(generated_reports__isnull=False)
+            .annotate(generation_count=Count("generated_reports"))
+            .order_by("-generation_count")[:5]
+            .values("id", "name", "generation_count")
+        )
+
         return Response(
-            {"total_reports": 0, "reports_this_month": 0, "popular_templates": [], "generation_time_avg": "0 seconds"}
+            {
+                "success": True,
+                "total_reports": total_reports,
+                "reports_this_month": reports_this_month,
+                "reports_by_type": reports_by_type,
+                "popular_templates": popular_templates,
+                "generation_stats": {"total_generated": total_generated, "avg_generation_time": avg_seconds},
+                "generation_time_avg": f"{avg_seconds} seconds",
+            }
         )
 
 
@@ -400,6 +441,10 @@ class GeneratePayslipView(APIView):
 
         User = get_user_model()
 
+        import calendar
+
+        from django.utils import timezone
+
         staff_id = request.data.get("staff_id")
         try:
             staff = User.objects.get(pk=staff_id)
@@ -409,23 +454,49 @@ class GeneratePayslipView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Period Selection
+        now = timezone.now()
+        month = int(request.data.get("month", now.month))
+        year = int(request.data.get("year", now.year))
+
+        # Calculate pay period dates based on selection
+        try:
+            pay_period_start = datetime(year, month, 1).date()
+            last_day = calendar.monthrange(year, month)[1]
+            pay_period_end = datetime(year, month, last_day).date()
+        except (ValueError, TypeError):
+            pay_period_start = now.replace(day=1).date()
+            pay_period_end = now.date()
+
         base_pay = Decimal(str(request.data.get("base_pay", "0")))
         allowances = Decimal(str(request.data.get("allowances", "0")))
 
-        payslip = Payslip.objects.create(
-            staff=staff,
-            month=timezone.now().month,
-            year=timezone.now().year,
-            pay_period_start=timezone.now().replace(day=1),
-            pay_period_end=timezone.now(),
-            base_pay=base_pay,
-            allowances=allowances,
-            gross_pay=0,
-            ssnit_contribution=0,
-            total_deductions=0,
-            net_salary=0,
-            generated_by=request.user,
-        )
+        # Check if payslip already exists for this period
+        existing = Payslip.objects.filter(staff=staff, month=month, year=year).first()
+        if existing:
+            # Update existing or return error? Typically regenerate/update
+            payslip = existing
+            payslip.base_pay = base_pay
+            payslip.allowances = allowances
+            payslip.pay_period_start = pay_period_start
+            payslip.pay_period_end = pay_period_end
+            payslip.generated_by = request.user
+            payslip.save()
+        else:
+            payslip = Payslip.objects.create(
+                staff=staff,
+                month=month,
+                year=year,
+                pay_period_start=pay_period_start,
+                pay_period_end=pay_period_end,
+                base_pay=base_pay,
+                allowances=allowances,
+                gross_pay=0,
+                ssnit_contribution=0,
+                total_deductions=0,
+                net_salary=0,
+                generated_by=request.user,
+            )
 
         pdf_buffer = generate_payslip_pdf(payslip)
         filename = f"payslip_{staff.username}_{payslip.month}_{payslip.year}.pdf"
@@ -511,7 +582,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
     permission_classes = [IsStaff]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ["month", "year", "status"]
+    filterset_fields = ["month", "year", "is_paid"]
     ordering_fields = ["created_at", "month", "year"]
     ordering = ["-created_at"]
 
@@ -529,11 +600,12 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
         return PayslipSerializer
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], url_path="my_payslips")
     def my_payslips(self, request):
-        """Get current user's payslips."""
-        payslips = self.get_queryset().filter(staff=request.user)
-        serializer = self.get_serializer(payslips, many=True)
+        """Get current user's payslips with filtering support."""
+        queryset = self.get_queryset().filter(staff=request.user)
+        filtered_queryset = self.filter_queryset(queryset)
+        serializer = self.get_serializer(filtered_queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
@@ -567,7 +639,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="mark-paid")
     def mark_paid(self, request, pk=None):
         """Mark payslip as paid."""
         # SECURITY: Only managers/admins can mark payslips as paid
@@ -579,7 +651,8 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
         try:
             payslip = Payslip.objects.get(pk=pk)
-            payslip.status = "paid"
+            payslip.is_paid = True
+            payslip.paid_at = timezone.now()
             payslip.save()
             return Response({"status": "success", "message": "Payslip marked as paid"})
         except Payslip.DoesNotExist:
@@ -608,7 +681,7 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
         """Return the serializer for account statements."""
         return AccountStatementSerializer
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], url_path="request-statement")
     def request_statement(self, request):
         """Request a new statement."""
         from django.db import models

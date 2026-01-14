@@ -1,11 +1,57 @@
 import React, { useState, useEffect } from 'react';
+import { Priority5f3Enum } from '../api/models/Priority5f3Enum';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api';
+import { apiService as authService, LoanExtended as Loan, MessageThreadExtended } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import GlassCard from '../components/ui/modern/GlassCard';
 import { Button } from '../components/ui/Button';
+
 import { Input } from '../components/ui/Input';
+import { Transaction } from '../api/models/Transaction';
+import { Message } from '../api/models/Message';
+import { Complaint } from '../api/models/Complaint';
+import { CashAdvance } from '../api/models/CashAdvance';
+import { Refund } from '../api/models/Refund';
+import { Account } from '../api/models/Account';
+
+import { FraudAlert } from '../api/models/FraudAlert';
+
+interface ExtendedFraudAlert extends FraudAlert {
+  transaction_id?: string;
+}
+
+interface ExtendedMessage extends Message {
+  is_me?: boolean;
+}
+
+// Using MessageThreadExtended directly instead of empty interface
+
+interface MonthlyReportData {
+  month: string;
+  loans: number;
+  transactions: number;
+  revenue: number;
+}
+
+interface CategoryReportData {
+  name: string;
+  value: number;
+  color: string;
+  [key: string]: string | number;
+}
+
+interface ReportsData {
+  monthlyData: MonthlyReportData[];
+  categoryData: CategoryReportData[];
+}
+
+// Local Loan interface removed in favor of LoanExtended from api.ts
+
+interface PerformanceMetric {
+  name: string;
+  score: number;
+}
 
 function BankingOperations() {
   const { user, logout } = useAuth();
@@ -15,22 +61,22 @@ function BankingOperations() {
   const [loading, setLoading] = useState(true);
 
   // Banking data state
-  const [loans, setLoans] = useState<any[]>([]);
-  const [complaints, setComplaints] = useState<any[]>([]);
-  const [cashAdvances, setCashAdvances] = useState<any[]>([]);
-  const [refunds, setRefunds] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [pendingLoans, setPendingLoans] = useState<any[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [pendingLoans, setPendingLoans] = useState<Loan[]>([]);
 
   // New feature states
-  const [messages, setMessages] = useState<any[]>([]);
-  const [messageThreads, setMessageThreads] = useState<any[]>([]);
-  const [selectedThread, setSelectedThread] = useState<any>(null);
+  const [messages, setMessages] = useState<ExtendedMessage[]>([]);
+  const [messageThreads, setMessageThreads] = useState<MessageThreadExtended[]>([]);
+  const [selectedThread, setSelectedThread] = useState<MessageThreadExtended | null>(null);
   const [newMessage, setNewMessage] = useState('');
-  const [reportsData, setReportsData] = useState<any>({});
-  const [fraudAlerts, setFraudAlerts] = useState<any[]>([]);
+  const [reportsData, setReportsData] = useState<Partial<ReportsData>>({});
+  const [fraudAlerts, setFraudAlerts] = useState<ExtendedFraudAlert[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [performanceMetrics, setPerformanceMetrics] = useState<any[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [reportFilters, setReportFilters] = useState({
     dateRange: '30d',
@@ -47,9 +93,9 @@ function BankingOperations() {
   });
 
   const [newComplaint, setNewComplaint] = useState({
-    title: '',
+    subject: '',
     description: '',
-    complaint_type: 'service',
+    category: 'service',
     priority: 'medium'
   });
 
@@ -99,29 +145,29 @@ function BankingOperations() {
 
   const fetchLoans = async () => {
     const result = await authService.getLoans();
-    if (result.success) {
-      setLoans(result.data);
+    if (result.success && result.data) {
+      setLoans(result.data.results);
     }
   };
 
   const fetchComplaints = async () => {
     const result = await authService.getComplaints();
-    if (result.success) {
-      setComplaints(result.data);
+    if (result.success && result.data) {
+      setComplaints(result.data.results);
     }
   };
 
   const fetchCashAdvances = async () => {
     const result = await authService.getCashAdvances();
-    if (result.success) {
-      setCashAdvances(result.data);
+    if (result.success && result.data) {
+      setCashAdvances(result.data.results);
     }
   };
 
   const fetchRefunds = async () => {
     const result = await authService.getRefunds();
-    if (result.success) {
-      setRefunds(result.data);
+    if (result.success && result.data) {
+      setRefunds(result.data.results);
     }
   };
 
@@ -134,19 +180,19 @@ function BankingOperations() {
 
   const fetchPendingLoans = async () => {
     const result = await authService.getPendingLoans();
-    if (result.success) {
-      setPendingLoans(result.data);
+    if (result.success && result.data) {
+      setPendingLoans(result.data.results);
     }
   };
 
   const fetchMessageThreads = async () => {
     const result = await authService.getMessageThreads();
-    if (result.success) {
-      setMessageThreads(result.data);
+    if (result.success && result.data) {
+      setMessageThreads(result.data.results as MessageThreadExtended[]);
     }
   };
 
-  const fetchMessages = async (threadId: string) => {
+  const fetchMessages = async (threadId: number) => {
     const result = await authService.getThreadMessages(threadId);
     if (result.success) {
       setMessages(result.data);
@@ -161,12 +207,12 @@ function BankingOperations() {
       authService.getPerformanceMetrics()
     ]);
 
-    if (loansResult.success && transactionsResult.success && performanceResult.success) {
+    if (loansResult.success && loansResult.data && transactionsResult.success && transactionsResult.data && performanceResult.success) {
       // Process data for charts
       const processedData = processReportsData(
-        loansResult.data,
-        transactionsResult.data,
-        performanceResult.data
+        loansResult.data.results || [],
+        transactionsResult.data.transactions || [],
+        performanceResult.data || []
       );
       setReportsData(processedData);
     }
@@ -176,14 +222,14 @@ function BankingOperations() {
     // Fetch real fraud alerts from backend
     const result = await authService.getFraudAlerts();
     if (result.success && result.data) {
-      setFraudAlerts(result.data);
+      setFraudAlerts(result.data.results as ExtendedFraudAlert[]);
     } else {
       // If API fails, set empty array instead of mock data
       setFraudAlerts([]);
     }
   };
 
-  const processReportsData = (loans: any[], transactions: any[], performance: any[]) => {
+  const processReportsData = (loans: Loan[], transactions: Transaction[], performance: PerformanceMetric[]) => {
     // Process real data for charts from API response
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentMonth = new Date().getMonth();
@@ -192,20 +238,20 @@ function BankingOperations() {
     const monthlyData = [];
     for (let i = 5; i >= 0; i--) {
       const monthIndex = (currentMonth - i + 12) % 12;
-      const monthLoans = loans?.filter((l: any) => {
+      const monthLoans = loans?.filter((l: Loan) => {
         const loanMonth = new Date(l.created_at).getMonth();
         return loanMonth === monthIndex;
       }).length || 0;
 
-      const monthTransactions = transactions?.filter((t: any) => {
-        const txMonth = new Date(t.timestamp || t.created_at).getMonth();
+      const monthTransactions = transactions?.filter((t: Transaction) => {
+        const txMonth = new Date(t.timestamp).getMonth();
         return txMonth === monthIndex;
       }).length || 0;
 
-      const monthRevenue = transactions?.filter((t: any) => {
-        const txMonth = new Date(t.timestamp || t.created_at).getMonth();
+      const monthRevenue = transactions?.filter((t: Transaction) => {
+        const txMonth = new Date(t.timestamp).getMonth();
         return txMonth === monthIndex && t.transaction_type === 'deposit';
-      }).reduce((sum: number, t: any) => sum + parseFloat(t.amount || 0), 0) || 0;
+      }).reduce((sum: number, t: Transaction) => sum + parseFloat(t.amount || '0'), 0) || 0;
 
       monthlyData.push({
         month: months[monthIndex],
@@ -231,8 +277,12 @@ function BankingOperations() {
   };
 
   const handleCreateLoan = async () => {
-    const result = await authService.createLoan(newLoan);
-    if (result.success) {
+    const loanToCreate = {
+      ...newLoan,
+      term_months: parseInt(newLoan.term_months) || 12
+    };
+    const result = await authService.createLoan(loanToCreate);
+    if (result.success && result.data) {
       setLoans([...loans, result.data]);
       setNewLoan({ amount: '', purpose: '', term_months: '', account: '' });
       alert('Loan application submitted successfully!');
@@ -245,14 +295,14 @@ function BankingOperations() {
     const result = await authService.createComplaint(newComplaint);
     if (result.success) {
       setComplaints([...complaints, result.data]);
-      setNewComplaint({ title: '', description: '', complaint_type: 'service', priority: 'medium' });
+      setNewComplaint({ subject: '', description: '', category: 'service', priority: 'medium' });
       alert('Complaint submitted successfully!');
     } else {
       alert('Failed to create complaint: ' + result.error);
     }
   };
 
-  const handleApproveLoan = async (loanId: string) => {
+  const handleApproveLoan = async (loanId: string | number) => {
     const result = await authService.approveLoan(loanId);
     if (result.success) {
       alert('Loan approved successfully!');
@@ -269,7 +319,7 @@ function BankingOperations() {
   };
 
   // Messaging handlers
-  const handleSelectThread = async (thread: any) => {
+  const handleSelectThread = async (thread: MessageThreadExtended) => {
     setSelectedThread(thread);
     await fetchMessages(thread.id);
   };
@@ -369,15 +419,17 @@ function BankingOperations() {
                   onChange={(e) => setNewLoan({ ...newLoan, term_months: e.target.value })}
                 />
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Account</label>
+                  <label htmlFor="loan-account" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Account</label>
                   <select
+                    id="loan-account"
+                    title="Select Account"
                     value={newLoan.account}
                     onChange={(e) => setNewLoan({ ...newLoan, account: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
                   >
                     <option value="">Select Account</option>
                     {accounts.map(account => (
-                      <option key={account.id} value={account.id}>{account.name}</option>
+                      <option key={account.id} value={account.id}>{account.account_type_display} - {account.account_number}</option>
                     ))}
                   </select>
                 </div>
@@ -426,17 +478,19 @@ function BankingOperations() {
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Submit a Complaint</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <Input
-                  label="Title"
+                  label="Subject"
                   type="text"
                   placeholder="Brief summary"
-                  value={newComplaint.title}
-                  onChange={(e) => setNewComplaint({ ...newComplaint, title: e.target.value })}
+                  value={newComplaint.subject}
+                  onChange={(e) => setNewComplaint({ ...newComplaint, subject: e.target.value })}
                 />
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Type</label>
+                  <label htmlFor="complaint-type" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Category</label>
                   <select
-                    value={newComplaint.complaint_type}
-                    onChange={(e) => setNewComplaint({ ...newComplaint, complaint_type: e.target.value })}
+                    id="complaint-type"
+                    title="Complaint Type"
+                    value={newComplaint.category}
+                    onChange={(e) => setNewComplaint({ ...newComplaint, category: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
                   >
                     <option value="service">Service</option>
@@ -446,8 +500,10 @@ function BankingOperations() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Priority</label>
+                  <label htmlFor="complaint-priority" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Priority</label>
                   <select
+                    id="complaint-priority"
+                    title="Complaint Priority"
                     value={newComplaint.priority}
                     onChange={(e) => setNewComplaint({ ...newComplaint, priority: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
@@ -455,7 +511,7 @@ function BankingOperations() {
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
+                    <option value="critical">Critical</option>
                   </select>
                 </div>
               </div>
@@ -479,7 +535,7 @@ function BankingOperations() {
                 {complaints.map((complaint) => (
                   <div key={complaint.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 rounded-xl border border-gray-100 bg-white shadow-sm">
                     <div className="mb-2 md:mb-0">
-                      <h4 className="font-bold text-gray-800">{complaint.title}</h4>
+                      <h4 className="font-bold text-gray-800">{complaint.subject}</h4>
                       <p className="text-sm text-gray-500 mb-1">{complaint.description}</p>
                       <p className="text-xs text-gray-400">
                         {new Date(complaint.created_at).toLocaleDateString()}
@@ -494,8 +550,7 @@ function BankingOperations() {
                         {complaint.status}
                       </span>
                       <span className={`
-                            px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                            ${complaint.priority === 'urgent' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}
+                            ${complaint.priority === Priority5f3Enum.CRITICAL ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}
                         `}>
                         {complaint.priority}
                       </span>
@@ -517,7 +572,7 @@ function BankingOperations() {
                   <h4 className="text-2xl font-black text-gray-800 mb-2">
                     ${advance.amount?.toLocaleString()}
                   </h4>
-                  <p className="text-gray-500 mb-4">{advance.purpose}</p>
+                  <p className="text-gray-500 mb-4">{advance.reason}</p>
                   <div className="flex justify-between items-center">
                     <span className={`
                         px-3 py-1 rounded-full text-xs font-bold uppercase
@@ -571,12 +626,12 @@ function BankingOperations() {
               {accounts.map((account) => (
                 <div key={account.id} className="p-6 rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-indigo-50 shadow-sm relative overflow-hidden">
                   <div className="absolute right-0 top-0 p-4 opacity-5 text-indigo-900 text-6xl">🏦</div>
-                  <h4 className="text-lg font-bold text-gray-800 mb-4 relative z-10">{account.name}</h4>
+                  <h4 className="text-lg font-bold text-gray-800 mb-4 relative z-10">{account.account_type_display}</h4>
                   <p className="text-3xl font-black text-indigo-600 mb-2 relative z-10">
-                    ${account.balance?.toLocaleString()}
+                    ${account.calculated_balance?.toLocaleString()}
                   </p>
                   <p className="text-sm font-medium text-gray-500 relative z-10">
-                    Type: <span className="uppercase">{account.account_type}</span>
+                    Account #: {account.account_number}
                   </p>
                   <p className="text-xs text-gray-400 mt-4 relative z-10">
                     Opened: {new Date(account.created_at).toLocaleDateString()}
@@ -596,7 +651,7 @@ function BankingOperations() {
                 <div key={loan.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 rounded-xl border border-gray-100 bg-white shadow-sm">
                   <div className="mb-4 md:mb-0">
                     <h4 className="font-bold text-gray-800 mb-1">
-                      ${loan.amount?.toLocaleString()} <span className="font-normal text-gray-500">for {loan.user?.name}</span>
+                      ${loan.amount?.toLocaleString()} <span className="font-normal text-gray-500">for {loan.borrower_name || 'Unknown User'}</span>
                     </h4>
                     <p className="text-sm text-gray-600 mb-1">{loan.purpose}</p>
                     <p className="text-xs text-gray-400">
@@ -622,7 +677,7 @@ function BankingOperations() {
                 </div>
               ))}
             </div>
-          </GlassCard>
+          </GlassCard >
         );
 
       case 'messaging':
@@ -632,7 +687,7 @@ function BankingOperations() {
             <GlassCard className="w-80 flex flex-col p-4 border-r-0 border-t-[6px] border-t-blue-400 h-full">
               <h4 className="font-bold text-gray-800 mb-4 px-2">Conversations</h4>
               <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-                {messageThreads.map((thread: any) => (
+                {messageThreads.map((thread: MessageThreadExtended) => (
                   <div
                     key={thread.id}
                     onClick={() => handleSelectThread(thread)}
@@ -677,7 +732,7 @@ function BankingOperations() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30">
-                    {messages.map((message: any) => (
+                    {messages.map((message: ExtendedMessage) => (
                       <div key={message.id} className={`flex ${message.is_me ? 'justify-end' : 'justify-start'}`}>
                         <div className={`
                                         max-w-[70%] p-3 rounded-2xl text-sm shadow-sm
@@ -724,7 +779,7 @@ function BankingOperations() {
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Check if data exists before rendering charts */}
-              {reportsData.course_progress ? ( // Adjusting check based on likely data structure, or just render conditional
+              {reportsData.monthlyData ? (
                 <div className="h-80 w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
                   {/* Placeholder for Recharts implementation - reusing logic from existing code implies standard Recharts usage */}
                   <ResponsiveContainer width="100%" height="100%">
@@ -759,7 +814,7 @@ function BankingOperations() {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {reportsData.categoryData.map((entry: any, index: number) => (
+                        {reportsData.categoryData.map((entry: { name: string; value: number; color: string }, index: number) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -806,22 +861,23 @@ function BankingOperations() {
                     <div className="flex gap-2 ml-8 md:ml-0">
                       <Button
                         size="sm"
-                        onClick={() => handleRunFraudCheck(alert.transaction_id)}
+                        onClick={() => handleRunFraudCheck(alert.transaction_id || '')}
                         className="bg-white text-red-600 border-red-200 hover:bg-red-50"
+                        disabled={!alert.transaction_id}
                       >
                         Investigate 🔍
                       </Button>
                       <Button
                         size="sm"
                         variant="danger"
-                        onClick={() => handleReviewFraudAlert(alert.id, 'confirmed')}
+                        onClick={() => handleReviewFraudAlert(String(alert.id), 'confirmed')}
                       >
                         Confirm Fraud
                       </Button>
                       <Button
                         size="sm"
                         className="bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
-                        onClick={() => handleReviewFraudAlert(alert.id, 'dismissed')}
+                        onClick={() => handleReviewFraudAlert(String(alert.id), 'dismissed')}
                       >
                         Dismiss
                       </Button>
