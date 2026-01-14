@@ -1,5 +1,5 @@
 # Use Node.js 22 Alpine image for modern package support
-FROM node:22-alpine
+FROM node:25-alpine
 
 # Set work directory
 WORKDIR /app
