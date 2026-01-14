@@ -62,7 +62,6 @@ def column_exists(table_name: str, column_name: str) -> bool:
 def add_column_if_not_exists(table_name: str, column_name: str, column_def: str) -> bool:
     """Add a column if it doesn't already exist."""
     if column_exists(table_name, column_name):
-        print(f"    ✓ {table_name}.{column_name} already exists")
         return False
 
     with connection.cursor() as cursor:
@@ -85,52 +84,23 @@ def sync_missing_columns():
     # ==========================================================================
     # From users.0008_user_id_number_user_id_type
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
-    add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL UNIQUE")
+    add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
 
     # ==========================================================================
-    # Core App - Missing columns from various migrations
+    # Core App - Account columns
     # ==========================================================================
     # From core.0020_add_initial_balance_and_quantize
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
 
-    # From core.0022_add_initial_deposit_to_account_opening
+    # ==========================================================================
+    # Core App - AccountOpeningRequest columns
+    # ==========================================================================
+    # From core.0022
     add_column_if_not_exists("core_accountopeningrequest", "initial_deposit", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-
-    # From core.0026_add_credential_dispatch_to_account_opening
+    # From core.0026
     add_column_if_not_exists("core_accountopeningrequest", "credential_dispatch_method", "VARCHAR(20) DEFAULT 'pickup' NOT NULL")
     add_column_if_not_exists("core_accountopeningrequest", "credential_delivery_address", "TEXT NULL")
-
-    # From core.0027_reliability_models - FraudAlert fields
-    add_column_if_not_exists("core_fraudalert", "transaction_id", "BIGINT NULL")
-    add_column_if_not_exists("core_fraudalert", "alert_type", "VARCHAR(50) DEFAULT 'suspicious_activity' NOT NULL")
-    add_column_if_not_exists("core_fraudalert", "risk_score", "NUMERIC(5,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_fraudalert", "metadata", "JSONB DEFAULT '{}' NOT NULL")
-
-    # Message related fields
-    add_column_if_not_exists("core_message", "encrypted_content", "TEXT NULL")
-    add_column_if_not_exists("core_message", "iv", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_message", "auth_tag", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_message", "message_type", "VARCHAR(50) DEFAULT 'text' NOT NULL")
-    add_column_if_not_exists("core_message", "reactions", "JSONB DEFAULT '{}' NOT NULL")
-
-    # Loan fields from core.0030
-    add_column_if_not_exists("core_loan", "city", "VARCHAR(100) NULL")
-    add_column_if_not_exists("core_loan", "date_of_birth", "DATE NULL")
-    add_column_if_not_exists("core_loan", "digital_address", "VARCHAR(100) NULL")
-    add_column_if_not_exists("core_loan", "employer_name", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_loan", "employment_status", "VARCHAR(50) NULL")
-    add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) NULL")
-    add_column_if_not_exists("core_loan", "id_type", "VARCHAR(50) NULL")
-    add_column_if_not_exists("core_loan", "monthly_income", "NUMERIC(15,2) NULL")
-    add_column_if_not_exists("core_loan", "nationality", "VARCHAR(100) NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_name", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_phone", "VARCHAR(20) NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_relationship", "VARCHAR(50) NULL")
-    add_column_if_not_exists("core_loan", "phone_number", "VARCHAR(20) NULL")
-    add_column_if_not_exists("core_loan", "residential_address", "TEXT NULL")
-    add_column_if_not_exists("core_loan", "work_address", "TEXT NULL")
-
-    # AccountOpeningRequest fields from core.0032
+    # From core.0032
     add_column_if_not_exists("core_accountopeningrequest", "digital_address", "VARCHAR(100) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "employer_name", "VARCHAR(255) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "location", "VARCHAR(255) NULL")
@@ -138,6 +108,66 @@ def sync_missing_columns():
     add_column_if_not_exists("core_accountopeningrequest", "occupation", "VARCHAR(255) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "position", "VARCHAR(100) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "work_address", "TEXT NULL")
+
+    # ==========================================================================
+    # Core App - Loan columns (from core.0030)
+    # ==========================================================================
+    add_column_if_not_exists("core_loan", "city", "VARCHAR(100) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "date_of_birth", "DATE NULL")
+    add_column_if_not_exists("core_loan", "digital_address", "VARCHAR(100) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "employment_status", "VARCHAR(50) DEFAULT 'employed' NOT NULL")
+    add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "id_type", "VARCHAR(50) DEFAULT 'ghana_card' NOT NULL")
+    add_column_if_not_exists("core_loan", "monthly_income", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("core_loan", "town", "VARCHAR(100) DEFAULT '' NOT NULL")
+    # Guarantor 1 fields
+    add_column_if_not_exists("core_loan", "guarantor_1_name", "VARCHAR(255) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_address", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_id_type", "VARCHAR(50) DEFAULT 'ghana_card' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
+    # Guarantor 2 fields
+    add_column_if_not_exists("core_loan", "guarantor_2_name", "VARCHAR(255) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_address", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_id_type", "VARCHAR(50) DEFAULT 'ghana_card' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
+    # Next of Kin 1 fields
+    add_column_if_not_exists("core_loan", "next_of_kin_1_name", "VARCHAR(255) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_1_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_1_address", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_1_relationship", "VARCHAR(100) DEFAULT '' NOT NULL")
+    # Next of Kin 2 fields
+    add_column_if_not_exists("core_loan", "next_of_kin_2_name", "VARCHAR(255) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_2_phone", "VARCHAR(20) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_2_address", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_2_relationship", "VARCHAR(100) DEFAULT '' NOT NULL")
+
+    # ==========================================================================
+    # Core App - FraudAlert columns (from core.0027)
+    # ==========================================================================
+    add_column_if_not_exists("core_fraudalert", "transaction_id", "BIGINT NULL")
+    add_column_if_not_exists("core_fraudalert", "alert_type", "VARCHAR(50) DEFAULT 'suspicious_activity' NOT NULL")
+    add_column_if_not_exists("core_fraudalert", "risk_score", "NUMERIC(5,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("core_fraudalert", "metadata", "JSONB DEFAULT '{}' NOT NULL")
+
+    # ==========================================================================
+    # Core App - Message columns (from various migrations)
+    # ==========================================================================
+    if table_exists("core_message"):
+        add_column_if_not_exists("core_message", "encrypted_content", "TEXT NULL")
+        add_column_if_not_exists("core_message", "iv", "VARCHAR(255) NULL")
+        add_column_if_not_exists("core_message", "auth_tag", "VARCHAR(255) NULL")
+        add_column_if_not_exists("core_message", "message_type", "VARCHAR(50) DEFAULT 'text' NOT NULL")
+        add_column_if_not_exists("core_message", "reactions", "JSONB DEFAULT '{}' NOT NULL")
+
+    # ==========================================================================
+    # Core App - FraudRule columns (from core.0033)
+    # ==========================================================================
+    if table_exists("core_fraudrule"):
+        add_column_if_not_exists("core_fraudrule", "rule_type", "VARCHAR(50) DEFAULT 'threshold' NOT NULL")
+        add_column_if_not_exists("core_fraudrule", "threshold_value", "NUMERIC(15,2) NULL")
+        add_column_if_not_exists("core_fraudrule", "is_active", "BOOLEAN DEFAULT TRUE NOT NULL")
 
     print("  Column sync complete!\n")
 
