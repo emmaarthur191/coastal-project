@@ -105,7 +105,8 @@ class AccountAdmin(admin.ModelAdmin):
 
     def balance_display(self, obj):
         """Display balance with currency formatting."""
-        return format_html("<strong>GH₵ {:,.2f}</strong>", obj.balance)
+        balance = float(obj.balance) if obj.balance is not None else 0.0
+        return format_html("<strong>GH₵ {:,.2f}</strong>", balance)
 
     balance_display.short_description = "Balance"
     balance_display.admin_order_field = "balance"
@@ -160,7 +161,8 @@ class TransactionAdmin(admin.ModelAdmin):
 
     def amount_display(self, obj):
         """Display amount with currency formatting."""
-        return format_html("GH₵ {:,.2f}", obj.amount)
+        amount = float(obj.amount) if obj.amount is not None else 0.0
+        return format_html("GH₵ {:,.2f}", amount)
 
     amount_display.short_description = "Amount"
     amount_display.admin_order_field = "amount"
@@ -225,13 +227,15 @@ class LoanAdmin(admin.ModelAdmin):
     ]
 
     def amount_display(self, obj):
-        return format_html("GH₵ {:,.2f}", obj.amount)
+        amount = float(obj.amount) if obj.amount is not None else 0.0
+        return format_html("GH₵ {:,.2f}", amount)
 
     amount_display.short_description = "Amount"
     amount_display.admin_order_field = "amount"
 
     def outstanding_display(self, obj):
-        return format_html("GH₵ {:,.2f}", obj.outstanding_balance)
+        outstanding = float(obj.outstanding_balance) if obj.outstanding_balance is not None else 0.0
+        return format_html("GH₵ {:,.2f}", outstanding)
 
     outstanding_display.short_description = "Outstanding"
     outstanding_display.admin_order_field = "outstanding_balance"
