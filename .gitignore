@@ -49,3 +49,8 @@ Coastal_Banking_Documentation_Full.*
 CoastalBanking.apk
 convert_to_word.py
 utils/generate_erd_graphviz.py
+docs/*.apk
+docs/*.exe
+docs/*.zip
+docs/*.docx
+docs/*.pdf
