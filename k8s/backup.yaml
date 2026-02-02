@@ -53,7 +53,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: postgres-backup
-            image: postgres:15-alpine
+            image: postgres:18-alpine
             env:
             - name: PGHOST
               value: postgres-service
