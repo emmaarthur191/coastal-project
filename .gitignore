@@ -39,3 +39,13 @@ docs/maintenance/
 full_traceback.txt
 tsc_output_*.txt
 .agent/
+backend_logs.txt
+migration_error.log
+tmp_migration_log.log
+security_audit_bandit.json
+e2e_test_results.json
+COMPREHENSIVE_*_REPORT.md
+Coastal_Banking_Documentation_Full.*
+CoastalBanking.apk
+convert_to_word.py
+utils/generate_erd_graphviz.py
