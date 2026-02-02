@@ -28,3 +28,14 @@ dist/
 build/
 coverage/
 .npm/
+
+# Sensitive / Generated
+admin_log.txt
+Coastal_Maintenance_Manual.pdf
+MAINTENANCE_MANUAL_MASTER.md
+erd.dot
+generate_maintenance_pdf.py
+docs/maintenance/
+full_traceback.txt
+tsc_output_*.txt
+.agent/
