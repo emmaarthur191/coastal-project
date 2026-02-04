@@ -20,6 +20,7 @@ requests>=2.31.0
 pytest>=8.0.0
 pytest-django>=4.8.0
 pytest-cov>=4.1.0
+hypothesis>=6.100.0
 psycopg2-binary>=2.9.0
 faker>=24.0.0
 phonenumbers>=8.13.0
