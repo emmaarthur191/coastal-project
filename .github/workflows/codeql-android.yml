@@ -52,11 +52,15 @@ jobs:
 
     # Sync Capacitor to generate capacitor-cordova-android-plugins folder
     # This folder is gitignored, so it must be generated in CI before build
+    # We use 'cap update' instead of 'cap sync' since we don't have web build output
     - name: Install frontend dependencies and sync Capacitor
       run: |
         cd frontend
         npm ci
-        npx cap sync android
+        # Create assets directory that Capacitor expects
+        mkdir -p android/app/src/main/assets
+        # Use update (plugins only) instead of sync (which needs web build)
+        npx cap update android
 
     # MANUAL BUILD STEP
     # The default autobuild often fails for Android or mixed projects.
