@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smart Migration Script v4 - Exhaustive Production Schema Sync
+"""Smart Migration Script v4 - Exhaustive Production Schema Sync.
 
 This script ensures the production database has all required tables and columns,
 even if the migration history is corrupted or out of sync.
@@ -471,6 +471,9 @@ def sync_missing_columns():
     # Users
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
+    # Encrypted PII columns (GDPR/PCI-DSS compliance)
+    add_column_if_not_exists("users_user", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
 
     # Accounts & Registration
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
@@ -487,6 +490,7 @@ def sync_missing_columns():
 
 
 def main():
+    """Run the smart migration sync."""
     print("=" * 60)
     print("  Smart Migration Script v4 (Exhaustive Sync)")
     print("=" * 60)
