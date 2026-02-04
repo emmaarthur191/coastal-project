@@ -1,0 +1,33 @@
+[run]
+omit =
+    */migrations/*
+    */tests/*
+    *test*.py
+    celery.py
+    smart_migrate.py
+    repair_db.py
+    create_test_data.py
+    diagnose_*.py
+    verify_*.py
+    fix_*.py
+    check_naming.py
+    config/asgi.py
+    config/wsgi.py
+    config/routing.py
+    config/channels_middleware.py
+    core/tests.py
+    core/tests_*.py
+    core/consumers.py
+    core/tasks.py
+    core/validators.py
+    core/pdf_services.py
+    core/management/commands/*
+    users/management/commands/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
