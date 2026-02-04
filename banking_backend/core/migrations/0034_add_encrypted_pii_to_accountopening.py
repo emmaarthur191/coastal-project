@@ -11,13 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="account",
-            name="initial_balance",
-            field=models.DecimalField(
-                decimal_places=2, default=Decimal("0.00"), max_digits=15
-            ),
-        ),
+        # NOTE: initial_balance was already added in 0020, so we skip it here
         migrations.AddField(
             model_name="accountopeningrequest",
             name="initial_deposit",
