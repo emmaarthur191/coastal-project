@@ -11,13 +11,17 @@ Thumbs.db
 .env.*
 !.env.example
 
-# Python / Django
-__pycache__/
+# Critical Config Exceptions (Do NOT Ignore)
+!README.md
+!package.json
 *.py[cod]
 *$py.class
 venv/
 env/
 .venv/
+
+# Python / Django
+__pycache__/
 db.sqlite3
 media/
 staticfiles/
@@ -54,3 +58,14 @@ docs/*.exe
 docs/*.zip
 docs/*.docx
 docs/*.pdf
+
+# Explicitly ignore sensitive files
+postman_environment.json
+security_audit_*.json
+*.json
+!package.json
+!frontend/package.json
+!package-lock.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/tsconfig.node.json
