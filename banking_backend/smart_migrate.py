@@ -481,6 +481,9 @@ def sync_missing_columns():
     add_column_if_not_exists("core_accountopeningrequest", "digital_address", "VARCHAR(100) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "occupation", "VARCHAR(255) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_data", "JSONB DEFAULT '{}' NOT NULL")
+    # Encrypted PII columns for AccountOpeningRequest
+    add_column_if_not_exists("core_accountopeningrequest", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
 
     # Loans
     add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
