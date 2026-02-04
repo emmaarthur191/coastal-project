@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""
-Smart Migration Script v4 - Exhaustive Production Schema Sync
+"""Smart Migration Script v4 - Exhaustive Production Schema Sync
 
 This script ensures the production database has all required tables and columns,
 even if the migration history is corrupted or out of sync.
@@ -8,7 +7,6 @@ even if the migration history is corrupted or out of sync.
 
 import os
 import sys
-from decimal import Decimal
 
 import django
 
@@ -22,36 +20,15 @@ from django.db import connection
 
 
 def table_exists(table_name: str) -> bool:
-    """Check if a table exists in the database."""
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables
-                WHERE table_schema = 'public'
-                AND table_name = %s
-            )
-            """,
-            [table_name],
-        )
-        return cursor.fetchone()[0]
+    """Check if a table exists in the database (cross-database compatible)."""
+    return table_name in connection.introspection.table_names()
 
 
 def column_exists(table_name: str, column_name: str) -> bool:
-    """Check if a column exists in a table."""
+    """Check if a column exists in a table (cross-database compatible)."""
     with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT EXISTS (
-                SELECT FROM information_schema.columns
-                WHERE table_schema = 'public'
-                AND table_name = %s
-                AND column_name = %s
-            )
-            """,
-            [table_name, column_name],
-        )
-        return cursor.fetchone()[0]
+        columns = [c.name for c in connection.introspection.get_table_description(cursor, table_name)]
+        return column_name in columns
 
 
 def add_column_if_not_exists(table_name: str, column_name: str, column_def: str) -> bool:

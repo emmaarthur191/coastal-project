@@ -518,9 +518,13 @@ class SendOTPView(APIView):
         otp_code = str(secrets.SystemRandom().randint(100000, 999999))
 
         # Store OTP in session
+        import time
+
         request.session["otp_code"] = otp_code
         request.session["otp_phone"] = phone_number
         request.session["otp_type"] = verification_type
+        request.session["otp_created_at"] = time.time()
+        request.session["otp_failed_attempts"] = 0
 
         # Send OTP via Sendexa
         message = f"Your Coastal Banking OTP is: {otp_code}. Do not share this code."
@@ -640,7 +644,7 @@ class MembersListView(APIView):
 
         from django.db.models import Prefetch
 
-        from core.models_legacy import ClientAssignment
+        from core.models.operational import ClientAssignment
 
         # Prefetch active assignments with banker details in a single query
         active_assignment_prefetch = Prefetch(
@@ -903,3 +907,146 @@ class SessionTerminateView(APIView):
 
         except UserActivity.DoesNotExist:
             return Response({"detail": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class PasswordResetRequestView(APIView):
+    """Request a password reset link.
+
+    Security features:
+    - Rate limited (3 requests per hour)
+    - Does not reveal if email exists (prevents enumeration)
+    - Sends email/SMS with secure token
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_scope = "password_reset"
+
+    def post(self, request):
+        from .models import PasswordResetToken
+        from .serializers import PasswordResetRequestSerializer
+        from .services import SendexaService
+
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data["email"]
+
+        # Always return success to prevent email enumeration
+        success_response = {
+            "message": "If an account exists with this email, you will receive a password reset link.",
+            "expires_in": 900,  # 15 minutes
+        }
+
+        try:
+            user = User.objects.get(email=email)
+
+            # Create token
+            reset_token = PasswordResetToken.create_for_user(user, request)
+
+            # Send reset link via SMS (as this is a banking app with SMS)
+            if user.phone_number:
+                reset_url = (
+                    f"{settings.FRONTEND_URL or 'https://app.coastalbank.com'}/reset-password?token={reset_token.token}"
+                )
+                message = f"Coastal Banking: Your password reset link (valid for 15 min): {reset_url}"
+                SendexaService.send_sms(user.phone_number, message)
+                logger.info(f"Password reset token sent to user {user.id}")
+
+            # Also log for audit
+            from users.models import AuditLog
+
+            AuditLog.objects.create(
+                user=user,
+                action="password_reset_requested",
+                resource_type="User",
+                resource_id=str(user.id),
+                ip_address=request.META.get("REMOTE_ADDR"),
+                changes={"email": email},
+            )
+
+        except User.DoesNotExist:
+            # Log attempt but don't reveal to user
+            logger.warning(f"Password reset attempted for non-existent email: {email}")
+
+        return Response(success_response)
+
+
+class PasswordResetConfirmView(APIView):
+    """Confirm password reset with token.
+
+    Security features:
+    - Token validation (one-time use, expiration)
+    - Password strength enforcement
+    - All existing tokens blacklisted after reset
+    - User notified of password change
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+        from .models import PasswordResetToken
+        from .serializers import PasswordResetConfirmSerializer
+
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        token_str = serializer.validated_data["token"]
+        new_password = serializer.validated_data["new_password"]
+
+        try:
+            reset_token = PasswordResetToken.objects.get(token=token_str)
+
+            if not reset_token.is_valid():
+                return Response(
+                    {"error": "This reset link has expired or already been used. Please request a new one."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user = reset_token.user
+
+            # Update password
+            user.set_password(new_password)
+            user.save()
+
+            # Mark token as used
+            reset_token.mark_used()
+
+            # Invalidate all existing JWT tokens
+            for token in OutstandingToken.objects.filter(user=user):
+                BlacklistedToken.objects.get_or_create(token=token)
+
+            # Notify user via SMS
+            from .services import SendexaService
+
+            if user.phone_number:
+                message = "Coastal Banking: Your password has been changed. If you did not do this, contact support immediately."
+                SendexaService.send_sms(user.phone_number, message)
+
+            # Audit log
+            from users.models import AuditLog
+
+            AuditLog.objects.create(
+                user=user,
+                action="password_reset_completed",
+                resource_type="User",
+                resource_id=str(user.id),
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+
+            logger.info(f"Password reset completed for user {user.id}")
+
+            return Response(
+                {"message": "Password has been reset successfully. You can now log in with your new password."}
+            )
+
+        except PasswordResetToken.DoesNotExist:
+            return Response(
+                {"error": "Invalid reset token. Please request a new password reset."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

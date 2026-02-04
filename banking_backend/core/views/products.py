@@ -17,9 +17,9 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import Product, Promotion
+from core.models.marketing import Product, Promotion
 from core.permissions import IsStaff
-from core.serializers import ProductSerializer, PromotionSerializer
+from core.serializers.marketing import ProductSerializer, PromotionSerializer
 
 logger = logging.getLogger(__name__)
 

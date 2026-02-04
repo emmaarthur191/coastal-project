@@ -13,9 +13,9 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import FraudAlert, FraudRule
+from core.models.fraud import FraudAlert, FraudRule
 from core.permissions import IsStaff
-from core.serializers import FraudAlertSerializer, FraudRuleSerializer
+from core.serializers.fraud import FraudAlertSerializer, FraudRuleSerializer
 
 logger = logging.getLogger(__name__)
 

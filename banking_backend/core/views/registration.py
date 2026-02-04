@@ -29,7 +29,7 @@ class ClientRegistrationViewSet(GenericViewSet):
     @action(detail=False, methods=["post"], url_path="submit-registration")
     def submit_registration(self, request):
         """Handle client registration form submission and persist to database."""
-        from core.models import ClientRegistration
+        from core.models.operational import ClientRegistration
 
         # Extract form data - handle both camelCase (from frontend) and snake_case
         first_name = request.data.get("firstName") or request.data.get("first_name", "")
@@ -117,7 +117,7 @@ class ClientRegistrationViewSet(GenericViewSet):
     @action(detail=False, methods=["post"], url_path="send-otp")
     def send_otp(self, request):
         """Generate and send OTP for registration verification."""
-        from core.models import ClientRegistration
+        from core.models.operational import ClientRegistration
         from users.services import SendexaService
 
         registration_id = request.data.get("email")  # Frontend sends registration ID as 'email'
@@ -152,7 +152,8 @@ class ClientRegistrationViewSet(GenericViewSet):
     @action(detail=False, methods=["post"], url_path="verify-otp")
     def verify_otp(self, request):
         """Verify OTP and transition to AccountOpeningRequest."""
-        from core.models import AccountOpeningRequest, ClientRegistration
+        from core.models.accounts import AccountOpeningRequest
+        from core.models.operational import ClientRegistration
 
         registration_id = request.data.get("email")
         otp_code = request.data.get("otp")

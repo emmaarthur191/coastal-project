@@ -18,11 +18,9 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import BankingMessage
+from core.models.messaging import BankingMessage
 from core.permissions import IsCustomer, IsStaff
-from core.serializers import (
-    BankingMessageSerializer,
-)
+from core.serializers.messaging import BankingMessageSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +51,7 @@ class BankingMessageViewSet(
     @action(detail=True, methods=["post"], permission_classes=[IsCustomer], url_path="mark-read")
     def mark_read(self, request, pk=None):
         message = self.get_object()
-        from core.services import MessagingService
+        from core.services.messaging import BankingMessageService as MessagingService
 
         MessagingService.mark_as_read(message)
         return Response({"status": "Message marked as read."})
@@ -70,12 +68,12 @@ class MessageThreadViewSet(ModelViewSet):
 
     def get_queryset(self):
         """Return threads where current user is a participant."""
-        from core.models import MessageThread
+        from core.models.messaging import MessageThread
 
         return MessageThread.objects.filter(participants=self.request.user).distinct()
 
     def get_serializer_class(self):
-        from core.serializers import MessageThreadSerializer
+        from core.serializers.messaging import MessageThreadSerializer
 
         return MessageThreadSerializer
 
@@ -93,7 +91,7 @@ class MessageThreadViewSet(ModelViewSet):
 
     def create(self, request):
         """Create a new message thread."""
-        from core.models import Message, MessageThread
+        from core.models.messaging import Message, MessageThread
 
         subject = request.data.get("subject", "")
         participant_ids = request.data.get("participants", [])
@@ -126,7 +124,7 @@ class MessageThreadViewSet(ModelViewSet):
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
         """Send a message to a thread."""
-        from core.models import Message
+        from core.models.messaging import Message
 
         thread = self.get_object()
         content = request.data.get("content", "")
@@ -140,7 +138,7 @@ class MessageThreadViewSet(ModelViewSet):
         thread.updated_at = timezone.now()
         thread.save()
 
-        from core.serializers import MessageSerializer
+        from core.serializers.messaging import MessageSerializer
 
         return Response({"status": "success", "message": MessageSerializer(message).data})
 
@@ -168,14 +166,14 @@ class MessageViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
 
     def get_queryset(self):
         """Return messages from threads where the current user is a participant."""
-        from core.models import Message
+        from core.models.messaging import Message
 
         # Only show messages from threads user is part of
         return Message.objects.filter(thread__participants=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer for individual messages."""
-        from core.serializers import MessageSerializer
+        from core.serializers.messaging import MessageSerializer
 
         return MessageSerializer
 
@@ -218,12 +216,12 @@ class DeviceViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewS
 
     def get_queryset(self):
         """Return devices for the current user."""
-        from core.models import Device
+        from core.models.operational import Device
 
         return Device.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
-        from core.serializers import DeviceSerializer
+        from core.serializers.operational import DeviceSerializer
 
         return DeviceSerializer
 
@@ -235,7 +233,7 @@ class DeviceViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewS
 
     def create(self, request):
         """Register a device for push notifications."""
-        from core.models import Device
+        from core.models.operational import Device
 
         device_token = request.data.get("token")
         device_type = request.data.get("device_type", "unknown")
@@ -272,7 +270,7 @@ class UserPreferencesView(APIView):
 
     def get(self, request):
         """Get current user's message preferences."""
-        from core.models import UserMessagePreference
+        from core.models.messaging import UserMessagePreference
 
         prefs, _ = UserMessagePreference.objects.get_or_create(user=request.user)
         return Response(
@@ -286,7 +284,7 @@ class UserPreferencesView(APIView):
 
     def post(self, request):
         """Update user's message preferences."""
-        from core.models import UserMessagePreference
+        from core.models.messaging import UserMessagePreference
 
         prefs, _ = UserMessagePreference.objects.get_or_create(user=request.user)
 
@@ -311,13 +309,13 @@ class BlockedUsersViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Generi
 
     def get_queryset(self):
         """Return the list of users blocked by the current user."""
-        from core.models import BlockedUser
+        from core.models.messaging import BlockedUser
 
         return BlockedUser.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer for blocked user entries."""
-        from core.serializers import BlockedUserSerializer
+        from core.serializers.messaging import BlockedUserSerializer
 
         return BlockedUserSerializer
 
@@ -328,7 +326,7 @@ class BlockedUsersViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Generi
     @action(detail=False, methods=["post"])
     def unblock(self, request):
         """Unblock a user by their ID."""
-        from core.models import BlockedUser
+        from core.models.messaging import BlockedUser
 
         blocked_user_id = request.data.get("user_id")
         if not blocked_user_id:
@@ -349,13 +347,13 @@ class OperationsMessagesViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, 
 
     def get_queryset(self):
         """Return operations-related technical messages for the current user."""
-        from core.models import OperationsMessage
+        from core.models.messaging import OperationsMessage
 
         return OperationsMessage.objects.filter(recipient=self.request.user).order_by("-created_at")
 
     def get_serializer_class(self):
         """Define and return a serializer for operations messages."""
-        from core.models import OperationsMessage
+        from core.models.messaging import OperationsMessage
 
         class OperationsMessageSerializer(serializers.ModelSerializer):
             sender_name = serializers.CharField(source="sender.get_full_name", read_only=True)

@@ -18,18 +18,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import (
-    Account,
-    AccountOpeningRequest,
-    Complaint,
-    Expense,
-    FraudAlert,
-    Loan,
-    Refund,
-    ServiceRequest,
-    SystemHealth,
-    Transaction,
-)
+from core.models.accounts import Account, AccountOpeningRequest
+from core.models.fraud import FraudAlert
+from core.models.hr import Expense
+from core.models.loans import Loan
+from core.models.operational import Complaint, ServiceRequest
+from core.models.reporting import SystemHealth
+from core.models.transactions import Refund, Transaction
 from core.permissions import IsManagerOrAdmin, IsStaff
 
 logger = logging.getLogger(__name__)

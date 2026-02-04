@@ -81,3 +81,18 @@ class IsManagerOrAdmin(BasePermission):
             and request.user.is_authenticated
             and (request.user.role in ["manager", "operations_manager", "admin"] or request.user.is_superuser)
         )
+
+
+class IsCashierOrTeller(BasePermission):
+    """Allows access only to cashiers and tellers.
+
+    Use this for frontline banking operations like processing deposits
+    and withdrawals at a counter.
+    """
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and (request.user.role in ["cashier", "teller"] or request.user.is_superuser)
+        )

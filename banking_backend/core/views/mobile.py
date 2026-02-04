@@ -20,7 +20,8 @@ from rest_framework.viewsets import GenericViewSet, ViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import ClientAssignment, Transaction, VisitSchedule
+from core.models.operational import ClientAssignment, VisitSchedule
+from core.models.transactions import Transaction
 from core.permissions import IsStaff
 
 logger = logging.getLogger(__name__)
@@ -132,8 +133,8 @@ class MobileOperationsViewSet(ViewSet):
         if request.user.role != "mobile_banker" and not request.user.is_staff:
             return Response({"error": "This operation is restricted to mobile bankers"}, status=403)
 
-        from core.models import Account
-        from core.services import TransactionService
+        from core.models.accounts import Account
+        from core.services.transactions import TransactionService
 
         member_id = request.data.get("member_id")
         amount = request.data.get("amount")
@@ -195,8 +196,8 @@ class MobileOperationsViewSet(ViewSet):
         if request.user.role != "mobile_banker" and not request.user.is_staff:
             return Response({"error": "This operation is restricted to mobile bankers"}, status=403)
 
-        from core.models import Account
-        from core.services import TransactionService
+        from core.models.accounts import Account
+        from core.services.transactions import TransactionService
 
         member_id = request.data.get("member_id")
         amount = request.data.get("amount")
@@ -258,8 +259,8 @@ class MobileOperationsViewSet(ViewSet):
     @action(detail=False, methods=["post"], url_path="process-repayment")
     def process_repayment(self, request):
         """Process a loan repayment (permission check handled by viewset)."""
-        from core.models import Loan
-        from core.services import LoanService
+        from core.models.loans import Loan
+        from core.services.loans import LoanService
 
         member_id = request.data.get("member_id")
         amount = request.data.get("amount")
@@ -314,7 +315,7 @@ class MobileOperationsViewSet(ViewSet):
     @action(detail=False, methods=["post"], url_path="schedule-visit")
     def schedule_visit(self, request):
         """Create a new visit schedule for a client (RPC-style action)."""
-        from core.models import VisitSchedule
+        from core.models.operational import VisitSchedule
 
         client_name = request.data.get("client_name")
         location = request.data.get("location")
@@ -353,7 +354,7 @@ class ClientAssignmentViewSet(
 
     def get_queryset(self):
         """Filter assignments based on user role."""
-        from core.models import ClientAssignment
+        from core.models.operational import ClientAssignment
 
         if self.request.user.role in ["manager", "admin", "superuser"]:
             return ClientAssignment.objects.all()
@@ -361,7 +362,7 @@ class ClientAssignmentViewSet(
 
     def get_serializer_class(self):
         """Return the serializer class for client assignments."""
-        from core.serializers import ClientAssignmentSerializer
+        from core.serializers.mobile import ClientAssignmentSerializer
 
         return ClientAssignmentSerializer
 
@@ -375,7 +376,7 @@ class ClientAssignmentViewSet(
     @action(detail=False, methods=["get"], url_path="my-clients")
     def my_clients(self, request):
         """Get all clients assigned to the current mobile banker."""
-        from core.models import ClientAssignment
+        from core.models.operational import ClientAssignment
 
         assignments = ClientAssignment.objects.filter(mobile_banker=request.user, is_active=True).select_related(
             "client"

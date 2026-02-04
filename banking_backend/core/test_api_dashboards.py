@@ -69,9 +69,10 @@ class TestDashboardAPI:
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         data = response.data
-        assert isinstance(data, list)
-        assert any(item["metric"] == "System Status" for item in data)
-        assert any(item["metric"] == "Active Users" for item in data)
+        assert isinstance(data, dict)
+        assert "performance_summary" in data
+        assert "system_health" in data
+        assert "active_alerts" in data
 
     def test_performance_metrics(self, api_client, staff_user, dashboard_data):
         api_client.force_authenticate(user=staff_user)

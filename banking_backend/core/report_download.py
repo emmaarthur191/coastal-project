@@ -2,6 +2,7 @@ import os
 
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -27,6 +28,12 @@ class ReportDownloadView(APIView):
                 # But mostly we expect ID lookup now
                 raise Http404("Report not found")
 
+            # SECURITY FIX: Enforce Ownership or Staff role to prevent IDOR
+            from core.permissions import STAFF_ROLES
+
+            if report.generated_by != request.user and not (request.user.role in STAFF_ROLES or request.user.is_staff):
+                raise PermissionDenied("You do not have permission to download this report.")
+
             if not report.file_path:
                 raise Http404("Report file not generated")
 
@@ -42,7 +49,13 @@ class ReportDownloadView(APIView):
 
         except Report.DoesNotExist:
             raise Http404("Report object not found")
+        except PermissionDenied:
+            # Re-raise permission denied explicitly
+            raise
         except Exception as e:
             # Log error
-            print(f"Download error: {e}")
-            raise Http404(f"Error downloading report: {e!s}")
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"Download error for report {report_id}: {e}")
+            raise Http404("Error downloading report")

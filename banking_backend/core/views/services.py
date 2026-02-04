@@ -20,13 +20,14 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import Complaint, Refund, ServiceCharge, ServiceRequest
+from core.models.operational import Complaint, ServiceCharge, ServiceRequest
+from core.models.transactions import Refund
 from core.permissions import IsStaff
-from core.serializers import (
+from core.serializers.operational import (
     ComplaintSerializer,
-    RefundSerializer,
     ServiceRequestSerializer,
 )
+from core.serializers.transactions import RefundSerializer
 
 logger = logging.getLogger(__name__)
 

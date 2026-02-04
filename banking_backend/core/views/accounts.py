@@ -22,14 +22,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from core.mixins import IdempotencyMixin
-from core.models import Account, AccountClosureRequest, AccountOpeningRequest
-from core.permissions import IsCustomer, IsStaff
-from core.serializers import (
+from core.models.accounts import Account, AccountClosureRequest, AccountOpeningRequest
+from core.permissions import IsCustomer, IsManagerOrAdmin, IsStaff
+from core.serializers.accounts import (
     AccountClosureRequestSerializer,
     AccountOpeningRequestSerializer,
     AccountSerializer,
 )
-from core.services import AccountService
+from core.services.accounts import AccountService
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,17 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Return all accounts for staff management."""
+        """Return accounts for staff management. Mobile Bankers only see assigned clients."""
+        user = self.request.user
+        if user.role == "mobile_banker":
+            # Filter by client assignment (assuming ClientAssignment model exists and has 'client' and 'mobile_banker' fields)
+            # and that User model has a related name 'assignments' or we filter ClientAssignment directly
+            from core.models.operational import ClientAssignment
+
+            assigned_client_ids = ClientAssignment.objects.filter(mobile_banker=user, is_active=True).values_list(
+                "client_id", flat=True
+            )
+            return Account.objects.filter(user_id__in=assigned_client_ids)
         return Account.objects.all()
 
     def get_serializer_class(self):
@@ -501,6 +511,12 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
     ordering_fields = ["created_at"]
     ordering = ["-created_at"]
 
+    def get_permissions(self):
+        """Allow only managers/admins to approve or reject closures."""
+        if self.action in ["approve", "reject"]:
+            return [IsManagerOrAdmin()]
+        return super().get_permissions()
+
     def perform_create(self, serializer):
         """Set the submitted_by field when creating a new request."""
         serializer.save(submitted_by=self.request.user)
@@ -514,6 +530,16 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
 
         if closure_request.status != "pending":
             return Response({"error": "Only pending requests can be approved."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # SECURITY FIX: Maker-Checker Enforcement
+        if closure_request.submitted_by == request.user:
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Maker-Checker Violation: You cannot approve a closure request you submitted.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Close the associated account
         if closure_request.account:

@@ -1,35 +1,54 @@
-# Use Python 3.12 slim image for production stability
-FROM python:3.12-slim
+# Stage 1: Build dependencies
+FROM python:3.12-slim AS builder
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=config.settings
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Copy project
-COPY . .
+# Stage 2: Production image
+FROM python:3.12-slim
 
-# Make entrypoint script executable
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=config.settings
+ENV PATH="/home/django/.local/bin:${PATH}"
+
+WORKDIR /app
+
+# Create a non-privileged user and group
+RUN groupadd -r django && useradd -r -g django -d /home/django -s /sbin/nologin django \
+    && mkdir -p /home/django/.local /app/staticfiles /app/media \
+    && chown -R django:django /home/django /app
+
+# Install runtime dependencies ONLY
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
+
+# Copy project files with proper ownership
+COPY --chown=django:django . .
+
+# Ensure entrypoint is executable
 RUN chmod +x /app/entrypoint.sh
 
-# Expose port
+# Switch to non-root user
+USER django
+
 EXPOSE 8000
 
-# Use ENTRYPOINT for self-healing startup
 ENTRYPOINT ["/app/entrypoint.sh"]
-
-# Default command (can be overridden)
 CMD ["daphne", "config.asgi:application", "-b", "0.0.0.0", "-p", "8000"]

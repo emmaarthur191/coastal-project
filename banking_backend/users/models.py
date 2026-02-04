@@ -14,10 +14,16 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="customer")
     email = models.EmailField(unique=True, blank=False)
+    # SECURITY: Store plaintext for legacy compatibility, encrypted versions below
     phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     staff_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     id_type = models.CharField(max_length=50, null=True, blank=True)
     id_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
+
+    # SECURITY: Encrypted storage for PII (GDPR/PCI-DSS compliance)
+    # These fields store Fernet-encrypted versions of sensitive data
+    id_number_encrypted = models.TextField(blank=True, default="")
+    phone_number_encrypted = models.TextField(blank=True, default="")
 
     # Security: Account lockout fields
     failed_login_attempts = models.PositiveIntegerField(default=0)
@@ -46,6 +52,17 @@ class User(AbstractUser):
         if self.locked_until and self.locked_until > timezone.now():
             return True
         return False
+
+    def save(self, *args, **kwargs):
+        """Override save to ensure PII is encrypted before storage."""
+        from core.utils.field_encryption import encrypt_field
+
+        if self.id_number and (not self.id_number_encrypted):
+            self.id_number_encrypted = encrypt_field(self.id_number)
+        if self.phone_number and (not self.phone_number_encrypted):
+            self.phone_number_encrypted = encrypt_field(self.phone_number)
+
+        super().save(*args, **kwargs)
 
     def reset_failed_attempts(self):
         """Reset failed login attempts after successful login."""
@@ -163,3 +180,84 @@ class AdminNotification(models.Model):
 
     def __str__(self):
         return f"[{self.priority.upper()}] {self.title}"
+
+
+class PasswordResetToken(models.Model):
+    """Secure password reset token model.
+
+    Security features:
+    - Cryptographically secure token (32 bytes)
+    - 15-minute expiration (NIST 800-63B)
+    - One-time use (invalidated after use)
+    - Rate limited at view level
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+    )
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Password Reset Token"
+        verbose_name_plural = "Password Reset Tokens"
+
+    def __str__(self):
+        return f"Reset token for {self.user.email} (expires {self.expires_at})"
+
+    @classmethod
+    def generate_token(cls):
+        """Generate a cryptographically secure token."""
+        import secrets
+
+        return secrets.token_urlsafe(32)
+
+    @classmethod
+    def create_for_user(cls, user, request=None):
+        """Create a new password reset token for a user."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        # Invalidate any existing tokens
+        cls.objects.filter(user=user, is_used=False).update(is_used=True)
+
+        # Create new token with 15-minute expiration
+        token = cls.generate_token()
+        expires_at = timezone.now() + timedelta(minutes=15)
+
+        ip_address = None
+        if request:
+            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(",")[0].strip()
+            else:
+                ip_address = request.META.get("REMOTE_ADDR")
+
+        return cls.objects.create(
+            user=user,
+            token=token,
+            expires_at=expires_at,
+            ip_address=ip_address,
+        )
+
+    def is_valid(self):
+        """Check if token is still valid (not expired and not used)."""
+        from django.utils import timezone
+
+        return not self.is_used and self.expires_at > timezone.now()
+
+    def mark_used(self):
+        """Mark token as used."""
+        from django.utils import timezone
+
+        self.is_used = True
+        self.used_at = timezone.now()
+        self.save(update_fields=["is_used", "used_at"])

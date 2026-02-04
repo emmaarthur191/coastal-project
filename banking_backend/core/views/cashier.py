@@ -18,19 +18,12 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import (
-    Account,
-    CashAdvance,
-    CashDrawer,
-    CashDrawerDenomination,
-    CheckDeposit,
-)
+from core.models.accounts import Account
+from core.models.operational import CashAdvance, CashDrawer, CashDrawerDenomination
+from core.models.transactions import CheckDeposit
 from core.permissions import IsStaff
-from core.serializers import (
-    CashAdvanceSerializer,
-    CashDrawerSerializer,
-    CheckDepositSerializer,
-)
+from core.serializers.operational import CashAdvanceSerializer, CashDrawerSerializer
+from core.serializers.transactions import CheckDepositSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +54,7 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
         """Approve a cash advance request."""
         from django.core.exceptions import PermissionDenied
 
-        from .models import CashAdvance
+        from core.models.operational import CashAdvance
 
         try:
             advance = CashAdvance.objects.select_related("user", "submitted_by").get(pk=pk)

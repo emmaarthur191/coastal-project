@@ -10,7 +10,7 @@ from django.db import models
 
 
 class BankingMessage(models.Model):
-    """Legacy messaging model for backward compatibility."""
+    """Internal notifications and messages sent to users."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="banking_messages")
     subject = models.CharField(max_length=255)
@@ -22,12 +22,14 @@ class BankingMessage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "core_bankingmessage"
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"Message to {self.user.username}: {self.subject}"
 
     def save(self, *args, **kwargs):
+        # Auto-generate thread_id if not provided
         if not self.thread_id:
             if self.parent_message:
                 self.thread_id = self.parent_message.thread_id
@@ -59,16 +61,19 @@ class MessageThread(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "core_messagethread"
         ordering = ["-last_message_at", "-created_at"]
         verbose_name = "Message Thread"
         verbose_name_plural = "Message Threads"
 
     def __str__(self):
-        return f"Thread: {self.subject}"
+        return f"Thread: {self.subject[:50]}"
 
+    @property
     def message_count(self):
         return self.messages.count()
 
+    @property
     def last_message(self):
         return self.messages.order_by("-created_at").first()
 
@@ -94,14 +99,14 @@ class Message(models.Model):
     reactions = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        db_table = "core_message"
         ordering = ["created_at"]
         verbose_name = "Message"
         verbose_name_plural = "Messages"
 
     def __str__(self):
         sender_name = self.sender.get_full_name() if self.sender else "System"
-        content_preview = (self.content or "")[:50]
-        return f"Message from {sender_name}: {content_preview}..."
+        return f"Message from {sender_name}: {(self.content or '')[:50]}..."
 
     def mark_as_read(self, user):
         """Mark message as read by user."""
@@ -115,34 +120,149 @@ class Message(models.Model):
 
 
 class UserMessagePreference(models.Model):
-    """User preferences for messaging notifications."""
+    """User preferences for messaging features."""
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="message_preferences")
+
+    # Sound & Notifications
     email_notifications = models.BooleanField(default=True)
     push_notifications = models.BooleanField(default=True)
-    sound_enabled = models.BooleanField(default=True)
     show_previews = models.BooleanField(default=True)
+    sound_enabled = models.BooleanField(default=True)
+    notification_sound = models.CharField(
+        max_length=50,
+        default="default",
+        choices=[("default", "Default"), ("chime", "Chime"), ("ding", "Ding"), ("bell", "Bell"), ("none", "Silent")],
+    )
+
+    # Privacy Settings
+    read_receipts_enabled = models.BooleanField(default=True)
+    typing_indicators_enabled = models.BooleanField(default=True)
+    last_seen_visible = models.BooleanField(default=True)
+
+    # Auto-delete
+    auto_delete_enabled = models.BooleanField(default=False)
+    auto_delete_days = models.IntegerField(
+        default=30, choices=[(1, "24 Hours"), (7, "7 Days"), (30, "30 Days"), (90, "90 Days"), (365, "Never")]
+    )
+
+    # Message Formatting
+    markdown_enabled = models.BooleanField(default=True)
+    emoji_shortcuts_enabled = models.BooleanField(default=True)
+    font_size = models.CharField(
+        max_length=10, default="medium", choices=[("small", "Small"), ("medium", "Medium"), ("large", "Large")]
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "User Message Preferences"
+        db_table = "user_message_preference"
+        verbose_name = "User Message Preference"
         verbose_name_plural = "User Message Preferences"
 
     def __str__(self):
-        return f"Message preferences for {self.user.email}"
+        return f"Preferences for {self.user.username}"
 
 
 class BlockedUser(models.Model):
-    """Users blocked from sending messages."""
+    """Blocked users in messaging system."""
 
-    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="blocked_users")
-    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="blocked_by")
+    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="blocked_users", on_delete=models.CASCADE)
+    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="blocked_by", on_delete=models.CASCADE)
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ["blocker", "blocked"]
+        db_table = "core_blockeduser"
+        unique_together = ("blocker", "blocked")
+        ordering = ["-created_at"]
         verbose_name = "Blocked User"
         verbose_name_plural = "Blocked Users"
 
     def __str__(self):
-        return f"{self.blocker.email} blocked {self.blocked.email}"
+        return f"{self.blocker.username} blocked {self.blocked.username}"
+
+
+class OperationsMessage(models.Model):
+    """Model for messages between operations and staff."""
+
+    PRIORITY_CHOICES = [
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+    ]
+
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="sent_ops_messages", on_delete=models.CASCADE)
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="received_ops_messages", on_delete=models.CASCADE, null=True, blank=True
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default="medium")
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.priority}"
+
+    class Meta:
+        db_table = "operations_message"
+        ordering = ["-created_at"]
+
+
+class ChatRoom(models.Model):
+    """Represents a chat room - can be direct (2 users) or group (multiple users)."""
+
+    name = models.CharField(max_length=100, blank=True, null=True)  # Only for groups
+    is_group = models.BooleanField(default=False)
+    members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="chat_rooms")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_rooms"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "core_chatroom"
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        if self.is_group:
+            return f"Group: {self.name or self.id}"
+        return f"Chat Room {self.id}"
+
+    def get_display_name(self, for_user=None):
+        """Get a friendly display name for the room.
+        For 1-on-1, it's the other person's name.
+        For groups, it's the group name.
+        """
+        if self.is_group:
+            return self.name or f"Group {self.id}"
+
+        if not for_user:
+            return "Direct Chat"
+
+        # Find the other member
+        other_members = self.members.exclude(id=for_user.id)
+        if other_members.exists():
+            other = other_members.first()
+            return other.get_full_name() or other.email
+        return "Empty Chat"
+
+
+class ChatMessage(models.Model):
+    """A single message in a chat room."""
+
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_chat_messages")
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "core_chatmessage"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.sender}: {self.content[:50]}"

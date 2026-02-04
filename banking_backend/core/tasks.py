@@ -19,63 +19,67 @@ from .models import Account, FraudAlert, Loan, SystemHealth, Transaction
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+)
 def generate_daily_reports(self):
     """Generate daily financial reports and send to administrators."""
-    try:
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
 
-        # Transaction summary
-        transactions = Transaction.objects.filter(timestamp__date=yesterday, status="completed")
+    # Transaction summary
+    transactions = Transaction.objects.filter(timestamp__date=yesterday, status="completed")
 
-        total_volume = transactions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    total_volume = transactions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
-        transaction_count = transactions.count()
+    transaction_count = transactions.count()
 
-        # Account summary
-        accounts_created = Account.objects.filter(created_at__date=yesterday).count()
+    # Account summary
+    accounts_created = Account.objects.filter(created_at__date=yesterday).count()
 
-        # Loan applications
-        loans_approved = Loan.objects.filter(approved_at__date=yesterday).count()
+    # Loan applications
+    loans_approved = Loan.objects.filter(approved_at__date=yesterday).count()
 
-        # Fraud alerts
-        fraud_alerts = FraudAlert.objects.filter(created_at__date=yesterday, is_resolved=False).count()
+    # Fraud alerts
+    fraud_alerts = FraudAlert.objects.filter(created_at__date=yesterday, is_resolved=False).count()
 
-        # Generate report data
-        report_data = {
-            "date": yesterday,
-            "total_transaction_volume": total_volume,
-            "transaction_count": transaction_count,
-            "accounts_created": accounts_created,
-            "loans_approved": loans_approved,
-            "fraud_alerts": fraud_alerts,
-        }
+    # Generate report data
+    report_data = {
+        "date": yesterday,
+        "total_transaction_volume": total_volume,
+        "transaction_count": transaction_count,
+        "accounts_created": accounts_created,
+        "loans_approved": loans_approved,
+        "fraud_alerts": fraud_alerts,
+    }
 
-        # Send email report
-        subject = f"Daily Banking Report - {yesterday}"
-        message = render_to_string("reports/daily_report.html", report_data)
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [settings.ADMIN_EMAIL],
-            html_message=message,
-        )
+    # Send email report
+    subject = f"Daily Banking Report - {yesterday}"
+    message = render_to_string("reports/daily_report.html", report_data)
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [settings.ADMIN_EMAIL],
+        html_message=message,
+    )
 
-        logger.info(f"Daily report generated for {yesterday}")
-        return f"Report sent for {yesterday}"
-
-    except Exception as exc:
-        logger.error(f"Failed to generate daily report: {exc}")
-        try:
-            self.retry(countdown=60 * (2**self.request.retries))
-        except MaxRetriesException:
-            logger.critical("Max retries exceeded for daily report generation")
-            raise
+    logger.info(f"Daily report generated for {yesterday}")
+    return f"Report sent for {yesterday}"
 
 
-@shared_task(bind=True, max_retries=5, default_retry_delay=300)
+@shared_task(
+    bind=True,
+    max_retries=5,
+    default_retry_delay=300,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+)
 def analyze_fraud_patterns(self):
     """Analyze transactions for potential fraud patterns."""
     try:
@@ -300,7 +304,13 @@ def system_health_check(self):
 # ============================================================================
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=300)
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=300,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+)
 def retrain_fraud_detection_model(self):
     """Periodically retrain the ML fraud detection model.
     Run weekly to incorporate new transaction patterns.
@@ -327,8 +337,13 @@ def retrain_fraud_detection_model(self):
             raise
 
 
-@shared_task
-def analyze_transaction_for_fraud(transaction_id: int):
+@shared_task(
+    bind=True,
+    max_retries=3,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+)
+def analyze_transaction_for_fraud(self, transaction_id: int):
     """Analyze a specific transaction for fraud asynchronously.
     Creates FraudAlert if anomaly detected.
     """
@@ -382,7 +397,12 @@ def analyze_transaction_for_fraud(transaction_id: int):
         return {"error": str(exc)}
 
 
-@shared_task(bind=True, max_retries=2)
+@shared_task(
+    bind=True,
+    max_retries=2,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+)
 def batch_analyze_recent_transactions(self, hours: int = 24):
     """Batch analyze recent transactions for fraud.
     Useful for catching fraud that might have been missed.

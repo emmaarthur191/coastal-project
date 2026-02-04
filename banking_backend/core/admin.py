@@ -11,7 +11,11 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
-from .models import Account, BankingMessage, FraudAlert, Loan, Transaction
+from core.models.accounts import Account
+from core.models.fraud import FraudAlert
+from core.models.loans import Loan
+from core.models.messaging import BankingMessage
+from core.models.transactions import Transaction
 
 # =============================================================================
 # Export Utilities
@@ -106,7 +110,7 @@ class AccountAdmin(admin.ModelAdmin):
     def balance_display(self, obj):
         """Display balance with currency formatting."""
         balance = float(obj.balance) if obj.balance is not None else 0.0
-        formatted = "{:,.2f}".format(balance)
+        formatted = f"{balance:,.2f}"
         return format_html("<strong>GH₵ {}</strong>", formatted)
 
     balance_display.short_description = "Balance"
@@ -163,7 +167,7 @@ class TransactionAdmin(admin.ModelAdmin):
     def amount_display(self, obj):
         """Display amount with currency formatting."""
         amount = float(obj.amount) if obj.amount is not None else 0.0
-        formatted = "{:,.2f}".format(amount)
+        formatted = f"{amount:,.2f}"
         return format_html("GH₵ {}", formatted)
 
     amount_display.short_description = "Amount"
@@ -230,7 +234,7 @@ class LoanAdmin(admin.ModelAdmin):
 
     def amount_display(self, obj):
         amount = float(obj.amount) if obj.amount is not None else 0.0
-        formatted = "{:,.2f}".format(amount)
+        formatted = f"{amount:,.2f}"
         return format_html("GH₵ {}", formatted)
 
     amount_display.short_description = "Amount"
@@ -238,7 +242,7 @@ class LoanAdmin(admin.ModelAdmin):
 
     def outstanding_display(self, obj):
         outstanding = float(obj.outstanding_balance) if obj.outstanding_balance is not None else 0.0
-        formatted = "{:,.2f}".format(outstanding)
+        formatted = f"{outstanding:,.2f}"
         return format_html("GH₵ {}", formatted)
 
     outstanding_display.short_description = "Outstanding"

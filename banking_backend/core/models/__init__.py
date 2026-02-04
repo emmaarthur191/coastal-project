@@ -1,22 +1,57 @@
 """Core models package for Coastal Banking.
 
-This package provides backward compatibility with existing imports from core.models.
-The modular structure (accounts.py, transactions.py, etc.) is prepared for future
-gradual migration but currently all models are served from models_legacy.py.
-
-Usage:
-    from core.models import Account, Transaction  # Works as before
+This package provides access to all banking-related models through
+a modular structure.
 """
 
-# Import everything from the legacy models file for full backward compatibility
-# This ensures all existing code continues to work without changes
-# Import reliability models for the new resilience system
+# Import reliability models
+# Import domain-specific models
+from core.models.accounts import (
+    Account,
+    AccountClosureRequest,
+    AccountOpeningRequest,
+)
+from core.models.fraud import FraudAlert, FraudRule
+from core.models.hr import Expense, Payslip
+from core.models.loans import Loan
+from core.models.marketing import Product, Promotion
+from core.models.messaging import (
+    BankingMessage,
+    BlockedUser,
+    ChatMessage,
+    ChatRoom,
+    Message,
+    MessageThread,
+    OperationsMessage,
+    UserMessagePreference,
+)
+from core.models.operational import (
+    CashAdvance,
+    CashDrawer,
+    CashDrawerDenomination,
+    ClientAssignment,
+    ClientRegistration,
+    Complaint,
+    Device,
+    ServiceCharge,
+    ServiceRequest,
+    VisitSchedule,
+)
 from core.models.reliability import IdempotencyKey, SmsOutbox
-from core.models_legacy import *  # noqa: F403
+from core.models.reporting import (
+    PerformanceMetric,
+    Report,
+    ReportSchedule,
+    ReportTemplate,
+    SystemHealth,
+)
+from core.models.transactions import (
+    AccountStatement,
+    CheckDeposit,
+    Refund,
+    Transaction,
+)
 
-# Note: The modular files (accounts.py, transactions.py, etc.) contain the same
-# models but are not imported here to avoid duplicate model registration.
-# They are provided as reference for future gradual migration where:
-# 1. Models would be moved one-by-one to the new modules
-# 2. Migrations would be generated and applied
-# 3. Legacy file would be deprecated
+# Note: models_legacy.py is now deprecated.
+# Do not add new models to this package's __init__.py directly;
+# create/update the relevant module file instead.

@@ -68,6 +68,14 @@ else:
     # In production, this will raise ImproperlyConfigured if SECRET_KEY is not set
     SECRET_KEY = env("SECRET_KEY")
 
+# SECURITY: Field-level encryption key for PII (GDPR/PCI-DSS compliance)
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+if DEBUG:
+    FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="dev-only-insecure-key-32bytes!")
+else:
+    # In production, this will raise ImproperlyConfigured if not set
+    FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
+
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # Application definition
@@ -171,6 +179,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -277,11 +286,15 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    # SECURITY HARDENING (2026 Standards: NIST 800-63B, OAuth 2.1)
+    # Short-lived access tokens minimize the window for stolen token abuse
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": False,
+    # Rotation ensures a new refresh token is issued on each refresh,
+    # invalidating the old one. This detects token theft immediately.
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": False,
+    "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "VERIFYING_KEY": None,
@@ -574,3 +587,55 @@ CORS_ALLOW_HEADERS = [
 # Note: CSRF_TRUSTED_ORIGINS is configured above (lines 472-499)
 # CORS_ALLOWED_ORIGINS should sync with CSRF origins for API compatibility
 # This is handled via environment variables in production
+
+# =============================================================================
+# Security Headers (OWASP/PCI-DSS Compliance)
+# =============================================================================
+
+# HSTS - Force HTTPS for 1 year (only in production)
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# SSL/HTTPS settings (production only)
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Secure cookies
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# Prevent content type sniffing
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# XSS Protection (legacy browsers)
+SECURE_BROWSER_XSS_FILTER = True
+
+# =============================================================================
+# Content Security Policy (CSP) - XSS Protection
+# =============================================================================
+# Using django-csp 4.0+ middleware (new format)
+
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        # Allow resources only from same origin by default
+        "default-src": ("'self'",),
+        # Scripts: self + any CDNs you use
+        "script-src": ("'self'",),
+        # Styles: self + inline for DRF browsable API
+        "style-src": ("'self'", "'unsafe-inline'"),
+        # Images: self + data URIs for inline images
+        "img-src": ("'self'", "data:", "https:"),
+        # Fonts: self + Google Fonts if used
+        "font-src": ("'self'", "https://fonts.gstatic.com"),
+        # Connect: self + your API domains
+        "connect-src": ("'self'",),
+        # Frame ancestors: prevent clickjacking
+        "frame-ancestors": ("'none'",),
+        # Form actions: only submit to self
+        "form-action": ("'self'",),
+    }
+}
+# SECURITY: Broaden coverage for 2026 standards
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"

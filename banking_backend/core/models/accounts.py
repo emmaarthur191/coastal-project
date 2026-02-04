@@ -3,7 +3,6 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Sum
 
@@ -30,8 +29,8 @@ class Account(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "core_account"
         ordering = ["-created_at"]
-        # Database indexes for query optimization
         indexes = [
             models.Index(fields=["user", "-created_at"], name="account_user_created_idx"),
             models.Index(fields=["account_type", "is_active"], name="account_type_active_idx"),
@@ -43,11 +42,7 @@ class Account(models.Model):
 
     @property
     def calculated_balance(self):
-        """Calculate balance dynamically from completed transactions.
-
-        Uses Decimal.quantize() to prevent floating-point precision issues
-        following Python/Django best practices for financial calculations.
-        """
+        """Calculate balance dynamically from completed transactions."""
         # Deposits (money coming in)
         deposits = self.incoming_transactions.filter(status="completed").aggregate(total=Sum("amount"))[
             "total"
@@ -58,8 +53,6 @@ class Account(models.Model):
             "total"
         ] or Decimal("0.00")
 
-        # Calculate with proper precision: initial + deposits - withdrawals
-        # Use quantize to ensure exact 2 decimal places (banker's rounding)
         result = self.initial_balance + deposits - withdrawals
         return result.quantize(self.TWOPLACES)
 
@@ -75,8 +68,23 @@ class AccountOpeningRequest(models.Model):
     ACCOUNT_TYPES = [
         ("daily_susu", "Daily Susu"),
         ("shares", "Shares"),
-        ("member_savings", "Member Savings"),
-        ("youth_savings", "Youth Savings"),
+        ("monthly_contribution", "Monthly Contribution"),
+    ]
+
+    CARD_TYPES = [
+        ("standard", "Standard Card"),
+        ("gold", "Gold Card"),
+        ("platinum", "Platinum Card"),
+        ("none", "No Card Required"),
+    ]
+
+    ID_TYPES = [
+        ("ghana_card", "Ghana Card"),
+        ("voter_id", "Voter ID"),
+        ("passport", "Passport"),
+        ("drivers_license", "Driver's License"),
+        ("nhis_card", "NHIS Card"),
+        ("other", "Other"),
     ]
 
     STATUS_CHOICES = [
@@ -86,80 +94,82 @@ class AccountOpeningRequest(models.Model):
         ("completed", "Completed"),
     ]
 
-    ID_TYPES = [
-        ("ghana_card", "Ghana Card"),
-        ("passport", "Passport"),
-        ("voter_id", "Voter ID"),
-        ("drivers_license", "Driver's License"),
-    ]
+    # Account Details
+    account_type = models.CharField(max_length=25, choices=ACCOUNT_TYPES, default="daily_susu")
+    card_type = models.CharField(max_length=20, choices=CARD_TYPES, default="standard")
+    initial_deposit = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Initial deposit amount (optional, can be 0)",
+    )
 
-    # Customer Personal Information
+    # ID Information
+    id_type = models.CharField(max_length=20, choices=ID_TYPES, default="ghana_card")
+    id_number = models.CharField(max_length=50, blank=True)
+
+    # Personal Information
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    middle_name = models.CharField(max_length=100, blank=True)
-    date_of_birth = models.DateField(null=True, blank=True)
-    gender = models.CharField(max_length=10, blank=True)
-
-    # Contact Information
-    email = models.EmailField(blank=True, null=True)
-    phone = models.CharField(max_length=20)
-    alternate_phone = models.CharField(max_length=20, blank=True)
-
-    # Address
+    date_of_birth = models.DateField()
+    nationality = models.CharField(max_length=100, blank=True)
     address = models.TextField(blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    region = models.CharField(max_length=100, blank=True)
+    phone_number = models.CharField(max_length=20)
+    email = models.EmailField(blank=True, null=True)
 
-    # Identification
-    id_type = models.CharField(max_length=30, choices=ID_TYPES, default="ghana_card")
-    id_number = models.CharField(max_length=50, blank=True)
-    # SECURITY FIX: Validate file extensions to prevent malicious uploads
-    id_document = models.ImageField(
-        upload_to="id_documents/",
-        null=True,
-        blank=True,
-        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "pdf"])],
-    )
+    # Employment Information
+    occupation = models.CharField(max_length=255, blank=True)
+    work_address = models.TextField(blank=True)
+    position = models.CharField(max_length=255, blank=True)
 
-    # Customer Photo
-    # SECURITY FIX: Validate file extensions to prevent malicious uploads
-    customer_photo = models.ImageField(
-        upload_to="customer_photos/",
-        null=True,
-        blank=True,
-        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png"])],
-    )
+    # Location Information
+    digital_address = models.CharField(max_length=50, blank=True)
+    location = models.CharField(max_length=255, blank=True)
 
-    # Account Details
-    account_type = models.CharField(max_length=30, choices=ACCOUNT_TYPES, default="daily_susu")
-    initial_deposit = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
+    # Next of Kin Details
+    next_of_kin_data = models.JSONField(null=True, blank=True)
 
-    # Employment/Occupation
-    occupation = models.CharField(max_length=100, blank=True)
-    employer_name = models.CharField(max_length=200, blank=True)
-    employer_address = models.TextField(blank=True)
+    # Photo
+    photo = models.TextField(blank=True, null=True, help_text="Base64 encoded photo or file path")
 
-    # Next of Kin
-    next_of_kin_name = models.CharField(max_length=200, blank=True)
-    next_of_kin_phone = models.CharField(max_length=20, blank=True)
-    next_of_kin_relationship = models.CharField(max_length=50, blank=True)
+    # SECURITY: Encrypted storage for PII
+    id_number_encrypted = models.TextField(blank=True, default="")
+    phone_number_encrypted = models.TextField(blank=True, default="")
 
     # Status and Tracking
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processed_account_openings",
+    )
     submitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="submitted_account_requests",
+        related_name="submitted_account_openings",
     )
-    reviewed_by = models.ForeignKey(
+
+    # Related Account (created after approval)
+    created_account = models.ForeignKey(
+        Account, on_delete=models.SET_NULL, null=True, blank=True, related_name="opening_request"
+    )
+
+    # Credential Dispatch Tracking
+    credentials_approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="reviewed_account_requests",
+        related_name="credential_approvals",
+        help_text="Manager who approved the dispatch of login credentials",
     )
+    credentials_sent_at = models.DateTimeField(null=True, blank=True)
+
+    # Notes
     rejection_reason = models.TextField(blank=True)
     notes = models.TextField(blank=True)
 
@@ -169,12 +179,28 @@ class AccountOpeningRequest(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        db_table = "core_accountopeningrequest"
         ordering = ["-created_at"]
         verbose_name = "Account Opening Request"
         verbose_name_plural = "Account Opening Requests"
+        indexes = [
+            models.Index(fields=["status", "-created_at"], name="acc_open_status_idx"),
+            models.Index(fields=["submitted_by", "-created_at"], name="acc_open_sub_idx"),
+        ]
 
     def __str__(self):
         return f"Account Opening #{self.id} - {self.first_name} {self.last_name} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        """Override save to ensure PII is encrypted before storage."""
+        from core.utils.field_encryption import encrypt_field
+
+        if self.id_number and (not self.id_number_encrypted):
+            self.id_number_encrypted = encrypt_field(self.id_number)
+        if self.phone_number and (not self.phone_number_encrypted):
+            self.phone_number_encrypted = encrypt_field(self.phone_number)
+
+        super().save(*args, **kwargs)
 
 
 class AccountClosureRequest(models.Model):
@@ -236,6 +262,7 @@ class AccountClosureRequest(models.Model):
     closed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        db_table = "core_accountclosurerequest"
         ordering = ["-created_at"]
         verbose_name = "Account Closure Request"
         verbose_name_plural = "Account Closure Requests"

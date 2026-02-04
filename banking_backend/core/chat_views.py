@@ -139,6 +139,17 @@ class ChatRoomCreateView(APIView):
         if members.count() != len(member_ids):
             return Response({"error": "One or more users not found"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # SECURITY FIX: Restrict customer-to-customer chat initiation
+        if request.user.role == "customer":
+            from core.permissions import STAFF_ROLES
+
+            for member in members:
+                if member.role not in STAFF_ROLES and not member.is_staff:
+                    return Response(
+                        {"error": "Customers can only initiate chats with staff or banking representatives."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
         # For direct messages (non-group), check if room already exists
         if not is_group and len(member_ids) == 1:
             other_user = members.first()

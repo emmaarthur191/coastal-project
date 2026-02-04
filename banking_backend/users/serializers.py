@@ -139,3 +139,43 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("This account has been deactivated. Please contact support.")
         attrs["user"] = user
         return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for requesting a password reset.
+
+    Security: Does not reveal if email exists to prevent enumeration.
+    """
+
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        """Normalize email for lookup."""
+        return value.lower().strip()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for confirming password reset with token.
+
+    Security features:
+    - Token validation
+    - Password strength enforcement
+    - Password confirmation
+    """
+
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=8, write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return attrs
+
+    def validate_new_password(self, value):
+        from .security import validate_password_strength
+
+        is_valid, errors = validate_password_strength(value)
+        if not is_valid:
+            raise serializers.ValidationError(errors)
+        return value

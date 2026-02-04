@@ -24,23 +24,18 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import (
-    Account,
-    AccountStatement,
-    Loan,
-    Payslip,
-    Report,
-    ReportSchedule,
-    ReportTemplate,
-    Transaction,
-)
+from core.models.accounts import Account
+from core.models.hr import Payslip
+from core.models.loans import Loan
+from core.models.reporting import Report, ReportSchedule, ReportTemplate
+from core.models.transactions import AccountStatement, Transaction
 from core.permissions import IsStaff
-from core.serializers import (
-    AccountStatementSerializer,
+from core.serializers.reporting import (
     ReportScheduleSerializer,
     ReportSerializer,
     ReportTemplateSerializer,
 )
+from core.serializers.transactions import AccountStatementSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +180,8 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
     @action(detail=False, methods=["post"])
     def generate(self, request):
         """Generate a report from a template."""
-        from core.models import Account, ReportTemplate
+        from core.models.accounts import Account
+        from core.models.reporting import ReportTemplate
         from core.pdf_services import generate_generic_report_pdf
 
         template_id = request.data.get("template_id")
@@ -436,7 +432,7 @@ class GeneratePayslipView(APIView):
         """Generate a payslip for a specified staff member."""
         from django.contrib.auth import get_user_model
 
-        from core.models import Payslip
+        from core.models.hr import Payslip
         from core.pdf_services import generate_payslip_pdf
 
         User = get_user_model()
@@ -528,7 +524,8 @@ class GenerateStatementView(APIView):
         """Handle manual account statement generation requests for staff."""
         from django.db import models
 
-        from core.models import Account, AccountStatement
+        from core.models.accounts import Account
+        from core.models.transactions import AccountStatement
         from core.pdf_services import generate_statement_pdf
 
         account_number = request.data.get("account_number")
@@ -588,7 +585,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
     def get_queryset(self):
         """Filter payslips based on role; staff see their own, managers see all."""
-        from core.models import Payslip
+        from core.models.hr import Payslip
 
         if self.request.user.role in ["manager", "admin", "superuser"]:
             return Payslip.objects.all()
@@ -596,7 +593,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
 
     def get_serializer_class(self):
         """Return the serializer for staff payslips."""
-        from core.serializers import PayslipSerializer
+        from core.serializers.hr import PayslipSerializer
 
         return PayslipSerializer
 
@@ -753,7 +750,7 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
         """Download statement PDF."""
         from django.http import FileResponse
 
-        from core.models import AccountStatement
+        from core.models.transactions import AccountStatement
 
         try:
             statement = AccountStatement.objects.get(pk=pk)

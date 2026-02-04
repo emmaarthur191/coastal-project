@@ -11,6 +11,8 @@ from .views import (
     LogoutView,
     MemberDashboardView,
     MembersListView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     SendOTPView,
     SessionTerminateView,
     StaffIdsView,
@@ -31,6 +33,9 @@ urlpatterns = [
     path("auth/check/", AuthCheckView.as_view(), name="auth-check"),
     path("auth/refresh/", CookieTokenRefreshView.as_view(), name="token-refresh"),
     path("auth/login-attempts/", LoginAttemptsView.as_view(), name="login-attempts"),
+    # Password Reset (NIST 800-63B compliant)
+    path("auth/password-reset/", PasswordResetRequestView.as_view(), name="password-reset-request"),
+    path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     path("me/", UserDetailView.as_view(), name="user-detail"),
     path("list/", UserListView.as_view(), name="user-list"),
     path("members/", MembersListView.as_view(), name="members-list"),

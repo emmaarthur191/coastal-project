@@ -19,10 +19,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from core.exceptions import BankingException, InsufficientFundsError, InvalidTransactionError
 from core.mixins import IdempotencyMixin
-from core.models import Account, Transaction
+from core.models.accounts import Account
+from core.models.transactions import Transaction
 from core.permissions import IsCustomer, IsStaff
-from core.serializers import TransactionSerializer
-from core.services import AccountService, TransactionService
+from core.serializers.transactions import TransactionSerializer
+from core.services.accounts import AccountService
+from core.services.transactions import TransactionService
 
 logger = logging.getLogger(__name__)
 
@@ -179,9 +181,16 @@ class TransactionViewSet(
 
         return Response({"count": len(data), "results": data})
 
-    @action(detail=False, methods=["post"], permission_classes=[IsStaff])
+    @action(detail=False, methods=["post"])
     def process(self, request):
         """Process a deposit or withdrawal from cashier dashboard."""
+        # Frontline staff check
+        if not (request.user.role in ["cashier", "teller", "mobile_banker"] or request.user.is_superuser):
+            return Response(
+                {"status": "error", "message": "Only frontline staff can process transactions manually."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         from users.models import User
 
         # Get and validate inputs

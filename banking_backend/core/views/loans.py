@@ -15,10 +15,10 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.models import Loan
-from core.permissions import STAFF_ROLES, IsCustomer, IsStaff
-from core.serializers import LoanSerializer
-from core.services import LoanService
+from core.models.loans import Loan
+from core.permissions import STAFF_ROLES, IsCustomer, IsManagerOrAdmin, IsStaff
+from core.serializers.loans import LoanSerializer
+from core.services.loans import LoanService
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,23 @@ class LoanViewSet(
     ordering_fields = ["created_at", "amount"]
     ordering = ["-created_at"]
 
+    def get_object(self):
+        """Enforce amount-based role restrictions on detail view access."""
+        obj = super().get_object()
+        user = self.request.user
+
+        if user.is_staff and not user.is_superuser:
+            if user.role == "operations_manager" and obj.amount >= 1000:
+                raise PermissionDenied(
+                    detail="Operations Managers cannot access loans >= 1000 GHS. Escalate to Manager."
+                )
+            if user.role == "manager" and obj.amount < 1000:
+                # Optional: Strict separation - Managers only see large loans?
+                # Usually managers see everything, but following the "pending" list logic:
+                pass
+
+        return obj
+
     def get_queryset(self):
         """Filter loans so customers only see their own applications."""
         user = self.request.user
@@ -42,8 +59,10 @@ class LoanViewSet(
 
     def get_permissions(self):
         """Map loan-related actions to their required permission classes."""
-        if self.action in ["update", "partial_update", "approve", "pending"]:
+        if self.action in ["update", "partial_update", "pending"]:
             return [IsStaff()]
+        if self.action == "approve":
+            return [IsManagerOrAdmin()]
         if self.action == "create":
             from core.permissions import IsStaffOrCustomer
 
@@ -64,14 +83,20 @@ class LoanViewSet(
 
                 # SECURITY FIX (CVE-COASTAL-04): Verify staff has authority over this customer
                 # Mobile bankers can only create loans for their assigned clients
-                if self.request.user.role == "mobile_banker":
-                    from core.models_legacy import ClientAssignment
+                # Regular staff (cashier, etc.) cannot create loans directly without manager oversight
+                if self.request.user.role not in ["manager", "operations_manager", "admin"]:
+                    if self.request.user.role == "mobile_banker":
+                        from core.models.operational import ClientAssignment
 
-                    is_assigned = ClientAssignment.objects.filter(
-                        mobile_banker=self.request.user, client=applicant, is_active=True
-                    ).exists()
-                    if not is_assigned:
-                        raise serializers.ValidationError({"user": "You are not assigned to this customer."})
+                        is_assigned = ClientAssignment.objects.filter(
+                            mobile_banker=self.request.user, client=applicant, is_active=True
+                        ).exists()
+                        if not is_assigned:
+                            raise serializers.ValidationError({"user": "You are not assigned to this customer."})
+                    else:
+                        raise PermissionDenied(
+                            "Only Managers or Mobile Bankers can initiate loan applications for customers."
+                        )
 
                 serializer.save(user=applicant)
             except User.DoesNotExist:

@@ -7,18 +7,9 @@ from django.db import connection, migrations, models
 
 
 def table_exists(table_name):
-    """Check if a table exists in the database."""
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables
-                WHERE table_name = %s
-            )
-            """,
-            [table_name],
-        )
-        return cursor.fetchone()[0]
+    """Check if a table exists in the database (cross-database compatible)."""
+    from django.db import connection
+    return table_name in connection.introspection.table_names()
 
 
 def create_models_if_not_exist(apps, schema_editor):
