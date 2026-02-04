@@ -54,7 +54,7 @@ jobs:
         DEBUG: 'true'
         SECRET_KEY: test-secret-key-for-ci
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-        FIELD_ENCRYPTION_KEY: test-ci-encryption-key-32bytes!!
+        FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
 
     - name: Run tests with coverage
       run: |
@@ -65,7 +65,7 @@ jobs:
         SECRET_KEY: test-secret-key-for-ci
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         REDIS_URL: redis://localhost:6379/1
-        FIELD_ENCRYPTION_KEY: test-ci-encryption-key-32bytes!!
+        FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
 
     - name: Upload coverage to Codecov
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
