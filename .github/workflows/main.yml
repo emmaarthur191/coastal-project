@@ -51,17 +51,21 @@ jobs:
         cd banking_backend
         python manage.py migrate
       env:
+        DEBUG: 'true'
         SECRET_KEY: test-secret-key-for-ci
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        FIELD_ENCRYPTION_KEY: test-ci-encryption-key-32bytes!!
 
     - name: Run tests with coverage
       run: |
         cd banking_backend
         python -m pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=50
       env:
+        DEBUG: 'true'
         SECRET_KEY: test-secret-key-for-ci
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         REDIS_URL: redis://localhost:6379/1
+        FIELD_ENCRYPTION_KEY: test-ci-encryption-key-32bytes!!
 
     - name: Upload coverage to Codecov
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
