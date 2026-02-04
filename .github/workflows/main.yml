@@ -15,6 +15,8 @@ jobs:
         image: postgres:13
         env:
           POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -23,6 +25,8 @@ jobs:
 
       redis:
         image: redis:6
+        ports:
+          - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -60,10 +64,10 @@ jobs:
         REDIS_URL: redis://localhost:6379/1
 
     - name: Upload coverage to Codecov
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       uses: codecov/codecov-action@v4
       with:
         files: ./banking_backend/coverage.xml
         fail_ci_if_error: false
         verbose: true
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        token: ${{ secrets.CODECOV_TOKEN }}

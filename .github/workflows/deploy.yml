@@ -53,7 +53,7 @@ jobs:
     name: Trigger Render Deploy
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && always()
+    if: github.ref == 'refs/heads/main' && success()
     steps:
     - name: Trigger Deploy Hook
       run: |
