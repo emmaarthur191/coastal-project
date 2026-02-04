@@ -11,15 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # NOTE: initial_balance was already added in 0020, so we skip it here
-        migrations.AddField(
-            model_name="accountopeningrequest",
-            name="initial_deposit",
-            field=models.DecimalField(
-                decimal_places=2,
-                default=Decimal("0.00"),
-                help_text="Initial deposit amount (optional, can be 0)",
-                max_digits=15,
-            ),
-        ),
+        # NOTE: This migration is now a no-op because both fields were already added:
+        # - initial_balance was added in migration 0020
+        # - initial_deposit was added in migration 0022
     ]
