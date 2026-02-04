@@ -389,9 +389,11 @@ class AccountOpeningViewSet(
         if not phone:
             return
 
+        # Include email in the message so customer knows they can login with it
+        email_note = f" (or your email: {opening_request.email})" if opening_request.email else ""
         message = (
             f"Dear {opening_request.first_name}, your login credentials for Coastal CU are ready. "
-            f"Username: {username} "
+            f"Username: {username}{email_note} "
             f"Temporary Password: {password} "
             f"Please change your password upon first login."
         )

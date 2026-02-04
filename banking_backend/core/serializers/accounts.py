@@ -88,6 +88,12 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Phone number is required.")
         return value
 
+    def validate_email(self, value):
+        """Validate that email is provided for customer login credentials."""
+        if not value:
+            raise serializers.ValidationError("Customer email is required for login credentials.")
+        return value
+
     def to_representation(self, instance):
         """Apply PII masking to sensitive fields in API responses."""
         from core.utils import mask_date_of_birth, mask_id_number, mask_phone_number

@@ -115,7 +115,7 @@ class AccountOpeningRequest(models.Model):
     nationality = models.CharField(max_length=100, blank=True)
     address = models.TextField(blank=True)
     phone_number = models.CharField(max_length=20)
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(default="", help_text="Customer email for login credentials")
 
     # Employment Information
     occupation = models.CharField(max_length=255, blank=True)
