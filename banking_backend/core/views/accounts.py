@@ -209,17 +209,17 @@ class AccountOpeningViewSet(
     filterset_fields = ["status", "account_type"]
     ordering_fields = ["created_at", "status"]
     ordering = ["-created_at"]
+    throttle_scope = ""
 
-    @property
-    def throttle_scope(self):
-        """Standard DRF ScopedRateThrottle looks for this attribute.
-        Since we have different scopes for different actions, we use a property.
+    def get_throttles(self):
+        """Standard DRF ScopedRateThrottle looks for view.throttle_scope.
+        Since we have different scopes for different actions, we set it here.
         """
         if self.action == "send_otp":
-            return "otp_request"
-        if self.action == "verify_and_submit":
-            return "otp_verify"
-        return None
+            self.throttle_scope = "otp_request"
+        elif self.action == "verify_and_submit":
+            self.throttle_scope = "otp_verify"
+        return super().get_throttles()
 
     def get_permissions(self):
         """Override permissions based on action - only managers/admins can approve/reject."""

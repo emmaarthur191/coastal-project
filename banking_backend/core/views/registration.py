@@ -25,15 +25,15 @@ class ClientRegistrationViewSet(GenericViewSet):
     permission_classes = [IsStaff]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = None  # No model backing this ViewSet
+    throttle_scope = ""
 
-    @property
-    def throttle_scope(self):
-        """Standard DRF ScopedRateThrottle looks for this attribute."""
+    def get_throttles(self):
+        """Standard DRF ScopedRateThrottle looks for view.throttle_scope."""
         if self.action == "send_otp":
-            return "otp_request"
-        if self.action == "verify_otp":
-            return "otp_verify"
-        return None
+            self.throttle_scope = "otp_request"
+        elif self.action == "verify_otp":
+            self.throttle_scope = "otp_verify"
+        return super().get_throttles()
 
     @action(detail=False, methods=["post"], url_path="submit-registration")
     def submit_registration(self, request):
