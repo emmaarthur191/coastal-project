@@ -471,9 +471,20 @@ def sync_missing_columns():
     # Users
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
-    # Encrypted PII columns (GDPR/PCI-DSS compliance)
+    # PII Encryption (GDPR/Compliance)
     add_column_if_not_exists("users_user", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "ssnit_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "staff_id_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    # PII Search Hashes (Zero-Plaintext)
+    add_column_if_not_exists("users_user", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "ssnit_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "staff_id_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "first_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "last_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
 
     # Accounts & Registration
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
@@ -481,9 +492,23 @@ def sync_missing_columns():
     add_column_if_not_exists("core_accountopeningrequest", "digital_address", "VARCHAR(100) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "occupation", "VARCHAR(255) NULL")
     add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_data", "JSONB DEFAULT '{}' NOT NULL")
-    # Encrypted PII columns for AccountOpeningRequest
+    # AccountOpeningRequest Encrypted PII
     add_column_if_not_exists("core_accountopeningrequest", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("core_accountopeningrequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "digital_address_encrypted_val", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "photo_encrypted", "TEXT DEFAULT ''")
+    # AccountOpeningRequest PII Hashes
+    add_column_if_not_exists("core_accountopeningrequest", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
 
     # Loans
     add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
