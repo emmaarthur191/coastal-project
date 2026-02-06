@@ -78,7 +78,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_bankingmessage" (
             "id" BIGSERIAL PRIMARY KEY,
             "subject" VARCHAR(255) NOT NULL,
-            "body" TEXT NOT NULL,
+            "body_encrypted" TEXT NOT NULL DEFAULT '',
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
             "read_at" TIMESTAMP WITH TIME ZONE NULL,
             "thread_id" VARCHAR(100) NULL,
@@ -513,6 +513,111 @@ def sync_missing_columns():
     # Loans
     add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
     add_column_if_not_exists("core_loan", "monthly_income", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
+
+    # Banking & Operations Messages
+    add_column_if_not_exists("core_bankingmessage", "body_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("operations_message", "message_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_chatmessage", "content_encrypted", "TEXT DEFAULT '' NOT NULL")
+
+    # Visits & Assignments
+    add_column_if_not_exists("visit_schedule", "client_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("visit_schedule", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_assignment", "client_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_assignment", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+
+    # Client Registration (Exhaustive PII)
+    add_column_if_not_exists("client_registration", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "digital_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("client_registration", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
+
+    # SMS Reliability
+    add_column_if_not_exists("sms_outbox", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("sms_outbox", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+
+    # Loans Intensive PII
+    add_column_if_not_exists("core_loan", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "digital_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_1_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_1_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_1_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_2_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_2_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "next_of_kin_2_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_1_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "guarantor_2_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_loan", "approved_at", "TIMESTAMP WITH TIME ZONE NULL")
+
+    # Maker-Checker & Processing (Transactions, Checks, Refunds)
+    add_column_if_not_exists("core_transaction", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists(
+        "core_transaction", "approved_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+    )
+    add_column_if_not_exists("core_transaction", "approval_date", "TIMESTAMP WITH TIME ZONE NULL")
+
+    add_column_if_not_exists(
+        "core_checkdeposit", "submitted_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+    )
+    add_column_if_not_exists(
+        "core_checkdeposit", "processed_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+    )
+    add_column_if_not_exists("core_checkdeposit", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("core_checkdeposit", "cleared_at", "TIMESTAMP WITH TIME ZONE NULL")
+
+    add_column_if_not_exists(
+        "core_refund", "processed_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+    )
+    add_column_if_not_exists("core_refund", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
+
+    add_column_if_not_exists(
+        "core_accountstatement", "requested_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE'
+    )
+    add_column_if_not_exists("core_accountstatement", "transaction_count", "INTEGER DEFAULT 0 NOT NULL")
+    add_column_if_not_exists("core_accountstatement", "opening_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("core_accountstatement", "closing_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("core_accountstatement", "generated_at", "TIMESTAMP WITH TIME ZONE NULL")
+
+    # Account Requests PII
+    add_column_if_not_exists("core_accountopeningrequest", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "digital_address_encrypted_val", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "photo_encrypted", "TEXT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_accountopeningrequest", "credentials_sent_at", "TIMESTAMP WITH TIME ZONE NULL")
+
+    add_column_if_not_exists("core_accountclosurerequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+
+    # Fraud & Audit
+    add_column_if_not_exists("core_fraudalert", "resolved_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     print("  Column sync complete!\n")
 
