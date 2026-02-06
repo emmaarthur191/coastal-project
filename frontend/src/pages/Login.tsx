@@ -145,12 +145,8 @@ function LoginPage() {
       if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
 
-        // Store remember me preference
-        if (formData.rememberMe) {
-          localStorage.setItem('rememberedEmail', formData.email);
-        } else {
-          localStorage.removeItem('rememberedEmail');
-        }
+        // Remember me preference disabled to prevent PII leaks in localStorage
+        // In a future phase, we will implement secure encrypted storage
 
         // Calculate route directly from login response user data (not async state)
         const userRole = result.user?.role;
@@ -190,12 +186,9 @@ function LoginPage() {
     setFormErrors(prev => ({ ...prev, [fieldName]: undefined }));
   };
 
-  // Load remembered email on mount
+  // Remembered email load removed to prevent PII leaks
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    if (rememberedEmail) {
-      setFormData(prev => ({ ...prev, email: rememberedEmail, rememberMe: true }));
-    }
+    // This hook is now a no-op until secure storage is implemented
   }, []);
 
   // Pre-fill email from URL params if available
@@ -214,8 +207,9 @@ function LoginPage() {
     let strength = 0;
 
     // Basic checks for visual feedback
-    if (password.length >= 8) strength += 25;
-    if (password.length > 12) strength += 15;
+    // Updated to align with 2026 12-character security threshold
+    if (password.length >= 10) strength += 20;
+    if (password.length >= 12) strength += 20;
     if (/[A-Z]/.test(password)) strength += 20;
     if (/[a-z]/.test(password)) strength += 15;
     if (/[0-9]/.test(password)) strength += 15;

@@ -1,6 +1,7 @@
 import React from 'react';
 import GlassCard from '../ui/modern/GlassCard';
 import ModernStatCard from '../ui/modern/ModernStatCard';
+import { authService } from '../../services/api';
 
 interface Metric {
   label: string;
@@ -19,9 +20,10 @@ interface DashboardData {
 interface OverviewSectionProps {
   dashboardData: DashboardData | null;
   onReviewAccountOpening?: () => void;
+  onRefreshDashboard?: () => void;
 }
 
-const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onReviewAccountOpening }) => {
+const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onReviewAccountOpening, onRefreshDashboard }) => {
   return (
     <div className="flex flex-col gap-6">
       {/* Metrics Row */}
@@ -109,8 +111,10 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
             {dashboardData?.pending_approvals?.map((item, idx) => (
               <div key={idx} className="group flex items-start p-3 bg-white/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-amber-100 dark:hover:border-amber-900/30 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer">
 
-                <div className={`p-2.5 rounded-lg mr-4 ${item.type === 'Loan Application' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
-                  <span className="text-lg">{item.type === 'Loan Application' ? '💰' : '👤'}</span>
+                <div className={`p-2.5 rounded-lg mr-4 ${item.type === 'Loan Application' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : (item.type === 'High-Value Transaction' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400')}`}>
+                  <span className="text-lg">
+                    {item.type === 'Loan Application' ? '💰' : (item.type === 'High-Value Transaction' ? '💸' : '👤')}
+                  </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -123,13 +127,53 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{item.description}</p>
                 </div>
 
-                <div className="ml-2 flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => onReviewAccountOpening?.()}
-                    className="text-xs bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 hover:bg-slate-50 text-slate-600 dark:text-white px-2 py-1 rounded shadow-sm"
-                  >
-                    Review
-                  </button>
+                <div className="ml-2 flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+                  {item.type === 'High-Value Transaction' ? (
+                    <>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Approve this transaction of ${item.description}?`)) {
+                            const res = await authService.approveTransaction(item.id);
+                            if (res.success) {
+                              alert('Transaction approved successfully!');
+                              onRefreshDashboard?.();
+                            } else {
+                              alert(`Failed to approve: ${res.error}`);
+                            }
+                          }
+                        }}
+                        className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded shadow-sm"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const reason = window.prompt('Enter rejection reason:', 'Insufficient verification');
+                          if (reason !== null) {
+                            const res = await authService.rejectTransaction(item.id, reason);
+                            if (res.success) {
+                              alert('Transaction rejected.');
+                              onRefreshDashboard?.();
+                            } else {
+                              alert(`Failed to reject: ${res.error}`);
+                            }
+                          }
+                        }}
+                        className="text-xs bg-rose-500 hover:bg-rose-600 text-white px-2 py-1 rounded shadow-sm"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => onReviewAccountOpening?.()}
+                      className="text-xs bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 hover:bg-slate-50 text-slate-600 dark:text-white px-2 py-1 rounded shadow-sm"
+                    >
+                      Review
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

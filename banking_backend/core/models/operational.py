@@ -275,8 +275,29 @@ class VisitSchedule(models.Model):
     mobile_banker = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="visit_schedules"
     )
-    client_name = models.CharField(max_length=255)
-    location = models.CharField(max_length=255)
+    client_name_encrypted = models.TextField(blank=True, default="")
+    location_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def client_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.client_name_encrypted)
+
+    @client_name.setter
+    def client_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.client_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def location(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.location_encrypted)
+
+    @location.setter
+    def location(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.location_encrypted = encrypt_field(value) if value else ""
+
     scheduled_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="scheduled")
     notes = models.TextField(blank=True)
@@ -318,8 +339,28 @@ class ClientAssignment(models.Model):
         limit_choices_to={"role": "mobile_banker"},
     )
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assigned_to_bankers")
-    client_name = models.CharField(max_length=200, blank=True)
-    location = models.CharField(max_length=255, blank=True)
+    client_name_encrypted = models.TextField(blank=True, default="")
+    location_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def client_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.client_name_encrypted)
+
+    @client_name.setter
+    def client_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.client_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def location(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.location_encrypted)
+
+    @location.setter
+    def location(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.location_encrypted = encrypt_field(value) if value else ""
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="pending")
     amount_due = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     next_visit = models.DateTimeField(null=True, blank=True)
@@ -375,20 +416,170 @@ class ClientRegistration(models.Model):
         on_delete=models.CASCADE,
         related_name="submitted_registrations",
     )
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    date_of_birth = models.DateField(null=True, blank=True)
+    first_name_encrypted = models.TextField(blank=True, default="")
+    last_name_encrypted = models.TextField(blank=True, default="")
+    date_of_birth_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def first_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.first_name_encrypted)
+
+    @first_name.setter
+    def first_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.first_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def last_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.last_name_encrypted)
+
+    @last_name.setter
+    def last_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.last_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def date_of_birth(self):
+        from datetime import datetime
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.date_of_birth_encrypted)
+        if val:
+            try:
+                if isinstance(val, (datetime,)):
+                    return val.date()
+                return datetime.strptime(val, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                return None
+        return None
+
+    @date_of_birth.setter
+    def date_of_birth(self, value):
+        from core.utils.field_encryption import encrypt_field
+        if value:
+            str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
+            self.date_of_birth_encrypted = encrypt_field(str_val)
+        else:
+            self.date_of_birth_encrypted = ""
+
     email = models.EmailField(blank=True)
-    phone_number = models.CharField(max_length=20)
     id_type = models.CharField(max_length=20, choices=ID_TYPE_CHOICES, default="ghana_card")
-    id_number = models.CharField(max_length=50, blank=True)
-    occupation = models.CharField(max_length=100, blank=True)
-    work_address = models.TextField(blank=True)
-    position = models.CharField(max_length=100, blank=True)
+
+    # SECURITY: Encrypted storage for PII (Ghana DPA compliance)
+    id_number_encrypted = models.TextField(blank=True, default="")
+    phone_number_encrypted = models.TextField(blank=True, default="")
+
+    # SECURITY: Searchable hashes for PII (Zero-Plaintext compliance)
+    id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    phone_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    @property
+    def id_number(self):
+        """Decrypt and return the ID number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.id_number_encrypted)
+
+    @id_number.setter
+    def id_number(self, value):
+        """Encrypt and set the ID number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.id_number_encrypted = encrypt_field(value) if value else ""
+        self.id_number_hash = hash_field(value) if value else ""
+
+    @property
+    def phone_number(self):
+        """Decrypt and return the phone number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.phone_number_encrypted)
+
+    @phone_number.setter
+    def phone_number(self, value):
+        """Encrypt and set the phone number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.phone_number_encrypted = encrypt_field(value) if value else ""
+        self.phone_number_hash = hash_field(value) if value else ""
+
+    occupation_encrypted = models.TextField(blank=True, default="")
+    work_address_encrypted = models.TextField(blank=True, default="")
+    position_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def occupation(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.occupation_encrypted)
+
+    @occupation.setter
+    def occupation(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.occupation_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def work_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.work_address_encrypted)
+
+    @work_address.setter
+    def work_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.work_address_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def position(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.position_encrypted)
+
+    @position.setter
+    def position(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.position_encrypted = encrypt_field(value) if value else ""
+
     account_type = models.CharField(max_length=25, choices=ACCOUNT_TYPE_CHOICES, default="daily_susu")
-    digital_address = models.CharField(max_length=50, blank=True)
-    location = models.CharField(max_length=255, blank=True)
-    next_of_kin_data = models.JSONField(null=True, blank=True)
+    digital_address_encrypted = models.TextField(blank=True, default="")
+    location_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def digital_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.digital_address_encrypted)
+
+    @digital_address.setter
+    def digital_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.digital_address_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def location(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.location_encrypted)
+
+    @location.setter
+    def location(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.location_encrypted = encrypt_field(value) if value else ""
+
+    next_of_kin_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def next_of_kin_data(self):
+        import json
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.next_of_kin_encrypted)
+        if val:
+            try:
+                return json.loads(val)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return None
+
+    @next_of_kin_data.setter
+    def next_of_kin_data(self, value):
+        import json
+        from core.utils.field_encryption import encrypt_field
+        if value:
+            self.next_of_kin_encrypted = encrypt_field(json.dumps(value))
+        else:
+            self.next_of_kin_encrypted = ""
     id_document = models.FileField(upload_to="registration/ids/", null=True, blank=True)
     passport_picture = models.ImageField(upload_to="registration/passports/", null=True, blank=True)
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default="pending_verification")

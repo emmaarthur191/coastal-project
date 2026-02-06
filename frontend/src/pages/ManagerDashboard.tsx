@@ -242,7 +242,7 @@ function ManagerDashboard() {
   // --- RENDER CONTENT ---
   const renderContent = () => {
     switch (activeView) {
-      case 'overview': return <OverviewSection dashboardData={dashboardData} onReviewAccountOpening={handleReviewAccountOpening} />;
+      case 'overview': return <OverviewSection dashboardData={dashboardData} onReviewAccountOpening={handleReviewAccountOpening} onRefreshDashboard={fetchDashboardData} />;
       case 'accounts': return <AccountsTab />;
       case 'account-openings': return <AccountOpeningsSection onRefreshDashboard={fetchDashboardData} />;
       case 'messaging': return (

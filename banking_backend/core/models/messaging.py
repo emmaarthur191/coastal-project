@@ -14,7 +14,20 @@ class BankingMessage(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="banking_messages")
     subject = models.CharField(max_length=255)
-    body = models.TextField()
+    body_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def body(self):
+        """Decrypt and return the message body."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.body_encrypted)
+
+    @body.setter
+    def body(self, value):
+        """Encrypt and set the message body."""
+        from core.utils.field_encryption import encrypt_field
+        self.body_encrypted = encrypt_field(value) if value else ""
+
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
     thread_id = models.CharField(max_length=100, blank=True, null=True)
@@ -198,7 +211,20 @@ class OperationsMessage(models.Model):
         settings.AUTH_USER_MODEL, related_name="received_ops_messages", on_delete=models.CASCADE, null=True, blank=True
     )
     title = models.CharField(max_length=255)
-    message = models.TextField()
+    message_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def message(self):
+        """Decrypt and return the operations message."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.message_encrypted)
+
+    @message.setter
+    def message(self, value):
+        """Encrypt and set the operations message."""
+        from core.utils.field_encryption import encrypt_field
+        self.message_encrypted = encrypt_field(value) if value else ""
+
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default="medium")
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -256,7 +282,20 @@ class ChatMessage(models.Model):
 
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_chat_messages")
-    content = models.TextField()
+    content_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def content(self):
+        """Decrypt and return the chat message content."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.content_encrypted)
+
+    @content.setter
+    def content(self, value):
+        """Encrypt and set the chat message content."""
+        from core.utils.field_encryption import encrypt_field
+        self.content_encrypted = encrypt_field(value) if value else ""
+
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

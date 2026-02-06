@@ -21,7 +21,7 @@ from core.exceptions import BankingException, InsufficientFundsError, InvalidTra
 from core.mixins import IdempotencyMixin
 from core.models.accounts import Account
 from core.models.transactions import Transaction
-from core.permissions import IsCustomer, IsStaff
+from core.permissions import IsCustomer, IsStaff, IsManagerOrAdmin
 from core.serializers.transactions import TransactionSerializer
 from core.services.accounts import AccountService
 from core.services.transactions import TransactionService
@@ -279,3 +279,26 @@ class TransactionViewSet(
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
+    def approve(self, request, pk=None):
+        """Approve a transaction (Maker-Checker Phase 2)."""
+        try:
+            tx = TransactionService.approve_transaction(pk, request.user)
+            return Response({"status": "success", "message": "Transaction approved.", "transaction_id": tx.id})
+        except (InvalidTransactionError, BankingException) as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception(f"Approval failed: {e}")
+            return Response({"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
+    def reject(self, request, pk=None):
+        """Reject a transaction (Maker-Checker Phase 2)."""
+        reason = request.data.get("reason", "N/A")
+        try:
+            tx = TransactionService.reject_transaction(pk, request.user, reason)
+            return Response({"status": "success", "message": "Transaction rejected.", "transaction_id": tx.id})
+        except Exception as e:
+            logger.exception(f"Rejection failed: {e}")
+            return Response({"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

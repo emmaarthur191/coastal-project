@@ -963,7 +963,9 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
             // Refresh successful, retry the request with the SAME idempotency key
             return apiCall(method, url, data, config, retryCount, effectiveIdempotencyKey);
           } else {
-            // Refresh failed, don't retry
+            // Refresh failed, dispatch logout event to clear auth state
+            // This prevents infinite loops and ensures the UI reflects the logged-out state
+            window.dispatchEvent(new Event('auth:logout'));
             throw apiError;
           }
         }
@@ -1085,6 +1087,9 @@ function sanitizeErrorMessage(message: unknown): string {
     /database/i,
     /sql/i,
     /connection/i,
+    /id_number/i,
+    /phone_number/i,
+    /phone/i,
   ];
 
   // Ensure message is a string to prevent TypeError when calling replace()
@@ -1439,6 +1444,24 @@ export const apiService = {
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async approveTransaction(transactionId: string | number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await api.post<{ status: string }>(`transactions/${transactionId}/approve/`, {});
+      return { success: response.data.status === 'success' };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
+    }
+  },
+
+  async rejectTransaction(transactionId: string | number, reason: string = 'Rejected by Manager'): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await api.post<{ status: string }>(`transactions/${transactionId}/reject/`, { reason });
+      return { success: response.data.status === 'success' };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 

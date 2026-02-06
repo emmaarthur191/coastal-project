@@ -6,5 +6,4 @@ class CoreConfig(AppConfig):
     name = "core"
 
     def ready(self):
-        import core.signals  # noqa
         import core.audit_signals  # noqa - Enable audit logging

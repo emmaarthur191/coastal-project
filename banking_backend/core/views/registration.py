@@ -227,6 +227,7 @@ class MemberViewSet(mixins.ListModelMixin, GenericViewSet):
         """Return a listed summary of registered members for staff viewing."""
         from django.db.models import Q
 
+        from core.utils.field_encryption import hash_field
         from users.models import User
 
         queryset = User.objects.filter(role="customer")
@@ -234,22 +235,27 @@ class MemberViewSet(mixins.ListModelMixin, GenericViewSet):
         # Apply search filter
         search = request.query_params.get("search", "")
         if search:
+            # Generate stable hash for exact matching on sensitive fields
+            search_hash = hash_field(search)
+
             queryset = queryset.filter(
                 Q(first_name__icontains=search)
                 | Q(last_name__icontains=search)
                 | Q(email__icontains=search)
-                | Q(id_number__icontains=search)
+                | Q(id_number_hash=search_hash)
+                | Q(phone_number_hash=search_hash)
             )
 
-        members = queryset.values("id", "email", "first_name", "last_name", "id_number")[:50]
+        # Pull objects to allow property-based PII decryption in loop
+        members = queryset.only("id", "email", "first_name", "last_name", "id_number_encrypted")[:50]
         return Response(
             {
                 "results": [
                     {
-                        "id": m["id"],
-                        "name": f"{m['first_name']} {m['last_name']}",
-                        "email": m["email"],
-                        "id_number": m["id_number"],
+                        "id": m.id,
+                        "name": f"{m.first_name} {m.last_name}",
+                        "email": m.email,
+                        "id_number": m.id_number,
                     }
                     for m in members
                 ]

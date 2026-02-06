@@ -12,7 +12,23 @@ class SmsOutbox(models.Model):
         ("failed", "Failed"),
     ]
 
-    phone_number = models.CharField(max_length=20)
+    # SECURITY: Encrypted storage for PII (Zero-Plaintext compliance)
+    phone_number_encrypted = models.TextField(blank=True, default="")
+    phone_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    @property
+    def phone_number(self):
+        """Decrypt and return the phone number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.phone_number_encrypted)
+
+    @phone_number.setter
+    def phone_number(self, value):
+        """Encrypt and set the phone number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.phone_number_encrypted = encrypt_field(value) if value else ""
+        self.phone_number_hash = hash_field(value) if value else ""
+
     message = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     error_message = models.TextField(blank=True, null=True)

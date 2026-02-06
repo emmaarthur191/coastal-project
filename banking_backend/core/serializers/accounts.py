@@ -95,16 +95,43 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
         return value
 
     def to_representation(self, instance):
-        """Apply PII masking to sensitive fields in API responses."""
-        from core.utils import mask_date_of_birth, mask_id_number, mask_phone_number
+        """Apply PII masking to sensitive fields in API responses based on user role."""
+        from core.utils.pii_masking import (
+            mask_date_of_birth,
+            mask_generic,
+            mask_id_number,
+            mask_phone_number,
+        )
 
         data = super().to_representation(instance)
-        # Mask ID number
-        data["id_number"] = mask_id_number(data.get("id_number"))
-        # Mask phone number
-        data["phone_number"] = mask_phone_number(data.get("phone_number"))
-        # Mask date of birth
-        data["date_of_birth"] = mask_date_of_birth(data.get("date_of_birth"))
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        # Determine if user has permission to view full PII
+        # Roles: 'admin', 'manager', 'operations_manager' can view PII
+        can_view_pii = user and (user.role in ["admin", "manager", "operations_manager"] or user.is_superuser)
+
+        if not can_view_pii:
+            # Mask ID number
+            data["id_number"] = mask_id_number(data.get("id_number"))
+            # Mask phone number
+            data["phone_number"] = mask_phone_number(data.get("phone_number"))
+            # Mask date of birth
+            data["date_of_birth"] = mask_date_of_birth(data.get("date_of_birth"))
+            # Mask address/location/employment info
+            data["address"] = mask_generic(data.get("address"))
+            data["occupation"] = mask_generic(data.get("occupation"))
+            data["work_address"] = mask_generic(data.get("work_address"))
+            data["position"] = mask_generic(data.get("position"))
+            data["digital_address"] = mask_generic(data.get("digital_address"))
+            data["location"] = mask_generic(data.get("location"))
+            # Mask next of kin
+            if data.get("next_of_kin_data"):
+                data["next_of_kin_data"] = {"relationship": "REDACTED", "contact": mask_phone_number(None)}
+            # Mask photo
+            if data.get("photo"):
+                data["photo"] = "[ENCRYPTED_PII_PHOTO]"
+
         return data
 
 

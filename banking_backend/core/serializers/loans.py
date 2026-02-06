@@ -71,23 +71,48 @@ class LoanSerializer(serializers.ModelSerializer):
         return obj.user.email if obj.user else ""
 
     def to_representation(self, instance):
-        """Apply PII masking to sensitive fields in API responses."""
-        from core.utils import mask_date_of_birth, mask_id_number, mask_income, mask_phone_number
+        """Apply PII masking to sensitive fields in API responses based on user role."""
+        from core.utils.pii_masking import (
+            mask_date_of_birth,
+            mask_generic,
+            mask_id_number,
+            mask_income,
+            mask_phone_number,
+        )
 
         data = super().to_representation(instance)
-        # Mask ID numbers
-        data["id_number"] = mask_id_number(data.get("id_number"))
-        data["guarantor_1_id_number"] = mask_id_number(data.get("guarantor_1_id_number"))
-        data["guarantor_2_id_number"] = mask_id_number(data.get("guarantor_2_id_number"))
-        # Mask phone numbers
-        data["next_of_kin_1_phone"] = mask_phone_number(data.get("next_of_kin_1_phone"))
-        data["next_of_kin_2_phone"] = mask_phone_number(data.get("next_of_kin_2_phone"))
-        data["guarantor_1_phone"] = mask_phone_number(data.get("guarantor_1_phone"))
-        data["guarantor_2_phone"] = mask_phone_number(data.get("guarantor_2_phone"))
-        # Mask income
-        data["monthly_income"] = mask_income(data.get("monthly_income"))
-        # Mask date of birth
-        data["date_of_birth"] = mask_date_of_birth(data.get("date_of_birth"))
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        # Determine if user has permission to view full PII
+        can_view_pii = user and (user.role in ["admin", "manager", "operations_manager"] or user.is_superuser)
+
+        if not can_view_pii:
+            # Mask ID numbers
+            data["id_number"] = mask_id_number(data.get("id_number"))
+            data["guarantor_1_id_number"] = mask_id_number(data.get("guarantor_1_id_number"))
+            data["guarantor_2_id_number"] = mask_id_number(data.get("guarantor_2_id_number"))
+            # Mask phone numbers
+            data["next_of_kin_1_phone"] = mask_phone_number(data.get("next_of_kin_1_phone"))
+            data["next_of_kin_2_phone"] = mask_phone_number(data.get("next_of_kin_2_phone"))
+            data["guarantor_1_phone"] = mask_phone_number(data.get("guarantor_1_phone"))
+            data["guarantor_2_phone"] = mask_phone_number(data.get("guarantor_2_phone"))
+            # Mask income
+            data["monthly_income"] = mask_income(data.get("monthly_income"))
+            # Mask date of birth
+            data["date_of_birth"] = mask_date_of_birth(data.get("date_of_birth"))
+            # Mask addresses and digital addresses
+            data["digital_address"] = mask_generic(data.get("digital_address"))
+            data["next_of_kin_1_address"] = mask_generic(data.get("next_of_kin_1_address"))
+            data["next_of_kin_2_address"] = mask_generic(data.get("next_of_kin_2_address"))
+            data["guarantor_1_address"] = mask_generic(data.get("guarantor_1_address"))
+            data["guarantor_2_address"] = mask_generic(data.get("guarantor_2_address"))
+            # Mask names if needed (usually borrower name is OK, but NOK/Guarantor names are PII)
+            data["next_of_kin_1_name"] = mask_generic(data.get("next_of_kin_1_name"))
+            data["next_of_kin_2_name"] = mask_generic(data.get("next_of_kin_2_name"))
+            data["guarantor_1_name"] = mask_generic(data.get("guarantor_1_name"))
+            data["guarantor_2_name"] = mask_generic(data.get("guarantor_2_name"))
+
         return data
 
     def validate_amount(self, value):

@@ -1,0 +1,25 @@
+.mirror-video {
+    transform: scaleX(-1);
+}
+
+/* Call Overlay Specific Styles */
+.call-overlay-container {
+    transition: all var(--motion-normal) var(--easing-standard);
+}
+
+.call-overlay-control-btn {
+    transition: all var(--motion-fast) var(--easing-standard);
+}
+
+.call-overlay-control-btn:hover {
+    transform: scale(1.1);
+}
+
+.call-overlay-end-btn {
+    background-color: var(--color-error);
+    box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+}
+
+.call-overlay-end-btn:hover {
+    background-color: var(--color-error-hover);
+}

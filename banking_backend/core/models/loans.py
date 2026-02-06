@@ -22,39 +22,226 @@ class Loan(models.Model):
     term_months = models.PositiveIntegerField()  # Loan term in months
     purpose = models.TextField(blank=True, null=True, help_text="Purpose of the loan")
 
-    # DETAILED FIELDS
-    date_of_birth = models.DateField(null=True, blank=True)
+    # DETAILED FIELDS (Encrypted)
+    date_of_birth_encrypted = models.TextField(blank=True, default="")
     id_type = models.CharField(max_length=50, default="ghana_card")
-    id_number = models.CharField(max_length=50, blank=True)
-    digital_address = models.CharField(max_length=100, blank=True)
+    id_number_encrypted = models.TextField(blank=True, default="")
+    id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    digital_address_encrypted = models.TextField(blank=True, default="")
     town = models.CharField(max_length=100, blank=True)
     city = models.CharField(max_length=100, blank=True)
 
-    # Next of Kin 1
-    next_of_kin_1_name = models.CharField(max_length=255, blank=True)
+    @property
+    def date_of_birth(self):
+        from datetime import datetime
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.date_of_birth_encrypted)
+        if val:
+            try:
+                return datetime.strptime(val, "%Y-%m-%d").date()
+            except ValueError:
+                return None
+        return None
+
+    @date_of_birth.setter
+    def date_of_birth(self, value):
+        from core.utils.field_encryption import encrypt_field
+        if value:
+            str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
+            self.date_of_birth_encrypted = encrypt_field(str_val)
+        else:
+            self.date_of_birth_encrypted = ""
+
+    @property
+    def id_number(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.id_number_encrypted)
+
+    @id_number.setter
+    def id_number(self, value):
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.id_number_encrypted = encrypt_field(value) if value else ""
+        self.id_number_hash = hash_field(value) if value else ""
+
+    @property
+    def digital_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.digital_address_encrypted)
+
+    @digital_address.setter
+    def digital_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.digital_address_encrypted = encrypt_field(value) if value else ""
+
+    # Next of Kin 1 (Encrypted)
+    next_of_kin_1_name_encrypted = models.TextField(blank=True, default="")
     next_of_kin_1_relationship = models.CharField(max_length=100, blank=True)
-    next_of_kin_1_phone = models.CharField(max_length=20, blank=True)
-    next_of_kin_1_address = models.TextField(blank=True)
+    next_of_kin_1_phone_encrypted = models.TextField(blank=True, default="")
+    next_of_kin_1_address_encrypted = models.TextField(blank=True, default="")
 
-    # Next of Kin 2
-    next_of_kin_2_name = models.CharField(max_length=255, blank=True)
+    @property
+    def next_of_kin_1_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.next_of_kin_1_name_encrypted)
+
+    @next_of_kin_1_name.setter
+    def next_of_kin_1_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.next_of_kin_1_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def next_of_kin_1_phone(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.next_of_kin_1_phone_encrypted)
+
+    @next_of_kin_1_phone.setter
+    def next_of_kin_1_phone(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.next_of_kin_1_phone_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def next_of_kin_1_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.next_of_kin_1_address_encrypted)
+
+    @next_of_kin_1_address.setter
+    def next_of_kin_1_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.next_of_kin_1_address_encrypted = encrypt_field(value) if value else ""
+
+    # Next of Kin 2 (Encrypted)
+    next_of_kin_2_name_encrypted = models.TextField(blank=True, default="")
     next_of_kin_2_relationship = models.CharField(max_length=100, blank=True)
-    next_of_kin_2_phone = models.CharField(max_length=20, blank=True)
-    next_of_kin_2_address = models.TextField(blank=True)
+    next_of_kin_2_phone_encrypted = models.TextField(blank=True, default="")
+    next_of_kin_2_address_encrypted = models.TextField(blank=True, default="")
 
-    # Guarantor 1
-    guarantor_1_name = models.CharField(max_length=255, blank=True)
+    @property
+    def next_of_kin_2_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.next_of_kin_2_name_encrypted)
+
+    @next_of_kin_2_name.setter
+    def next_of_kin_2_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.next_of_kin_2_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def next_of_kin_2_phone(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.next_of_kin_2_phone_encrypted)
+
+    @next_of_kin_2_phone.setter
+    def next_of_kin_2_phone(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.next_of_kin_2_phone_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def next_of_kin_2_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.next_of_kin_2_address_encrypted)
+
+    @next_of_kin_2_address.setter
+    def next_of_kin_2_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.next_of_kin_2_address_encrypted = encrypt_field(value) if value else ""
+
+    # Guarantor 1 (Encrypted)
+    guarantor_1_name_encrypted = models.TextField(blank=True, default="")
     guarantor_1_id_type = models.CharField(max_length=50, default="ghana_card")
-    guarantor_1_id_number = models.CharField(max_length=50, blank=True)
-    guarantor_1_phone = models.CharField(max_length=20, blank=True)
-    guarantor_1_address = models.TextField(blank=True)
+    guarantor_1_id_number_encrypted = models.TextField(blank=True, default="")
+    guarantor_1_id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    guarantor_1_phone_encrypted = models.TextField(blank=True, default="")
+    guarantor_1_address_encrypted = models.TextField(blank=True, default="")
 
-    # Guarantor 2
-    guarantor_2_name = models.CharField(max_length=255, blank=True)
+    @property
+    def guarantor_1_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_1_name_encrypted)
+
+    @guarantor_1_name.setter
+    def guarantor_1_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.guarantor_1_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def guarantor_1_id_number(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_1_id_number_encrypted)
+
+    @guarantor_1_id_number.setter
+    def guarantor_1_id_number(self, value):
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.guarantor_1_id_number_encrypted = encrypt_field(value) if value else ""
+        self.guarantor_1_id_number_hash = hash_field(value) if value else ""
+
+    @property
+    def guarantor_1_phone(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_1_phone_encrypted)
+
+    @guarantor_1_phone.setter
+    def guarantor_1_phone(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.guarantor_1_phone_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def guarantor_1_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_1_address_encrypted)
+
+    @guarantor_1_address.setter
+    def guarantor_1_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.guarantor_1_address_encrypted = encrypt_field(value) if value else ""
+
+    # Guarantor 2 (Encrypted)
+    guarantor_2_name_encrypted = models.TextField(blank=True, default="")
     guarantor_2_id_type = models.CharField(max_length=50, default="ghana_card")
-    guarantor_2_id_number = models.CharField(max_length=50, blank=True)
-    guarantor_2_phone = models.CharField(max_length=20, blank=True)
-    guarantor_2_address = models.TextField(blank=True)
+    guarantor_2_id_number_encrypted = models.TextField(blank=True, default="")
+    guarantor_2_id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    guarantor_2_phone_encrypted = models.TextField(blank=True, default="")
+    guarantor_2_address_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def guarantor_2_name(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_2_name_encrypted)
+
+    @guarantor_2_name.setter
+    def guarantor_2_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.guarantor_2_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def guarantor_2_id_number(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_2_id_number_encrypted)
+
+    @guarantor_2_id_number.setter
+    def guarantor_2_id_number(self, value):
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.guarantor_2_id_number_encrypted = encrypt_field(value) if value else ""
+        self.guarantor_2_id_number_hash = hash_field(value) if value else ""
+
+    @property
+    def guarantor_2_phone(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_2_phone_encrypted)
+
+    @guarantor_2_phone.setter
+    def guarantor_2_phone(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.guarantor_2_phone_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def guarantor_2_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.guarantor_2_address_encrypted)
+
+    @guarantor_2_address.setter
+    def guarantor_2_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.guarantor_2_address_encrypted = encrypt_field(value) if value else ""
 
     # Financial Info
     monthly_income = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))

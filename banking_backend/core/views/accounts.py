@@ -123,13 +123,16 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
         # Apply search filter
         search = request.query_params.get("search", "")
         if search:
+            from core.utils.field_encryption import hash_field
+            search_hash = hash_field(search)
+
             queryset = queryset.filter(
                 Q(account_number__icontains=search)
                 | Q(user__email__icontains=search)
                 | Q(user__first_name__icontains=search)
                 | Q(user__last_name__icontains=search)
-                | Q(user__id_number__icontains=search)
-                | Q(opening_request__id_number__icontains=search)
+                | Q(user__id_number_hash=search_hash)
+                | Q(opening_request__id_number_hash=search_hash)
             )
 
         # Apply account type filter
@@ -253,12 +256,16 @@ class AccountOpeningViewSet(
                     customer_user = User.objects.filter(email=user_email).first()
 
                 if not customer_user:
-                    # Generate username from email or phone
-                    username = user_email or f"user_{opening_request.phone_number}"
+                    # Generate username from email or a random suffix (never raw PII)
+                    if user_email:
+                        username = user_email
+                    else:
+                        import uuid
+                        username = f"user_{uuid.uuid4().hex[:8]}"
+
                     # Initial random password (will be reset/resent in Stage 2)
                     import secrets
-
-                    temp_initial_pwd = secrets.token_urlsafe(10)
+                    temp_initial_pwd = secrets.token_urlsafe(12)
 
                     customer_user = User.objects.create_user(
                         username=username,
@@ -431,17 +438,22 @@ class AccountOpeningViewSet(
         if not phone_number:
             return Response({"error": "Phone number is required"}, status=400)
 
+        # SECURITY FIX: Use hashed session keys for privacy
+        from core.utils.field_encryption import hash_field
+        session_key = f"otp_v2_{hash_field(phone_number)}"
+
         # SECURITY FIX: Use cryptographically secure random for OTP generation
         otp = str(secrets.randbelow(900000) + 100000)  # 6-digit OTP
 
-        # Store OTP in session or cache for verification
-        request.session[f"otp_{phone_number}"] = otp
-        request.session[f"otp_time_{phone_number}"] = timezone.now().isoformat()
+        request.session[session_key] = otp
+        request.session[f"{session_key}_time"] = timezone.now().isoformat()
 
         # SECURITY FIX: Don't log the actual OTP - only log that it was sent
         logger.info(f"OTP sent to phone ending in ...{phone_number[-4:]}")
 
-        return Response({"success": True, "message": "OTP sent successfully", "phone_number": phone_number})
+        # Mask phone in response
+        masked_phone = f"***-***-{phone_number[-4:]}"
+        return Response({"success": True, "message": "OTP sent successfully", "phone_number": masked_phone})
 
     @action(detail=False, methods=["post"], url_path="verify-and-submit")
     def verify_and_submit(self, request):
@@ -452,31 +464,34 @@ class AccountOpeningViewSet(
         if not phone_number or not submitted_otp:
             return Response({"error": "Phone number and OTP are required"}, status=400)
 
-        # Verify OTP
-        stored_otp = request.session.get(f"otp_{phone_number}")
-        otp_time_str = request.session.get(f"otp_time_{phone_number}")
+        # Verify OTP using hashed session key
+        from core.utils.field_encryption import hash_field
+        session_key = f"otp_v2_{hash_field(phone_number)}"
+
+        stored_otp = request.session.get(session_key)
+        otp_time_str = request.session.get(f"{session_key}_time")
 
         # SECURITY FIX: Check OTP expiration (5 minute validity)
         if otp_time_str:
             try:
                 from datetime import datetime
-
                 otp_time = datetime.fromisoformat(otp_time_str)
                 if timezone.is_naive(otp_time):
                     otp_time = timezone.make_aware(otp_time)
                 if timezone.now() - otp_time > timedelta(minutes=5):
                     # Clear expired OTP
-                    del request.session[f"otp_{phone_number}"]
-                    del request.session[f"otp_time_{phone_number}"]
+                    del request.session[session_key]
+                    del request.session[f"{session_key}_time"]
                     return Response({"error": "OTP has expired. Please request a new one."}, status=400)
             except (ValueError, TypeError):
-                pass  # If parsing fails, continue with normal validation
+                pass
 
         if not stored_otp or stored_otp != submitted_otp:
             return Response({"error": "Invalid or expired OTP"}, status=400)
 
         # Clear OTP from session
-        del request.session[f"otp_{phone_number}"]
+        del request.session[session_key]
+        del request.session[f"{session_key}_time"]
 
         # Create account opening request
         opening_request = AccountOpeningRequest.objects.create(

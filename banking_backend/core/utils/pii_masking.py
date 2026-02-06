@@ -74,3 +74,18 @@ def mask_date_of_birth(dob) -> str | None:
         return f"****-**-** ({year})"
     except Exception:
         return "N/A"
+
+
+def mask_generic(value: str | None, length: int = 4) -> str | None:
+    """Mask a generic string, showing 'X' for the specified length.
+
+    Useful for addresses, names, etc. when full privacy is needed.
+    """
+    if not value:
+        return value
+
+    if length == 4 and " " not in value and len(value) > 1:
+        # If it looks like a single name/word, show first char + ***
+        return value[0] + "*" * 3
+
+    return "X" * length

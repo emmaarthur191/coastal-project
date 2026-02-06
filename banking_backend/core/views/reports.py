@@ -243,13 +243,19 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
-            elif report_type == "accounts":
-                headers = ["Account No", "Type", "Balance (GHS)", "Holder", "Status"]
-                queryset = Account.objects.all().order_by("-created_at")[:50]
+                is_manager = request.user.role in ["manager", "operations_manager", "admin"] or request.user.is_superuser
                 for acc in queryset:
+                    acc_num = acc.account_number
+                    if not is_manager:
+                        # Mask account number: first 4 and last 4 visible
+                        if len(acc_num) > 8:
+                            acc_num = f"{acc_num[:4]}****{acc_num[-4:]}"
+                        else:
+                            acc_num = "****"
+
                     data.append(
                         [
-                            acc.account_number,
+                            acc_num,
                             acc.get_account_type_display(),
                             f"{acc.balance:,.2f}",
                             acc.user.get_full_name(),

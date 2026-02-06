@@ -15,7 +15,7 @@ class Transaction(models.Model):
     ]
 
     STATUS_CHOICES = [
-        ("pending", "Pending"),
+        ("pending_approval", "Pending Approval"),
         ("completed", "Completed"),
         ("failed", "Failed"),
         ("cancelled", "Cancelled"),
@@ -30,9 +30,19 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     description = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="completed")
     timestamp = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
+
+    # Maker-Checker (4-Eyes Principle) fields
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_transactions",
+    )
+    approval_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "core_transaction"

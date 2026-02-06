@@ -102,3 +102,32 @@ def is_encrypted(value: str) -> bool:
     if not value:
         return False
     return value.startswith("gAAAAA")
+
+
+def hash_field(value: str) -> str:
+    """Generate a stable HMAC-SHA256 hash for searchable PII.
+
+    This allows for exact-match database lookups without storing plaintext PII.
+    The hash is salted using PII_HASH_KEY.
+
+    Args:
+        value: The plaintext string to hash.
+
+    Returns:
+        Hex-encoded HMAC hash, or empty string if input is empty.
+    """
+    if not value:
+        return ""
+
+    import hashlib
+    import hmac
+
+    key = getattr(settings, "PII_HASH_KEY", None)
+    if not key:
+        # Fallback to a stable default for dev if missing, but log warning
+        logger.warning("PII_HASH_KEY not set in settings. Search might be inconsistent.")
+        key = "default-dev-pii-hash-key-replace-in-prod"
+
+    # Use HMAC-SHA256 for collision resistance and to prevent pre-computation attacks
+    h = hmac.new(key.encode(), value.strip().encode(), hashlib.sha256)
+    return h.hexdigest()

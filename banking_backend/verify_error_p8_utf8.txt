@@ -1,0 +1,46 @@
+﻿python : Traceback (most 
+recent call last):
+At line:1 char:32
++ ... astal_cu_env; 
+python 
+verify_pii_phase8.py > 
+verify_error_p8.txt 2>&1;
++                   ~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (T  
+  raceback (most recent   
+  call last)::String)     
+[], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  File "E:\coastal\banking
+_backend\verify_pii_phase8
+.py", line 145, in 
+<module>
+    verify_pii_phase8()
+  File "E:\coastal\banking
+_backend\verify_pii_phase8
+.py", line 64, in 
+verify_pii_phase8
+    print("\u2713 Loan 
+PII is encrypted in DB.")
+  File "C:\Users\snype\ana
+conda3\envs\coastal_cu_env
+\Lib\encodings\cp1252.py",
+ line 19, in encode
+    return codecs.charmap_
+encode(input,self.errors,e
+ncoding_table)[0]
+           ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+UnicodeEncodeError: 
+'charmap' codec can't 
+encode character '\u2713' 
+in position 0: character 
+maps to <undefined>
+--- Starting Phase 8 PII Verification ---

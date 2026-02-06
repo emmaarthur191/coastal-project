@@ -702,6 +702,17 @@ class StaffIdsView(APIView):
 
     def get(self, request):
         """Retrieve a list of staff members with their formal staff ID strings and status."""
+        # SECURITY FIX: Restrict staff PII enumeration to roles with legitimate business need (Manager+)
+        if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
+            return Response(
+                {
+                    "status": "error",
+                    "message": "You do not have permission to view staff PII.",
+                    "code": "PERMISSION_DENIED",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # Filter by role if provided
         role = request.query_params.get("role")
         status = request.query_params.get("status")
@@ -716,32 +727,41 @@ class StaffIdsView(APIView):
         elif status == "inactive":
             queryset = queryset.filter(is_active=False)
 
-        staff = queryset.values(
-            "id", "email", "first_name", "last_name", "role", "is_active", "date_joined", "staff_id", "phone_number"
-        )
+        # Pull objects to allow property-based PII decryption
+        staff = queryset.only(
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "date_joined",
+            "staff_id_encrypted",
+            "phone_number_encrypted",
+        )[:100]
 
         results = []
         for s in staff:
             # Use stored official staff_id if available, otherwise generate fallback
-            staff_id_official = s.get("staff_id")
+            staff_id_official = s.staff_id
             if not staff_id_official:
-                staff_id_official = f"STAFF-{s['id']:05d}"
+                staff_id_official = f"STAFF-{s.id:05d}"
 
             results.append(
                 {
-                    "id": s["id"],
+                    "id": s.id,
                     "staff_id": staff_id_official,
-                    "name": f"{s['first_name']} {s['last_name']}",
-                    "first_name": s["first_name"] or "",
-                    "last_name": s["last_name"] or "",
-                    "email": s["email"],
-                    "phone_number": s.get("phone_number"),
-                    "role": s["role"],
-                    "status": "active" if s["is_active"] else "inactive",
-                    "is_active": s["is_active"],
-                    "date_joined": s["date_joined"].isoformat() if s["date_joined"] else None,
-                    "joined_date": s["date_joined"].isoformat() if s["date_joined"] else None,
-                    "employment_date": s["date_joined"].isoformat() if s["date_joined"] else None,
+                    "name": f"{s.first_name} {s.last_name}",
+                    "first_name": s.first_name or "",
+                    "last_name": s.last_name or "",
+                    "email": s.email,
+                    "phone_number": s.phone_number,  # Decrypted via property
+                    "role": s.role,
+                    "status": "active" if s.is_active else "inactive",
+                    "is_active": s.is_active,
+                    "date_joined": s.date_joined.isoformat() if s.date_joined else None,
+                    "joined_date": s.date_joined.isoformat() if s.date_joined else None,
+                    "employment_date": s.date_joined.isoformat() if s.date_joined else None,
                 }
             )
 

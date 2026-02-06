@@ -1,0 +1,4 @@
+﻿--- DEBUG INFO ---
+File: E:\coastal\banking_backend\core\views\dashboard.py
+SUCCESS: Metrics view executed.
+Pending TX 20 found in metrics: True

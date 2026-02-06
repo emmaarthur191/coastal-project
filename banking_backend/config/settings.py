@@ -1,5 +1,6 @@
 import os
 import threading
+from decimal import Decimal
 from urllib.parse import urlparse
 
 import environ
@@ -72,9 +73,11 @@ else:
 # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 if DEBUG:
     FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="dev-only-insecure-key-32bytes!")
+    PII_HASH_KEY = env("PII_HASH_KEY", default="dev-only-insecure-hash-key-64chars-long-enough-to-be-secure-v1")
 else:
     # In production, this will raise ImproperlyConfigured if not set
     FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
+    PII_HASH_KEY = env("PII_HASH_KEY")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
@@ -639,3 +642,12 @@ CONTENT_SECURITY_POLICY = {
 # SECURITY: Broaden coverage for 2026 standards
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+# =============================================================================
+# Structural Security Hardening (Phase 2)
+# =============================================================================
+# Maker-Checker (4-Eyes Principle) threshold for high-value transactions
+TRANSACTION_APPROVAL_THRESHOLD = Decimal(env("TRANSACTION_APPROVAL_THRESHOLD", default="5000.00"))
+
+# IP Spoofing Mitigation: Whitelist of trusted proxy IP addresses.
+# Industry Standard (GCP GFE): 130.211.0.0/22 and 35.191.0.0/16
+TRUSTED_PROXIES = env.list("TRUSTED_PROXIES", default=["127.0.0.1", "130.211.0.0/22", "35.191.0.0/16"])

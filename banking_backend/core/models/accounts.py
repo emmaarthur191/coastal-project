@@ -106,35 +106,199 @@ class AccountOpeningRequest(models.Model):
 
     # ID Information
     id_type = models.CharField(max_length=20, choices=ID_TYPES, default="ghana_card")
-    id_number = models.CharField(max_length=50, blank=True)
 
-    # Personal Information
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    date_of_birth = models.DateField()
-    nationality = models.CharField(max_length=100, blank=True)
-    address = models.TextField(blank=True)
-    phone_number = models.CharField(max_length=20)
+
+    # Personal Information (Encrypted)
+    first_name_encrypted = models.TextField(blank=True, default="")
+    last_name_encrypted = models.TextField(blank=True, default="")
+    date_of_birth_encrypted = models.TextField(blank=True, default="") # Stored as ISO string
+    address_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def first_name(self):
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.first_name_encrypted)
+        return val if val else ""
+
+    @first_name.setter
+    def first_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.first_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def last_name(self):
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.last_name_encrypted)
+        return val if val else ""
+
+    @last_name.setter
+    def last_name(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.last_name_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def date_of_birth(self):
+        from datetime import datetime
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.date_of_birth_encrypted)
+        if val:
+            try:
+                return datetime.strptime(val, "%Y-%m-%d").date()
+            except ValueError:
+                return None
+        return None
+
+    @date_of_birth.setter
+    def date_of_birth(self, value):
+        from core.utils.field_encryption import encrypt_field
+        if value:
+            str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
+            self.date_of_birth_encrypted = encrypt_field(str_val)
+        else:
+            self.date_of_birth_encrypted = ""
+
+    @property
+    def address(self):
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.address_encrypted)
+        return val if val else ""
+
+    @address.setter
+    def address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.address_encrypted = encrypt_field(value) if value else ""
+
     email = models.EmailField(default="", help_text="Customer email for login credentials")
 
-    # Employment Information
-    occupation = models.CharField(max_length=255, blank=True)
-    work_address = models.TextField(blank=True)
-    position = models.CharField(max_length=255, blank=True)
+    # Employment Information (Encrypted)
+    occupation_encrypted = models.TextField(blank=True, default="")
+    work_address_encrypted = models.TextField(blank=True, default="")
+    position_encrypted = models.TextField(blank=True, default="")
 
-    # Location Information
-    digital_address = models.CharField(max_length=50, blank=True)
-    location = models.CharField(max_length=255, blank=True)
+    @property
+    def occupation(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.occupation_encrypted)
 
-    # Next of Kin Details
-    next_of_kin_data = models.JSONField(null=True, blank=True)
+    @occupation.setter
+    def occupation(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.occupation_encrypted = encrypt_field(value) if value else ""
 
-    # Photo
-    photo = models.TextField(blank=True, null=True, help_text="Base64 encoded photo or file path")
+    @property
+    def work_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.work_address_encrypted)
 
-    # SECURITY: Encrypted storage for PII
+    @work_address.setter
+    def work_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.work_address_encrypted = encrypt_field(value) if value else ""
+
+    @property
+    def position(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.position_encrypted)
+
+    @position.setter
+    def position(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.position_encrypted = encrypt_field(value) if value else ""
+
+    # Location Information (Encrypted)
+    digital_address_encrypted_val = models.TextField(blank=True, default="")  # Avoid conflict with existing digital_address charfield if any
+    location_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def digital_address(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.digital_address_encrypted_val)
+
+    @digital_address.setter
+    def digital_address(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.digital_address_encrypted_val = encrypt_field(value) if value else ""
+
+    @property
+    def location(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.location_encrypted)
+
+    @location.setter
+    def location(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.location_encrypted = encrypt_field(value) if value else ""
+
+    # Next of Kin Details (Encrypted)
+    next_of_kin_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def next_of_kin_data(self):
+        import json
+        from core.utils.field_encryption import decrypt_field
+        val = decrypt_field(self.next_of_kin_encrypted)
+        if val:
+            try:
+                return json.loads(val)
+            except json.JSONDecodeError:
+                return None
+        return None
+
+    @next_of_kin_data.setter
+    def next_of_kin_data(self, value):
+        import json
+        from core.utils.field_encryption import encrypt_field
+        if value:
+            self.next_of_kin_encrypted = encrypt_field(json.dumps(value))
+        else:
+            self.next_of_kin_encrypted = ""
+
+    # Photo (Encrypted Base64)
+    photo_encrypted = models.TextField(blank=True, null=True, help_text="Encrypted Base64 encoded photo")
+
+    @property
+    def photo(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.photo_encrypted)
+
+    @photo.setter
+    def photo(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.photo_encrypted = encrypt_field(value) if value else ""
+
+    # SECURITY: Encrypted storage for PII (Ghana DPA compliance)
     id_number_encrypted = models.TextField(blank=True, default="")
     phone_number_encrypted = models.TextField(blank=True, default="")
+
+    # SECURITY: Searchable hashes for PII (Zero-Plaintext compliance)
+    id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    phone_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    @property
+    def id_number(self):
+        """Decrypt and return the ID number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.id_number_encrypted)
+
+    @id_number.setter
+    def id_number(self, value):
+        """Encrypt and set the ID number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.id_number_encrypted = encrypt_field(value) if value else ""
+        self.id_number_hash = hash_field(value) if value else ""
+
+    @property
+    def phone_number(self):
+        """Decrypt and return the phone number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.phone_number_encrypted)
+
+    @phone_number.setter
+    def phone_number(self, value):
+        """Encrypt and set the phone number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.phone_number_encrypted = encrypt_field(value) if value else ""
+        self.phone_number_hash = hash_field(value) if value else ""
 
     # Status and Tracking
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
@@ -192,14 +356,7 @@ class AccountOpeningRequest(models.Model):
         return f"Account Opening #{self.id} - {self.first_name} {self.last_name} ({self.status})"
 
     def save(self, *args, **kwargs):
-        """Override save to ensure PII is encrypted before storage."""
-        from core.utils.field_encryption import encrypt_field
-
-        if self.id_number and (not self.id_number_encrypted):
-            self.id_number_encrypted = encrypt_field(self.id_number)
-        if self.phone_number and (not self.phone_number_encrypted):
-            self.phone_number_encrypted = encrypt_field(self.phone_number)
-
+        """Override save to ensure super is called."""
         super().save(*args, **kwargs)
 
 
@@ -228,8 +385,18 @@ class AccountClosureRequest(models.Model):
     closure_reason = models.CharField(max_length=30, choices=CLOSURE_REASONS)
     other_reason = models.TextField(blank=True)
 
-    # Customer verification
-    phone_number = models.CharField(max_length=20)
+    # Customer verification (Encrypted)
+    phone_number_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def phone_number(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.phone_number_encrypted)
+
+    @phone_number.setter
+    def phone_number(self, value):
+        from core.utils.field_encryption import encrypt_field
+        self.phone_number_encrypted = encrypt_field(value) if value else ""
     otp_verified = models.BooleanField(default=False)
 
     # Status and Tracking

@@ -14,16 +14,103 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="customer")
     email = models.EmailField(unique=True, blank=False)
-    # SECURITY: Store plaintext for legacy compatibility, encrypted versions below
-    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    staff_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    id_type = models.CharField(max_length=50, null=True, blank=True)
-    id_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
 
-    # SECURITY: Encrypted storage for PII (GDPR/PCI-DSS compliance)
-    # These fields store Fernet-encrypted versions of sensitive data
+    # SECURITY: Encrypted storage for PII/Internal IDs (Zero-Plaintext compliance)
     id_number_encrypted = models.TextField(blank=True, default="")
     phone_number_encrypted = models.TextField(blank=True, default="")
+    ssnit_number_encrypted = models.TextField(blank=True, default="")
+    staff_id_encrypted = models.TextField(blank=True, default="")
+    first_name_encrypted = models.TextField(blank=True, default="")
+    last_name_encrypted = models.TextField(blank=True, default="")
+
+    # SECURITY: Searchable hashes for PII (Zero-Plaintext compliance)
+    # HMAC-SHA256 hex digests are 64 characters
+    id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    phone_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    ssnit_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    staff_id_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    first_name_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    last_name_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    id_type = models.CharField(max_length=50, null=True, blank=True)
+
+    @property
+    def id_number(self):
+        """Decrypt and return the ID number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.id_number_encrypted)
+
+    @id_number.setter
+    def id_number(self, value):
+        """Encrypt and set the ID number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.id_number_encrypted = encrypt_field(value) if value else ""
+        self.id_number_hash = hash_field(value) if value else ""
+
+    @property
+    def phone_number(self):
+        """Decrypt and return the phone number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.phone_number_encrypted)
+
+    @phone_number.setter
+    def phone_number(self, value):
+        """Encrypt and set the phone number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.phone_number_encrypted = encrypt_field(value) if value else ""
+        self.phone_number_hash = hash_field(value) if value else ""
+
+    @property
+    def ssnit_number(self):
+        """Decrypt and return the SSNIT number."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.ssnit_number_encrypted)
+
+    @ssnit_number.setter
+    def ssnit_number(self, value):
+        """Encrypt and set the SSNIT number + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.ssnit_number_encrypted = encrypt_field(value) if value else ""
+        self.ssnit_number_hash = hash_field(value) if value else ""
+
+    @property
+    def staff_id(self):
+        """Decrypt and return the Staff ID."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.staff_id_encrypted)
+
+    @staff_id.setter
+    def staff_id(self, value):
+        """Encrypt and set the Staff ID + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.staff_id_encrypted = encrypt_field(value) if value else ""
+        self.staff_id_hash = hash_field(value) if value else ""
+
+    @property
+    def first_name(self):
+        """Decrypt and return the first name."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.first_name_encrypted)
+
+    @first_name.setter
+    def first_name(self, value):
+        """Encrypt and set the first name + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.first_name_encrypted = encrypt_field(value) if value else ""
+        self.first_name_hash = hash_field(value) if value else ""
+
+    @property
+    def last_name(self):
+        """Decrypt and return the last name."""
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.last_name_encrypted)
+
+    @last_name.setter
+    def last_name(self, value):
+        """Encrypt and set the last name + hash for searching."""
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.last_name_encrypted = encrypt_field(value) if value else ""
+        self.last_name_hash = hash_field(value) if value else ""
 
     # Security: Account lockout fields
     failed_login_attempts = models.PositiveIntegerField(default=0)
@@ -54,14 +141,7 @@ class User(AbstractUser):
         return False
 
     def save(self, *args, **kwargs):
-        """Override save to ensure PII is encrypted before storage."""
-        from core.utils.field_encryption import encrypt_field
-
-        if self.id_number and (not self.id_number_encrypted):
-            self.id_number_encrypted = encrypt_field(self.id_number)
-        if self.phone_number and (not self.phone_number_encrypted):
-            self.phone_number_encrypted = encrypt_field(self.phone_number)
-
+        """Override save to ensure PII is handled correctly."""
         super().save(*args, **kwargs)
 
     def reset_failed_attempts(self):

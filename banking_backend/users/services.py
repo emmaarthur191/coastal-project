@@ -57,7 +57,9 @@ class SendexaService:
         # 1. Create Outbox Entry
         from core.models.reliability import SmsOutbox
 
-        outbox_entry = SmsOutbox.objects.create(phone_number=normalized_phone, message=message, status="pending")
+        outbox_entry = SmsOutbox(message=message, status="pending")
+        outbox_entry.phone_number = normalized_phone
+        outbox_entry.save()
 
         # Configuration from settings
         url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/sms/send")

@@ -5,6 +5,10 @@ Handles financial transactions, balance movements, and SMS notifications.
 
 import logging
 from decimal import Decimal
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from users.models import User
 
 from django.db import transaction
 from django.utils import timezone
@@ -62,6 +66,15 @@ class TransactionService:
         # Validate the transaction
         TransactionService.validate_transaction(locked_from_account, locked_to_account, amount, transaction_type)
 
+        # Check for Maker-Checker (4-Eyes Principle) Threshold
+        # Threshold is GHS 5,000.00
+        from django.conf import settings
+        threshold = getattr(settings, 'TRANSACTION_APPROVAL_THRESHOLD', Decimal('5000.00'))
+
+        requires_approval = amount >= threshold
+        status = "pending_approval" if requires_approval else "completed"
+        processed_at = None if requires_approval else timezone.now()
+
         # Create the transaction record
         tx = Transaction.objects.create(
             from_account=locked_from_account,
@@ -69,15 +82,21 @@ class TransactionService:
             amount=amount,
             transaction_type=transaction_type,
             description=description,
-            status="completed",
-            processed_at=timezone.now(),
+            status=status,
+            processed_at=processed_at,
         )
 
-        # Update balances
-        if locked_from_account:
-            AccountService.update_balance(locked_from_account, -amount)
-        if locked_to_account:
-            AccountService.update_balance(locked_to_account, amount)
+        # Update balances ONLY if approval is not required
+        if not requires_approval:
+            if locked_from_account:
+                AccountService.update_balance(locked_from_account, -amount)
+            if locked_to_account:
+                AccountService.update_balance(locked_to_account, amount)
+
+            # Send SMS notification
+            TransactionService._enqueue_notification(tx)
+        else:
+            logger.info(f"Transaction {tx.id} requires approval (Amount: {amount} >= {threshold})")
 
         # Create AuditLog entry
         from users.models import AuditLog
@@ -99,22 +118,80 @@ class TransactionService:
             },
         )
 
-        # Send SMS notification AFTER COMMIT
-        if locked_from_account:
-            transaction.on_commit(
-                lambda: TransactionService._send_transaction_notification(
-                    locked_from_account, transaction_type, amount, tx.id
-                )
-            )
-        elif locked_to_account:
-            transaction.on_commit(
-                lambda: TransactionService._send_transaction_notification(
-                    locked_to_account, transaction_type, amount, tx.id
-                )
-            )
-
-        logger.info(f"Transaction {tx.id} completed successfully.")
+        logger.info(f"Transaction {tx.id} created with status: {status}")
         return tx
+
+    @staticmethod
+    @transaction.atomic
+    def approve_transaction(transaction_id: int, approved_by: "User") -> Transaction:
+        """Approve a pending transaction and execute balance changes."""
+        tx = Transaction.objects.select_for_update().get(pk=transaction_id)
+
+        if tx.status != "pending_approval":
+            raise InvalidTransactionError(message=f"Transaction {transaction_id} is not pending approval.")
+
+        if tx.from_account and tx.from_account.user_id == approved_by.id:
+            raise InvalidTransactionError(message="Self-approval is not allowed (Maker-Checker violation).")
+
+        # Refetch and lock accounts
+        from_acc = None
+        to_acc = None
+
+        if tx.from_account:
+            from_acc = Account.objects.select_for_update().get(pk=tx.from_account_id)
+        if tx.to_account:
+            to_acc = Account.objects.select_for_update().get(pk=tx.to_account_id)
+
+        # Re-validate (balance might have changed while pending)
+        TransactionService.validate_transaction(from_acc, to_acc, tx.amount, tx.transaction_type)
+
+        # Execute
+        if from_acc:
+            AccountService.update_balance(from_acc, -tx.amount)
+        if to_acc:
+            AccountService.update_balance(to_acc, tx.amount)
+
+        tx.status = "completed"
+        tx.approved_by = approved_by
+        tx.approval_date = timezone.now()
+        tx.processed_at = timezone.now()
+        tx.save()
+
+        # Notify
+        TransactionService._enqueue_notification(tx)
+
+        logger.info(f"Transaction {transaction_id} approved by {approved_by.email}")
+        return tx
+
+    @staticmethod
+    def reject_transaction(transaction_id: int, rejected_by: "User", reason: str = "") -> Transaction:
+        """Reject a pending transaction."""
+        tx = Transaction.objects.get(pk=transaction_id)
+        if tx.status != "pending_approval":
+            raise InvalidTransactionError(message="Only pending transactions can be rejected.")
+
+        tx.status = "cancelled"
+        tx.description = f"{tx.description} | Rejected: {reason}"
+        tx.save()
+
+        logger.info(f"Transaction {transaction_id} rejected by {rejected_by.email}")
+        return tx
+
+    @staticmethod
+    def _enqueue_notification(tx: Transaction):
+        """Helper to enqueue SMS notification."""
+        if tx.from_account:
+            transaction.on_commit(
+                lambda: TransactionService._send_transaction_notification(
+                    tx.from_account, tx.transaction_type, tx.amount, tx.id
+                )
+            )
+        elif tx.to_account:
+            transaction.on_commit(
+                lambda: TransactionService._send_transaction_notification(
+                    tx.to_account, tx.transaction_type, tx.amount, tx.id
+                )
+            )
 
     @staticmethod
     def validate_transaction(

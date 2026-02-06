@@ -10,6 +10,7 @@ from .pii_masking import (
     mask_id_number,
     mask_income,
     mask_phone_number,
+    mask_generic,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "mask_id_number",
     "mask_income",
     "mask_phone_number",
+    "mask_generic",
 ]

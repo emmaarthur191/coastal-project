@@ -59,6 +59,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     checkAuth();
+
+    // Listen for auth:logout events from api.ts (triggered when refresh token fails)
+    const handleAuthLogout = () => {
+      setUser(null);
+      // Optional: We could also call authService.logout() here, but the token is likely already invalid
+    };
+
+    window.addEventListener('auth:logout', handleAuthLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+    };
   }, []);
 
   const checkAuth = async (): Promise<void> => {

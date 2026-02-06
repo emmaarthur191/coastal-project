@@ -36,6 +36,21 @@ class BankingMessageSerializer(serializers.ModelSerializer):
             return BankingMessageSerializer(obj.replies.all(), many=True, context=self.context).data
         return []
 
+    def to_representation(self, instance):
+        """Apply PII masking based on roles."""
+        from core.utils import mask_generic
+
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        # Standard staff see masked bodies
+        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+        if not is_manager:
+            data["body"] = mask_generic(data.get("body"), length=20)
+
+        return data
+
     def update(self, instance, validated_data):
         if validated_data.get("is_read") and not instance.is_read:
             validated_data["read_at"] = timezone.now()
@@ -76,6 +91,23 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def get_sender_email(self, obj):
         return obj.sender.email if obj.sender else None
+
+    def to_representation(self, instance):
+        """Apply PII masking based on roles."""
+        from core.utils import mask_generic
+
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        # Standard staff see masked content
+        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+        if not is_manager:
+            # We also mask the sender name if it's there
+            data["sender_name"] = mask_generic(data.get("sender_name"))
+            data["content"] = mask_generic(data.get("content"), length=20)
+
+        return data
 
     def get_is_read_by_me(self, obj):
         request = self.context.get("request")
@@ -118,28 +150,55 @@ class MessageThreadSerializer(serializers.ModelSerializer):
 
     def get_messages(self, obj):
         # Return last 50 messages
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+
+        from core.utils import mask_generic
+
         messages = obj.messages.order_by("-created_at")[:50][::-1]
-        return [
-            {
+        result = []
+        for m in messages:
+            sender_name = m.sender.get_full_name() if m.sender else "System"
+            content = m.content or "" # uses property
+
+            if not is_manager:
+                sender_name = mask_generic(sender_name)
+                content = mask_generic(content, length=20)
+
+            result.append({
                 "id": m.id,
                 "sender": m.sender.id if m.sender else None,
-                "sender_name": m.sender.get_full_name() if m.sender else "System",
-                # SECURITY FIX: Only use encrypted_content, never expose plain content
-                "content": m.encrypted_content or "[Encrypted]",
-                "encrypted_content": m.encrypted_content,
-                "iv": m.iv,
-                "auth_tag": m.auth_tag,
-                "message_type": m.message_type,
+                "sender_name": sender_name,
+                "content": content,
+                "encrypted_content": m.content_encrypted, # naming mismatch in model ChatMessage has content_encrypted
+                "message_type": m.message_type if hasattr(m, 'message_type') else 'text',
                 "created_at": m.created_at.isoformat(),
-                "is_system_message": m.is_system_message,
-            }
-            for m in messages
-        ]
+                "is_system_message": getattr(m, 'is_system_message', False),
+            })
+        return result
 
     def get_participant_list(self, obj):
-        return [
-            {"id": p.id, "name": p.get_full_name(), "email": p.email, "role": p.role} for p in obj.participants.all()
-        ]
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+
+        from core.utils import mask_generic
+
+        result = []
+        for p in obj.participants.all():
+            first_name = p.first_name
+            last_name = p.last_name
+            email = p.email
+
+            if not is_manager:
+                name = f"{mask_generic(first_name)} {mask_generic(last_name)}"
+                email = mask_generic(email)
+            else:
+                name = f"{first_name} {last_name}"
+
+            result.append({"id": p.id, "name": name, "email": email, "role": p.role})
+        return result
 
     def get_unread_count(self, obj):
         request = self.context.get("request")

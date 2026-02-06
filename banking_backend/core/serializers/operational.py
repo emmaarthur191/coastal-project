@@ -241,3 +241,86 @@ class ClientAssignmentSerializer(serializers.ModelSerializer):
                 return f"Tomorrow {obj.next_visit.strftime('%I:%M %p')}"
             return obj.next_visit.strftime("%b %d, %I:%M %p")
         return "ASAP"
+
+    def to_representation(self, instance):
+        """Apply PII masking based on user role."""
+        from core.utils.pii_masking import mask_generic
+
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        # Determine if user has permission to view full PII
+        can_view_pii = user and (user.role in ["admin", "manager", "operations_manager"] or user.is_superuser)
+
+        if not can_view_pii:
+            # Mask client name and location
+            data["client_name"] = mask_generic(data.get("client_name"))
+            data["location"] = mask_generic(data.get("location"))
+
+        return data
+
+
+class ClientRegistrationSerializer(serializers.ModelSerializer):
+    """Serializer for client registration requests."""
+
+    class Meta:
+        from core.models.operational import ClientRegistration
+
+        model = ClientRegistration
+        fields = [
+            "id",
+            "mobile_banker",
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "email",
+            "id_type",
+            "id_number",
+            "phone_number",
+            "occupation",
+            "work_address",
+            "position",
+            "account_type",
+            "digital_address",
+            "location",
+            "next_of_kin_data",
+            "status",
+            "processed_by",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at", "processed_by", "status"]
+
+    def to_representation(self, instance):
+        """Apply PII masking based on user role."""
+        from core.utils.pii_masking import (
+            mask_date_of_birth,
+            mask_generic,
+            mask_id_number,
+            mask_phone_number,
+        )
+
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        # Determine if user has permission to view full PII
+        can_view_pii = user and (user.role in ["admin", "manager", "operations_manager"] or user.is_superuser)
+
+        if not can_view_pii:
+            # Mask sensitive fields
+            data["first_name"] = mask_generic(data.get("first_name"))
+            data["last_name"] = mask_generic(data.get("last_name"))
+            data["date_of_birth"] = mask_date_of_birth(data.get("date_of_birth"))
+            data["id_number"] = mask_id_number(data.get("id_number"))
+            data["phone_number"] = mask_phone_number(data.get("phone_number"))
+            data["occupation"] = mask_generic(data.get("occupation"))
+            data["work_address"] = mask_generic(data.get("work_address"))
+            data["position"] = mask_generic(data.get("position"))
+            data["digital_address"] = mask_generic(data.get("digital_address"))
+            data["location"] = mask_generic(data.get("location"))
+            if data.get("next_of_kin_data"):
+                data["next_of_kin_data"] = {"relationship": "REDACTED", "contact": mask_phone_number(None)}
+
+        return data

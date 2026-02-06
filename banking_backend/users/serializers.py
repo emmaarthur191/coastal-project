@@ -24,6 +24,28 @@ class UserSerializer(serializers.ModelSerializer):
         # SECURITY: 'role' must be read-only to prevent privilege escalation via mass assignment
         read_only_fields = ["id", "role", "is_active", "is_staff", "is_superuser", "name"]
 
+    def to_representation(self, instance):
+        """Apply PII masking based on roles."""
+        from core.utils import mask_generic
+
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        # Standard staff (non-managers/non-admins) see masked names
+        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+
+        if not is_manager:
+            data["first_name"] = mask_generic(data.get("first_name"))
+            data["last_name"] = mask_generic(data.get("last_name"))
+            # Recalculate full name from masked components
+            if data["first_name"] and data["last_name"]:
+                data["name"] = f"{data['first_name']} {data['last_name']}"
+            else:
+                data["name"] = data["first_name"] or data["username"]
+
+        return data
+
     def get_name(self, obj):
         if obj.first_name and obj.last_name:
             return f"{obj.first_name} {obj.last_name}"
@@ -31,7 +53,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True, min_length=12)
     password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
@@ -82,6 +104,8 @@ class StaffCreationSerializer(UserRegistrationSerializer):
             }  # generated in logic if needed, or by model default? No, usually model default is null.
         }
 
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+
     def create(self, validated_data):
         # Allow setting role and phone_number
         validated_data.pop("password_confirm")
@@ -108,7 +132,7 @@ class StaffCreationSerializer(UserRegistrationSerializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True, min_length=8)
+    new_password = serializers.CharField(required=True, min_length=12)
     confirm_password = serializers.CharField(required=True)
 
     def validate(self, attrs):
@@ -164,7 +188,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     """
 
     token = serializers.CharField()
-    new_password = serializers.CharField(min_length=8, write_only=True)
+    new_password = serializers.CharField(min_length=12, write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):

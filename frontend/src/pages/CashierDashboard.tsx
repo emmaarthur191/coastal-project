@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { api, authService, PaginatedResponse, ServiceRequest, AuditData, HealthCheckData, PerformanceMetric, PerformanceDashboardData, ReportAnalytics } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '../utils/logger';
+import './CashierDashboard.css';
 import { Transaction } from '../api/models/Transaction';
 import { Product } from '../api/models/Product';
 import { Report } from '../api/models/Report';
@@ -284,7 +286,7 @@ const CashierDashboard: React.FC = () => {
   const handleLogout = async () => { await logout(); navigate('/login'); };
   const announceToScreenReader = (msg: string) => {
     // eslint-disable-next-line no-console
-    console.log(msg);
+    logger.log(msg);
   }; // Simplified
 
   // --- HANDLERS ---

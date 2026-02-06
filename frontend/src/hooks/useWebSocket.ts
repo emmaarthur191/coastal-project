@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 
 interface WebSocketMessage {
   type: string;
@@ -42,7 +43,6 @@ export const useWebSocket = ({
       wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
-
         setIsConnected(true);
         reconnectCountRef.current = 0;
         onOpen?.();
@@ -54,19 +54,18 @@ export const useWebSocket = ({
           setLastMessage(message);
           onMessage?.(message);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          logger.error('Failed to parse WebSocket message:', error);
         }
       };
 
       wsRef.current.onclose = () => {
-
         setIsConnected(false);
         onClose?.();
 
         // Attempt to reconnect if not intentionally closed
         if (reconnectCountRef.current < reconnectAttempts) {
           reconnectCountRef.current += 1;
-          console.log(`Attempting to reconnect (${reconnectCountRef.current}/${reconnectAttempts})...`);
+          logger.log(`Attempting to reconnect (${reconnectCountRef.current}/${reconnectAttempts})...`);
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, reconnectInterval);
@@ -74,11 +73,11 @@ export const useWebSocket = ({
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        logger.error('WebSocket error:', error);
         onError?.(error);
       };
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      logger.error('Failed to create WebSocket connection:', error);
     }
   }, [url, user, onMessage, onOpen, onClose, onError, reconnectAttempts, reconnectInterval]);
 
@@ -100,7 +99,7 @@ export const useWebSocket = ({
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket is not connected. Message not sent:', message);
+      logger.warn('WebSocket is not connected. Message not sent:', message);
     }
   }, []);
 

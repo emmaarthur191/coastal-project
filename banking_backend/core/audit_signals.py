@@ -28,11 +28,99 @@ def get_request_context():
     return user, ip
 
 
+# --- PII Fields to Mask in Audit Logs ---
+PII_FIELDS = [
+    "id_number",
+    "phone_number",
+    "ssnit_number",
+    "staff_id",
+    "first_name",
+    "last_name",
+    "date_of_birth",
+    "address",
+    "nationality",
+    "occupation",
+    "work_address",
+    "position",
+    "digital_address",
+    "location",
+    "location_encrypted",
+    "next_of_kin_data",
+    "client_name",
+    "client_name_encrypted",
+    "id_number_encrypted",
+    "phone_number_encrypted",
+    "ssnit_number_encrypted",
+    "staff_id_encrypted",
+    "id_number_hash",
+    "phone_number_hash",
+    "ssnit_number_hash",
+    "staff_id_hash",
+    "first_name_encrypted",
+    "last_name_encrypted",
+    "date_of_birth_encrypted",
+    "address_encrypted",
+    "next_of_kin_encrypted",
+    "occupation_encrypted",
+    "work_address_encrypted",
+    "position_encrypted",
+    "digital_address_encrypted",
+    "digital_address_encrypted_val",
+    "photo",
+    "photo_encrypted",
+    "next_of_kin_1_name",
+    "next_of_kin_1_name_encrypted",
+    "next_of_kin_1_phone",
+    "next_of_kin_1_phone_encrypted",
+    "next_of_kin_1_address",
+    "next_of_kin_1_address_encrypted",
+    "next_of_kin_2_name",
+    "next_of_kin_2_name_encrypted",
+    "next_of_kin_2_phone",
+    "next_of_kin_2_phone_encrypted",
+    "next_of_kin_2_address",
+    "next_of_kin_2_address_encrypted",
+    "guarantor_1_name",
+    "guarantor_1_name_encrypted",
+    "guarantor_1_id_number",
+    "guarantor_1_id_number_encrypted",
+    "guarantor_1_id_number_hash",
+    "guarantor_1_phone",
+    "guarantor_1_phone_encrypted",
+    "guarantor_1_address",
+    "guarantor_1_address_encrypted",
+    "guarantor_2_name",
+    "guarantor_2_name_encrypted",
+    "guarantor_2_id_number",
+    "guarantor_2_id_number_encrypted",
+    "guarantor_2_id_number_hash",
+    "guarantor_2_phone",
+    "guarantor_2_phone_encrypted",
+    "guarantor_2_address",
+    "guarantor_2_address_encrypted",
+    "body",
+    "body_encrypted",
+    "content",
+    "content_encrypted",
+    "message",
+    "message_encrypted",
+    "first_name_hash",
+    "last_name_hash",
+]
+
+
 def create_audit_log(action: str, model_name: str, instance, changes: dict = None):
     """Create an audit log entry for a model change."""
     from users.models import AuditLog
 
     user, ip = get_request_context()
+
+    # Sanitize changes dictionary to prevent PII leakage
+    # Even if property-based PII access isn't directly logged, we mask these keys to be safe
+    sanitized_changes = changes or {}
+    for field in PII_FIELDS:
+        if field in sanitized_changes:
+            sanitized_changes[field] = "[REDACTED]"
 
     try:
         AuditLog.objects.create(
@@ -41,7 +129,7 @@ def create_audit_log(action: str, model_name: str, instance, changes: dict = Non
             model_name=model_name,
             object_id=str(instance.pk),
             object_repr=str(instance)[:255],
-            changes=changes or {},
+            changes=sanitized_changes,
             ip_address=ip,
         )
     except Exception as e:
@@ -96,3 +184,14 @@ def log_user_save(sender, instance, created, **kwargs):
         "is_active": instance.is_active,
     }
     create_audit_log(action, "User", instance, changes)
+
+
+# --- Deletion Audit ---
+from django.db.models.signals import post_delete
+
+@receiver(post_delete, sender="core.Account")
+@receiver(post_delete, sender="core.Loan")
+@receiver(post_delete, sender="users.User")
+def log_deletion(sender, instance, **kwargs):
+    """Automatically log deletion of critical models."""
+    create_audit_log("delete", sender.__name__, instance, {"automated": True})

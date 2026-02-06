@@ -239,7 +239,7 @@ class SystemAlertsView(APIView):
         return Response(alerts[:10])
 
 
-@method_decorator(cache_page(60 * 2), name="get")
+@method_decorator(cache_page(60 * 5), name="get")
 class OperationsMetricsView(APIView):
     """View for operations metrics used by ManagerDashboard."""
 
@@ -247,15 +247,13 @@ class OperationsMetricsView(APIView):
 
     def get(self, request):
         """Calculate comprehensive operational metrics for the manager dashboard."""
-        from users.models import User
-
-        today = timezone.now().date()
+        _today = timezone.now().date()
 
         try:
             # Calculate metrics
-            total_transactions_today = Transaction.objects.filter(timestamp__date=today).count()
+            total_transactions_today = Transaction.objects.filter(timestamp__date=_today).count()
 
-            total_volume_today_agg = Transaction.objects.filter(timestamp__date=today, status="completed").aggregate(
+            total_volume_today_agg = Transaction.objects.filter(timestamp__date=_today, status="completed").aggregate(
                 total=Sum("amount")
             )
             total_volume_today = total_volume_today_agg["total"] or Decimal("0")
@@ -268,6 +266,7 @@ class OperationsMetricsView(APIView):
             open_complaints = Complaint.objects.filter(status__in=["open", "in_progress"]).count()
 
             # Staff metrics
+            from users.models import User
             active_staff = User.objects.filter(
                 role__in=["staff", "cashier", "manager", "admin"], is_active=True
             ).count()
@@ -275,12 +274,12 @@ class OperationsMetricsView(APIView):
             # Calculate daily trend (last 7 days)
             daily_transactions = []
             for i in range(7):
-                day = today - datetime.timedelta(days=i)
+                day = _today - datetime.timedelta(days=i)
                 count = Transaction.objects.filter(timestamp__date=day).count()
                 daily_transactions.append({"date": day.isoformat(), "count": count})
 
             # Calculate trends
-            yesterday = today - datetime.timedelta(days=1)
+            yesterday = _today - datetime.timedelta(days=1)
             transactions_yesterday = Transaction.objects.filter(timestamp__date=yesterday).count()
 
             if transactions_yesterday > 0:
@@ -292,19 +291,19 @@ class OperationsMetricsView(APIView):
                 transaction_change = 0 if total_transactions_today == 0 else 100
 
             # Failed transactions
-            failed_today = Transaction.objects.filter(status="failed", timestamp__date=today).count()
+            failed_today = Transaction.objects.filter(status="failed", timestamp__date=_today).count()
             failed_yesterday = Transaction.objects.filter(status="failed", timestamp__date=yesterday).count()
             failed_change = failed_today - failed_yesterday
 
             # API Response Time
-            avg_resp_time_agg = SystemHealth.objects.filter(checked_at__date=today, status="healthy").aggregate(
+            avg_resp_time_agg = SystemHealth.objects.filter(checked_at__date=_today, status="healthy").aggregate(
                 avg=Avg("response_time_ms")
             )
             avg_resp_time = avg_resp_time_agg["avg"]
 
             api_response_time = int(avg_resp_time) if avg_resp_time is not None else 125
 
-            # System Uptime - Calculate from SystemHealth records
+            # System Uptime
             uptime_window = timezone.now() - datetime.timedelta(days=7)
             total_health_checks = SystemHealth.objects.filter(checked_at__gte=uptime_window).count()
             healthy_checks = SystemHealth.objects.filter(checked_at__gte=uptime_window, status="healthy").count()
@@ -312,12 +311,12 @@ class OperationsMetricsView(APIView):
                 uptime_percent = (healthy_checks / total_health_checks) * 100
                 system_uptime = f"{uptime_percent:.1f}%"
             else:
-                system_uptime = "99.9%"  # Fallback if no health data
+                system_uptime = "99.9%"
 
             # Pending Approvals
             pending_items = []
 
-            # Pending Loans - select_related('user') is important for performance and stability
+            # Pending Loans
             loans = Loan.objects.filter(status="pending").select_related("user").order_by("-created_at")[:10]
             for loan in loans:
                 user_name = loan.user.get_full_name() if loan.user else "Unknown User"
@@ -344,28 +343,36 @@ class OperationsMetricsView(APIView):
                     }
                 )
 
-            # Staff Performance - Based on UserActivity (login/actions) since Transaction has no performed_by
-            from users.models import UserActivity
+            # High-Value Transactions (Maker-Checker Phase 2)
+            high_value_txs = Transaction.objects.filter(status="pending_approval").select_related("from_account", "to_account", "from_account__user", "to_account__user").order_by("-timestamp")[:10]
+            for tx in high_value_txs:
+                from_info = tx.from_account.user.get_full_name() if tx.from_account and tx.from_account.user else "Cash/External"
+                to_info = tx.to_account.user.get_full_name() if tx.to_account and tx.to_account.user else "Cash/External"
+                pending_items.append(
+                    {
+                        "id": str(tx.id),
+                        "type": "High-Value Transaction",
+                        "description": f"{from_info} - GHS {tx.amount} to {to_info}",
+                        "date": tx.timestamp.isoformat(),
+                        "status": "pending_approval",
+                    }
+                )
 
+            # Staff Performance
+            from users.models import UserActivity
             staff_perf_list = []
-            # Get active staff members
-            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True)[
-                :5
-            ]
+            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True)[:5]
 
             for s in active_staff_list:
-                # Count activities for this staff member today
-                activity_count = UserActivity.objects.filter(user=s, created_at__date=today).count()
-
-                # Calculate "efficiency" as presence indicator (logged in today = 100%)
-                logged_in_today = UserActivity.objects.filter(user=s, action="login", created_at__date=today).exists()
+                activity_count = UserActivity.objects.filter(user=s, created_at__date=_today).count()
+                logged_in_today = UserActivity.objects.filter(user=s, action="login", created_at__date=_today).exists()
                 efficiency = "100%" if logged_in_today else "0%"
 
                 staff_perf_list.append(
                     {
                         "name": s.get_full_name() or s.username,
                         "role": s.get_role_display(),
-                        "transactions": activity_count,  # Actions count as proxy
+                        "transactions": activity_count,
                         "efficiency": efficiency,
                     }
                 )
