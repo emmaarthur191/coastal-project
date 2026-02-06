@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework.response import Response
 
@@ -32,11 +33,18 @@ class IdempotencyMixin:
                 existing_key.delete()
             elif existing_key.response_data is not None:
                 logger.info(f"Idempotency hit: returning cached response for {idempotency_key}")
-                return Response(existing_key.response_data, status=existing_key.status_code)
+                # FIX: Use JsonResponse instead of DRF Response to avoid
+                # '.accepted_renderer not set on Response' error
+                return JsonResponse(
+                    existing_key.response_data,
+                    status=existing_key.status_code,
+                    safe=False,  # Allow non-dict responses (e.g., lists)
+                )
             else:
                 # Key exists but no response data -> possible concurrent request or previous crash
-                return Response(
-                    {"detail": "Request already in progress or failed. Please check status and retry."}, status=409
+                return JsonResponse(
+                    {"detail": "Request already in progress or failed. Please check status and retry."},
+                    status=409,
                 )
 
         # Create new key entry
