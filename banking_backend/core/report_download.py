@@ -40,11 +40,13 @@ class ReportDownloadView(APIView):
             if not default_storage.exists(report.file_path):
                 raise Http404(f"File not found on storage: {report.file_path}")
 
-            # Open file and return
+            # Open file and return using async iterator for ASGI compatibility
+            from .utils.async_stream import async_file_iterator
+
             file_handle = default_storage.open(report.file_path, "rb")
             filename = os.path.basename(report.file_path)
 
-            response = FileResponse(file_handle, as_attachment=True, filename=filename)
+            response = FileResponse(async_file_iterator(file_handle), as_attachment=True, filename=filename)
             return response
 
         except Report.DoesNotExist:
