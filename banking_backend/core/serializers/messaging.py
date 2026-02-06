@@ -160,22 +160,24 @@ class MessageThreadSerializer(serializers.ModelSerializer):
         result = []
         for m in messages:
             sender_name = m.sender.get_full_name() if m.sender else "System"
-            content = m.content or "" # uses property
+            content = m.content or ""  # uses property
 
             if not is_manager:
                 sender_name = mask_generic(sender_name)
                 content = mask_generic(content, length=20)
 
-            result.append({
-                "id": m.id,
-                "sender": m.sender.id if m.sender else None,
-                "sender_name": sender_name,
-                "content": content,
-                "encrypted_content": m.content_encrypted, # naming mismatch in model ChatMessage has content_encrypted
-                "message_type": m.message_type if hasattr(m, 'message_type') else 'text',
-                "created_at": m.created_at.isoformat(),
-                "is_system_message": getattr(m, 'is_system_message', False),
-            })
+            result.append(
+                {
+                    "id": m.id,
+                    "sender": m.sender.id if m.sender else None,
+                    "sender_name": sender_name,
+                    "content": content,
+                    "encrypted_content": m.content_encrypted,  # naming mismatch in model ChatMessage has content_encrypted
+                    "message_type": m.message_type if hasattr(m, "message_type") else "text",
+                    "created_at": m.created_at.isoformat(),
+                    "is_system_message": getattr(m, "is_system_message", False),
+                }
+            )
         return result
 
     def get_participant_list(self, obj):

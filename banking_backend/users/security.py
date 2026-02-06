@@ -44,13 +44,15 @@ class SecurityService:
             # For this bank, we default to trusting the header if we're in PROD and behind an LB
             # but we take the first element (the original client IP) only if we've verified the chain.
             # Here we follow a standard Django-secure pattern:
-            proxies = [ip.strip() for ip in x_forwarded_for.split(',')]
+            proxies = [ip.strip() for ip in x_forwarded_for.split(",")]
 
             # If we have a list of trusted proxies, we'd verify remote_addr is in it.
             # For now, we adopt the 'rightmost' secure logic if provided by settings,
             # or default to the first one but with a warning for logging.
-            if hasattr(settings, 'TRUSTED_PROXIES') and remote_addr not in settings.TRUSTED_PROXIES:
-                logger.warning(f"IP Spoofing attempt detected? Request from {remote_addr} claiming to be {x_forwarded_for}")
+            if hasattr(settings, "TRUSTED_PROXIES") and remote_addr not in settings.TRUSTED_PROXIES:
+                logger.warning(
+                    f"IP Spoofing attempt detected? Request from {remote_addr} claiming to be {x_forwarded_for}"
+                )
                 return remote_addr
 
             return proxies[0]

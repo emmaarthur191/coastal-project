@@ -124,6 +124,7 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
         search = request.query_params.get("search", "")
         if search:
             from core.utils.field_encryption import hash_field
+
             search_hash = hash_field(search)
 
             queryset = queryset.filter(
@@ -261,10 +262,12 @@ class AccountOpeningViewSet(
                         username = user_email
                     else:
                         import uuid
+
                         username = f"user_{uuid.uuid4().hex[:8]}"
 
                     # Initial random password (will be reset/resent in Stage 2)
                     import secrets
+
                     temp_initial_pwd = secrets.token_urlsafe(12)
 
                     customer_user = User.objects.create_user(
@@ -440,6 +443,7 @@ class AccountOpeningViewSet(
 
         # SECURITY FIX: Use hashed session keys for privacy
         from core.utils.field_encryption import hash_field
+
         session_key = f"otp_v2_{hash_field(phone_number)}"
 
         # SECURITY FIX: Use cryptographically secure random for OTP generation
@@ -466,6 +470,7 @@ class AccountOpeningViewSet(
 
         # Verify OTP using hashed session key
         from core.utils.field_encryption import hash_field
+
         session_key = f"otp_v2_{hash_field(phone_number)}"
 
         stored_otp = request.session.get(session_key)
@@ -475,6 +480,7 @@ class AccountOpeningViewSet(
         if otp_time_str:
             try:
                 from datetime import datetime
+
                 otp_time = datetime.fromisoformat(otp_time_str)
                 if timezone.is_naive(otp_time):
                     otp_time = timezone.make_aware(otp_time)

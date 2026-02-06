@@ -267,6 +267,7 @@ class OperationsMetricsView(APIView):
 
             # Staff metrics
             from users.models import User
+
             active_staff = User.objects.filter(
                 role__in=["staff", "cashier", "manager", "admin"], is_active=True
             ).count()
@@ -344,10 +345,20 @@ class OperationsMetricsView(APIView):
                 )
 
             # High-Value Transactions (Maker-Checker Phase 2)
-            high_value_txs = Transaction.objects.filter(status="pending_approval").select_related("from_account", "to_account", "from_account__user", "to_account__user").order_by("-timestamp")[:10]
+            high_value_txs = (
+                Transaction.objects.filter(status="pending_approval")
+                .select_related("from_account", "to_account", "from_account__user", "to_account__user")
+                .order_by("-timestamp")[:10]
+            )
             for tx in high_value_txs:
-                from_info = tx.from_account.user.get_full_name() if tx.from_account and tx.from_account.user else "Cash/External"
-                to_info = tx.to_account.user.get_full_name() if tx.to_account and tx.to_account.user else "Cash/External"
+                from_info = (
+                    tx.from_account.user.get_full_name()
+                    if tx.from_account and tx.from_account.user
+                    else "Cash/External"
+                )
+                to_info = (
+                    tx.to_account.user.get_full_name() if tx.to_account and tx.to_account.user else "Cash/External"
+                )
                 pending_items.append(
                     {
                         "id": str(tx.id),
@@ -360,8 +371,11 @@ class OperationsMetricsView(APIView):
 
             # Staff Performance
             from users.models import UserActivity
+
             staff_perf_list = []
-            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True)[:5]
+            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True)[
+                :5
+            ]
 
             for s in active_staff_list:
                 activity_count = UserActivity.objects.filter(user=s, created_at__date=_today).count()

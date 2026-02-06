@@ -115,6 +115,7 @@ def hash_field(value: str) -> str:
 
     Returns:
         Hex-encoded HMAC hash, or empty string if input is empty.
+
     """
     if not value:
         return ""

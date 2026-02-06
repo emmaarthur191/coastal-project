@@ -34,7 +34,9 @@ class Loan(models.Model):
     @property
     def date_of_birth(self):
         from datetime import datetime
+
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.date_of_birth_encrypted)
         if val:
             try:
@@ -46,6 +48,7 @@ class Loan(models.Model):
     @date_of_birth.setter
     def date_of_birth(self, value):
         from core.utils.field_encryption import encrypt_field
+
         if value:
             str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
             self.date_of_birth_encrypted = encrypt_field(str_val)
@@ -55,22 +58,26 @@ class Loan(models.Model):
     @property
     def id_number(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.id_number_encrypted)
 
     @id_number.setter
     def id_number(self, value):
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.id_number_encrypted = encrypt_field(value) if value else ""
         self.id_number_hash = hash_field(value) if value else ""
 
     @property
     def digital_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.digital_address_encrypted)
 
     @digital_address.setter
     def digital_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.digital_address_encrypted = encrypt_field(value) if value else ""
 
     # Next of Kin 1 (Encrypted)
@@ -82,31 +89,37 @@ class Loan(models.Model):
     @property
     def next_of_kin_1_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.next_of_kin_1_name_encrypted)
 
     @next_of_kin_1_name.setter
     def next_of_kin_1_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.next_of_kin_1_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def next_of_kin_1_phone(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.next_of_kin_1_phone_encrypted)
 
     @next_of_kin_1_phone.setter
     def next_of_kin_1_phone(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.next_of_kin_1_phone_encrypted = encrypt_field(value) if value else ""
 
     @property
     def next_of_kin_1_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.next_of_kin_1_address_encrypted)
 
     @next_of_kin_1_address.setter
     def next_of_kin_1_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.next_of_kin_1_address_encrypted = encrypt_field(value) if value else ""
 
     # Next of Kin 2 (Encrypted)
@@ -118,31 +131,37 @@ class Loan(models.Model):
     @property
     def next_of_kin_2_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.next_of_kin_2_name_encrypted)
 
     @next_of_kin_2_name.setter
     def next_of_kin_2_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.next_of_kin_2_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def next_of_kin_2_phone(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.next_of_kin_2_phone_encrypted)
 
     @next_of_kin_2_phone.setter
     def next_of_kin_2_phone(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.next_of_kin_2_phone_encrypted = encrypt_field(value) if value else ""
 
     @property
     def next_of_kin_2_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.next_of_kin_2_address_encrypted)
 
     @next_of_kin_2_address.setter
     def next_of_kin_2_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.next_of_kin_2_address_encrypted = encrypt_field(value) if value else ""
 
     # Guarantor 1 (Encrypted)
@@ -156,42 +175,50 @@ class Loan(models.Model):
     @property
     def guarantor_1_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_1_name_encrypted)
 
     @guarantor_1_name.setter
     def guarantor_1_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.guarantor_1_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def guarantor_1_id_number(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_1_id_number_encrypted)
 
     @guarantor_1_id_number.setter
     def guarantor_1_id_number(self, value):
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.guarantor_1_id_number_encrypted = encrypt_field(value) if value else ""
         self.guarantor_1_id_number_hash = hash_field(value) if value else ""
 
     @property
     def guarantor_1_phone(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_1_phone_encrypted)
 
     @guarantor_1_phone.setter
     def guarantor_1_phone(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.guarantor_1_phone_encrypted = encrypt_field(value) if value else ""
 
     @property
     def guarantor_1_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_1_address_encrypted)
 
     @guarantor_1_address.setter
     def guarantor_1_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.guarantor_1_address_encrypted = encrypt_field(value) if value else ""
 
     # Guarantor 2 (Encrypted)
@@ -205,42 +232,50 @@ class Loan(models.Model):
     @property
     def guarantor_2_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_2_name_encrypted)
 
     @guarantor_2_name.setter
     def guarantor_2_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.guarantor_2_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def guarantor_2_id_number(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_2_id_number_encrypted)
 
     @guarantor_2_id_number.setter
     def guarantor_2_id_number(self, value):
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.guarantor_2_id_number_encrypted = encrypt_field(value) if value else ""
         self.guarantor_2_id_number_hash = hash_field(value) if value else ""
 
     @property
     def guarantor_2_phone(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_2_phone_encrypted)
 
     @guarantor_2_phone.setter
     def guarantor_2_phone(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.guarantor_2_phone_encrypted = encrypt_field(value) if value else ""
 
     @property
     def guarantor_2_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.guarantor_2_address_encrypted)
 
     @guarantor_2_address.setter
     def guarantor_2_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.guarantor_2_address_encrypted = encrypt_field(value) if value else ""
 
     # Financial Info

@@ -5,12 +5,16 @@ re-encrypting all sensitive fields in the database with a new key.
 """
 
 import logging
-from cryptography.fernet import Fernet
+
 from django.db import transaction
-from users.models import User
+
+from cryptography.fernet import Fernet
+
 from core.models.accounts import AccountOpeningRequest
+from users.models import User
 
 logger = logging.getLogger(__name__)
+
 
 def rotate_keys(old_key: str, new_key: str):
     """Iterate through models and re-encrypt data with the new key."""
@@ -32,7 +36,7 @@ def rotate_keys(old_key: str, new_key: str):
                 decrypted = old_cipher.decrypt(user.phone_number_encrypted).decode()
                 user.phone_number_encrypted = new_cipher.encrypt(decrypted.encode())
 
-            user.save(update_fields=['id_number_encrypted', 'phone_number_encrypted'])
+            user.save(update_fields=["id_number_encrypted", "phone_number_encrypted"])
 
         # 2. Rotate Account Opening Requests
         requests = AccountOpeningRequest.objects.all()
@@ -46,6 +50,6 @@ def rotate_keys(old_key: str, new_key: str):
                 decrypted = old_cipher.decrypt(req.phone_number_encrypted).decode()
                 req.phone_number_encrypted = new_cipher.encrypt(decrypted.encode())
 
-            req.save(update_fields=['id_number_encrypted', 'phone_number_encrypted'])
+            req.save(update_fields=["id_number_encrypted", "phone_number_encrypted"])
 
     logger.info("Key rotation completed successfully.")

@@ -107,39 +107,44 @@ class AccountOpeningRequest(models.Model):
     # ID Information
     id_type = models.CharField(max_length=20, choices=ID_TYPES, default="ghana_card")
 
-
     # Personal Information (Encrypted)
     first_name_encrypted = models.TextField(blank=True, default="")
     last_name_encrypted = models.TextField(blank=True, default="")
-    date_of_birth_encrypted = models.TextField(blank=True, default="") # Stored as ISO string
+    date_of_birth_encrypted = models.TextField(blank=True, default="")  # Stored as ISO string
     address_encrypted = models.TextField(blank=True, default="")
 
     @property
     def first_name(self):
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.first_name_encrypted)
         return val if val else ""
 
     @first_name.setter
     def first_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.first_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def last_name(self):
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.last_name_encrypted)
         return val if val else ""
 
     @last_name.setter
     def last_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.last_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def date_of_birth(self):
         from datetime import datetime
+
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.date_of_birth_encrypted)
         if val:
             try:
@@ -151,6 +156,7 @@ class AccountOpeningRequest(models.Model):
     @date_of_birth.setter
     def date_of_birth(self, value):
         from core.utils.field_encryption import encrypt_field
+
         if value:
             str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
             self.date_of_birth_encrypted = encrypt_field(str_val)
@@ -160,12 +166,14 @@ class AccountOpeningRequest(models.Model):
     @property
     def address(self):
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.address_encrypted)
         return val if val else ""
 
     @address.setter
     def address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.address_encrypted = encrypt_field(value) if value else ""
 
     email = models.EmailField(default="", help_text="Customer email for login credentials")
@@ -178,55 +186,67 @@ class AccountOpeningRequest(models.Model):
     @property
     def occupation(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.occupation_encrypted)
 
     @occupation.setter
     def occupation(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.occupation_encrypted = encrypt_field(value) if value else ""
 
     @property
     def work_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.work_address_encrypted)
 
     @work_address.setter
     def work_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.work_address_encrypted = encrypt_field(value) if value else ""
 
     @property
     def position(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.position_encrypted)
 
     @position.setter
     def position(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.position_encrypted = encrypt_field(value) if value else ""
 
     # Location Information (Encrypted)
-    digital_address_encrypted_val = models.TextField(blank=True, default="")  # Avoid conflict with existing digital_address charfield if any
+    digital_address_encrypted_val = models.TextField(
+        blank=True, default=""
+    )  # Avoid conflict with existing digital_address charfield if any
     location_encrypted = models.TextField(blank=True, default="")
 
     @property
     def digital_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.digital_address_encrypted_val)
 
     @digital_address.setter
     def digital_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.digital_address_encrypted_val = encrypt_field(value) if value else ""
 
     @property
     def location(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.location_encrypted)
 
     @location.setter
     def location(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.location_encrypted = encrypt_field(value) if value else ""
 
     # Next of Kin Details (Encrypted)
@@ -235,7 +255,9 @@ class AccountOpeningRequest(models.Model):
     @property
     def next_of_kin_data(self):
         import json
+
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.next_of_kin_encrypted)
         if val:
             try:
@@ -247,7 +269,9 @@ class AccountOpeningRequest(models.Model):
     @next_of_kin_data.setter
     def next_of_kin_data(self, value):
         import json
+
         from core.utils.field_encryption import encrypt_field
+
         if value:
             self.next_of_kin_encrypted = encrypt_field(json.dumps(value))
         else:
@@ -259,11 +283,13 @@ class AccountOpeningRequest(models.Model):
     @property
     def photo(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.photo_encrypted)
 
     @photo.setter
     def photo(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.photo_encrypted = encrypt_field(value) if value else ""
 
     # SECURITY: Encrypted storage for PII (Ghana DPA compliance)
@@ -278,12 +304,14 @@ class AccountOpeningRequest(models.Model):
     def id_number(self):
         """Decrypt and return the ID number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.id_number_encrypted)
 
     @id_number.setter
     def id_number(self, value):
         """Encrypt and set the ID number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.id_number_encrypted = encrypt_field(value) if value else ""
         self.id_number_hash = hash_field(value) if value else ""
 
@@ -291,12 +319,14 @@ class AccountOpeningRequest(models.Model):
     def phone_number(self):
         """Decrypt and return the phone number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.phone_number_encrypted)
 
     @phone_number.setter
     def phone_number(self, value):
         """Encrypt and set the phone number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.phone_number_encrypted = encrypt_field(value) if value else ""
         self.phone_number_hash = hash_field(value) if value else ""
 
@@ -391,12 +421,15 @@ class AccountClosureRequest(models.Model):
     @property
     def phone_number(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.phone_number_encrypted)
 
     @phone_number.setter
     def phone_number(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.phone_number_encrypted = encrypt_field(value) if value else ""
+
     otp_verified = models.BooleanField(default=False)
 
     # Status and Tracking

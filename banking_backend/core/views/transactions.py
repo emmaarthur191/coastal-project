@@ -21,7 +21,7 @@ from core.exceptions import BankingException, InsufficientFundsError, InvalidTra
 from core.mixins import IdempotencyMixin
 from core.models.accounts import Account
 from core.models.transactions import Transaction
-from core.permissions import IsCustomer, IsStaff, IsManagerOrAdmin
+from core.permissions import IsCustomer, IsManagerOrAdmin, IsStaff
 from core.serializers.transactions import TransactionSerializer
 from core.services.accounts import AccountService
 from core.services.transactions import TransactionService
@@ -290,7 +290,9 @@ class TransactionViewSet(
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.exception(f"Approval failed: {e}")
-            return Response({"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
     def reject(self, request, pk=None):
@@ -301,4 +303,6 @@ class TransactionViewSet(
             return Response({"status": "success", "message": "Transaction rejected.", "transaction_id": tx.id})
         except Exception as e:
             logger.exception(f"Rejection failed: {e}")
-            return Response({"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

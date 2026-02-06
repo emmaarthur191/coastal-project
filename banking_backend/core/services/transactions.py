@@ -69,7 +69,8 @@ class TransactionService:
         # Check for Maker-Checker (4-Eyes Principle) Threshold
         # Threshold is GHS 5,000.00
         from django.conf import settings
-        threshold = getattr(settings, 'TRANSACTION_APPROVAL_THRESHOLD', Decimal('5000.00'))
+
+        threshold = getattr(settings, "TRANSACTION_APPROVAL_THRESHOLD", Decimal("5000.00"))
 
         requires_approval = amount >= threshold
         status = "pending_approval" if requires_approval else "completed"

@@ -38,12 +38,14 @@ class User(AbstractUser):
     def id_number(self):
         """Decrypt and return the ID number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.id_number_encrypted)
 
     @id_number.setter
     def id_number(self, value):
         """Encrypt and set the ID number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.id_number_encrypted = encrypt_field(value) if value else ""
         self.id_number_hash = hash_field(value) if value else ""
 
@@ -51,12 +53,14 @@ class User(AbstractUser):
     def phone_number(self):
         """Decrypt and return the phone number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.phone_number_encrypted)
 
     @phone_number.setter
     def phone_number(self, value):
         """Encrypt and set the phone number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.phone_number_encrypted = encrypt_field(value) if value else ""
         self.phone_number_hash = hash_field(value) if value else ""
 
@@ -64,12 +68,14 @@ class User(AbstractUser):
     def ssnit_number(self):
         """Decrypt and return the SSNIT number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.ssnit_number_encrypted)
 
     @ssnit_number.setter
     def ssnit_number(self, value):
         """Encrypt and set the SSNIT number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.ssnit_number_encrypted = encrypt_field(value) if value else ""
         self.ssnit_number_hash = hash_field(value) if value else ""
 
@@ -77,12 +83,14 @@ class User(AbstractUser):
     def staff_id(self):
         """Decrypt and return the Staff ID."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.staff_id_encrypted)
 
     @staff_id.setter
     def staff_id(self, value):
         """Encrypt and set the Staff ID + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.staff_id_encrypted = encrypt_field(value) if value else ""
         self.staff_id_hash = hash_field(value) if value else ""
 
@@ -90,12 +98,14 @@ class User(AbstractUser):
     def first_name(self):
         """Decrypt and return the first name."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.first_name_encrypted)
 
     @first_name.setter
     def first_name(self, value):
         """Encrypt and set the first name + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.first_name_encrypted = encrypt_field(value) if value else ""
         self.first_name_hash = hash_field(value) if value else ""
 
@@ -103,12 +113,14 @@ class User(AbstractUser):
     def last_name(self):
         """Decrypt and return the last name."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.last_name_encrypted)
 
     @last_name.setter
     def last_name(self, value):
         """Encrypt and set the last name + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.last_name_encrypted = encrypt_field(value) if value else ""
         self.last_name_hash = hash_field(value) if value else ""
 

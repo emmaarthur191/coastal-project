@@ -7,10 +7,10 @@ from .field_encryption import (
 )
 from .pii_masking import (
     mask_date_of_birth,
+    mask_generic,
     mask_id_number,
     mask_income,
     mask_phone_number,
-    mask_generic,
 )
 
 __all__ = [
@@ -18,8 +18,8 @@ __all__ = [
     "encrypt_field",
     "is_encrypted",
     "mask_date_of_birth",
+    "mask_generic",
     "mask_id_number",
     "mask_income",
     "mask_phone_number",
-    "mask_generic",
 ]

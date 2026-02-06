@@ -1,10 +1,10 @@
+import base64
 import logging
 import re
 
 from django.conf import settings
 from django.utils import timezone
 
-import base64
 import requests
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,6 @@ class SendexaService:
             credentials = f"{api_key}:{api_secret}"
             auth_token = base64.b64encode(credentials.encode()).decode()
             logger.info("Sendexa: Generated auth token from API Credentials")
-
 
         if settings.DEBUG and not auth_token:
             logger.info(f"[SENDEXA MOCK] Would send to {normalized_phone}: {message}")

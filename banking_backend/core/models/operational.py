@@ -281,21 +281,25 @@ class VisitSchedule(models.Model):
     @property
     def client_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.client_name_encrypted)
 
     @client_name.setter
     def client_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.client_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def location(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.location_encrypted)
 
     @location.setter
     def location(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.location_encrypted = encrypt_field(value) if value else ""
 
     scheduled_time = models.DateTimeField()
@@ -345,22 +349,27 @@ class ClientAssignment(models.Model):
     @property
     def client_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.client_name_encrypted)
 
     @client_name.setter
     def client_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.client_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def location(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.location_encrypted)
 
     @location.setter
     def location(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.location_encrypted = encrypt_field(value) if value else ""
+
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="pending")
     amount_due = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     next_visit = models.DateTimeField(null=True, blank=True)
@@ -423,27 +432,33 @@ class ClientRegistration(models.Model):
     @property
     def first_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.first_name_encrypted)
 
     @first_name.setter
     def first_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.first_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def last_name(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.last_name_encrypted)
 
     @last_name.setter
     def last_name(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.last_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def date_of_birth(self):
         from datetime import datetime
+
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.date_of_birth_encrypted)
         if val:
             try:
@@ -457,6 +472,7 @@ class ClientRegistration(models.Model):
     @date_of_birth.setter
     def date_of_birth(self, value):
         from core.utils.field_encryption import encrypt_field
+
         if value:
             str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
             self.date_of_birth_encrypted = encrypt_field(str_val)
@@ -478,12 +494,14 @@ class ClientRegistration(models.Model):
     def id_number(self):
         """Decrypt and return the ID number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.id_number_encrypted)
 
     @id_number.setter
     def id_number(self, value):
         """Encrypt and set the ID number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.id_number_encrypted = encrypt_field(value) if value else ""
         self.id_number_hash = hash_field(value) if value else ""
 
@@ -491,12 +509,14 @@ class ClientRegistration(models.Model):
     def phone_number(self):
         """Decrypt and return the phone number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.phone_number_encrypted)
 
     @phone_number.setter
     def phone_number(self, value):
         """Encrypt and set the phone number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.phone_number_encrypted = encrypt_field(value) if value else ""
         self.phone_number_hash = hash_field(value) if value else ""
 
@@ -507,31 +527,37 @@ class ClientRegistration(models.Model):
     @property
     def occupation(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.occupation_encrypted)
 
     @occupation.setter
     def occupation(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.occupation_encrypted = encrypt_field(value) if value else ""
 
     @property
     def work_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.work_address_encrypted)
 
     @work_address.setter
     def work_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.work_address_encrypted = encrypt_field(value) if value else ""
 
     @property
     def position(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.position_encrypted)
 
     @position.setter
     def position(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.position_encrypted = encrypt_field(value) if value else ""
 
     account_type = models.CharField(max_length=25, choices=ACCOUNT_TYPE_CHOICES, default="daily_susu")
@@ -541,21 +567,25 @@ class ClientRegistration(models.Model):
     @property
     def digital_address(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.digital_address_encrypted)
 
     @digital_address.setter
     def digital_address(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.digital_address_encrypted = encrypt_field(value) if value else ""
 
     @property
     def location(self):
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.location_encrypted)
 
     @location.setter
     def location(self, value):
         from core.utils.field_encryption import encrypt_field
+
         self.location_encrypted = encrypt_field(value) if value else ""
 
     next_of_kin_encrypted = models.TextField(blank=True, default="")
@@ -563,7 +593,9 @@ class ClientRegistration(models.Model):
     @property
     def next_of_kin_data(self):
         import json
+
         from core.utils.field_encryption import decrypt_field
+
         val = decrypt_field(self.next_of_kin_encrypted)
         if val:
             try:
@@ -575,11 +607,14 @@ class ClientRegistration(models.Model):
     @next_of_kin_data.setter
     def next_of_kin_data(self, value):
         import json
+
         from core.utils.field_encryption import encrypt_field
+
         if value:
             self.next_of_kin_encrypted = encrypt_field(json.dumps(value))
         else:
             self.next_of_kin_encrypted = ""
+
     id_document = models.FileField(upload_to="registration/ids/", null=True, blank=True)
     passport_picture = models.ImageField(upload_to="registration/passports/", null=True, blank=True)
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default="pending_verification")

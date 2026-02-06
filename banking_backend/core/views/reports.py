@@ -180,7 +180,6 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
     @action(detail=False, methods=["post"])
     def generate(self, request):
         """Generate a report from a template."""
-        from core.models.accounts import Account
         from core.models.reporting import ReportTemplate
         from core.pdf_services import generate_generic_report_pdf
 
@@ -243,7 +242,9 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
-                is_manager = request.user.role in ["manager", "operations_manager", "admin"] or request.user.is_superuser
+                is_manager = (
+                    request.user.role in ["manager", "operations_manager", "admin"] or request.user.is_superuser
+                )
                 for acc in queryset:
                     acc_num = acc.account_number
                     if not is_manager:

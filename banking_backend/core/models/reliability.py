@@ -20,12 +20,14 @@ class SmsOutbox(models.Model):
     def phone_number(self):
         """Decrypt and return the phone number."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.phone_number_encrypted)
 
     @phone_number.setter
     def phone_number(self, value):
         """Encrypt and set the phone number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
+
         self.phone_number_encrypted = encrypt_field(value) if value else ""
         self.phone_number_hash = hash_field(value) if value else ""
 

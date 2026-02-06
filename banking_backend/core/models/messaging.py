@@ -20,12 +20,14 @@ class BankingMessage(models.Model):
     def body(self):
         """Decrypt and return the message body."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.body_encrypted)
 
     @body.setter
     def body(self, value):
         """Encrypt and set the message body."""
         from core.utils.field_encryption import encrypt_field
+
         self.body_encrypted = encrypt_field(value) if value else ""
 
     is_read = models.BooleanField(default=False)
@@ -217,12 +219,14 @@ class OperationsMessage(models.Model):
     def message(self):
         """Decrypt and return the operations message."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.message_encrypted)
 
     @message.setter
     def message(self, value):
         """Encrypt and set the operations message."""
         from core.utils.field_encryption import encrypt_field
+
         self.message_encrypted = encrypt_field(value) if value else ""
 
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default="medium")
@@ -288,12 +292,14 @@ class ChatMessage(models.Model):
     def content(self):
         """Decrypt and return the chat message content."""
         from core.utils.field_encryption import decrypt_field
+
         return decrypt_field(self.content_encrypted)
 
     @content.setter
     def content(self, value):
         """Encrypt and set the chat message content."""
         from core.utils.field_encryption import encrypt_field
+
         self.content_encrypted = encrypt_field(value) if value else ""
 
     is_read = models.BooleanField(default=False)

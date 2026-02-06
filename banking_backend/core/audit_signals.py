@@ -189,6 +189,7 @@ def log_user_save(sender, instance, created, **kwargs):
 # --- Deletion Audit ---
 from django.db.models.signals import post_delete
 
+
 @receiver(post_delete, sender="core.Account")
 @receiver(post_delete, sender="core.Loan")
 @receiver(post_delete, sender="users.User")
