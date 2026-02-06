@@ -38,3 +38,5 @@ twisted>=24.3.0
 joblib>=1.3.0
 scikit-learn>=1.4.0
 reportlab>=4.2.4
+
+user-agents>=2.2.0
