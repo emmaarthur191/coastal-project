@@ -26,6 +26,15 @@ class ClientRegistrationViewSet(GenericViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = None  # No model backing this ViewSet
 
+    @property
+    def throttle_scope(self):
+        """Standard DRF ScopedRateThrottle looks for this attribute."""
+        if self.action == "send_otp":
+            return "otp_request"
+        if self.action == "verify_otp":
+            return "otp_verify"
+        return None
+
     @action(detail=False, methods=["post"], url_path="submit-registration")
     def submit_registration(self, request):
         """Handle client registration form submission and persist to database."""
@@ -114,7 +123,7 @@ class ClientRegistrationViewSet(GenericViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["post"], url_path="send-otp", throttle_scope="otp_request")
+    @action(detail=False, methods=["post"], url_path="send-otp")
     def send_otp(self, request):
         """Generate and send OTP for registration verification."""
         from core.models.operational import ClientRegistration
@@ -161,7 +170,7 @@ class ClientRegistrationViewSet(GenericViewSet):
 
         return Response({"success": True, "message": "OTP sent successfully"})
 
-    @action(detail=False, methods=["post"], url_path="verify-otp", throttle_scope="otp_verify")
+    @action(detail=False, methods=["post"], url_path="verify-otp")
     def verify_otp(self, request):
         """Verify OTP and transition to AccountOpeningRequest."""
         from core.models.accounts import AccountOpeningRequest

@@ -210,6 +210,17 @@ class AccountOpeningViewSet(
     ordering_fields = ["created_at", "status"]
     ordering = ["-created_at"]
 
+    @property
+    def throttle_scope(self):
+        """Standard DRF ScopedRateThrottle looks for this attribute.
+        Since we have different scopes for different actions, we use a property.
+        """
+        if self.action == "send_otp":
+            return "otp_request"
+        if self.action == "verify_and_submit":
+            return "otp_verify"
+        return None
+
     def get_permissions(self):
         """Override permissions based on action - only managers/admins can approve/reject."""
         if self.action in ["approve", "reject"]:
@@ -433,7 +444,7 @@ class AccountOpeningViewSet(
             }
         )
 
-    @action(detail=False, methods=["post"], url_path="send-otp", throttle_scope="otp_request")
+    @action(detail=False, methods=["post"], url_path="send-otp")
     def send_otp(self, request):
         """Send OTP to customer phone number for account opening verification."""
         phone_number = request.data.get("phone_number")
@@ -488,7 +499,7 @@ class AccountOpeningViewSet(
         masked_phone = f"***-***-{phone_number[-4:]}"
         return Response({"success": True, "message": "OTP sent successfully", "phone_number": masked_phone})
 
-    @action(detail=False, methods=["post"], url_path="verify-and-submit", throttle_scope="otp_verify")
+    @action(detail=False, methods=["post"], url_path="verify-and-submit")
     def verify_and_submit(self, request):
         """Verify OTP and submit account opening request."""
         phone_number = request.data.get("phone_number")
