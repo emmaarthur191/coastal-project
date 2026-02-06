@@ -68,10 +68,9 @@ jobs:
         FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
 
     - name: Upload coverage to Codecov
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
       uses: codecov/codecov-action@v4
       with:
         files: ./banking_backend/coverage.xml
         fail_ci_if_error: false
         verbose: true
-        token: ${{ secrets.CODECOV_TOKEN }}

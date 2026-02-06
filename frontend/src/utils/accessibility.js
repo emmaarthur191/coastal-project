@@ -402,7 +402,7 @@ class AccessibilityTester {
 
     const hasResponsiveCSS = this.checkResponsiveCSS();
     const textScalable = viewportContent.includes('user-scalable=yes') ||
-                        !viewportContent.includes('maximum-scale');
+      !viewportContent.includes('maximum-scale');
 
     this.results.push({
       test: 'Responsive Design',
@@ -449,16 +449,16 @@ class AccessibilityTester {
 
   isElementFocusable(element) {
     return !element.disabled &&
-           !element.getAttribute('hidden') &&
-           !element.getAttribute('aria-hidden') &&
-           (element.offsetWidth > 0 || element.offsetHeight > 0);
+      !element.getAttribute('hidden') &&
+      !element.getAttribute('aria-hidden') &&
+      (element.offsetWidth > 0 || element.offsetHeight > 0);
   }
 
   hasVisibleFocusIndicator(element) {
     const style = window.getComputedStyle(element, ':focus');
     return style.outline !== 'none' ||
-           style.boxShadow !== 'none' ||
-           style.border !== 'none';
+      style.boxShadow !== 'none' ||
+      style.border !== 'none';
   }
 
   testKeyboardShortcuts(shortcuts) {
@@ -573,7 +573,7 @@ class AccessibilityTester {
     }).join(' ');
 
     return styles.includes('@media (prefers-reduced-motion: reduce)') ||
-           styles.includes('@media (prefers-reduced-motion:reduce)');
+      styles.includes('@media (prefers-reduced-motion:reduce)');
   }
 
   checkResponsiveCSS() {
@@ -694,10 +694,9 @@ class AccessibilityTester {
     // Log the report for now - in production, send to analytics/monitoring
     console.warn(' Accessibility Report:', report);
 
-    // Store in localStorage for debugging
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('accessibilityReport', JSON.stringify(report, null, 2));
-    }
+    // SECURITY: Removed localStorage persistence (2026 Red/Black Team Audit)
+    // Accessibility reports could contain PII (user IDs, content fragments).
+    // In production, send reports to a secure server-side analytics endpoint.
   }
 }
 

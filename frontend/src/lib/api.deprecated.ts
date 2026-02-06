@@ -14,12 +14,12 @@ export const api = new ApiClient({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
 });
 
-// Add auth token if using JWT
+// SECURITY: Authentication is now handled via HttpOnly cookies
+// set by the backend. Do NOT use localStorage for tokens (XSS vulnerable).
+// See: 2026 Red/Black Team Audit - LocalStorage PII Remediation
 api.instance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  // Cookies are automatically included via credentials: 'include'
+  // No manual token handling required
   return config;
 });
 
