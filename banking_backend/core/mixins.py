@@ -55,13 +55,21 @@ class IdempotencyMixin:
         response = super().dispatch(request, *args, **kwargs)
 
         # Save response data for subsequent retries
+        # RFC 7232 / Stripe Best Practice: Only cache terminal responses
+        # DO NOT cache transient errors (401, 429, 5xx) which are retriable
         try:
-            # We only cache successful or terminal responses (not transient errors if possible,
-            # but usually we cache all to be safe about the result).
             if hasattr(response, "data"):
-                new_key.response_data = response.data
-                new_key.status_code = response.status_code
-                new_key.save()
+                status = response.status_code
+                # Cache 2xx success and 4xx client errors EXCEPT transient ones
+                is_cacheable = (200 <= status < 500) and status not in [401, 429]
+                if is_cacheable:
+                    new_key.response_data = response.data
+                    new_key.status_code = status
+                    new_key.save()
+                else:
+                    # Delete the key so retries can re-execute
+                    new_key.delete()
+                    logger.debug(f"Idempotency key {idempotency_key} not cached (status {status})")
         except Exception as e:
             logger.error(f"Failed to save idempotency response for {idempotency_key}: {e}")
 
