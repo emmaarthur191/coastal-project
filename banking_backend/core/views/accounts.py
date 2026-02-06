@@ -433,7 +433,7 @@ class AccountOpeningViewSet(
             }
         )
 
-    @action(detail=False, methods=["post"], url_path="send-otp")
+    @action(detail=False, methods=["post"], url_path="send-otp", throttle_scope="otp_request")
     def send_otp(self, request):
         """Send OTP to customer phone number for account opening verification."""
         phone_number = request.data.get("phone_number")
@@ -446,8 +446,24 @@ class AccountOpeningViewSet(
 
         session_key = f"otp_v2_{hash_field(phone_number)}"
 
-        # SECURITY FIX: Use cryptographically secure random for OTP generation
+        # SECURITY FIX: Use cryptographically secure random for OTP generation (NIST Standard)
         otp = str(secrets.randbelow(900000) + 100000)  # 6-digit OTP
+
+        # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
+        otp_time_str = request.session.get(f"{session_key}_time")
+        if otp_time_str:
+            try:
+                from datetime import datetime
+                prev_time = datetime.fromisoformat(otp_time_str)
+                if timezone.is_naive(prev_time):
+                    prev_time = timezone.make_aware(prev_time)
+                if timezone.now() - prev_time < timedelta(seconds=60):
+                    return Response(
+                        {"error": "Please wait 60 seconds before requesting another OTP."},
+                        status=status.HTTP_429_TOO_MANY_REQUESTS
+                    )
+            except (ValueError, TypeError):
+                pass
 
         request.session[session_key] = otp
         request.session[f"{session_key}_time"] = timezone.now().isoformat()
@@ -455,11 +471,24 @@ class AccountOpeningViewSet(
         # SECURITY FIX: Don't log the actual OTP - only log that it was sent
         logger.info(f"OTP sent to phone ending in ...{phone_number[-4:]}")
 
+        # Send via Sendexa (Industry Standard: Verify delivery)
+        from users.services import SendexaService
+        message = f"Your Coastal Banking account opening OTP is: {otp}. Valid for 5 minutes."
+        success, sms_resp = SendexaService.send_sms(phone_number, message)
+
+        if not success:
+            logger.error(f"[OTP Error] Failed to send SMS to {phone_number[-4:]}: {sms_resp}")
+            if not settings.DEBUG:
+                return Response(
+                    {"error": "Failed to deliver OTP. Please check the number or try again later."},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
+
         # Mask phone in response
         masked_phone = f"***-***-{phone_number[-4:]}"
         return Response({"success": True, "message": "OTP sent successfully", "phone_number": masked_phone})
 
-    @action(detail=False, methods=["post"], url_path="verify-and-submit")
+    @action(detail=False, methods=["post"], url_path="verify-and-submit", throttle_scope="otp_verify")
     def verify_and_submit(self, request):
         """Verify OTP and submit account opening request."""
         phone_number = request.data.get("phone_number")

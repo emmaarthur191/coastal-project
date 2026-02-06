@@ -114,7 +114,7 @@ class ClientRegistrationViewSet(GenericViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["post"], url_path="send-otp")
+    @action(detail=False, methods=["post"], url_path="send-otp", throttle_scope="otp_request")
     def send_otp(self, request):
         """Generate and send OTP for registration verification."""
         from core.models.operational import ClientRegistration
@@ -130,6 +130,18 @@ class ClientRegistrationViewSet(GenericViewSet):
                 registration = ClientRegistration.objects.get(id=registration_id)
             except:
                 return Response({"error": "Registration not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
+        expiry_key = f"reg_otp_expiry_{registration.registration_id}"
+        prev_expiry = request.session.get(expiry_key)
+        if prev_expiry:
+             # Current code sets expiry to +600s. We want cooldown of 60s from creation.
+             # So if (expiry - 540) > now, it's too soon.
+             if prev_expiry - 540 > timezone.now().timestamp():
+                 return Response(
+                     {"error": "Please wait 60 seconds before requesting another OTP."},
+                     status=status.HTTP_429_TOO_MANY_REQUESTS
+                 )
 
         # Generate OTP
         import secrets
@@ -149,7 +161,7 @@ class ClientRegistrationViewSet(GenericViewSet):
 
         return Response({"success": True, "message": "OTP sent successfully"})
 
-    @action(detail=False, methods=["post"], url_path="verify-otp")
+    @action(detail=False, methods=["post"], url_path="verify-otp", throttle_scope="otp_verify")
     def verify_otp(self, request):
         """Verify OTP and transition to AccountOpeningRequest."""
         from core.models.accounts import AccountOpeningRequest

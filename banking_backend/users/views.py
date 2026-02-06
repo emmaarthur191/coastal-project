@@ -505,6 +505,7 @@ class SendOTPView(APIView):
     """Send OTP for 2FA setup or verification."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope = "otp_request"
 
     def post(self, request):
         """Generate and send a 6-digit OTP to the provided phone number for security verification."""
@@ -513,6 +514,16 @@ class SendOTPView(APIView):
 
         if not phone_number:
             return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
+        import time
+
+        last_sent = request.session.get("otp_created_at")
+        if last_sent and time.time() < last_sent + 60:
+            return Response(
+                {"error": "Please wait 60 seconds before requesting another OTP."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
 
         # Generate a 6-digit OTP using a cryptographically secure RNG
         otp_code = str(secrets.SystemRandom().randint(100000, 999999))
@@ -553,6 +564,7 @@ class VerifyOTPView(APIView):
     """Verify OTP for 2FA setup or other purposes."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope = "otp_verify"
 
     def post(self, request):
         """Verify the provided OTP against the stored session value and return verification status."""
