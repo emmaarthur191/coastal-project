@@ -1,4 +1,5 @@
 import os
+
 import django
 
 # Set up Django environment
@@ -6,9 +7,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 from django.contrib.auth import get_user_model
+
 from core.utils.field_encryption import hash_field
 
 User = get_user_model()
+
 
 def check_hash():
     test_val = "SEARCH-ME-123"
@@ -22,6 +25,7 @@ def check_hash():
         print("Success: Hashes match!")
     else:
         print("Error: Hash mismatch!")
+
 
 if __name__ == "__main__":
     check_hash()

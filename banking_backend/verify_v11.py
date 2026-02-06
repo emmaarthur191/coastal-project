@@ -1,7 +1,7 @@
 import os
-import django
 import sys
-from django.test import RequestFactory
+
+import django
 from django.contrib.sessions.middleware import SessionMiddleware
 
 # Set up Django environment
@@ -10,11 +10,13 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory, force_authenticate
+
 from core.models.accounts import Account, AccountOpeningRequest
-from core.views.accounts import StaffAccountsViewSet, AccountOpeningViewSet
 from core.utils.field_encryption import hash_field
+from core.views.accounts import AccountOpeningViewSet, StaffAccountsViewSet
 
 User = get_user_model()
+
 
 def verify_phase_5():
     print("--- Phase 5: PII Audit & Remediation Verification ---")
@@ -34,11 +36,7 @@ def verify_phase_5():
     User.objects.filter(email=test_email).delete()
 
     user = User.objects.create(
-        username="pii_tester_v11",
-        email=test_email,
-        first_name="Search",
-        last_name="Tester",
-        role="customer"
+        username="pii_tester_v11", email=test_email, first_name="Search", last_name="Tester", role="customer"
     )
     user.id_number = test_id
     user.save()
@@ -55,8 +53,8 @@ def verify_phase_5():
     Account.objects.filter(user=user).delete()
     acc = Account.objects.create(user=user, account_number="ACC-V11-SER", balance=100)
 
-    view = StaffAccountsViewSet.as_view({'get': 'list'})
-    request = factory.get(f'/api/staff/accounts/?search={test_id}')
+    view = StaffAccountsViewSet.as_view({"get": "list"})
+    request = factory.get(f"/api/staff/accounts/?search={test_id}")
     force_authenticate(request, user=admin)
     response = view(request)
 
@@ -86,15 +84,15 @@ def verify_phase_5():
         id_number="ID-777",
         submitted_by=admin,
         status="pending",
-        date_of_birth="1990-01-01"
+        date_of_birth="1990-01-01",
     )
 
     manager = User.objects.filter(role="manager").exclude(id=admin.id).first()
     if not manager:
         manager = User.objects.create(username="manager_v5", email="mgr_v5@example.com", role="manager")
 
-    view_approve = AccountOpeningViewSet.as_view({'post': 'approve'})
-    request = factory.post(f'/api/accounts/opening/{opening_request.id}/approve/')
+    view_approve = AccountOpeningViewSet.as_view({"post": "approve"})
+    request = factory.post(f"/api/accounts/opening/{opening_request.id}/approve/")
     force_authenticate(request, user=manager)
     response = view_approve(request, pk=opening_request.id)
 
@@ -113,8 +111,8 @@ def verify_phase_5():
     # 3. Test OTP Session Privacy
     print("\n[3] Testing OTP Session Privacy...")
     phone_number = "+233999888777"
-    view_otp = AccountOpeningViewSet.as_view({'post': 'send_otp'})
-    request = factory.post('/api/accounts/opening/send-otp/', {'phone_number': phone_number})
+    view_otp = AccountOpeningViewSet.as_view({"post": "send_otp"})
+    request = factory.post("/api/accounts/opening/send-otp/", {"phone_number": phone_number})
     force_authenticate(request, user=admin)
 
     middleware = SessionMiddleware(lambda r: None)
@@ -147,6 +145,7 @@ def verify_phase_5():
 
     print("\n--- ALL PHASE 5 VERIFICATIONS PASSED ---")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     verify_phase_5()

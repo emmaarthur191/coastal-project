@@ -1,29 +1,29 @@
-﻿python : Traceback (most 
+﻿python : Traceback (most
 recent call last):
 At line:1 char:32
-+ ... tal_cu_env; python 
-verify_pii_phase8.py > 
-verify_error_p8_v2.txt 
++ ... tal_cu_env; python
+verify_pii_phase8.py >
+verify_error_p8_v2.txt
 2>&1 ...
 +                 ~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo        
-      : NotSpecified: (T  
-  raceback (most recent   
-  call last)::String)     
+    + CategoryInfo
+      : NotSpecified: (T
+  raceback (most recent
+  call last)::String)
 [], RemoteException
-    + FullyQualifiedError 
-   Id : NativeCommandErr  
+    + FullyQualifiedError
+   Id : NativeCommandErr
   or
- 
+
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\backends\utils.py", 
+db\backends\utils.py",
 line 105, in _execute
-    return 
-self.cursor.execute(sql, 
+    return
+self.cursor.execute(sql,
 params)
            ^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^^^
@@ -32,50 +32,50 @@ conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
 db\backends\sqlite3\base.p
 y", line 354, in execute
-    return 
-super().execute(query, 
+    return
+super().execute(query,
 params)
            ^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^
-sqlite3.OperationalError: 
+sqlite3.OperationalError:
 no such table: core_accoun
 t_opening_request
 
-The above exception was 
-the direct cause of the 
+The above exception was
+the direct cause of the
 following exception:
 
-Traceback (most recent 
+Traceback (most recent
 call last):
   File "E:\coastal\banking
 _backend\verify_pii_phase8
-.py", line 155, in 
+.py", line 155, in
 <module>
     verify_pii_phase8()
   File "E:\coastal\banking
 _backend\verify_pii_phase8
-.py", line 80, in 
+.py", line 80, in
 verify_pii_phase8
-    
-cursor.execute("SELECT 
-occupation_encrypted, 
+
+cursor.execute("SELECT
+occupation_encrypted,
 photo_encrypted FROM core_
-account_opening_request 
+account_opening_request
 WHERE id = %s", [aor.id])
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\backends\utils.py", 
+db\backends\utils.py",
 line 122, in execute
-    return 
-super().execute(sql, 
+    return
+super().execute(sql,
 params)
            ^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\backends\utils.py", 
+db\backends\utils.py",
 line 79, in execute
     return self._execute_w
 ith_wrappers(
@@ -84,17 +84,17 @@ ith_wrappers(
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\backends\utils.py", 
-line 92, in 
+db\backends\utils.py",
+line 92, in
 _execute_with_wrappers
-    return executor(sql, 
+    return executor(sql,
 params, many, context)
            ^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^^^^^^^
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\backends\utils.py", 
+db\backends\utils.py",
 line 100, in _execute
     with self.db.wrap_data
 base_errors:
@@ -103,18 +103,18 @@ base_errors:
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\utils.py", line 91, in 
+db\utils.py", line 91, in
 __exit__
     raise dj_exc_value.wit
-h_traceback(traceback) 
+h_traceback(traceback)
 from exc_value
   File "C:\Users\snype\ana
 conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
-db\backends\utils.py", 
+db\backends\utils.py",
 line 105, in _execute
-    return 
-self.cursor.execute(sql, 
+    return
+self.cursor.execute(sql,
 params)
            ^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^^^
@@ -123,8 +123,8 @@ conda3\envs\coastal_cu_env
 \Lib\site-packages\django\
 db\backends\sqlite3\base.p
 y", line 354, in execute
-    return 
-super().execute(query, 
+    return
+super().execute(query,
 params)
            ^^^^^^^^^^^^^^^
 ^^^^^^^^^^^^^^^

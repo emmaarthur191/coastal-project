@@ -4,6 +4,9 @@
 
 set -o errexit  # Exit on error
 
+echo "=== Setting build environment ==="
+export BUILD_MODE=True
+
 echo "=== Upgrading pip ==="
 pip install --upgrade pip
 

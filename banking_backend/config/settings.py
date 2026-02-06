@@ -75,9 +75,15 @@ if DEBUG:
     FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="dev-only-insecure-key-32bytes!")
     PII_HASH_KEY = env("PII_HASH_KEY", default="dev-only-insecure-hash-key-64chars-long-enough-to-be-secure-v1")
 else:
-    # In production, this will raise ImproperlyConfigured if not set
-    FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
-    PII_HASH_KEY = env("PII_HASH_KEY")
+    # In production, allow a placeholder ONLY during the build phase (collectstatic)
+    # This ensures the Render build succeeds. The app will fail at runtime if real keys are missing.
+    if env.bool("BUILD_MODE", default=False):
+        FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="build-time-only-insecure-key-32bytes!")
+        PII_HASH_KEY = env("PII_HASH_KEY", default="build-time-only-insecure-hash-key-64chars-v1")
+    else:
+        # In production runtime, these MUST be set
+        FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
+        PII_HASH_KEY = env("PII_HASH_KEY")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
