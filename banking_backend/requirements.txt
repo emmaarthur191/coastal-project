@@ -43,22 +43,22 @@ user-agents>=2.2.0
 
 # Security Mitigations
 # pygments 2.19.2 is currently the latest but has CVE-2026-4539; fix pending
-pyjwt>=2.12.0     # Mitigate CVE-2026-32597
-pyopenssl>=26.0.0 # Mitigate CVE-2026-27448
-ujson>=5.12.0     # Mitigate CVE-2026-32874
-werkzeug>=3.1.7   # Mitigate CVE-2026-27199
-tornado>=6.5.5    # Mitigate GHSA-78cv-mqj4-43f7
-jinja2>=3.1.6     # Mitigate CVE-2026-0925
-aiohttp>=3.12.1   # Mitigate CVE-2026-1736
-idna>=3.11        # Mitigate CVE-2026-27827
-authlib>=1.6.9     # Mitigate CVE-2026-28802
-black>=26.3.1      # Mitigate CVE-2026-32274
-cbor2>=5.9.0       # Mitigate CVE-2026-26209
-django-allauth>=65.14.1 # Mitigate CVE-2026-27982
-filelock>=3.20.3   # Mitigate CVE-2026-22701
-flask>=3.1.3       # Mitigate CVE-2026-27205
-nltk>=3.9.4        # Mitigate CVE-2026-33230
-protobuf>=4.25.8,<5.0.0  # Mitigate CVE-2025-4565 (compat-locked)
-pyasn1>=0.6.3      # Mitigate CVE-2026-30922
-virtualenv>=20.36.1 # Mitigate CVE-2026-22702
-wheel>=0.46.2      # Mitigate CVE-2026-24049
+pyjwt==2.12.1     # Mitigate CVE-2026-32597
+pyopenssl==26.0.0 # Mitigate CVE-2026-27448
+ujson==5.12.1     # Mitigate CVE-2026-32874
+werkzeug==3.1.7   # Mitigate CVE-2026-27199
+tornado==6.5.5    # Mitigate GHSA-78cv-mqj4-43f7
+jinja2==3.1.6     # Mitigate CVE-2026-0925
+aiohttp==3.12.1   # Mitigate CVE-2026-1736
+idna==3.11        # Mitigate CVE-2026-27827
+authlib==1.6.9     # Mitigate CVE-2026-28802
+black==26.3.1      # Mitigate CVE-2026-32274
+cbor2==5.9.0       # Mitigate CVE-2026-26209
+django-allauth==65.14.1 # Mitigate CVE-2026-27982
+filelock==3.20.3   # Mitigate CVE-2026-22701
+flask==3.1.3       # Mitigate CVE-2026-27205
+nltk==3.9.4        # Mitigate CVE-2026-33230
+protobuf==4.25.10  # Mitigate CVE-2025-4565 (compat-locked)
+pyasn1==0.6.3      # Mitigate CVE-2026-30922
+virtualenv==20.36.1 # Mitigate CVE-2026-22702
+wheel==0.46.2      # Mitigate CVE-2026-24049
