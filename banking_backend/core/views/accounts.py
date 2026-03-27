@@ -225,11 +225,20 @@ class AccountOpeningViewSet(
         return super().get_throttles()
 
     def get_permissions(self):
-        """Override permissions based on action - only managers/admins can approve/reject."""
+        """Override permissions based on action.
+        Registration actions (OTP, verify) are public, but only staff/managers can manage requests.
+        """
+        if self.action in ["send_otp", "verify_and_submit"]:
+            from rest_framework.permissions import AllowAny
+
+            return [AllowAny()]
+
         if self.action in ["approve", "reject"]:
             from core.permissions import IsManagerOrAdmin
 
             return [IsManagerOrAdmin()]
+
+        # Fallback to class-level permission_classes (IsStaff)
         return super().get_permissions()
 
     def perform_create(self, serializer):
