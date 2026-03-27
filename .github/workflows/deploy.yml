@@ -35,7 +35,9 @@ jobs:
       env:
         SECRET_KEY: test-secret-key-for-ci
         DATABASE_URL: sqlite:///db.sqlite3
+        DEBUG: 'true'
         FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
+        PII_HASH_KEY: dev-only-insecure-hash-key-64chars-long-enough-to-be-secure-v1
 
     # Frontend Tests (Optional - verify buildable)
     - name: Setup Node.js

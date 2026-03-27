@@ -70,6 +70,7 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         REDIS_URL: redis://localhost:6379/1
         FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
+        PII_HASH_KEY: dev-only-insecure-hash-key-64chars-long-enough-to-be-secure-v1
 
     - name: Upload coverage to Codecov
       if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
