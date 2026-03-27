@@ -49,7 +49,7 @@ ujson==5.12.1     # Mitigate CVE-2026-32874
 werkzeug==3.1.7   # Mitigate CVE-2026-27199
 tornado==6.5.5    # Mitigate GHSA-78cv-mqj4-43f7
 jinja2==3.1.6     # Mitigate CVE-2026-0925
-aiohttp==3.12.1   # Mitigate CVE-2026-1736
+aiohttp==3.13.3   # Mitigate CVE-2026-1736
 idna==3.11        # Mitigate CVE-2026-27827
 authlib==1.6.9     # Mitigate CVE-2026-28802
 black==26.3.1      # Mitigate CVE-2026-32274
