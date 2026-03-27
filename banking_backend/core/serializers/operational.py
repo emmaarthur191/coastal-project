@@ -177,6 +177,8 @@ class ClientAssignmentSerializer(serializers.ModelSerializer):
     """Serializer for client assignments to mobile bankers."""
 
     mobile_banker_name = serializers.SerializerMethodField()
+    # client_name is now derived from the User FK at the model level (no DB column).
+    client_name = serializers.SerializerMethodField()
     amount_due_formatted = serializers.SerializerMethodField()
     next_visit_formatted = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
@@ -221,6 +223,12 @@ class ClientAssignmentSerializer(serializers.ModelSerializer):
                     "Please reassign instead of creating a new assignment."
                 )
         return attrs
+
+    def get_client_name(self, obj):
+        """Derive client name from the FK — always fresh."""
+        if obj.client:
+            return obj.client.get_full_name() or obj.client.email
+        return ""
 
     def get_mobile_banker_name(self, obj):
         return obj.mobile_banker.get_full_name() if obj.mobile_banker else None

@@ -163,7 +163,7 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
                         "id": str(account.user.id),
                         "email": account.user.email,
                         "full_name": account.user.get_full_name(),
-                        "phone": getattr(account.user, "phone", ""),
+                        "phone": account.user.phone_number or "",
                     },
                 }
             )
@@ -465,13 +465,14 @@ class AccountOpeningViewSet(
         if otp_time_str:
             try:
                 from datetime import datetime
+
                 prev_time = datetime.fromisoformat(otp_time_str)
                 if timezone.is_naive(prev_time):
                     prev_time = timezone.make_aware(prev_time)
                 if timezone.now() - prev_time < timedelta(seconds=60):
                     return Response(
                         {"error": "Please wait 60 seconds before requesting another OTP."},
-                        status=status.HTTP_429_TOO_MANY_REQUESTS
+                        status=status.HTTP_429_TOO_MANY_REQUESTS,
                     )
             except (ValueError, TypeError):
                 pass
@@ -484,6 +485,7 @@ class AccountOpeningViewSet(
 
         # Send via Sendexa (Industry Standard: Verify delivery)
         from users.services import SendexaService
+
         message = f"Your Coastal Banking account opening OTP is: {otp}. Valid for 5 minutes."
         success, sms_resp = SendexaService.send_sms(phone_number, message)
 
@@ -492,7 +494,7 @@ class AccountOpeningViewSet(
             if not settings.DEBUG:
                 return Response(
                     {"error": "Failed to deliver OTP. Please check the number or try again later."},
-                    status=status.HTTP_502_BAD_GATEWAY
+                    status=status.HTTP_502_BAD_GATEWAY,
                 )
 
         # Mask phone in response

@@ -312,8 +312,15 @@ class LogoutView(APIView):
 
     def post(self, request):
         """Handle user logout, invalidating JWT tokens and clearing authentication cookies."""
+        from django.conf import settings
+
         try:
+            # SECURITY FIX (CVE-COASTAL-009): Extract refresh token from cookie
+            # when not provided in body. Cookie-based auth means the body is
+            # typically empty, so the server must read from the HttpOnly cookie.
             refresh_token = request.data.get("refresh")
+            if not refresh_token:
+                refresh_token = request.COOKIES.get(settings.SIMPLE_JWT.get("REFRESH_COOKIE", "refresh_token"))
             if refresh_token:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
@@ -323,9 +330,7 @@ class LogoutView(APIView):
 
         response = Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
 
-        # Clear Auth Cookie
-        from django.conf import settings
-
+        # Clear Auth Cookies
         response.delete_cookie(settings.SIMPLE_JWT["AUTH_COOKIE"])
         response.delete_cookie(settings.SIMPLE_JWT["REFRESH_COOKIE"])
 

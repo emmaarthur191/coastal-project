@@ -7,13 +7,18 @@ ensuring compliance with data protection standards (GDPR, PCI-DSS).
 import re
 
 
-def mask_id_number(id_number: str | None) -> str | None:
+def mask_id_number(id_number: str | None) -> str:
     """Mask a government ID number, showing only the last 4 characters.
 
     Example: "GHA-123456789012" -> "GHA-XXXXXXXX9012"
+    Returns "REDACTED" for None/empty inputs to prevent null-state leakage.
     """
-    if not id_number or len(id_number) < 4:
-        return id_number
+    if id_number is None:
+        return "REDACTED"
+    if len(id_number) == 0:
+        return "REDACTED"
+    if len(id_number) < 4:
+        return "X" * len(id_number)
     # Keep prefix and last 4 digits
     prefix_match = re.match(r"^([A-Z]{2,4}[-\s]?)", id_number.upper())
     if prefix_match:
@@ -25,13 +30,18 @@ def mask_id_number(id_number: str | None) -> str | None:
     return "X" * (len(id_number) - 4) + id_number[-4:]
 
 
-def mask_phone_number(phone: str | None) -> str | None:
+def mask_phone_number(phone: str | None) -> str:
     """Mask a phone number, showing only the last 4 digits.
 
     Example: "+233201234567" -> "+233XXXXX567"
+    Returns "REDACTED" for None/empty inputs to prevent null-state leakage.
     """
-    if not phone or len(phone) < 4:
-        return phone
+    if phone is None:
+        return "REDACTED"
+    if len(phone) == 0:
+        return "REDACTED"
+    if len(phone) < 4:
+        return "X" * len(phone)
     # Keep country code if present (+XXX)
     if phone.startswith("+"):
         country_code = phone[:4]  # +233
@@ -48,7 +58,7 @@ def mask_income(income) -> str:
     Example: 5500.00 -> "5,000 - 6,000"
     """
     if income is None:
-        return None
+        return "REDACTED"
     try:
         value = float(income)
         lower = int(value // 1000) * 1000

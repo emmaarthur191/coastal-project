@@ -49,6 +49,24 @@ def add_column_if_not_exists(table_name: str, column_name: str, column_def: str)
             return False
 
 
+def drop_column_if_exists(table_name: str, column_name: str) -> bool:
+    """Drop a column if it exists — used to clean up removed fields on existing DBs."""
+    if not table_exists(table_name):
+        return False
+    if not column_exists(table_name, column_name):
+        return False
+
+    with connection.cursor() as cursor:
+        sql = f'ALTER TABLE "{table_name}" DROP COLUMN "{column_name}"'
+        try:
+            cursor.execute(sql)
+            print(f"    - Dropped {table_name}.{column_name}")
+            return True
+        except Exception as e:
+            print(f"    ! Error dropping {table_name}.{column_name}: {e}")
+            return False
+
+
 def create_table_if_not_exists(table_name: str, create_sql: str) -> bool:
     """Create a table if it doesn't exist."""
     if table_exists(table_name):
@@ -393,12 +411,13 @@ def sync_missing_tables():
     )
 
     # ClientAssignment
+    # NOTE: client_name_encrypted was removed in migration 0048.
+    # client_name is now derived from the client FK at runtime.
     create_table_if_not_exists(
         "client_assignment",
         """CREATE TABLE "client_assignment" (
             "id" BIGSERIAL PRIMARY KEY,
-            "client_name" VARCHAR(200) NOT NULL DEFAULT '',
-            "location" VARCHAR(255) NOT NULL DEFAULT '',
+            "location_encrypted" TEXT NOT NULL DEFAULT '',
             "status" VARCHAR(50) NOT NULL DEFAULT 'pending',
             "amount_due" NUMERIC(15,2) NULL,
             "next_visit" TIMESTAMP WITH TIME ZONE NULL,
@@ -522,7 +541,7 @@ def sync_missing_columns():
     # Visits & Assignments
     add_column_if_not_exists("visit_schedule", "client_name_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("visit_schedule", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_assignment", "client_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    # NOTE: client_assignment.client_name_encrypted removed in migration 0048 — do NOT re-add it.
     add_column_if_not_exists("client_assignment", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
 
     # Client Registration (Exhaustive PII)
@@ -540,7 +559,16 @@ def sync_missing_columns():
     add_column_if_not_exists("client_registration", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("client_registration", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
 
-    # SMS Reliability
+    # ── Schema Cleanup (DROP removed columns on existing production DBs) ──────
+    # Migration 0048: client_name_encrypted removed from client_assignment
+    drop_column_if_exists("client_assignment", "client_name_encrypted")
+    # Migration 0048: old plaintext location column (superseded by location_encrypted)
+    drop_column_if_exists("client_assignment", "location")
+    # Migration 0047: old plaintext message column on sms_outbox
+    drop_column_if_exists("sms_outbox", "message")
+
+    # SMS Reliability (migration 0047: message field encrypted)
+    add_column_if_not_exists("sms_outbox", "message_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("sms_outbox", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("sms_outbox", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
 

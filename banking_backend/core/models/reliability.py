@@ -31,7 +31,25 @@ class SmsOutbox(models.Model):
         self.phone_number_encrypted = encrypt_field(value) if value else ""
         self.phone_number_hash = hash_field(value) if value else ""
 
-    message = models.TextField()
+    # SECURITY FIX (CVE-COASTAL-008): Encrypted storage for SMS content
+    # SMS messages may contain OTPs, temporary passwords, and account numbers.
+    # Storing them in plaintext violates the Zero-Plaintext policy.
+    message_encrypted = models.TextField(blank=True, default="")
+
+    @property
+    def message(self):
+        """Decrypt and return the SMS message content."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.message_encrypted)
+
+    @message.setter
+    def message(self, value):
+        """Encrypt and store the SMS message content."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.message_encrypted = encrypt_field(value) if value else ""
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     error_message = models.TextField(blank=True, null=True)
     retry_count = models.PositiveIntegerField(default=0)

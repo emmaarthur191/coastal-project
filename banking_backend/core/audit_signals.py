@@ -47,7 +47,7 @@ PII_FIELDS = [
     "location_encrypted",
     "next_of_kin_data",
     "client_name",
-    "client_name_encrypted",
+    # client_name_encrypted removed — field no longer exists on ClientAssignment
     "id_number_encrypted",
     "phone_number_encrypted",
     "ssnit_number_encrypted",

@@ -343,20 +343,9 @@ class ClientAssignment(models.Model):
         limit_choices_to={"role": "mobile_banker"},
     )
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assigned_to_bankers")
-    client_name_encrypted = models.TextField(blank=True, default="")
+    # NOTE: client_name is no longer cached here. Always derive from self.client.get_full_name().
+    # This eliminates the stale-data risk when user names change.
     location_encrypted = models.TextField(blank=True, default="")
-
-    @property
-    def client_name(self):
-        from core.utils.field_encryption import decrypt_field
-
-        return decrypt_field(self.client_name_encrypted)
-
-    @client_name.setter
-    def client_name(self, value):
-        from core.utils.field_encryption import encrypt_field
-
-        self.client_name_encrypted = encrypt_field(value) if value else ""
 
     @property
     def location(self):
@@ -369,6 +358,14 @@ class ClientAssignment(models.Model):
         from core.utils.field_encryption import encrypt_field
 
         self.location_encrypted = encrypt_field(value) if value else ""
+
+    # Convenience read-only property so serializers and templates can call assignment.client_name
+    @property
+    def client_name(self) -> str:
+        """Derive client name from the FK relation (always fresh, never stale)."""
+        if self.client_id:
+            return self.client.get_full_name() or self.client.email
+        return ""
 
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="pending")
     amount_due = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
@@ -388,11 +385,6 @@ class ClientAssignment(models.Model):
 
     def __str__(self):
         return f"{self.client_name or self.client.email} assigned to {self.mobile_banker.email}"
-
-    def save(self, *args, **kwargs):
-        if not self.client_name and self.client:
-            self.client_name = f"{self.client.first_name} {self.client.last_name}".strip() or self.client.email
-        super().save(*args, **kwargs)
 
 
 class ClientRegistration(models.Model):
