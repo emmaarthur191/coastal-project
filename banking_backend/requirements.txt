@@ -45,7 +45,7 @@ user-agents>=2.2.0
 # pygments 2.19.2 is currently the latest but has CVE-2026-4539; fix pending
 pyjwt==2.12.1     # Mitigate CVE-2026-32597
 pyopenssl==26.0.0 # Mitigate CVE-2026-27448
-ujson==5.12.1     # Mitigate CVE-2026-32874
+ujson==5.12.0     # Mitigate CVE-2026-32874
 werkzeug==3.1.7   # Mitigate CVE-2026-27199
 tornado==6.5.5    # Mitigate GHSA-78cv-mqj4-43f7
 jinja2==3.1.6     # Mitigate CVE-2026-0925
