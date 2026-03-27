@@ -9,3 +9,18 @@ db.sqlite3
 .DS_Store
 media/
 staticfiles/
+
+# Developer Scratch Scripts & Verification Tools
+verify_*.py
+debug_*.py
+check_*.py
+repair_*.py
+diagnose_*.py
+fix_*.py
+tmp_*.py
+*.txt
+*.log
+
+# Project Logs
+logs/
+*.log
