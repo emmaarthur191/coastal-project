@@ -1,3 +1,5 @@
+"""Views and API endpoints for user authentication, registration, and management."""
+
 import logging
 import secrets
 import string
@@ -32,6 +34,7 @@ class UserRegistrationView(generics.CreateAPIView):
 
 class CreateStaffView(APIView):
     """Admin-only endpoint to create staff users.
+
     Auto-generates password and sends via SMS.
     """
 
@@ -191,6 +194,8 @@ class ChangePasswordView(APIView):
             # Update session/token if needed, but for JWT usually client just gets new token next time
             # Or we can invalidate old tokens (Blacklist) if strict security is needed.
             # SECURITY FIX (CVE-COASTAL-003): Invalidate all existing tokens
+            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
             tokens = OutstandingToken.objects.filter(user=user)
             for token in tokens:
                 BlacklistedToken.objects.get_or_create(token=token)
@@ -205,11 +210,14 @@ class ChangePasswordView(APIView):
 
 
 class LoginView(APIView):
+    """Endpoint for user authentication and login."""
+
     authentication_classes = []  # Skip auth to allow login even if old token is invalid
     permission_classes = [AllowAny]
     throttle_scope = "login"  # DRF rate limiting: 5 attempts per 5 minutes
 
     def post(self, request):
+        """Authenticate user credentials and return JWT tokens and user details."""
         from .security import SecurityService
 
         # Security: Check rate limiting by IP
@@ -299,6 +307,8 @@ class LoginView(APIView):
 
 
 class UserDetailView(generics.RetrieveUpdateAPIView):
+    """Endpoint for retrieving and updating user profile details."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -308,6 +318,8 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
 
 
 class LogoutView(APIView):
+    """Endpoint for user logout and token revocation."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -338,11 +350,13 @@ class LogoutView(APIView):
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-    """Custom TokenRefreshView that reads the refresh token from an HttpOnly cookie
-    and sets the new access and refresh tokens back into HttpOnly cookies.
+    """Custom TokenRefreshView that reads the refresh token from an HttpOnly cookie.
+
+    Sets the new access and refresh tokens back into HttpOnly cookies.
     """
 
     def post(self, request, *args, **kwargs):
+        """Exchange a valid refresh token for a new access token."""
         refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
 
         if refresh_token and "refresh" not in request.data:
@@ -400,6 +414,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class GetCSRFToken(APIView):
+    """Endpoint to issue a CSRF cookie for subsequent requests."""
+
     authentication_classes = []  # Skip auth to prevent 401s
     permission_classes = [AllowAny]
 
@@ -732,16 +748,16 @@ class StaffIdsView(APIView):
 
         # Filter by role if provided
         role = request.query_params.get("role")
-        status = request.query_params.get("status")
+        status_param = request.query_params.get("status")
 
         # Filter to exclude customers, allowing all other roles (staff, banker, manager, etc.)
         queryset = User.objects.exclude(role="customer")
 
         if role:
             queryset = queryset.filter(role=role)
-        if status == "active":
+        if status_param == "active":
             queryset = queryset.filter(is_active=True)
-        elif status == "inactive":
+        elif status_param == "inactive":
             queryset = queryset.filter(is_active=False)
 
         # Pull objects to allow property-based PII decryption
@@ -845,7 +861,7 @@ class UserSessionsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Identifies and returns active user sessions based on recent login activity within the last 24 hours."""
+        """Identify and return active user sessions based on recent login activity within the last 24 hours."""
         if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
             return Response(
                 {"detail": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN
@@ -960,6 +976,7 @@ class PasswordResetRequestView(APIView):
     throttle_scope = "password_reset"
 
     def post(self, request):
+        """Handle request for a password reset token."""
         from .models import PasswordResetToken
         from .serializers import PasswordResetRequestSerializer
         from .services import SendexaService
@@ -1024,6 +1041,7 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """Handle the confirmation of a new password using a reset token."""
         from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
         from .models import PasswordResetToken

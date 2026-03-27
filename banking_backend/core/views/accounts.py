@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 class AccountViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet
 ):
+    """API viewset designed to list, create, retrieve, and update core bank accounts."""
+
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -212,7 +214,8 @@ class AccountOpeningViewSet(
     throttle_scope = ""
 
     def get_throttles(self):
-        """Standard DRF ScopedRateThrottle looks for view.throttle_scope.
+        """Configure DRF ScopedRateThrottle to look for view.throttle_scope.
+
         Since we have different scopes for different actions, we set it here.
         """
         if self.action == "send_otp":
@@ -491,6 +494,8 @@ class AccountOpeningViewSet(
 
         if not success:
             logger.error(f"[OTP Error] Failed to send SMS to {phone_number[-4:]}: {sms_resp}")
+            from django.conf import settings
+
             if not settings.DEBUG:
                 return Response(
                     {"error": "Failed to deliver OTP. Please check the number or try again later."},
@@ -664,9 +669,9 @@ class AccountBalanceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """GET /api/accounts/balance/
+        """Retrieve the account balance summary for the logged-in user.
 
-        Returns account balance summary for the currently logged-in user.
+        Returns a detailed breakdown by account type and a combined total balance.
         """
         from decimal import Decimal
 
