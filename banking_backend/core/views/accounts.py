@@ -226,6 +226,7 @@ class AccountOpeningViewSet(
 
     def get_permissions(self):
         """Override permissions based on action.
+
         Registration actions (OTP, verify) are public, but only staff/managers can manage requests.
         """
         if self.action in ["send_otp", "verify_and_submit"]:
@@ -492,16 +493,14 @@ class AccountOpeningViewSet(
         request.session[session_key] = otp
         request.session[f"{session_key}_time"] = timezone.now().isoformat()
 
-        # SECURITY FIX: Don't log the actual OTP - only log that it was sent
-        logger.info(f"OTP sent to phone ending in ...{phone_number[-4:]}")
-
-        # Send via Sendexa (Industry Standard: Verify delivery)
         from users.services import SendexaService
 
         message = f"Your Coastal Banking account opening OTP is: {otp}. Valid for 5 minutes."
         success, sms_resp = SendexaService.send_sms(phone_number, message)
 
-        if not success:
+        if success:
+            logger.info(f"OTP sent to phone ending in ...{phone_number[-4:]}")
+        else:
             logger.error(f"[OTP Error] Failed to send SMS to {phone_number[-4:]}: {sms_resp}")
             from django.conf import settings
 

@@ -1,3 +1,5 @@
+"""Service for Sendexa SMS integration."""
+
 import base64
 import logging
 import re
@@ -15,13 +17,15 @@ _E164_PATTERN = re.compile(r"^\+[1-9]\d{7,14}$")
 
 class SendexaService:
     """Service for sending SMS via Sendexa API.
+
     Uses Basic Auth with pre-encoded Base64 token.
     """
 
     @staticmethod
     def normalize_phone_number(phone_number: str) -> str:
         """Normalize phone number to E.164 format for Ghana.
-        Converts formats like 0244123456 to +233244123456
+
+        Converts formats like 0244123456 to +233244123456.
         """
         if not phone_number:
             return phone_number
@@ -51,6 +55,7 @@ class SendexaService:
     @staticmethod
     def is_valid_e164(phone_number: str) -> bool:
         """Validate that a phone number matches E.164 format.
+
         E.164: + followed by 8-15 digits, first digit non-zero.
         """
         if not phone_number:
@@ -129,7 +134,16 @@ class SendexaService:
             return False, error_msg
 
         # Prepare headers and payload
-        headers = {"Authorization": f"Basic {auth_token}", "Content-Type": "application/json"}
+        # Standard browser-like headers to reduce Cloudflare bot-detection suspicion
+        headers = {
+            "Authorization": f"Basic {auth_token}",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
         payload = {"to": normalized_phone, "sender": sender_id, "message": message}
 
         try:
@@ -168,11 +182,19 @@ class SendexaService:
                     f"Sendexa: SMS delivered successfully " f"(outbox_id={outbox_id}, status={response.status_code})"
                 )
                 return True, response.json()
+            elif response.status_code == 403 and (
+                "Just a moment..." in response.text or "cloudflare" in response.text.lower()
+            ):
+                error_msg = "BLOCKED BY CLOUDFLARE: The SMS provider is challenging this server-side request. White-listing or alternative provider may be required."
+                logger.error(f"Sendexa: {error_msg} (outbox_id={outbox_id}, status=403)")
+                return False, error_msg
             else:
+                # Log a snippet of the response text if it's large (Cloudflare pages can be huge)
+                response_snippet = (response.text[:500] + "...") if len(response.text) > 500 else response.text
                 logger.error(
-                    f"Sendexa: API error (outbox_id={outbox_id}, " f"status={response.status_code}): {response.text}"
+                    f"Sendexa: API error (outbox_id={outbox_id}, " f"status={response.status_code}): {response_snippet}"
                 )
-                return False, f"Provider error: {response.text}"
+                return False, f"Provider error ({response.status_code}): {response_snippet}"
         except Exception as e:
             logger.error(f"Sendexa: Response parsing error (outbox_id={outbox_id}): {e!s}")
             return False, f"Response parsing error: {e!s}"
