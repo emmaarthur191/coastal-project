@@ -490,6 +490,7 @@ def sync_missing_columns():
     # Users
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
+    add_column_if_not_exists("users_user", "staff_number", "INTEGER DEFAULT 0 NOT NULL")
     # PII Encryption (GDPR/Compliance)
     add_column_if_not_exists("users_user", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
