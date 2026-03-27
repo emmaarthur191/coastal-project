@@ -19,8 +19,26 @@ export type OpenAPIConfig = {
     ENCODE_PATH?: ((path: string) => string) | undefined;
 };
 
+// Resolve the base API URL from environment variables, mirroring the logic in services/api.ts.
+// This ensures the auto-generated OpenAPI services (e.g. AccountOpeningsService) correctly
+// target the Render backend in production and never silently fail with empty relative paths.
+function resolveOpenApiBase(): string {
+    const prodUrl = import.meta.env.VITE_PROD_API_URL as string | undefined;
+    const devUrl = import.meta.env.VITE_DEV_API_URL as string | undefined;
+
+    if (prodUrl) {
+        // Strip trailing slash as OpenAPI appends paths with a leading slash
+        return prodUrl.replace(/\/$/, '');
+    }
+    if (devUrl) {
+        return devUrl.replace(/\/$/, '');
+    }
+    // Fallback: same origin (BFF proxy mode)
+    return '';
+}
+
 export const OpenAPI: OpenAPIConfig = {
-    BASE: '',
+    BASE: resolveOpenApiBase(),
     VERSION: '1.0.0',
     WITH_CREDENTIALS: false,
     CREDENTIALS: 'include',

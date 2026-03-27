@@ -1,300 +1,419 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AccountOpeningsService } from '../api/services/AccountOpeningsService';
+import type { AccountOpeningRequest } from '../api/models/AccountOpeningRequest';
 import { authService } from '../services/api';
+
+type ViewMode = 'pending' | 'approved' | 'active' | 'all';
 
 interface Account {
   id: string;
   account_number: string;
-  account_type: string;  // Backend returns account_type, not type
-  balance: string | number;  // Backend returns string
-  is_active: boolean;  // Backend returns is_active, not status
-  user?: {  // Backend returns user, not owner (made optional for safety)
-    id: string;
-    full_name: string;  // Backend returns full_name, not first_name/last_name
-    email: string;
-    phone?: string;
-  };
+  account_type: string;
+  balance: string | number;
+  is_active: boolean;
+  user?: { id: string; full_name: string; email: string; phone?: string };
   created_at: string | null;
 }
 
-interface AccountSummary {
+interface AccountSummaryData {
   total_accounts: number;
   active_accounts: number;
   total_balance: number;
   recent_accounts: number;
 }
 
+const STATUS_BADGE: Record<string, string> = {
+  pending:   'bg-yellow-100 text-yellow-800',
+  approved:  'bg-blue-100 text-blue-800',
+  completed: 'bg-green-100 text-green-800',
+  rejected:  'bg-red-100 text-red-800',
+};
+
 const AccountsTab: React.FC = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>('pending');
 
+  // ── Opening requests state ───────────────────────────────────────────────
+  const [requests, setRequests] = useState<AccountOpeningRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<AccountOpeningRequest | null>(null);
 
+  // ── Active accounts state ────────────────────────────────────────────────
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [summary, setSummary] = useState<AccountSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<AccountSummaryData | null>(null);
+  const [accountsLoading, setAccountsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    loadAccounts();
-    loadSummary();
+  // ── Fetch opening requests ───────────────────────────────────────────────
+  const fetchRequests = useCallback(async (status?: 'pending' | 'approved' | 'rejected' | 'completed') => {
+    setRequestsLoading(true);
+    setRequestsError(null);
+    try {
+      const res = await AccountOpeningsService.apiBankingAccountOpeningsList(
+        undefined, undefined, undefined, status
+      );
+      setRequests(res.results || []);
+    } catch (e) {
+      setRequestsError(e instanceof Error ? e.message : 'Failed to load requests');
+    } finally {
+      setRequestsLoading(false);
+    }
   }, []);
 
-  const loadAccounts = async () => {
+  // ── Fetch active accounts ────────────────────────────────────────────────
+  const fetchAccounts = useCallback(async () => {
+    setAccountsLoading(true);
     try {
-      const response = await authService.getStaffAccounts();
-      if (response.success) {
-        // Handle paginated response structure
-        const responseData = response.data || {};
-        const accountsList = Array.isArray(responseData) ? responseData : ((responseData as { results?: Account[] }).results || []);
-        setAccounts(accountsList as Account[]);
-      } else {
-        setError(response.error || 'Failed to load accounts');
-      }
-    } catch {
-      setError('Failed to load accounts');
+      const [acctRes, summaryRes] = await Promise.all([
+        authService.getStaffAccounts(),
+        authService.getStaffAccountsSummary(),
+      ]);
+      if (acctRes.success) setAccounts(acctRes.data || []);
+      if (summaryRes.success) setSummary(summaryRes.data as AccountSummaryData);
     } finally {
-      setLoading(false);
+      setAccountsLoading(false);
     }
-  };
+  }, []);
 
-  const loadSummary = async () => {
+  // ── Effects ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (viewMode === 'pending')   fetchRequests('pending');
+    else if (viewMode === 'approved') fetchRequests('approved');
+    else if (viewMode === 'all')  fetchRequests(undefined);
+    else if (viewMode === 'active') fetchAccounts();
+  }, [viewMode, fetchRequests, fetchAccounts]);
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+  const handleApprove = async (req: AccountOpeningRequest) => {
+    if (!confirm(`Approve account for ${req.first_name || ''} ${req.last_name || ''}?`)) return;
+    setActionLoading(true);
     try {
-
-      const response = await authService.getStaffAccountsSummary();
-
-      if (response.success) {
-        setSummary(response.data as AccountSummary);
-
-      } else {
-        console.warn('AccountsTab: Failed to load summary:', response.error);
-      }
-    } catch (err) {
-      console.error('AccountsTab: Exception loading summary:', err);
-      // Summary is optional, don't show error
+      await AccountOpeningsService.apiBankingAccountOpeningsApproveCreate(req.id!, req);
+      fetchRequests('pending');
+    } catch (e) {
+      alert('Approval failed: ' + (e instanceof Error ? e.message : 'Unknown error'));
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const filteredAccounts = accounts.filter(account => {
-    const matchesSearch = searchTerm === '' ||
-      account.account_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (account.user?.full_name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
-      (account.user?.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'active' && account.is_active) ||
-      (statusFilter === 'inactive' && !account.is_active);
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-GH', {
-      style: 'currency',
-      currency: 'GHS'
-    }).format(amount);
+  const handleReject = async (req: AccountOpeningRequest) => {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+    setActionLoading(true);
+    try {
+      await AccountOpeningsService.apiBankingAccountOpeningsRejectCreate(req.id!, { ...req, rejection_reason: reason });
+      fetchRequests('pending');
+    } catch (e) {
+      alert('Rejection failed: ' + (e instanceof Error ? e.message : 'Unknown error'));
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GH');
+  const handleDispatch = async (req: AccountOpeningRequest) => {
+    if (!confirm(`Dispatch login credentials for ${req.first_name || ''} ${req.last_name || ''}?`)) return;
+    setActionLoading(true);
+    try {
+      await AccountOpeningsService.apiBankingAccountOpeningsDispatchCredentialsCreate(req.id!, req);
+      fetchRequests('approved');
+    } catch (e) {
+      alert('Dispatch failed: ' + (e instanceof Error ? e.message : 'Unknown error'));
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  if (loading) {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(amount);
 
+  // ── Tabs config ──────────────────────────────────────────────────────────
+  const tabs: { id: ViewMode; label: string; badge?: number }[] = [
+    { id: 'pending',  label: '🕐 Pending Approval', badge: viewMode === 'pending' ? requests.length : undefined },
+    { id: 'approved', label: '✉️ Awaiting Credentials', badge: viewMode === 'approved' ? requests.length : undefined },
+    { id: 'active',   label: '🏦 Active Accounts' },
+    { id: 'all',      label: '📋 All Requests' },
+  ];
+
+  // ── Detail view ──────────────────────────────────────────────────────────
+  if (selectedRequest) {
     return (
-      <div className="flex justify-center items-center h-48 bg-blue-600 text-white p-5 rounded-lg">
-        <div className="animate-pulse font-semibold">Loading accounts...</div>
+      <div className="space-y-4">
+        <button
+          onClick={() => setSelectedRequest(null)}
+          className="text-blue-600 hover:underline flex items-center gap-2 text-sm font-semibold"
+        >
+          ← Back to List
+        </button>
+
+        <div className="bg-white rounded-xl shadow p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-900">
+              Request #{selectedRequest.id} — {selectedRequest.first_name} {selectedRequest.last_name}
+            </h3>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[selectedRequest.status!] || ''}`}>
+              {selectedRequest.status === 'approved' ? 'Awaiting Credentials Dispatch' : selectedRequest.status}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-2">Contact</h4>
+              <p><span className="text-gray-500">Email:</span> {selectedRequest.email || 'N/A'}</p>
+              <p><span className="text-gray-500">Phone:</span> {selectedRequest.phone_number}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-2">Account Details</h4>
+              <p><span className="text-gray-500">Type:</span> {selectedRequest.account_type}</p>
+              <p><span className="text-gray-500">Card:</span> {selectedRequest.card_type || 'N/A'}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-2">Identification</h4>
+              <p><span className="text-gray-500">ID Type:</span> {selectedRequest.id_type}</p>
+              <p><span className="text-gray-500">ID Number:</span> {selectedRequest.id_number || 'N/A'}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-2">Submission</h4>
+              <p><span className="text-gray-500">Submitted:</span> {selectedRequest.created_at ? new Date(selectedRequest.created_at).toLocaleDateString() : 'N/A'}</p>
+            </div>
+          </div>
+
+          {/* Stage 1 Actions */}
+          {selectedRequest.status === 'pending' && (
+            <div className="flex gap-4 pt-4 border-t">
+              <button
+                onClick={() => handleApprove(selectedRequest)}
+                disabled={actionLoading}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+              >
+                {actionLoading ? 'Processing…' : '✅ Approve & Create Account'}
+              </button>
+              <button
+                onClick={() => handleReject(selectedRequest)}
+                disabled={actionLoading}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+              >
+                ❌ Reject
+              </button>
+            </div>
+          )}
+
+          {/* Stage 2 Actions */}
+          {selectedRequest.status === 'approved' && (
+            <div className="pt-4 border-t">
+              <button
+                onClick={() => handleDispatch(selectedRequest)}
+                disabled={actionLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+              >
+                {actionLoading ? 'Dispatching…' : '✉️ Dispatch Login Credentials'}
+              </button>
+              <p className="text-center text-xs text-gray-500 mt-2">
+                This will generate a temporary password and send login details via SMS.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
-  if (error) {
-
-    return (
-      <div className="bg-red-600 text-white p-5 border-4 border-red-800 rounded-lg">
-        <h2 className="text-lg font-bold mb-2">Error Loading Accounts</h2>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
+  // ── Main view ─────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Accounts</h2>
+      </div>
 
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Accounts</dt>
-                    <dd className="text-lg font-medium text-gray-900">{summary.total_accounts}</dd>
-                  </dl>
-                </div>
-              </div>
+      {/* Summary cards (shown for active tab) */}
+      {viewMode === 'active' && summary && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total', value: summary.total_accounts, color: 'bg-indigo-50 text-indigo-700' },
+            { label: 'Active', value: summary.active_accounts, color: 'bg-green-50 text-green-700' },
+            { label: 'Total Balance', value: formatCurrency(summary.total_balance), color: 'bg-blue-50 text-blue-700' },
+            { label: 'New (30d)', value: summary.recent_accounts, color: 'bg-purple-50 text-purple-700' },
+          ].map(c => (
+            <div key={c.label} className={`rounded-xl p-5 ${c.color}`}>
+              <div className="text-2xl font-bold">{c.value}</div>
+              <div className="text-sm mt-1 font-medium">{c.label}</div>
             </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Active Accounts</dt>
-                    <dd className="text-lg font-medium text-gray-900">{summary.active_accounts}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Balance</dt>
-                    <dd className="text-lg font-medium text-gray-900">{formatCurrency(summary.total_balance)}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Recent (30 days)</dt>
-                    <dd className="text-lg font-medium text-gray-900">{summary.recent_accounts}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label htmlFor="search" className="sr-only">Search accounts</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  name="search"
-                  id="search"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Search by account number, name, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="status-filter" className="sr-only">Filter by status</label>
-              <select
-                id="status-filter"
-                name="status-filter"
-                className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setViewMode(t.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              viewMode === t.id
+                ? 'bg-blue-600 text-white shadow'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            {t.label}
+            {t.badge !== undefined && (
+              <span className="ml-2 bg-white/30 text-xs px-1.5 py-0.5 rounded-full">{t.badge}</span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Accounts Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Accounts ({filteredAccounts.length})</h3>
-        </div>
-        <ul className="divide-y divide-gray-200">
-          {filteredAccounts.length === 0 ? (
-            <li className="px-4 py-8 text-center text-gray-500">
-              {accounts.length === 0 ? 'No accounts found.' : 'No accounts match your search criteria.'}
-            </li>
+      {/* ── Opening request list (pending / approved / all) ── */}
+      {viewMode !== 'active' && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
+          {requestsLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600" />
+            </div>
+          ) : requestsError ? (
+            <div className="p-6 text-center text-red-600">{requestsError}</div>
+          ) : requests.length === 0 ? (
+            <div className="p-10 text-center text-gray-400">
+              No {viewMode === 'all' ? '' : viewMode} requests found.
+            </div>
           ) : (
-            filteredAccounts.map((account) => (
-              <li key={account.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <svg className="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+              <thead className="bg-gray-50 dark:bg-slate-700">
+                <tr className="text-left text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Account Type</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {requests.map(req => (
+                  <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <td className="px-4 py-3 text-sm font-mono text-gray-500">#{req.id}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-sm text-gray-900 dark:text-white">
+                        {req.first_name || ''} {req.last_name || 'Unknown'}
                       </div>
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {account.account_number}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {account.user?.full_name ?? 'Unknown'} • {account.user?.email ?? 'No email'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(Number(account.balance) || 0)}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {account.account_type}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${account.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                        }`}>
-                        {account.is_active ? 'Active' : 'Inactive'}
+                      <div className="text-xs text-gray-400">{req.email || '—'}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">{req.account_type}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[req.status!] || 'bg-gray-100 text-gray-600'}`}>
+                        {req.status === 'approved' ? 'Awaiting Dispatch' : req.status}
                       </span>
-                      <div className="text-sm text-gray-500 mt-1">
-                        Created {account.created_at ? formatDate(account.created_at) : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-400">
+                      {req.created_at ? new Date(req.created_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => setSelectedRequest(req)}
+                        className="text-blue-600 hover:underline text-sm font-semibold mr-3"
+                      >
+                        View
+                      </button>
+                      {req.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(req)}
+                            disabled={actionLoading}
+                            className="text-green-600 hover:underline text-sm font-semibold mr-3 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(req)}
+                            disabled={actionLoading}
+                            className="text-red-600 hover:underline text-sm font-semibold disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {req.status === 'approved' && (
+                        <button
+                          onClick={() => handleDispatch(req)}
+                          disabled={actionLoading}
+                          className="text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded text-sm font-semibold disabled:opacity-50"
+                        >
+                          Dispatch
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </ul>
-      </div>
+        </div>
+      )}
+
+      {/* ── Active accounts list ── */}
+      {viewMode === 'active' && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
+          <div className="px-5 py-4 border-b dark:border-slate-700 flex gap-3">
+            <input
+              type="text"
+              placeholder="Search by account number, name or email…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {accountsLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600" />
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+              <thead className="bg-gray-50 dark:bg-slate-700">
+                <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3">Account #</th>
+                  <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Balance</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Opened</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {accounts
+                  .filter(a =>
+                    !searchTerm ||
+                    a.account_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    a.user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    a.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(a => (
+                    <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                      <td className="px-4 py-3 text-sm font-mono font-semibold text-gray-900 dark:text-white">{a.account_number}</td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{a.user?.full_name ?? 'Unknown'}</div>
+                        <div className="text-xs text-gray-400">{a.user?.email ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">{a.account_type}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(Number(a.balance) || 0)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${a.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {a.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-400">
+                        {a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 };
