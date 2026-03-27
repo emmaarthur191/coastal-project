@@ -48,7 +48,7 @@ jobs:
     - name: Install Frontend Dependencies
       run: |
         cd frontend
-        npm ci
+        npm ci --legacy-peer-deps
 
     - name: Run Frontend Tests
       continue-on-error: true
