@@ -6,7 +6,7 @@ import string
 
 from django.conf import settings
 from django.utils import timezone
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -712,6 +712,22 @@ class MembersListView(APIView):
         return Response(results)
 
 
+class StaffSerializer(serializers.ModelSerializer):
+    """Serializer for staff users with decrypted name."""
+
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        """Metadata for StaffSerializer."""
+
+        model = User
+        fields = ["id", "email", "name", "role"]
+
+    def get_name(self, obj):
+        """Retrieve full name by decrypting first and last names."""
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.email
+
+
 class StaffListView(APIView):
     """List staff users for messaging."""
 
@@ -719,13 +735,9 @@ class StaffListView(APIView):
 
     def get(self, request):
         """Retrieve a list of staff users for selection in internal messaging."""
-        staff = User.objects.filter(is_staff=True).values("id", "email", "first_name", "last_name", "role")[:100]
-        return Response(
-            [
-                {"id": s["id"], "name": f"{s['first_name']} {s['last_name']}", "email": s["email"], "role": s["role"]}
-                for s in staff
-            ]
-        )
+        staff = User.objects.filter(is_staff=True)[:100]
+        serializer = StaffSerializer(staff, many=True)
+        return Response(serializer.data)
 
 
 class StaffIdsView(APIView):

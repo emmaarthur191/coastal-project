@@ -6,10 +6,14 @@ from core.models.accounts import Account, AccountClosureRequest, AccountOpeningR
 
 
 class AccountSerializer(serializers.ModelSerializer):
+    """Serializer for existing banking accounts."""
+
     calculated_balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
     account_type_display = serializers.CharField(source="get_account_type_display", read_only=True)
 
     class Meta:
+        """Metadata for AccountSerializer."""
+
         model = Account
         fields = [
             "id",
@@ -26,6 +30,7 @@ class AccountSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user", "account_number", "balance", "created_at", "updated_at", "calculated_balance"]
 
     def validate_balance(self, value):
+        """Ensure balance remains non-negative."""
         if value < 0:
             raise serializers.ValidationError("Balance cannot be negative.")
         return value
@@ -35,6 +40,8 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
     """Serializer for account opening requests."""
 
     class Meta:
+        """Metadata for AccountOpeningRequestSerializer."""
+
         model = AccountOpeningRequest
         fields = [
             "id",
@@ -45,7 +52,6 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "date_of_birth",
-            "nationality",
             "address",
             "phone_number",
             "email",
@@ -84,6 +90,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
         ]
 
     def validate_phone_number(self, value):
+        """Ensure phone number is provided."""
         if not value:
             raise serializers.ValidationError("Phone number is required.")
         return value
@@ -141,6 +148,8 @@ class AccountClosureRequestSerializer(serializers.ModelSerializer):
     account_id = serializers.IntegerField(write_only=True)
 
     class Meta:
+        """Metadata for AccountClosureRequestSerializer."""
+
         model = AccountClosureRequest
         fields = [
             "id",
@@ -175,6 +184,7 @@ class AccountClosureRequestSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        """Create a closure request and verify account ownership."""
         account_id = validated_data.pop("account_id")
         user = self.context["request"].user
         try:
