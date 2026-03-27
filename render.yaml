@@ -57,7 +57,7 @@ services:
       - key: PII_HASH_KEY
         generateValue: true
       - key: PYTHON_VERSION
-        value: "3.11.4"
+        value: "3.12.12"
     healthCheckPath: /api/health/simple/
     autoDeploy: true
 
