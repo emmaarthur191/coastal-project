@@ -93,12 +93,12 @@ class MobileBankerMetricsView(APIView):
         # SECURITY FIX (CVE-COASTAL-010): Prevent API3 Excessive Data Exposure
         # Filter by the specific mobile banker's email to avoid leaking total bank mobile collections
         banker_email = request.user.email
-        
+
         collections_today = Transaction.objects.filter(
-            transaction_type="deposit", 
-            status="completed", 
-            timestamp__date=today, 
-            description__icontains=f"Mobile deposit by {banker_email}"
+            transaction_type="deposit",
+            status="completed",
+            timestamp__date=today,
+            description__icontains=f"Mobile deposit by {banker_email}",
         ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
 
         collections_this_week = Transaction.objects.filter(
