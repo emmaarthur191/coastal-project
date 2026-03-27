@@ -69,12 +69,12 @@ class SendexaService:
 
         # Validate E.164 format after normalization
         if not SendexaService.is_valid_e164(normalized_phone):
+            # Avoid including raw phone numbers in logs or error messages to protect PII
             error_msg = (
-                f"Invalid phone number format after normalization: "
-                f"'{phone_number}' -> '{normalized_phone}'. "
-                f"Expected E.164 format (e.g. +233244123456)."
+                "Invalid phone number format after normalization. "
+                "Expected E.164 format (e.g. +233244123456)."
             )
-            logger.error(f"Sendexa: {error_msg}")
+            logger.error("Sendexa: %s", error_msg)
             # Still create outbox entry for auditing
             from core.models.reliability import SmsOutbox
 

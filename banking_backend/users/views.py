@@ -564,7 +564,8 @@ class SendOTPView(APIView):
         success, response = SendexaService.send_sms(phone_number, message)
 
         if not success:
-            logger.error(f"[OTP Error] Failed to send SMS: {response}")
+            # Avoid logging provider/raw error details that may contain sensitive data (e.g., phone numbers)
+            logger.error("[OTP Error] Failed to send SMS to user phone number")
             # In dev, we might still want to return success for testing flow
             # but in prod, this should probably error
             # Return specific error even in production to help debug provider issues (e.g. missing API key)
