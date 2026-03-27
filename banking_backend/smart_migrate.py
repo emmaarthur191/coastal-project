@@ -567,6 +567,7 @@ def sync_missing_columns():
     drop_column_if_exists("client_assignment", "location")
     # Migration 0047: old plaintext message column on sms_outbox
     drop_column_if_exists("sms_outbox", "message")
+    drop_column_if_exists("sms_outbox", "phone_number")
 
     # SMS Reliability (migration 0047: message field encrypted)
     add_column_if_not_exists("sms_outbox", "message_encrypted", "TEXT DEFAULT '' NOT NULL")
