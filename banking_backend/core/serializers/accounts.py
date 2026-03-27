@@ -23,7 +23,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "balance", "created_at", "updated_at", "calculated_balance"]
+        read_only_fields = ["id", "user", "account_number", "balance", "created_at", "updated_at", "calculated_balance"]
 
     def validate_balance(self, value):
         if value < 0:

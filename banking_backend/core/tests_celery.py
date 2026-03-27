@@ -49,11 +49,17 @@ class CeleryTasksTestCase(TestCase):
     @patch("core.tasks.logger")
     def test_generate_daily_reports_with_retry(self, mock_logger):
         """Test daily report generation with retry on failure."""
+        from celery.exceptions import Retry
+
         with patch("core.tasks.send_mail", side_effect=Exception("Email failed")):
-            _task = generate_daily_reports()
-            # The task should retry and eventually log critical error
+            # Use .apply(throw=True) to run synchronously and propagate Retry
+            with self.assertRaises(Retry):
+                generate_daily_reports.apply(throw=True)
+
+            # The task should log the error
             mock_logger.error.assert_called()
-            mock_logger.critical.assert_called_with("Max retries exceeded for daily report generation")
+            # It should NOT log critical yet (only on MaxRetriesExceeded)
+            mock_logger.critical.assert_not_called()
 
     def test_analyze_fraud_patterns_large_transaction(self):
         """Test fraud analysis detects large transactions."""
@@ -118,11 +124,13 @@ class CeleryTasksTestCase(TestCase):
     @patch("core.tasks.logger")
     def test_send_email_notification_with_retry(self, mock_logger):
         """Test email notification retry on failure."""
+        from celery.exceptions import Retry
+
         with patch("core.tasks.send_mail", side_effect=Exception("SMTP failed")):
-            _result = send_email_notification(self.user.id, "Subject", "Message")
+            with self.assertRaises(Retry):
+                send_email_notification(self.user.id, "Subject", "Message")
 
             mock_logger.error.assert_called()
-            mock_logger.critical.assert_called_with("Max retries exceeded for email notification")
 
     def test_export_transaction_data_csv(self):
         """Test transaction data export in CSV format."""
@@ -161,24 +169,26 @@ class CeleryTasksTestCase(TestCase):
 
         self.assertIn("Health check completed", result)
         self.assertIn("0 issues found", result)
-        mock_send_mail.assert_called_once()
+        # Should NOT call send_mail if 0 issues
+        mock_send_mail.assert_not_called()
 
     @patch("core.tasks.send_mail")
     def test_system_health_check_with_issues(self, mock_send_mail):
         """Test system health check with detected issues."""
         # Create old pending transaction
-        Transaction.objects.create(
+        tx = Transaction.objects.create(
             from_account=self.account,
             amount=Decimal("100.00"),
             transaction_type="transfer",
             status="pending",
-            timestamp=timezone.now() - timedelta(hours=25),  # Older than 24 hours
         )
+        # Bypassing auto_now_add for testing
+        Transaction.objects.filter(id=tx.id).update(timestamp=timezone.now() - timedelta(hours=25))
 
         # Create unresolved fraud alert
-        FraudAlert.objects.create(
-            user=self.user, message="Test alert", severity="high", created_at=timezone.now() - timedelta(days=10)
-        )
+        alert = FraudAlert.objects.create(user=self.user, message="Test alert", severity="high")
+        # Bypassing auto_now_add for testing
+        FraudAlert.objects.filter(id=alert.id).update(created_at=timezone.now() - timedelta(days=10))
 
         result = system_health_check()
 
@@ -198,7 +208,8 @@ class CeleryTasksTestCase(TestCase):
 
         result = system_health_check()
 
-        self.assertIn("Health check completed", result)
+        self.assertIn("1 issues found", result)
+        # Task records issue and sends mail instead of retrying database connectivity on its own here
         mock_send_mail.assert_called_once()
         args, kwargs = mock_send_mail.call_args
         email_body = args[1]

@@ -2,17 +2,18 @@ import csv
 import io
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q, Sum
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 import psutil
 from celery import shared_task
-from celery.exceptions import MaxRetriesException
+from celery.exceptions import MaxRetriesExceededError
 
 from .models import Account, FraudAlert, Loan, SystemHealth, Transaction
 
@@ -23,53 +24,57 @@ logger = logging.getLogger(__name__)
     bind=True,
     max_retries=3,
     default_retry_delay=60,
-    autoretry_for=(Exception,),
-    retry_backoff=True,
 )
 def generate_daily_reports(self):
     """Generate daily financial reports and send to administrators."""
-    today = datetime.now().date()
-    yesterday = today - timedelta(days=1)
+    try:
+        today = timezone.now().date()
+        yesterday = today - timedelta(days=1)
 
-    # Transaction summary
-    transactions = Transaction.objects.filter(timestamp__date=yesterday, status="completed")
+        # Transaction summary
+        transactions = Transaction.objects.filter(timestamp__date=yesterday, status="completed")
+        total_volume = transactions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        transaction_count = transactions.count()
 
-    total_volume = transactions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        # Account summary
+        accounts_created = Account.objects.filter(created_at__date=yesterday).count()
 
-    transaction_count = transactions.count()
+        # Loan applications
+        loans_approved = Loan.objects.filter(approved_at__date=yesterday).count()
 
-    # Account summary
-    accounts_created = Account.objects.filter(created_at__date=yesterday).count()
+        # Fraud alerts
+        fraud_alerts = FraudAlert.objects.filter(created_at__date=yesterday, is_resolved=False).count()
 
-    # Loan applications
-    loans_approved = Loan.objects.filter(approved_at__date=yesterday).count()
+        # Generate report data
+        report_data = {
+            "date": yesterday,
+            "total_transaction_volume": total_volume,
+            "transaction_count": transaction_count,
+            "accounts_created": accounts_created,
+            "loans_approved": loans_approved,
+            "fraud_alerts": fraud_alerts,
+        }
 
-    # Fraud alerts
-    fraud_alerts = FraudAlert.objects.filter(created_at__date=yesterday, is_resolved=False).count()
+        # Render and send email
+        message = render_to_string("reports/daily_report.html", report_data)
+        send_mail(
+            f"Daily Banking Report - {yesterday}",
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [settings.ADMIN_EMAIL],
+            html_message=message,
+        )
 
-    # Generate report data
-    report_data = {
-        "date": yesterday,
-        "total_transaction_volume": total_volume,
-        "transaction_count": transaction_count,
-        "accounts_created": accounts_created,
-        "loans_approved": loans_approved,
-        "fraud_alerts": fraud_alerts,
-    }
+        logger.info(f"Daily report generated for {yesterday}")
+        return f"Report sent for {yesterday}"
 
-    # Send email report
-    subject = f"Daily Banking Report - {yesterday}"
-    message = render_to_string("reports/daily_report.html", report_data)
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [settings.ADMIN_EMAIL],
-        html_message=message,
-    )
-
-    logger.info(f"Daily report generated for {yesterday}")
-    return f"Report sent for {yesterday}"
+    except Exception as exc:
+        logger.error(f"Failed to generate daily report: {exc}")
+        try:
+            self.retry(exc=exc, countdown=300)
+        except MaxRetriesExceededError:
+            logger.critical("Max retries exceeded for daily report generation")
+            raise
 
 
 @shared_task(
@@ -88,7 +93,7 @@ def analyze_fraud_patterns(self):
 
         # Large transactions
         large_transactions = Transaction.objects.filter(
-            amount__gt=Decimal("10000.00"), status="completed", timestamp__gte=datetime.now() - timedelta(hours=24)
+            amount__gt=Decimal("10000.00"), status="completed", timestamp__gte=timezone.now() - timedelta(hours=24)
         )
 
         for transaction in large_transactions:
@@ -101,7 +106,7 @@ def analyze_fraud_patterns(self):
 
         # Rapid successive transactions
         recent_transactions = Transaction.objects.filter(
-            timestamp__gte=datetime.now() - timedelta(hours=1), status="completed"
+            timestamp__gte=timezone.now() - timedelta(hours=1), status="completed"
         ).select_related("from_account__user")
 
         user_transaction_counts = {}
@@ -125,7 +130,7 @@ def analyze_fraud_patterns(self):
         logger.error(f"Failed to analyze fraud patterns: {exc}")
         try:
             self.retry(countdown=300 * (2**self.request.retries))
-        except MaxRetriesException:
+        except MaxRetriesExceededError:
             logger.critical("Max retries exceeded for fraud analysis")
             raise
 
@@ -157,7 +162,7 @@ def send_email_notification(self, user_id, subject, message, html_message=None):
         logger.error(f"Failed to send email notification: {exc}")
         try:
             self.retry(countdown=120 * (2**self.request.retries))
-        except MaxRetriesException:
+        except MaxRetriesExceededError:
             logger.critical("Max retries exceeded for email notification")
             raise
 
@@ -213,7 +218,7 @@ def export_transaction_data(self, user_id, start_date, end_date, export_format="
         logger.error(f"Failed to export transaction data: {exc}")
         try:
             self.retry(countdown=180 * (2**self.request.retries))
-        except MaxRetriesException:
+        except MaxRetriesExceededError:
             logger.critical("Max retries exceeded for data export")
             raise
 
@@ -235,7 +240,7 @@ def system_health_check(self):
 
         # Check for pending transactions older than 24 hours
         old_pending_transactions = Transaction.objects.filter(
-            status="pending", timestamp__lt=datetime.now() - timedelta(hours=24)
+            status="pending", timestamp__lt=timezone.now() - timedelta(hours=24)
         ).count()
 
         if old_pending_transactions > 0:
@@ -243,7 +248,7 @@ def system_health_check(self):
 
         # Check for unresolved fraud alerts
         unresolved_alerts = FraudAlert.objects.filter(
-            is_resolved=False, created_at__lt=datetime.now() - timedelta(days=7)
+            is_resolved=False, created_at__lt=timezone.now() - timedelta(days=7)
         ).count()
 
         if unresolved_alerts > 0:
@@ -288,13 +293,13 @@ def system_health_check(self):
             )
 
         logger.info(f"System health snapshot recorded. Issues found: {len(health_issues)}")
-        return f"Health check completed. Snapshot created with {len(health_issues)} issues."
+        return f"Health check completed. {len(health_issues)} issues found."
 
     except Exception as exc:
         logger.error(f"Failed to perform system health check: {exc}")
         try:
             self.retry(countdown=300)
-        except MaxRetriesException:
+        except MaxRetriesExceededError:
             logger.critical("Max retries exceeded for system health check")
             raise
 
@@ -332,7 +337,7 @@ def retrain_fraud_detection_model(self):
         logger.error(f"Failed to retrain fraud detection model: {exc}")
         try:
             self.retry(countdown=3600)  # Retry in 1 hour
-        except MaxRetriesException:
+        except MaxRetriesExceededError:
             logger.critical("Max retries exceeded for fraud model retraining")
             raise
 
@@ -454,5 +459,5 @@ def batch_analyze_recent_transactions(self, hours: int = 24):
         logger.error(f"Failed batch fraud analysis: {exc}")
         try:
             self.retry(countdown=600)
-        except MaxRetriesException:
+        except MaxRetriesExceededError:
             raise

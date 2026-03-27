@@ -1,6 +1,8 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from core.views.messaging import BankingMessageViewSet
+
 from .chat_views import (
     ChatMessageCreateView,
     ChatMessageListView,
@@ -83,6 +85,7 @@ router.register(r"transactions", TransactionViewSet)
 router.register(r"loans", LoanViewSet)
 router.register(r"fraud-alerts", FraudAlertViewSet)
 router.register(r"banking/messages", MessageViewSet, basename="message")
+router.register(r"messages", BankingMessageViewSet, basename="banking-message")
 router.register(r"services/requests", ServiceRequestViewSet, basename="service-request")
 
 # Banking endpoints for cashier dashboard

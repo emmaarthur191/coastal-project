@@ -87,6 +87,9 @@ else:
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
+# Administrative email for system alerts
+ADMIN_EMAIL = env("ADMIN_EMAIL", default="admin@coastal.com")
+
 # Application definition
 
 INSTALLED_APPS = [

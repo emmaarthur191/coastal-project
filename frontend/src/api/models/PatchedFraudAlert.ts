@@ -12,4 +12,3 @@ export type PatchedFraudAlert = {
     readonly resolved_at?: string | null;
     readonly created_at?: string;
 };
-
