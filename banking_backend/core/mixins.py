@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from django.http import JsonResponse
 from django.utils import timezone
-from rest_framework.response import Response
 
 from .models import IdempotencyKey
 

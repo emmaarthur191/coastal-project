@@ -144,13 +144,13 @@ class ClientRegistrationViewSet(GenericViewSet):
         expiry_key = f"reg_otp_expiry_{registration.registration_id}"
         prev_expiry = request.session.get(expiry_key)
         if prev_expiry:
-             # Current code sets expiry to +600s. We want cooldown of 60s from creation.
-             # So if (expiry - 540) > now, it's too soon.
-             if prev_expiry - 540 > timezone.now().timestamp():
-                 return Response(
-                     {"error": "Please wait 60 seconds before requesting another OTP."},
-                     status=status.HTTP_429_TOO_MANY_REQUESTS
-                 )
+            # Current code sets expiry to +600s. We want cooldown of 60s from creation.
+            # So if (expiry - 540) > now, it's too soon.
+            if prev_expiry - 540 > timezone.now().timestamp():
+                return Response(
+                    {"error": "Please wait 60 seconds before requesting another OTP."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
 
         # Generate OTP
         import secrets

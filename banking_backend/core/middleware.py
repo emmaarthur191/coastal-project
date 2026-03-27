@@ -2,23 +2,18 @@ import threading
 import uuid
 from urllib.parse import parse_qs
 
-
 # Deferred imports inside functions to avoid AppRegistryNotReady during logging setup
-
-
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
 
-
-
-
 @database_sync_to_async
 def get_user(token_key):
     from django.contrib.auth import get_user_model
     from django.contrib.auth.models import AnonymousUser
+
     User = get_user_model()
     try:
         access_token = AccessToken(token_key)
@@ -64,6 +59,7 @@ class JWTAuthMiddleware(BaseMiddleware):
             scope["user"] = await get_user(token)
         else:
             from django.contrib.auth.models import AnonymousUser
+
             scope["user"] = AnonymousUser()
 
         return await super().__call__(scope, receive, send)

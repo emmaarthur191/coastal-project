@@ -90,15 +90,22 @@ class MobileBankerMetricsView(APIView):
         total_clients = ClientAssignment.objects.filter(mobile_banker=request.user, is_active=True).count()
 
         # Transaction volume (approximation based on mobile collections)
+        # SECURITY FIX (CVE-COASTAL-010): Prevent API3 Excessive Data Exposure
+        # Filter by the specific mobile banker's email to avoid leaking total bank mobile collections
+        banker_email = request.user.email
+        
         collections_today = Transaction.objects.filter(
-            transaction_type="deposit", status="completed", timestamp__date=today, description__icontains="mobile"
+            transaction_type="deposit", 
+            status="completed", 
+            timestamp__date=today, 
+            description__icontains=f"Mobile deposit by {banker_email}"
         ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
 
         collections_this_week = Transaction.objects.filter(
             transaction_type="deposit",
             status="completed",
             timestamp__date__gte=this_week_start,
-            description__icontains="mobile",
+            description__icontains=f"Mobile deposit by {banker_email}",
         ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
 
         return Response(

@@ -135,7 +135,7 @@ def generate_staff_id(sender, instance, created, **kwargs):
                     # Find the highest existing staff_id with CA prefix
                     latest_user = (
                         User.objects.select_for_update()
-                        .filter(staff_id__startswith=prefix, staff_id__regex=r'^CA\d{4}$')
+                        .filter(staff_id__startswith=prefix, staff_id__regex=r"^CA\d{4}$")
                         .order_by("staff_id")
                         .last()
                     )
@@ -175,4 +175,3 @@ def generate_staff_id(sender, instance, created, **kwargs):
             except Exception as e:
                 logger.error(f"Failed to generate staff ID for {instance.email}: {e}")
                 return  # Don't crash user creation
-

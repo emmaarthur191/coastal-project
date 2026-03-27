@@ -40,3 +40,6 @@ scikit-learn>=1.4.0
 reportlab>=4.2.4
 
 user-agents>=2.2.0
+
+# Security Mitigations
+pygments>=2.19.3  # Mitigate CVE-2026-4539 (transitive dependency from ipython/rich)
