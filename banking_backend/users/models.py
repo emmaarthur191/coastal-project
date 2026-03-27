@@ -1,9 +1,13 @@
+"""User models for the Coastal Banking Application."""
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class User(AbstractUser):
+    """Custom User model for banking security and Zero-Plaintext compliance."""
+
     ROLE_CHOICES = [
         ("customer", "Customer"),
         ("cashier", "Cashier"),
@@ -31,6 +35,9 @@ class User(AbstractUser):
     staff_id_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
     first_name_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
     last_name_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+
+    # SECURITY: Numeric sequence for staff IDs (not PII, but used for generation)
+    staff_number = models.PositiveIntegerField(null=True, blank=True, unique=True)
 
     id_type = models.CharField(max_length=50, null=True, blank=True)
 
@@ -142,6 +149,7 @@ class User(AbstractUser):
     LOCKOUT_DURATION_MINUTES = 30
 
     def __str__(self):
+        """Return the user's email address."""
         return self.email
 
     def is_locked(self):
@@ -206,6 +214,7 @@ class UserActivity(models.Model):
         verbose_name_plural = "User Activities"
 
     def __str__(self):
+        """Return a string representation of the activity."""
         return f"{self.user.email} - {self.action} at {self.created_at}"
 
 
@@ -235,6 +244,7 @@ class AuditLog(models.Model):
         verbose_name_plural = "Audit Logs"
 
     def __str__(self):
+        """Return a string representation of the audit log."""
         return f"{self.action} {self.model_name} ({self.object_id}) by {self.user}"
 
 
@@ -271,6 +281,7 @@ class AdminNotification(models.Model):
         verbose_name_plural = "Admin Notifications"
 
     def __str__(self):
+        """Return the notification summary."""
         return f"[{self.priority.upper()}] {self.title}"
 
 
@@ -302,6 +313,7 @@ class PasswordResetToken(models.Model):
         verbose_name_plural = "Password Reset Tokens"
 
     def __str__(self):
+        """Return the token description."""
         return f"Reset token for {self.user.email} (expires {self.expires_at})"
 
     @classmethod

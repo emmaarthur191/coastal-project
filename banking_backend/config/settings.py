@@ -87,6 +87,11 @@ else:
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
+# Automatically add Render host in production
+if RENDER_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(RENDER_HOSTNAME)
+    ALLOWED_HOSTS.append("*.onrender.com")
+
 # Administrative email for system alerts
 ADMIN_EMAIL = env("ADMIN_EMAIL", default="admin@coastal.com")
 

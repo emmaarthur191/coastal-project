@@ -8,6 +8,7 @@ This module provides security-related utilities including:
 """
 
 import logging
+import os
 from datetime import date
 from decimal import Decimal
 
@@ -29,39 +30,42 @@ class SecurityService:
     @staticmethod
     def get_client_ip(request):
         """Extract client IP from request, handling proxies securely.
-        In a production environment, TRUSTED_PROXIES should be configured in settings.
+
+        Optimized for Render/Cloud environments where X-Forwarded-For is set by a trusted LB.
         """
         from django.conf import settings
 
-        # Get the actual remote address (the one the server is talking to)
-        remote_addr = request.META.get("REMOTE_ADDR")
-
         # Get the forwarded-for chain
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        remote_addr = request.META.get("REMOTE_ADDR")
 
         if x_forwarded_for:
-            # Most secure approach: Only trust the header if the connection comes from a known proxy
-            # For this bank, we default to trusting the header if we're in PROD and behind an LB
-            # but we take the first element (the original client IP) only if we've verified the chain.
-            # Here we follow a standard Django-secure pattern:
+            # Render/Heroku/AWS standard: The first element is the original client IP.
+            # We trust this header if the system is configured to be behind a proxy.
             proxies = [ip.strip() for ip in x_forwarded_for.split(",")]
+            client_ip = proxies[0]
 
-            # If we have a list of trusted proxies, we'd verify remote_addr is in it.
-            # For now, we adopt the 'rightmost' secure logic if provided by settings,
-            # or default to the first one but with a warning for logging.
-            if hasattr(settings, "TRUSTED_PROXIES") and remote_addr not in settings.TRUSTED_PROXIES:
-                logger.warning(
-                    f"IP Spoofing attempt detected? Request from {remote_addr} claiming to be {x_forwarded_for}"
-                )
-                return remote_addr
+            # SECURITY: Relax spoofing detect for known Cloud environments (Render)
+            # If we are on Render, we trust the chain because only the Render LB can hit the app.
+            is_cloud = os.getenv("RENDER") == "true" or os.getenv("IS_RENDER") == "true"
 
-            return proxies[0]
+            if not is_cloud:
+                # Fallback to strict check for non-cloud environments
+                trusted = getattr(settings, "TRUSTED_PROXIES", ["127.0.0.1"])
+                if remote_addr not in trusted and "*" not in trusted:
+                    logger.warning(
+                        f"IP Spoofing attempt detected? Request from {remote_addr} claiming to be {x_forwarded_for}"
+                    )
+                    return remote_addr
+
+            return client_ip
 
         return remote_addr or "0.0.0.0"
 
     @staticmethod
     def is_rate_limited(request) -> bool:
         """Check if the IP address has exceeded the login rate limit.
+
         Returns True if rate limited, False otherwise.
         """
         ip = SecurityService.get_client_ip(request)
@@ -85,6 +89,7 @@ class SecurityService:
     @staticmethod
     def get_location_info(ip):
         """Get location info from IP address using a public API.
+
         Fails gracefully if API is unreachable or rate limited.
         """
         if ip in ["127.0.0.1", "localhost", "0.0.0.0"]:
