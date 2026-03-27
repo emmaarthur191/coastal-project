@@ -95,13 +95,18 @@ class UserAdmin(BaseUserAdmin):
         "date_joined",
     )
     list_filter = ("role", "is_active", "is_staff", "is_superuser", "date_joined")
-    search_fields = ("email", "username", "first_name", "last_name")
+    # first_name / last_name are encrypted @property accessors, NOT DB columns.
+    # Searching on them is not supported; use email and username instead.
+    search_fields = ("email", "username")
     ordering = ("-date_joined",)
 
-    # Customize fieldsets for better organization
+    # Customize fieldsets for better organization.
+    # NOTE: first_name / last_name are encrypted @property accessors – they are NOT
+    # real database columns.  Including them in fieldsets causes Django's ModelForm
+    # factory to raise FieldError.  We expose them as read-only admin methods below.
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
-        ("Personal Info", {"fields": ("first_name", "last_name")}),
+        ("Personal Info", {"fields": ("display_first_name", "display_last_name"), "description": "Decrypted PII (read-only)"}),
         (
             "Role & Permissions",
             {
@@ -128,7 +133,9 @@ class UserAdmin(BaseUserAdmin):
         ),
     )
 
-    readonly_fields = ("last_login", "date_joined")
+    # display_first_name & display_last_name are listed in fieldsets as read-only
+    # so they appear in the admin form but don't participate in form saving.
+    readonly_fields = ("last_login", "date_joined", "display_first_name", "display_last_name")
 
     # Add bulk actions
     actions = [
@@ -147,7 +154,21 @@ class UserAdmin(BaseUserAdmin):
         return full_name if full_name.strip() else obj.username
 
     get_full_name_display.short_description = "Name"
-    get_full_name_display.admin_order_field = "first_name"
+    # first_name is an encrypted property – we cannot order by it in the DB.
+    # Order by the reliable date_joined column instead.
+    get_full_name_display.admin_order_field = "date_joined"
+
+    def display_first_name(self, obj):
+        """Read-only decrypted first name for the admin change form."""
+        return obj.first_name or "—"
+
+    display_first_name.short_description = "First Name"
+
+    def display_last_name(self, obj):
+        """Read-only decrypted last name for the admin change form."""
+        return obj.last_name or "—"
+
+    display_last_name.short_description = "Last Name"
 
     def is_active_display(self, obj):
         """Display active status with color indicator."""
