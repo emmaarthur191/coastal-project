@@ -1,5 +1,9 @@
 name: Deploy to Render
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+
 on:
   push:
     branches: [ main ]
@@ -14,7 +18,7 @@ jobs:
 
     # Backend Tests
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
@@ -37,7 +41,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
 
     - name: Install Frontend Dependencies
       run: |
