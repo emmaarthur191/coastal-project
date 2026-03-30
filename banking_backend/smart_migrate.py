@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smart Migration Script v6 - Exhaustive Production Schema Sync.
+"""Smart Migration Script v7 - Exhaustive Production Schema Sync.
 
 This script ensures the production database has all required tables and columns,
 even if the migration history is corrupted or out of sync.
@@ -539,6 +539,15 @@ def sync_missing_columns():
     add_column_if_not_exists("users_user", "staff_id_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "first_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "last_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    # Security/Lockout
+    add_column_if_not_exists("users_user", "failed_login_attempts", "INTEGER DEFAULT 0 NOT NULL")
+    add_column_if_not_exists("users_user", "locked_until", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("users_user", "last_failed_login", "TIMESTAMP WITH TIME ZONE NULL")
+    # Transaction Limits
+    add_column_if_not_exists("users_user", "daily_transaction_limit", "NUMERIC(12,2) DEFAULT 10000.00 NOT NULL")
+    add_column_if_not_exists("users_user", "daily_transaction_total", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("users_user", "daily_limit_reset_date", "DATE NULL")
+
 
     # Accounts & Registration
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
@@ -697,7 +706,7 @@ def sync_missing_columns():
 def main():
     """Run the smart migration sync."""
     print("=" * 60)
-    print("  Smart Migration Script v6 (Exhaustive Sync)")
+    print("  Smart Migration Script v7 (Exhaustive Sync)")
     print("=" * 60)
 
     core_tables = ["core_account", "core_transaction", "users_user", "core_loan"]
