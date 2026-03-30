@@ -103,16 +103,17 @@ class SendexaService:
             outbox.save()
             return False, msg
 
-        # 4. Determine auth token (Official Documentation: Bearer)
-        # Handle cases where api_key might be the base64 encoded user:pass
         auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "") or api_key
+        # Auto-detect if token is base64(key:secret) or raw
         try:
-            decoded = base64.b64decode(auth_token).decode("utf-8")
-            if ":" in decoded:
-                # Often the second part of a key:secret is the actual Bearer token
-                _, secret = decoded.split(":", 1)
-                auth_token = secret
+            if ":" not in auth_token: # No colon in raw
+                decoded = base64.b64decode(auth_token).decode("utf-8")
+                if ":" in decoded:
+                    # User:Pass format, the second half (Secret) is often the Bearer token
+                    _, secret = decoded.split(":", 1)
+                    auth_token = secret
         except Exception:
+            # If decode fails, it's likely already the raw token
             pass
 
         payload: dict[str, str] = {"recipient": normalized_phone, "senderId": sender_id, "message": message}
@@ -123,12 +124,6 @@ class SendexaService:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "en-US,en;q=0.9",
-            "Origin": "https://api.sendexa.co",
-            "Referer": "https://api.sendexa.co/",
-            "DNT": "1",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-site",
         }
 
         for attempt in range(max_retries):
