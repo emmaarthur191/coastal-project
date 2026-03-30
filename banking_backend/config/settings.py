@@ -291,7 +291,7 @@ REST_FRAMEWORK = {
         # Authentication endpoint limits (critical security)
         "login": "5/m",  # Login: 5 attempts per minute (brute-force protection)
         "otp_verify": "36/h",  # OTP verification: 36 attempts per hour (approx 3 per 5 mins)
-        "otp_request": "10/hour",  # Relaxed from 3/hour for better UX (SMS spam protection still active)
+        "otp_request": "100/hour",  # Relaxed for testing/debugging
         "password_reset": "5/hour",
         "registration": "10/hour",  # Relaxed from 3/hour
         "token_refresh": "10/min",  # Token refresh: 10 per minute
