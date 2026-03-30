@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\config\celery.py
+# hypothesis_version: 6.148.7
+
+['*/30', 'CELERY', 'banking_backend', 'config.settings', 'django.conf:settings', 'schedule', 'system-health-check', 'task']

@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0022_add_initial_deposit_to_account_opening.py
+# hypothesis_version: 6.148.7
+
+['core', 'initial_deposit', 'postgresql', 'sqlite']

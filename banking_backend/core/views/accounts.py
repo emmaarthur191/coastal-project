@@ -554,16 +554,19 @@ class AccountOpeningViewSet(
         del request.session[session_key]
         del request.session[f"{session_key}_time"]
 
+        # Support both top-level and nested account_data (Frontend sends inside account_data)
+        data = request.data.get("account_data", request.data)
+
         # Create account opening request
         opening_request = AccountOpeningRequest.objects.create(
-            first_name=request.data.get("first_name", ""),
-            last_name=request.data.get("last_name", ""),
-            email=request.data.get("email", ""),
+            first_name=data.get("first_name", data.get("firstName", "")),
+            last_name=data.get("last_name", data.get("lastName", "")),
+            email=data.get("email", ""),
             phone_number=phone_number,
-            date_of_birth=request.data.get("date_of_birth"),
-            id_type=request.data.get("id_type", "ghana_card"),
-            id_number=request.data.get("id_number", ""),
-            account_type=request.data.get("account_type", "daily_susu"),
+            date_of_birth=data.get("date_of_birth", data.get("dateOfBirth")),
+            id_type=data.get("id_type", data.get("idType", "ghana_card")),
+            id_number=data.get("id_number", data.get("idNumber", "")),
+            account_type=data.get("account_type", data.get("accountType", "daily_susu")),
             submitted_by=request.user,
             status="pending",
         )

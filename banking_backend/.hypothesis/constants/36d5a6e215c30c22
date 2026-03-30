@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0021_add_maker_checker_fields.py
+# hypothesis_version: 6.148.7
+
+['checkdeposit', 'core', 'submitted_by']

@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0005_add_id_fields_to_account_opening.py
+# hypothesis_version: 6.148.7
+
+["Driver's License", 'Ghana Card', 'NHIS Card', 'Other', 'Passport', 'Voter ID', 'core', 'drivers_license', 'ghana_card', 'id_number', 'id_type', 'nhis_card', 'other', 'passport', 'voter_id']

@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\accounts.py
+# hypothesis_version: 6.148.7
+
+[100, 400, 404, 100000, 900000, '-created_at', '0.00', 'Account Openings', 'Accounts', 'GHS', 'account_number', 'account_type', 'accounts_count', 'active_accounts', 'approve', 'approved', 'available_balance', 'balance', 'by_type', 'client_id', 'completed', 'count', 'create', 'created_at', 'currency', 'customer', 'daily_susu', 'data', 'date_of_birth', 'dispatch-credentials', 'email', 'error', 'first_name', 'full_name', 'get', 'ghana_card', 'id', 'id_number', 'id_type', 'is_active', 'last_name', 'message', 'mobile_banker', 'otp', 'otp_request', 'otp_verify', 'partial_update', 'pending', 'phone', 'phone_number', 'post', 'reason', 'reject', 'rejected', 'results', 'retrieve', 'search', 'send-otp', 'send_otp', 'status', 'success', 'summary', 'total', 'total_accounts', 'total_balance', 'true', 'update', 'user', 'verify-and-submit', 'verify_and_submit']

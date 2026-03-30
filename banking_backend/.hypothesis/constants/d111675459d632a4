@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0024_audit_fixes.py
+# hypothesis_version: 6.148.7
+
+['0023_audit_fixes', 'Daily Savings', 'Member Savings', 'Shares', 'Youth Savings', 'account', 'account_type', 'core', 'daily_susu', 'member_savings', 'shares', 'youth_savings']

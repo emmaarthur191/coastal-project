@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0036_accountopeningrequest_id_number_encrypted_and_more.py
+# hypothesis_version: 6.148.7
+
+['core', 'id_number_encrypted']

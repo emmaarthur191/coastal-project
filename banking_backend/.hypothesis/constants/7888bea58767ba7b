@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\calculations.py
+# hypothesis_version: 6.148.7
+
+[100, 1000, 10000, '0', '0.01', '0.015', '0.02', 'agent_id', 'amount', 'calculated_at', 'commission_amount', 'commission_rate', 'duration_months', 'interest_amount', 'monthly_repayment', 'months', 'principal', 'rate', 'rate_percentage', 'total_amount', 'transaction_amount']

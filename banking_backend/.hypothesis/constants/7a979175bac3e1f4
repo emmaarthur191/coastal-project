@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\services\loans.py
+# hypothesis_version: 6.148.7
+
+[100, '0.00', '1000.00', 'active', 'approved', 'approved_at', 'created_at', 'disbursed', 'disbursement', 'member_savings', 'operations_manager', 'outstanding_balance', 'paid_off', 'payment', 'pending', 'phone', 'phone_number', 'rejected', 'status', 'updated_at']

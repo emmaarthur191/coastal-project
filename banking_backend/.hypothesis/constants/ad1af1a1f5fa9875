@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\models\fraud.py
+# hypothesis_version: 6.148.7
+
+[100, 255, '-created_at', 'Account Activity', 'Critical', 'Fraud Rule', 'Fraud Rules', 'Geographic', 'High', 'Low', 'Medium', 'Time Based', 'Transaction Amount', 'Velocity', 'account_activity', 'core.Transaction', 'core_fraudalert', 'core_fraudrule', 'critical', 'fraud_alerts', 'fraud_sev_res_idx', 'fraud_user_idx', 'geographic', 'high', 'is_resolved', 'low', 'medium', 'severity', 'time_based', 'transaction_amount', 'user', 'velocity']

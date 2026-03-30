@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\serializers\marketing.py
+# hypothesis_version: 6.148.7
+
+['bonus_amount', 'created_at', 'current_enrollments', 'description', 'discount_percentage', 'eligible_products', 'end_date', 'features', 'id', 'interest_rate', 'is_active', 'is_currently_active', 'max_enrollments', 'maximum_balance', 'minimum_balance', 'name', 'product_type', 'product_type_display', 'start_date', 'terms_and_conditions', 'updated_at']

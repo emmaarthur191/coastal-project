@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\models\reliability.py
+# hypothesis_version: 6.148.7
+
+['-created_at', 'Failed', 'Idempotency Key', 'Idempotency Keys', 'Pending', 'SMS Outbox', 'SMS Outboxes', 'Sent', 'failed', 'idempotency_key', 'key', 'pending', 'sent', 'sms_outbox', 'user']

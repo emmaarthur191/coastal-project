@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0029_alter_operationsmessage_options_and_more.py
+# hypothesis_version: 6.148.7
+
+['-created_at', '-scheduled_time', 'client_assignment', 'clientassignment', 'core', 'operations_message', 'operationsmessage', 'ordering', 'visit_schedule', 'visitschedule']

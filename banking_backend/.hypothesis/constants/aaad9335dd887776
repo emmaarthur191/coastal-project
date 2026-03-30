@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0018_alter_useractivity_action_userinvitation.py
+# hypothesis_version: 6.148.7
+
+['0017_otpverification', 'Account Locked', 'Account Unlocked', 'Failed Login', 'ID', 'Login', 'Logout', 'Password Change', 'Password Reset', 'Payload Anomaly', 'Profile Update', 'User Invitation', 'User Invitations', 'UserInvitation', 'account_locked', 'account_unlocked', 'action', 'created_at', 'db_table', 'expires_at', 'failed_login', 'id', 'invitation', 'is_used', 'login', 'logout', 'password_change', 'password_reset', 'payload_anomaly', 'profile_update', 'token', 'used_at', 'user', 'user_invitation', 'useractivity', 'users', 'verbose_name', 'verbose_name_plural']

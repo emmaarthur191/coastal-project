@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0042_remove_smsoutbox_phone_number_and_more.py
+# hypothesis_version: 6.148.7
+
+['core', 'phone_number', 'phone_number_hash', 'smsoutbox']

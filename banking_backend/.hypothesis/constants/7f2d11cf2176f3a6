@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\serializers\hr.py
+# hypothesis_version: 6.148.7
+
+['Error Loading Name', 'Invalid Date', 'N/A', 'System', 'Unknown Staff', 'allowances', 'amount', 'base_pay', 'bonuses', 'category', 'created_at', 'date', 'description', 'download_url', 'generated_by', 'generated_by_name', 'gross_pay', 'id', 'is_paid', 'month', 'month_name', 'net_salary', 'notes', 'other_deductions', 'overtime_pay', 'paid_at', 'pay_period_end', 'pay_period_start', 'pdf_file', 'ssnit_contribution', 'staff', 'staff_id_display', 'staff_name', 'status', 'tax_deduction', 'total_deductions', 'transaction', 'updated_at', 'year']

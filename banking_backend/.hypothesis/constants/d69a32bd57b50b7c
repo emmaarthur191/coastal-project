@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\loans.py
+# hypothesis_version: 6.148.7
+
+[1000, '-created_at', 'LOAN_APPROVAL_FAILED', 'admin', 'amount', 'approve', 'code', 'create', 'created_at', 'customer', 'data', 'detail', 'error', 'get', 'manager', 'message', 'mobile_banker', 'operations_manager', 'partial_update', 'pending', 'post', 'status', 'success', 'update', 'user']

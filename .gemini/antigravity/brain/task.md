@@ -1,0 +1,31 @@
+# GitHub Actions Maintenance
+
+- [x] Phase 4: Node.js 24 Migration
+    - [x] Update `main.yml` to opt-in to Node 24
+    - [x] Update `deploy.yml` to opt-in to Node 24 and upgrade Node version
+    - [x] Update `dependabot-auto-merge.yml` to opt-in to Node 24
+    - [x] Upgrade `setup-python` to `v5` across all workflows
+    - [x] Verify CI/CD pipeline passes on GitHub (Fixed PII_HASH_KEY)
+- [x] Phase 5: Frontend Dependency Resolution
+    - [x] Upgrade `eslint-plugin-react` and `eslint-plugin-react-hooks`
+    - [x] Update `deploy.yml` to use `--legacy-peer-deps`
+    - [x] Verify frontend build successfully on GitHub
+- [x] Phase 6: Production Build Stabilization (Render)
+    - [x] Create `.npmrc` for project-wide dependency resolution
+    - [x] Synchronize `package-lock.json` locally
+    - [x] Verify Render build successful
+- [x] Phase 7: Dependabot Security Fixes
+    - [x] Pin `protobuf` and other security mitigations in `requirements.txt`
+    - [x] Verify Dependabot can successfully scan and update
+- [x] Phase 8: Frontend Build Fix (Recharts/Vite)
+    - [x] Add `react-is` to `package.json`
+    - [x] Synchronize `package-lock.json`
+    - [x] Verify Render build success
+- [x] Phase 9: Render Proxy & Hostname Stabilization
+    - [x] Update `ALLOWED_HOSTS` for dynamic Render hostnames
+    - [x] Relax `get_client_ip` proxy validation for cloud environments
+    - [x] Verify 200 responses on login endpoint
+- [x] Phase 10: Staff ID Generation Fix
+    - [x] Add `staff_number` field to `User` model
+    - [x] Refactor `generate_staff_id` signal to use `staff_number`
+    - [x] Fix ORM field resolution errors

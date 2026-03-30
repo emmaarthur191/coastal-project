@@ -8,6 +8,7 @@ from core.models.accounts import Account, AccountClosureRequest, AccountOpeningR
 class AccountSerializer(serializers.ModelSerializer):
     """Serializer for existing banking accounts."""
 
+    customer_name = serializers.SerializerMethodField()
     calculated_balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
     account_type_display = serializers.CharField(source="get_account_type_display", read_only=True)
 
@@ -24,10 +25,26 @@ class AccountSerializer(serializers.ModelSerializer):
             "balance",
             "calculated_balance",
             "is_active",
+            "customer_name",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "account_number", "balance", "created_at", "updated_at", "calculated_balance"]
+        read_only_fields = [
+            "id",
+            "user",
+            "account_number",
+            "balance",
+            "created_at",
+            "updated_at",
+            "calculated_balance",
+            "customer_name",
+        ]
+
+    def get_customer_name(self, obj):
+        """Return the customer's full name."""
+        if obj.user:
+            return obj.user.get_full_name()
+        return "Unknown"
 
     def validate_balance(self, value):
         """Ensure balance remains non-negative."""
@@ -38,6 +55,8 @@ class AccountSerializer(serializers.ModelSerializer):
 
 class AccountOpeningRequestSerializer(serializers.ModelSerializer):
     """Serializer for account opening requests."""
+
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         """Metadata for AccountOpeningRequestSerializer."""
@@ -63,6 +82,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             "next_of_kin_data",
             "photo",
             "status",
+            "full_name",
             "processed_by",
             "submitted_by",
             "created_account",
@@ -77,6 +97,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "status",
+            "full_name",
             "processed_by",
             "submitted_by",
             "created_account",
@@ -88,6 +109,12 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             "updated_at",
             "approved_at",
         ]
+
+    def get_full_name(self, obj):
+        """Return the full name of the applicant."""
+        if obj.first_name or obj.last_name:
+            return f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+        return "Unknown"
 
     def validate_phone_number(self, value):
         """Ensure phone number is provided."""

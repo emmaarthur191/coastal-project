@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0026_add_credential_dispatch_to_account_opening.py
+# hypothesis_version: 6.148.7
+
+['core', 'credential_approvals', 'credentials_sent_at']

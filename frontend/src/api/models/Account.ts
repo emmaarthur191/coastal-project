@@ -5,6 +5,7 @@
 import type { AccountAccountTypeEnum } from './AccountAccountTypeEnum';
 export type Account = {
     readonly id: number;
+    readonly customer_name?: string;
     readonly user: number;
     account_number: string;
     account_type?: AccountAccountTypeEnum;

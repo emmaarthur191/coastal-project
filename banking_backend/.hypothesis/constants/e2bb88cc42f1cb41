@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0012_usermessagepreferences_blockeduser.py
+# hypothesis_version: 6.148.7
+
+[365, '-created_at', '24 Hours', '30 Days', '7 Days', '90 Days', 'Bell', 'Blocked User', 'Blocked Users', 'BlockedUser', 'Chime', 'Default', 'Ding', 'ID', 'Large', 'Medium', 'Never', 'Silent', 'Small', 'auto_delete_days', 'auto_delete_enabled', 'bell', 'blocked', 'blocked_by', 'blocked_users', 'blocker', 'chime', 'core', 'created_at', 'default', 'ding', 'font_size', 'id', 'large', 'last_seen_visible', 'markdown_enabled', 'medium', 'message_preferences', 'none', 'notification_sound', 'ordering', 'reason', 'small', 'sound_enabled', 'unique_together', 'updated_at', 'user', 'verbose_name', 'verbose_name_plural']

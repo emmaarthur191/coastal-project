@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\utils\pii_masking.py
+# hypothesis_version: 6.148.7
+
+[1000, '*', '+', '@', 'N/A', 'REDACTED', 'X', '^([A-Z]{2,4}[-\\s]?)', 'year']

@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\pdf_services.py
+# hypothesis_version: 6.148.7
+
+[0.1, 0.3, 0.4, 0.5, 0.9, 0.95, 100, 120, 180, '%B %d, %Y', '%Y-%m-%d', '+233 XX XXX XXXX', '<b>DEDUCTIONS</b>', '<b>EARNINGS</b>', '<b>Summary</b>', 'ALIGN', 'Account Holder:', 'Account Number:', 'Account Type:', 'Allowances', 'Amount (GHS)', 'BACKGROUND', 'BOTTOMPADDING', 'Basic Pay', 'Bonuses', 'Closing Balance:', 'Date', 'Date Issued:', 'Department:', 'Description', 'Employee Name:', 'FONTNAME', 'FONTSIZE', 'Footer', 'GRID', 'Gross Pay', 'Heading1', 'Heading2', 'Heading3', 'Helvetica-Bold', 'LEFT', 'MIDDLE', 'N/A', 'NET PAY', 'Normal', 'Opening Balance:', 'Other Deductions', 'Overtime Pay', 'Pay Period:', 'PayslipTitle', 'RIGHT', 'ReportTitle', 'SSNIT (5.5%)', 'SSNIT Number:', 'Staff ID:', 'Statement Period:', 'StatementTitle', 'Subtitle', 'TEXTCOLOR', 'TOPPADDING', 'Tax Deduction', 'Title', 'Total Deductions', 'Total Transactions:', 'Type', 'VALIGN', '_', 'ssnit_number']

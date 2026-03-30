@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0047_security_encrypt_sms_message.py
+# hypothesis_version: 6.148.7
+
+['core', 'message', 'message_encrypted', 'smsoutbox']

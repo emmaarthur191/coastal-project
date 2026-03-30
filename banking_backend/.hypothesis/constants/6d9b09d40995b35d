@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\services\fraud.py
+# hypothesis_version: 6.148.7
+
+['alert', 'fraud_alert_update', 'is_resolved', 'medium', 'resolved_at', 'type']

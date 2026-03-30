@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0045_remove_bankingmessage_body_and_more.py
+# hypothesis_version: 6.148.7
+
+['bankingmessage', 'body', 'body_encrypted', 'chatmessage', 'content', 'content_encrypted', 'core', 'message', 'message_encrypted', 'operationsmessage']

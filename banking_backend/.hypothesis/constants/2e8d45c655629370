@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0027_reliability_models.py
+# hypothesis_version: 6.148.7
+
+['-created_at', 'Failed', 'ID', 'Idempotency Key', 'Idempotency Keys', 'IdempotencyKey', 'Pending', 'SMS Outbox', 'SMS Outboxes', 'Sent', 'SmsOutbox', 'core', 'created_at', 'db_table', 'error_message', 'expires_at', 'failed', 'id', 'idempotency_key', 'indexes', 'key', 'message', 'ordering', 'pending', 'phone_number', 'response_data', 'retry_count', 'sent', 'sent_at', 'sms_outbox', 'status', 'status_code', 'user', 'verbose_name', 'verbose_name_plural']

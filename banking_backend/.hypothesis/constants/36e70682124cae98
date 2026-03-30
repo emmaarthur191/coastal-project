@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\serializers\fraud.py
+# hypothesis_version: 6.148.7
+
+['auto_block', 'created_at', 'description', 'escalation_threshold', 'false_positive_count', 'field', 'id', 'is_active', 'is_resolved', 'last_triggered', 'message', 'name', 'operator', 'require_approval', 'resolved_at', 'rule_type', 'severity', 'trigger_count', 'updated_at', 'user', 'value']

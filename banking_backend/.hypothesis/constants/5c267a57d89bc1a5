@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0043_remove_accountclosurerequest_phone_number_and_more.py
+# hypothesis_version: 6.148.7
+
+['address', 'address_encrypted', 'core', 'date_of_birth', 'first_name', 'first_name_encrypted', 'last_name', 'last_name_encrypted', 'nationality', 'next_of_kin_data', 'phone_number']

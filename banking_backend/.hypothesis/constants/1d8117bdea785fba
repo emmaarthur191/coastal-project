@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\urls.py
+# hypothesis_version: 6.148.7
+
+['auth-check', 'auth/check/', 'auth/login-attempts/', 'auth/login/', 'auth/logout/', 'auth/password-reset/', 'auth/refresh/', 'auth/register/', 'change-password', 'create-staff', 'create/', 'csrf-token', 'csrf/', 'enroll/staff/', 'list/', 'login', 'login-attempts', 'logout', 'me/', 'member-dashboard', 'member-dashboard/', 'members-list', 'members/', 'register', 'send-otp', 'send-otp/', 'session-terminate', 'sessions/', 'staff-enroll', 'staff-ids', 'staff-ids/', 'staff-list', 'staff/', 'token-refresh', 'user-detail', 'user-list', 'user-sessions', 'users', 'verify-otp', 'verify-otp/']

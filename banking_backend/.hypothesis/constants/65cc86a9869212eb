@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\models\loans.py
+# hypothesis_version: 6.148.7
+
+[100, '%Y-%m-%d', '-created_at', '0.00', 'Active', 'Approved', 'Defaulted', 'Paid Off', 'Pending', 'Purpose of the loan', 'Rejected', 'active', 'approved', 'core_loan', 'defaulted', 'employed', 'ghana_card', 'loan_status_idx', 'loan_user_idx', 'loans', 'paid_off', 'pending', 'rejected', 'status', 'strftime', 'user']

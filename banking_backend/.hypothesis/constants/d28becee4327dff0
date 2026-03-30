@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0016_user_staff_number.py
+# hypothesis_version: 6.148.7
+
+['staff_number', 'user', 'users']

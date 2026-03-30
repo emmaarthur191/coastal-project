@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\serializers\reporting.py
+# hypothesis_version: 6.148.7
+
+['checked_at', 'completed_at', 'created_at', 'created_by', 'created_by_name', 'day_of_month', 'day_of_week', 'default_parameters', 'description', 'details', 'email_recipients', 'endpoint', 'error_message', 'file_path', 'file_size', 'file_url', 'format', 'format_display', 'frequency', 'frequency_display', 'generated_at', 'generated_by', 'generated_by_name', 'get_format_display', 'get_status_display', 'id', 'is_active', 'last_run', 'metric_type', 'metric_type_display', 'name', 'next_run', 'parameters', 'recorded_at', 'report_type', 'report_type_display', 'report_url', 'response_time_ms', 'service_name', 'status', 'status_display', 'template', 'template.name', 'template_name', 'time_of_day', 'title', 'type', 'unit', 'updated_at', 'value']

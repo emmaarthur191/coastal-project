@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\serializers\transactions.py
+# hypothesis_version: 6.148.7
+
+['account', 'account.id', 'account_number', 'account_type_display', 'admin_notes', 'amount', 'back_image', 'bank_name', 'check_number', 'cleared_at', 'closing_balance', 'created_at', 'deposit', 'description', 'download_url', 'end_date', 'from_account', 'front_image', 'generated_at', 'get_status_display', 'id', 'opening_balance', 'payment', 'pdf_file', 'processed_at', 'processed_by', 'processed_by_name', 'reason', 'rejection_reason', 'requested_by', 'requested_by_name', 'routing_number', 'start_date', 'status', 'status_display', 'timestamp', 'to_account', 'transaction', 'transaction_count', 'transaction_type', 'transfer', 'updated_at', 'user', 'withdrawal']

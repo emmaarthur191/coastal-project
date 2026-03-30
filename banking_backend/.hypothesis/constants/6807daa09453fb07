@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0048_fix_remove_client_assignment_duplicate_name.py
+# hypothesis_version: 6.148.7
+
+['clientassignment', 'core']

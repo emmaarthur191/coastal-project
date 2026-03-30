@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0040_transaction_approval_date_transaction_approved_by_and_more.py
+# hypothesis_version: 6.148.7
+
+['Cancelled', 'Completed', 'Failed', 'Pending Approval', 'approval_date', 'approved_by', 'cancelled', 'completed', 'core', 'failed', 'pending_approval', 'status', 'transaction']

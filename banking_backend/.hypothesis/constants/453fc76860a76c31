@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\registration.py
+# hypothesis_version: 6.148.7
+
+[540, 600, 100000, 999999, 'Invalid OTP code', 'PENDING', 'accountType', 'account_number', 'account_type', 'applicant', 'customer', 'daily_susu', 'dateOfBirth', 'date_of_birth', 'digitalAddress', 'digital_address', 'email', 'error', 'firstName', 'first_name', 'ghana_card', 'id', 'idDocument', 'idNumber', 'idType', 'id_document', 'id_number', 'id_number_encrypted', 'id_type', 'lastName', 'last_name', 'location', 'message', 'name', 'next_of_kin_data', 'notes', 'occupation', 'otp', 'otp_request', 'otp_verify', 'passportPicture', 'passport_picture', 'pending', 'pending_verification', 'phone', 'phoneNumber', 'position', 'post', 'registration_id', 'results', 'search', 'send-otp', 'send_otp', 'status', 'submit-registration', 'submitted_at', 'success', 'under_review', 'verify-otp', 'verify_otp', 'workAddress', 'work_address']

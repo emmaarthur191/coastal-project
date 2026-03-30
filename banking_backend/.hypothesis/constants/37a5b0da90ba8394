@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0015_add_client_assignment.py
+# hypothesis_version: 6.148.7
+
+[200, 255, '-priority', 'Account Opening', 'Client Assignment', 'Client Assignments', 'ClientAssignment', 'Completed', 'Due Payment', 'Follow Up', 'High', 'ID', 'Loan Application', 'Low', 'Medium', 'Overdue Payment', 'Pending Visit', 'Urgent', 'account_opening', 'amount_due', 'assigned_clients', 'assigned_to_bankers', 'client', 'client_name', 'completed', 'core', 'created_at', 'due_payment', 'follow_up', 'high', 'id', 'is_active', 'loan_application', 'location', 'low', 'medium', 'mobile_banker', 'next_visit', 'notes', 'ordering', 'overdue_payment', 'pending', 'priority', 'role', 'status', 'unique_together', 'updated_at', 'urgent', 'verbose_name', 'verbose_name_plural']

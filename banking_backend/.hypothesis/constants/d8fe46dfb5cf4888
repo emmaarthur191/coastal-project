@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0025_add_submitted_by_to_cash_advance.py
+# hypothesis_version: 6.148.7
+
+['0024_audit_fixes', 'cashadvance', 'core', 'submitted_by']

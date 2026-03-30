@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0013_user_id_number_hash_user_phone_number_hash.py
+# hypothesis_version: 6.148.7
+
+['id_number_hash', 'phone_number_hash', 'user', 'users']

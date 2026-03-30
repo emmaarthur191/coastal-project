@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0015_remove_user_first_name_remove_user_last_name_and_more.py
+# hypothesis_version: 6.148.7
+
+['first_name', 'first_name_encrypted', 'first_name_hash', 'last_name', 'last_name_encrypted', 'last_name_hash', 'user', 'users']

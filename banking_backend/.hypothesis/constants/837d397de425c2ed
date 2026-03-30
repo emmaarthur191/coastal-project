@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0035_encrypt_existing_accountopening_pii.py
+# hypothesis_version: 6.148.7
+
+['core', 'id_number_encrypted', 'phone_encrypted']

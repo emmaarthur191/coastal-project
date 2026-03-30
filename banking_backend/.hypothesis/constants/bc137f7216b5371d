@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0032_accountopeningrequest_digital_address_and_more.py
+# hypothesis_version: 6.148.7
+
+[100, 255, 'clientregistration', 'core', 'date_of_birth', 'digital_address', 'id_document', 'location', 'next_of_kin_data', 'occupation', 'passport_picture', 'position', 'registration/ids/', 'work_address']

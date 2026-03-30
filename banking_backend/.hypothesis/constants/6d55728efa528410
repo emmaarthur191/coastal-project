@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0010_encrypt_existing_pii.py
+# hypothesis_version: 6.148.7
+
+['User', 'id_number_encrypted', 'users']

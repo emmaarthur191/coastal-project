@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0034_add_encrypted_pii_to_accountopening.py
+# hypothesis_version: 6.148.7
+
+['0033_fraudrule', 'core']

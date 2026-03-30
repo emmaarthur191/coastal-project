@@ -6,12 +6,13 @@ import { authService } from '../services/api';
 type ViewMode = 'pending' | 'approved' | 'active' | 'all';
 
 interface Account {
-  id: string;
+  id: number;
   account_number: string;
-  account_type: string;
-  balance: string | number;
-  is_active: boolean;
-  user?: { id: string; full_name: string; email: string; phone?: string };
+  account_type?: string;
+  balance?: string | number;
+  is_active?: boolean;
+  customer_name?: string;
+  user?: { id: string | number; full_name: string; email: string; phone?: string };
   created_at: string | null;
 }
 
@@ -150,7 +151,7 @@ const AccountsTab: React.FC = () => {
         <div className="bg-white rounded-xl shadow p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-gray-900">
-              Request #{selectedRequest.id} — {selectedRequest.first_name} {selectedRequest.last_name}
+              Request #{selectedRequest.id} — {selectedRequest.full_name || `${selectedRequest.first_name} ${selectedRequest.last_name}`}
             </h3>
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[selectedRequest.status!] || ''}`}>
               {selectedRequest.status === 'approved' ? 'Awaiting Credentials Dispatch' : selectedRequest.status}
@@ -295,7 +296,7 @@ const AccountsTab: React.FC = () => {
                     <td className="px-4 py-3 text-sm font-mono text-gray-500">#{req.id}</td>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                        {req.first_name || ''} {req.last_name || 'Unknown'}
+                        {req.full_name || `${req.first_name || ''} ${req.last_name || 'Unknown'}`}
                       </div>
                       <div className="text-xs text-gray-400">{req.email || '—'}</div>
                     </td>
@@ -392,7 +393,7 @@ const AccountsTab: React.FC = () => {
                     <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
                       <td className="px-4 py-3 text-sm font-mono font-semibold text-gray-900 dark:text-white">{a.account_number}</td>
                       <td className="px-4 py-3">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{a.user?.full_name ?? 'Unknown'}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{a.customer_name ?? a.user?.full_name ?? 'Unknown'}</div>
                         <div className="text-xs text-gray-400">{a.user?.email ?? '—'}</div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">{a.account_type}</td>

@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0020_add_initial_balance_and_quantize.py
+# hypothesis_version: 6.148.7
+
+['core', 'initial_balance', 'postgresql', 'sqlite']

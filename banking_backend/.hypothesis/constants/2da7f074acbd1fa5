@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\transactions.py
+# hypothesis_version: 6.148.7
+
+[100, 400, 404, '-timestamp', 'BANKING_ERROR', 'Deposit', 'INSUFFICIENT_FUNDS', 'INVALID_TRANSACTION', 'Invalid amount', 'Member not found', 'N/A', 'SERVER_ERROR', 'Unexpected error.', 'account_number', 'account_type', 'amount', 'cashier', 'code', 'count', 'create', 'customer', 'daily_susu', 'date_from', 'date_to', 'deposit', 'description', 'error', 'from_account', 'get', 'id', 'max_amount', 'member', 'member_id', 'message', 'min_amount', 'mobile_banker', 'new_balance', 'post', 'reason', 'reference', 'reference_number', 'results', 'status', 'success', 'teller', 'timestamp', 'to_account', 'transaction_id', 'transaction_type', 'type', 'user_email', 'withdrawal']

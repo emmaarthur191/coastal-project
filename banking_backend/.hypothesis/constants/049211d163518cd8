@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\migrations\0033_fraudrule.py
+# hypothesis_version: 6.148.7
+
+[100, 255, '-created_at', 'Account Activity', 'Critical', 'Fraud Rule', 'Fraud Rules', 'FraudRule', 'Geographic', 'High', 'ID', 'Low', 'Medium', 'Time Based', 'Transaction Amount', 'Velocity', 'account_activity', 'auto_block', 'core', 'created_at', 'critical', 'description', 'escalation_threshold', 'false_positive_count', 'field', 'geographic', 'high', 'id', 'is_active', 'last_triggered', 'low', 'medium', 'name', 'operator', 'ordering', 'require_approval', 'rule_type', 'severity', 'time_based', 'transaction_amount', 'trigger_count', 'updated_at', 'value', 'velocity', 'verbose_name', 'verbose_name_plural']

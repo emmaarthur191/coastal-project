@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\services.py
+# hypothesis_version: 6.148.7
+
+[200, 201, 403, 429, 500, '+', '+233', '...', '0', '00', '233', 'Accept', 'Authorization', 'CACCU', 'CF-RAY', 'Content-Type', 'Just a moment...', 'N/A', 'Python/Requests', 'SENDEXA_API_KEY', 'SENDEXA_API_SECRET', 'SENDEXA_API_URL', 'SENDEXA_AUTH_TOKEN', 'SENDEXA_SENDER_ID', 'Server', 'User-Agent', 'X-App-Service', 'X-Client-Platform', '[^\\d+]', '^\\+[1-9]\\d{7,14}$', 'application/json', 'cloudflare', 'failed', 'message', 'pending', 'sender', 'sent', 'to']

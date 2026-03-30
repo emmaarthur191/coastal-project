@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\mixins.py
+# hypothesis_version: 6.148.7
+
+[200, 401, 409, 429, 500, 'PATCH', 'POST', 'PUT', 'X-Idempotency-Key', 'data', 'detail']

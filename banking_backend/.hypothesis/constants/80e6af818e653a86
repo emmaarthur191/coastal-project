@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0014_remove_user_staff_id_user_ssnit_number_encrypted_and_more.py
+# hypothesis_version: 6.148.7
+
+['ssnit_number_hash', 'staff_id', 'staff_id_encrypted', 'staff_id_hash', 'user', 'users']

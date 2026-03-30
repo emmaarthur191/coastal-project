@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\views\fraud.py
+# hypothesis_version: 6.148.7
+
+['-created_at', 'by_severity', 'create', 'created_at', 'customer', 'dashboard-stats', 'get', 'id', 'is_active', 'is_resolved', 'name', 'partial_update', 'post', 'recent_alerts', 'rule_type', 'severity', 'status', 'success', 'total', 'trigger_count', 'unresolved', 'update']

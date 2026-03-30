@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\middleware.py
+# hypothesis_version: 6.148.7
+
+[b'cookie', 'AUTH_COOKIE', 'NO_ID', 'X-Correlation-ID', 'access_token', 'correlation_id', 'headers', 'query_string', 'token', 'user', 'user_id']

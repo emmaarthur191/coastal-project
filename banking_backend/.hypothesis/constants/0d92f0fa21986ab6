@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0011_add_password_reset_token.py
+# hypothesis_version: 6.148.7
+
+['-created_at', 'ID', 'Password Reset Token', 'PasswordResetToken', 'created_at', 'expires_at', 'id', 'ip_address', 'is_used', 'ordering', 'token', 'used_at', 'user', 'users', 'verbose_name', 'verbose_name_plural']

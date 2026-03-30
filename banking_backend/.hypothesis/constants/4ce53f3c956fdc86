@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\serializers\accounts.py
+# hypothesis_version: 6.148.7
+
+['REDACTED', 'account', 'account_id', 'account_number', 'account_type', 'account_type_display', 'address', 'admin', 'approved_at', 'balance', 'calculated_balance', 'card_type', 'closed_at', 'closure_reason', 'contact', 'created_account', 'created_at', 'credentials_sent_at', 'date_of_birth', 'digital_address', 'email', 'final_balance', 'first_name', 'id', 'id_number', 'id_type', 'is_active', 'last_name', 'location', 'manager', 'next_of_kin_data', 'notes', 'occupation', 'operations_manager', 'other_reason', 'otp_verified', 'phone_number', 'photo', 'position', 'processed_by', 'rejection_reason', 'relationship', 'request', 'status', 'submitted_by', 'updated_at', 'user', 'work_address']

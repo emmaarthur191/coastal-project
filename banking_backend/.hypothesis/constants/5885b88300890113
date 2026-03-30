@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\utils\field_encryption.py
+# hypothesis_version: 6.148.7
+
+['FIELD_ENCRYPTION_KEY', 'PII_HASH_KEY', 'gAAAAA']

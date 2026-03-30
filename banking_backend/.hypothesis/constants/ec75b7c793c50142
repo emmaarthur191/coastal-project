@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\models\hr.py
+# hypothesis_version: 6.148.7
+
+['-month', '-year', '0.00', '0.055', 'Cancelled', 'Maintenance', 'Marketing', 'Operational', 'Other', 'Paid', 'Payroll', 'Payslip', 'Payslips', 'Pending', 'Utilities', 'cancelled', 'cashier', 'core.Transaction', 'core_expense', 'core_payslip', 'expense', 'generated_payslips', 'manager', 'mobile_banker', 'month', 'operations_manager', 'paid', 'payslips', 'payslips/', 'pending', 'role__in', 'staff', 'year']

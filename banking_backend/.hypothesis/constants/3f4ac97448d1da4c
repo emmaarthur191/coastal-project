@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\users\migrations\0017_otpverification.py
+# hypothesis_version: 6.148.7
+
+['ID', 'OTP Verification', 'OTP Verifications', 'OTPVerification', 'attempts', 'created_at', 'db_table', 'expires_at', 'id', 'indexes', 'ip_address', 'is_verified', 'otp_code_hash', 'otp_verification', 'phone_number_hash', 'user_agent', 'users', 'verbose_name', 'verbose_name_plural']

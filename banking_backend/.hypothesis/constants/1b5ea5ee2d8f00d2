@@ -1,0 +1,4 @@
+# file: E:\coastal\banking_backend\core\services\transactions.py
+# hypothesis_version: 6.148.7
+
+['5000.00', 'Transaction', 'User', 'XXXX', 'amount', 'available', 'cancelled', 'completed', 'create', 'deposit', 'from_account', 'payment', 'pending_approval', 'phone', 'phone_number', 'repayment', 'requested', 'to_account', 'transfer', 'type', 'withdrawal']
