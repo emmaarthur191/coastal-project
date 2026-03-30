@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smart Migration Script v5 - Exhaustive Production Schema Sync.
+"""Smart Migration Script v6 - Exhaustive Production Schema Sync.
 
 This script ensures the production database has all required tables and columns,
 even if the migration history is corrupted or out of sync.
@@ -84,7 +84,7 @@ def create_table_if_not_exists(table_name: str, create_sql: str) -> bool:
 
 def sync_missing_tables():
     """Create any tables that should exist but don't."""
-    print("\n→ Creating missing tables (Messaging, Junctions, Logs, Audit)...")
+    print("\n--> Creating missing tables (Messaging, Junctions, Logs, Audit)...")
 
     # ==========================================================================
     # AUDIT LOGS
@@ -519,7 +519,7 @@ def sync_missing_tables():
 
 def sync_missing_columns():
     """Add any columns that exist in models but not in the database."""
-    print("→ Syncing missing columns...")
+    print("--> Syncing missing columns...")
 
     # Users
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
@@ -682,6 +682,10 @@ def sync_missing_columns():
 
     # Fraud & Audit
     add_column_if_not_exists("core_fraudalert", "resolved_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("core_fraudalert", "risk_score", "DOUBLE PRECISION NULL")
+    add_column_if_not_exists("core_fraudalert", "risk_level", "VARCHAR(20) DEFAULT 'medium' NOT NULL")
+    add_column_if_not_exists("core_fraudalert", "reason", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("core_fraudalert", "status", "VARCHAR(20) DEFAULT 'pending' NOT NULL")
 
     # AuditLog alignment (actor -> user)
     add_column_if_not_exists("users_auditlog", "user_id", "INTEGER REFERENCES users_user(id) ON DELETE SET NULL")
@@ -693,15 +697,15 @@ def sync_missing_columns():
 def main():
     """Run the smart migration sync."""
     print("=" * 60)
-    print("  Smart Migration Script v5 (Exhaustive Sync)")
+    print("  Smart Migration Script v6 (Exhaustive Sync)")
     print("=" * 60)
 
     core_tables = ["core_account", "core_transaction", "users_user", "core_loan"]
     existing_tables = [t for t in core_tables if table_exists(t)]
 
     if len(existing_tables) >= 3:
-        print(f"\n✓ Detected existing database schema ({len(existing_tables)}/{len(core_tables)} core tables)")
-        print("\n→ Strategy: FAKE migrations, then sync exhaustive schema\n")
+        print(f"\n[OK] Detected existing database schema ({len(existing_tables)}/{len(core_tables)} core tables)")
+        print("\n--> Strategy: FAKE migrations, then sync exhaustive schema\n")
 
         print("Step 1: Faking migrations...")
         try:
@@ -715,7 +719,7 @@ def main():
         print("Step 3: Syncing missing columns...")
         sync_missing_columns()
     else:
-        print("\n→ Fresh database detected. Running migrations normally...")
+        print("\n--> Fresh database detected. Running migrations normally...")
         call_command("migrate", "--noinput", verbosity=1)
 
     print("=" * 60)
