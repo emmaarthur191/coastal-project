@@ -9,3 +9,4 @@ export type PaginatedUserList = {
     previous?: string | null;
     results: Array<User>;
 };
+

@@ -9,3 +9,4 @@ export type PaginatedServiceRequestList = {
     previous?: string | null;
     results: Array<ServiceRequest>;
 };
+

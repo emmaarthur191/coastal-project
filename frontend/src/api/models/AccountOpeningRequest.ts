@@ -11,7 +11,6 @@ import type { StatusE5aEnum } from './StatusE5aEnum';
  */
 export type AccountOpeningRequest = {
     readonly id: number;
-    readonly full_name?: string;
     account_type?: AccountOpeningRequestAccountTypeEnum;
     card_type?: CardTypeEnum;
     id_type?: IdTypeEnum;
@@ -48,3 +47,4 @@ export type AccountOpeningRequest = {
     readonly updated_at: string;
     readonly approved_at: string | null;
 };
+

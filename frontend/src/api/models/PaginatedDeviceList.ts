@@ -9,3 +9,4 @@ export type PaginatedDeviceList = {
     previous?: string | null;
     results: Array<Device>;
 };
+

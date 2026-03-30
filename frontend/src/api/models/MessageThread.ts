@@ -24,3 +24,4 @@ export type MessageThread = {
     readonly unread_count: string;
     readonly last_message_preview: string;
 };
+

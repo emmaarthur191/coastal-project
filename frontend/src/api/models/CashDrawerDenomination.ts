@@ -12,3 +12,4 @@ export type CashDrawerDenomination = {
     is_opening?: boolean;
     readonly total: string;
 };
+

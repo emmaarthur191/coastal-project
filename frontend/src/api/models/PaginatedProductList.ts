@@ -9,3 +9,4 @@ export type PaginatedProductList = {
     previous?: string | null;
     results: Array<Product>;
 };
+

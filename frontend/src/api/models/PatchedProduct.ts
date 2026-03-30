@@ -21,3 +21,4 @@ export type PatchedProduct = {
     readonly created_at?: string;
     readonly updated_at?: string;
 };
+

@@ -9,3 +9,4 @@ export type PaginatedReportScheduleList = {
     previous?: string | null;
     results: Array<ReportSchedule>;
 };
+

@@ -30,36 +30,38 @@ class TestSendexaServiceNormalization:
 
 @pytest.mark.django_db
 class TestSendexaServiceDelivery:
-    @patch("cloudscraper.create_scraper")
-    def test_send_sms_success(self, mock_create):
-        """Test successful SMS delivery."""
-        mock_scraper = MagicMock()
+    @patch("requests.post")
+    def test_send_sms_success(self, mock_post):
+        """Test successful SMS delivery with Basic Auth."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"success": True}
-        mock_scraper.post.return_value = mock_response
-        mock_create.return_value = mock_scraper
+        mock_post.return_value = mock_response
 
-        with patch.object(settings, "SENDEXA_AUTH_TOKEN", "mock_token"):
+        with patch.object(settings, "SENDEXA_API_KEY", "test_key"):
             success, result = SendexaService.send_sms("0244123456", "Hello Test")
 
         assert success is True
+        # Verify Basic Auth header (base64 of test_key)
+        import base64
+        expected_auth = "Basic " + base64.b64encode(b"test_key").decode()
+        
+        args, kwargs = mock_post.call_args
+        assert args[0] == "https://server.sendexa.co/v1/sms/send"
+        assert kwargs["headers"]["Authorization"] == expected_auth
         assert SmsOutbox.objects.filter(status="sent", phone_number_hash=hash_field("+233244123456")).exists()
 
-    @patch("cloudscraper.create_scraper")
-    def test_send_sms_cloudflare_retry(self, mock_create):
-        """Test detection of Cloudflare challenges and retry behavior."""
-        mock_scraper = MagicMock()
+    @patch("requests.post")
+    def test_send_sms_failure(self, mock_post):
+        """Test handling of API failures."""
         mock_response = MagicMock()
-        mock_response.status_code = 403
-        mock_response.text = "Just a moment... challenge-platform"
-        mock_scraper.post.return_value = mock_response
-        mock_create.return_value = mock_scraper
+        mock_response.status_code = 401
+        mock_response.text = "Unauthorized"
+        mock_post.return_value = mock_response
 
-        with patch("time.sleep"):
-            with patch.object(settings, "SENDEXA_AUTH_TOKEN", "mock_token"):
-                success, result = SendexaService.send_sms("0244123456", "Hello Test", max_retries=2)
+        with patch.object(settings, "SENDEXA_API_KEY", "wrong_key"):
+            success, result = SendexaService.send_sms("0244123456", "Hello Test")
 
         assert success is False
-        assert "HTTP 403" in result
-        assert mock_scraper.post.call_count == 2
+        assert "HTTP 401" in result
+        assert mock_post.call_count == 1

@@ -9,3 +9,4 @@ export type PaginatedClientAssignmentList = {
     previous?: string | null;
     results: Array<ClientAssignment>;
 };
+

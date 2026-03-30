@@ -27,9 +27,9 @@
 | `ALLOWED_HOSTS` | ✅ | `.onrender.com` |
 | `CORS_ALLOWED_ORIGINS` | ✅ | Your frontend URL (e.g., `https://coastal-frontend.onrender.com`) |
 | `DATABASE_URL` | ✅ | Auto-linked from coastal-db |
-| `SENDEXA_API_URL` | ⚠️ | SMS gateway URL |
-| `SENDEXA_AUTH_TOKEN` | ⚠️ | Base64 encoded API token |
-| `SENTRY_DSN` | ⚠️ | Sentry error tracking DSN |
+| `SENDEXA_API_URL` |  | SMS gateway URL |
+| `SENDEXA_AUTH_TOKEN` |  | Base64 encoded API token |
+| `SENTRY_DSN` |  | Sentry error tracking DSN |
 
 ### Frontend (coastal-frontend)
 
@@ -37,8 +37,8 @@
 |----------|----------|-------------|
 | `VITE_PROD_API_URL` | ✅ | `https://coastal-backend.onrender.com/api/` |
 | `VITE_PROD_WS_URL` | ✅ | `wss://coastal-backend.onrender.com/ws/` |
-| `VITE_SENTRY_DSN` | ⚠️ | Sentry DSN for frontend |
-| `VITE_SENTRY_ENABLED` | ⚠️ | `true` or `false` |
+| `VITE_SENTRY_DSN` |  | Sentry DSN for frontend |
+| `VITE_SENTRY_ENABLED` |  | `true` or `false` |
 
 ---
 

@@ -13,3 +13,4 @@ export type UserRegistration = {
     first_name?: string;
     last_name?: string;
 };
+

@@ -15,3 +15,4 @@ export type Transaction = {
     readonly timestamp: string;
     readonly processed_at: string | null;
 };
+

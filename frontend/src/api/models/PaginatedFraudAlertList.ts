@@ -9,3 +9,4 @@ export type PaginatedFraudAlertList = {
     previous?: string | null;
     results: Array<FraudAlert>;
 };
+

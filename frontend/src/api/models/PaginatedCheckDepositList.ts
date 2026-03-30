@@ -9,3 +9,4 @@ export type PaginatedCheckDepositList = {
     previous?: string | null;
     results: Array<CheckDeposit>;
 };
+

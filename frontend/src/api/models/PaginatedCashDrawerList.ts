@@ -9,3 +9,4 @@ export type PaginatedCashDrawerList = {
     previous?: string | null;
     results: Array<CashDrawer>;
 };
+

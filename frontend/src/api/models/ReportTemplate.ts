@@ -17,3 +17,4 @@ export type ReportTemplate = {
     readonly created_at: string;
     readonly updated_at: string;
 };
+

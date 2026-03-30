@@ -28,3 +28,4 @@ export type Report = {
     readonly created_at: string;
     readonly completed_at: string | null;
 };
+

@@ -10,3 +10,4 @@ export type ChatMessage = {
     is_read?: boolean;
     readonly created_at: string;
 };
+

@@ -27,3 +27,4 @@ export type User = {
      */
     readonly is_superuser: boolean;
 };
+

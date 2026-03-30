@@ -9,3 +9,4 @@ export type PaginatedAccountStatementList = {
     previous?: string | null;
     results: Array<AccountStatement>;
 };
+

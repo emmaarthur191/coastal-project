@@ -9,3 +9,4 @@ export type PaginatedOperationsMessageList = {
     previous?: string | null;
     results: Array<OperationsMessage>;
 };
+

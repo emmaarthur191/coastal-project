@@ -37,8 +37,6 @@ export type { Device } from './models/Device';
 export { DeviceTypeEnum } from './models/DeviceTypeEnum';
 export { FormatEnum } from './models/FormatEnum';
 export type { FraudAlert } from './models/FraudAlert';
-export type { FraudRule, FraudRuleRequest } from './models/FraudRule';
-export { RuleTypeEnum } from './models/FraudRule';
 export { FrequencyEnum } from './models/FrequencyEnum';
 export { IdTypeEnum } from './models/IdTypeEnum';
 export type { Loan } from './models/Loan';

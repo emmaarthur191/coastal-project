@@ -23,3 +23,4 @@ export type Message = {
     readonly edited_at: string | null;
     readonly is_read_by_me: string;
 };
+

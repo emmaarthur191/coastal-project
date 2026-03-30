@@ -9,3 +9,4 @@ export type PaginatedChatRoomList = {
     previous?: string | null;
     results: Array<ChatRoom>;
 };
+

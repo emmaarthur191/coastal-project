@@ -9,3 +9,4 @@ export type PaginatedMessageThreadList = {
     previous?: string | null;
     results: Array<MessageThread>;
 };
+

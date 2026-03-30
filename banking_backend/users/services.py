@@ -1,13 +1,10 @@
-"""Service for Sendexa SMS integration."""
-
+import base64
 import logging
 import re
 import time
 
+import requests
 from django.conf import settings
-from django.utils import timezone
-
-import cloudscraper
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +82,7 @@ class SendexaService:
         outbox.save()
 
         # 3. Configure Client
-        url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/sms/send")
+        url = getattr(settings, "SENDEXA_API_URL", "https://server.sendexa.co/v1/sms/send")
         api_key = getattr(settings, "SENDEXA_API_KEY", "")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
@@ -97,27 +94,24 @@ class SendexaService:
             return True, "Mock success"
 
         if not api_key:
-            msg = "SMS failed: No SENDEXA_API_KEY configured for Bearer auth."
+            msg = "SMS failed: No SENDEXA_API_KEY configured for Basic auth."
             outbox.status = "failed"
             outbox.error_message = msg
             outbox.save()
             return False, msg
 
-        # 4. Execute with Cloudflare Bypass
-        scraper = cloudscraper.create_scraper(
-            browser={"browser": "chrome", "platform": "windows", "mobile": False}, delay=8
-        )
-
+        # 4. Build Basic Auth header (sendexa api_key)
+        credentials = base64.b64encode(api_key.encode()).decode()
         payload = {"to": normalized_phone, "sender": sender_id, "message": message}
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Basic {credentials}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
 
         for attempt in range(max_retries):
             try:
-                response = scraper.post(url, json=payload, headers=headers, timeout=25)
+                response = requests.post(url, json=payload, headers=headers, timeout=25)
                 outbox.retry_count = attempt
 
                 if response.status_code in [200, 201]:
@@ -125,14 +119,6 @@ class SendexaService:
                     outbox.sent_at = timezone.now()
                     outbox.save()
                     return True, "Sent successfully"
-
-                # Check for Cloudflare challenge
-                is_cf = "Just a moment" in response.text or "challenge-platform" in response.text
-                if is_cf:
-                    logger.warning(f"Sendexa: CF challenge on attempt {attempt+1}")
-                    if attempt < max_retries - 1:
-                        time.sleep(2**attempt)
-                        continue
 
                 outbox.status = "failed"
                 outbox.error_message = f"HTTP {response.status_code}: {response.text[:200]}"

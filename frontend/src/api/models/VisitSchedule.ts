@@ -14,3 +14,4 @@ export type VisitSchedule = {
     readonly created_at: string;
     readonly updated_at: string;
 };
+
