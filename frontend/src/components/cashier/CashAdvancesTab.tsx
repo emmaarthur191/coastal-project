@@ -88,6 +88,23 @@ const CashAdvancesTab: React.FC = () => {
     );
   };
 
+  const handleRepayLoan = async (id: number) => {
+    const amount = prompt('Enter repayment amount (GHS):');
+    if (!amount || isNaN(parseFloat(amount))) return;
+
+    try {
+      const response = await api.post<{ status: string; error?: string }>(`banking/cash-advances/${id}/repay_loan/`, { amount });
+      if (response.data.status === 'success') {
+        alert('Repayment successful!');
+        fetchAdvances();
+      } else {
+        alert('Repayment failed: ' + (response.data.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      alert('Error: ' + (error.message || 'Connection failed'));
+    }
+  };
+
   if (loading) {
     return <div className="p-12 text-center text-gray-400"><div className="animate-spin text-4xl mb-4">⏳</div>Loading Cash Advances...</div>;
   }
@@ -248,11 +265,21 @@ const CashAdvancesTab: React.FC = () => {
                       {advance.status === 'pending' && (
                         <div className="flex justify-end gap-2">
                           <Button variant="success" size="sm" className="h-8 px-2 text-xs">Approve</Button>
-                          <Button variant="danger" size="sm" className="h-8 Poi-2 text-xs">Reject</Button>
+                          <Button variant="danger" size="sm" className="h-8 px-2 text-xs">Reject</Button>
                         </div>
                       )}
                       {advance.status === 'approved' && (
                         <Button variant="primary" size="sm" className="h-8 px-3 text-xs">Disburse</Button>
+                      )}
+                      {advance.status === 'disbursed' && (
+                        <Button
+                          variant="success"
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => handleRepayLoan(advance.id)}
+                        >
+                          Repay Loan 💰
+                        </Button>
                       )}
                     </td>
                   </tr>

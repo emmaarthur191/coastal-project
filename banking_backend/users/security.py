@@ -28,6 +28,24 @@ class SecurityService:
     LOGIN_RATE_LIMIT_WINDOW = 300  # 5 minutes in seconds
 
     @staticmethod
+    def log_payload_anomaly(request, message, details=None):
+        """Log a security anomaly detected in a request payload."""
+        ip = SecurityService.get_client_ip(request)
+        ua = request.META.get("HTTP_USER_AGENT", "")
+
+        log_msg = f"[PAYLOAD_ANOMALY] {message} | IP: {ip} | User: {request.user}"
+        if details:
+            log_msg += f" | Details: {details}"
+
+        logger.warning(log_msg)
+
+        # If user is authenticated, we can also record an activity
+        if request.user.is_authenticated:
+            SecurityService.log_activity(
+                request.user, "payload_anomaly", request, {"message": message, "anomaly_details": details or {}}
+            )
+
+    @staticmethod
     def get_client_ip(request):
         """Extract client IP from request, handling proxies securely.
 

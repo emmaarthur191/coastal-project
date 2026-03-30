@@ -76,11 +76,12 @@ from .views import (
     VisitScheduleViewSet,
     WorkflowStatusView,
 )
+from .views import mobile as mobile_views
 
 app_name = "core"
 
 router = DefaultRouter()
-router.register(r"accounts", AccountViewSet)
+router.register(r"accounts", AccountViewSet, basename="account")
 router.register(r"transactions", TransactionViewSet)
 router.register(r"loans", LoanViewSet)
 router.register(r"fraud-alerts", FraudAlertViewSet)
@@ -172,6 +173,7 @@ urlpatterns = [
     path("operations/generate-report/", GenerateReportView.as_view(), name="generate-report"),
     path("reports/download/<str:report_id>/", ReportDownloadView.as_view(), name="report-download"),
     # Mobile Banker endpoints
+    path("mobile/repayment/", mobile_views.ProcessRepaymentView.as_view(), name="mobile-process-repayment"),
     path("operations/mobile-banker-metrics/", MobileBankerMetricsView.as_view(), name="mobile-banker-metrics"),
     # Messaging preferences
     path("messaging/preferences/", UserPreferencesView.as_view(), name="user-preferences"),

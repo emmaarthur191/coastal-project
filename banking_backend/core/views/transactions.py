@@ -97,7 +97,7 @@ class TransactionViewSet(
         # Filter by reference number
         reference = request.query_params.get("reference")
         if reference:
-            queryset = queryset.filter(reference_number__icontains=reference)
+            queryset = queryset.filter(description__icontains=reference)
 
         # Filter by date range
         date_from = request.query_params.get("date_from")
@@ -156,7 +156,6 @@ class TransactionViewSet(
             data.append(
                 {
                     "id": str(tx.id),
-                    "reference_number": tx.reference_number,
                     "transaction_type": tx.transaction_type,
                     "amount": str(tx.amount),
                     "status": tx.status,

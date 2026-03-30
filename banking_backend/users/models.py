@@ -1,8 +1,39 @@
 """User models for the Coastal Banking Application."""
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+
+
+class UserManager(BaseUserManager):
+    """Custom manager for the User model with email as the unique identifier."""
+
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular User with the given email and password."""
+        if not email:
+            raise ValueError("The Email field must be set")
+        email = self.normalize_email(email)
+        # Handle username if not provided but required by AbstractUser
+        if "username" not in extra_fields:
+            extra_fields["username"] = email.split("@")[0]
+
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        """Create and save a SuperUser with the given email and password."""
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", "admin")
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -18,6 +49,8 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="customer")
     email = models.EmailField(unique=True, blank=False)
+
+    objects = UserManager()
 
     # SECURITY: Encrypted storage for PII/Internal IDs (Zero-Plaintext compliance)
     id_number_encrypted = models.TextField(blank=True, default="")
@@ -199,6 +232,7 @@ class UserActivity(models.Model):
         ("failed_login", "Failed Login"),
         ("account_locked", "Account Locked"),
         ("account_unlocked", "Account Unlocked"),
+        ("payload_anomaly", "Payload Anomaly"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="activities")
@@ -365,3 +399,150 @@ class PasswordResetToken(models.Model):
         self.is_used = True
         self.used_at = timezone.now()
         self.save(update_fields=["is_used", "used_at"])
+
+
+class OTPVerification(models.Model):
+    """Secure, persistent storage for OTPs with Zero-Plaintext compliance.
+
+    Replaces volatile session-based OTPs to prevent rate-limit bypasses
+    and ensure auditability in banking operations.
+    """
+
+    # SECURITY: Searchable hash of phone number (PII compliance)
+    phone_number_hash = models.CharField(max_length=64, db_index=True)
+
+    # SECURITY: Salted HMAC hash of the 6-digit code (Never store plaintext OTP)
+    otp_code_hash = models.CharField(max_length=64)
+
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveIntegerField(default=0)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Metadata for auditing
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "otp_verification"
+        verbose_name = "OTP Verification"
+        verbose_name_plural = "OTP Verifications"
+        indexes = [
+            models.Index(fields=["phone_number_hash", "is_verified"]),
+        ]
+
+    def __str__(self):
+        return f"OTP for {self.phone_number_hash[:8]}... (Verified: {self.is_verified})"
+
+    @classmethod
+    def create_otp(cls, phone_number, request=None):
+        """Generate a 6-digit OTP, hash it, and store it."""
+        import secrets
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from core.utils.field_encryption import hash_field
+
+        # Generate 6-digit code
+        otp_code = str(secrets.SystemRandom().randint(100000, 999999))
+
+        # Invalidate existing unverified OTPs for this phone
+        phone_hash = hash_field(phone_number)
+        cls.objects.filter(phone_number_hash=phone_hash, is_verified=False).delete()
+
+        expires_at = timezone.now() + timedelta(minutes=10)
+
+        ip_address = None
+        user_agent = ""
+        if request:
+            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+            ip_address = x_forwarded_for.split(",")[0].strip() if x_forwarded_for else request.META.get("REMOTE_ADDR")
+            user_agent = request.META.get("HTTP_USER_AGENT", "")
+
+        obj = cls.objects.create(
+            phone_number_hash=phone_hash,
+            otp_code_hash=hash_field(otp_code),
+            expires_at=expires_at,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+        return obj, otp_code
+
+    def verify(self, code):
+        """Verify code against hash and check expiration/attempts."""
+        from django.utils import timezone
+
+        from core.utils.field_encryption import hash_field
+
+        if self.is_verified:
+            return False, "OTP already used"
+
+        if timezone.now() > self.expires_at:
+            return False, "OTP expired"
+
+        if self.attempts >= 5:
+            return False, "Too many failed attempts"
+
+        # Compare hash
+        if hash_field(str(code)) == self.otp_code_hash:
+            self.is_verified = True
+            self.save(update_fields=["is_verified"])
+            return True, "Verified"
+        else:
+            self.attempts += 1
+            self.save(update_fields=["attempts"])
+            return False, "Invalid code"
+
+
+class UserInvitation(models.Model):
+    """Secure invitation token for staff enrollment.
+
+    Replaces SMS plaintext passwords with a secure registration link.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="invitation",
+    )
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "user_invitation"
+        verbose_name = "User Invitation"
+        verbose_name_plural = "User Invitations"
+
+    def __str__(self):
+        return f"Invitation for {self.user.email} (Expires: {self.expires_at})"
+
+    @classmethod
+    def create_for_user(cls, user):
+        """Create a new invitation token for a user."""
+        import secrets
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        # Invalidate existing
+        cls.objects.filter(user=user, is_used=False).delete()
+
+        token = secrets.token_urlsafe(32)
+        expires_at = timezone.now() + timedelta(hours=24)
+
+        return cls.objects.create(
+            user=user,
+            token=token,
+            expires_at=expires_at,
+        )
+
+    def is_valid(self):
+        """Check if invitation is still valid."""
+        from django.utils import timezone
+
+        return not self.is_used and self.expires_at > timezone.now()

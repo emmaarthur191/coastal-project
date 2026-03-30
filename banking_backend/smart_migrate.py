@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smart Migration Script v4 - Exhaustive Production Schema Sync.
+"""Smart Migration Script v5 - Exhaustive Production Schema Sync.
 
 This script ensures the production database has all required tables and columns,
 even if the migration history is corrupted or out of sync.
@@ -84,7 +84,25 @@ def create_table_if_not_exists(table_name: str, create_sql: str) -> bool:
 
 def sync_missing_tables():
     """Create any tables that should exist but don't."""
-    print("\n→ Creating missing tables (Messaging, Junctions, Logs)...")
+    print("\n→ Creating missing tables (Messaging, Junctions, Logs, Audit)...")
+
+    # ==========================================================================
+    # AUDIT LOGS
+    # ==========================================================================
+    create_table_if_not_exists(
+        "users_auditlog",
+        """CREATE TABLE "users_auditlog" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "action" VARCHAR(20) NOT NULL,
+            "model_name" VARCHAR(100) NOT NULL,
+            "object_id" VARCHAR(100) NOT NULL,
+            "object_repr" VARCHAR(255) NOT NULL,
+            "changes" JSONB NOT NULL DEFAULT '{}',
+            "ip_address" INET NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "user_id" INTEGER REFERENCES "users_user" ("id") ON DELETE SET NULL
+        )""",
+    )
 
     # ==========================================================================
     # CORE MODELS (MESSAGING & FRAUD)
@@ -249,6 +267,22 @@ def sync_missing_tables():
             "adminnotification_id" BIGINT NOT NULL REFERENCES "users_adminnotification" ("id") ON DELETE CASCADE,
             "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("adminnotification_id", "user_id")
+        )""",
+    )
+
+    # OTPVerification (Hardened SMS Integration)
+    create_table_if_not_exists(
+        "otp_verification",
+        """CREATE TABLE "otp_verification" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "phone_number_hash" VARCHAR(64) NOT NULL,
+            "otp_code_hash" VARCHAR(64) NOT NULL,
+            "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
+            "attempts" INTEGER NOT NULL DEFAULT 0,
+            "is_verified" BOOLEAN NOT NULL DEFAULT FALSE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "ip_address" INET NULL,
+            "user_agent" TEXT NOT NULL DEFAULT ''
         )""",
     )
 
@@ -649,13 +683,17 @@ def sync_missing_columns():
     # Fraud & Audit
     add_column_if_not_exists("core_fraudalert", "resolved_at", "TIMESTAMP WITH TIME ZONE NULL")
 
+    # AuditLog alignment (actor -> user)
+    add_column_if_not_exists("users_auditlog", "user_id", "INTEGER REFERENCES users_user(id) ON DELETE SET NULL")
+    drop_column_if_exists("users_auditlog", "actor_id")
+
     print("  Column sync complete!\n")
 
 
 def main():
     """Run the smart migration sync."""
     print("=" * 60)
-    print("  Smart Migration Script v4 (Exhaustive Sync)")
+    print("  Smart Migration Script v5 (Exhaustive Sync)")
     print("=" * 60)
 
     core_tables = ["core_account", "core_transaction", "users_user", "core_loan"]

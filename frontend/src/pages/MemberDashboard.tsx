@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { authService } from '../services/api';
@@ -13,6 +13,7 @@ interface BackendStatus {
   balance: boolean;
   accounts: boolean;
   services: boolean;
+  loans: boolean;
   password: boolean;
   twofa: boolean;
 }
@@ -31,6 +32,7 @@ function MemberDashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [loans, setLoans] = useState<any[]>([]);
   const [twoFactorStatus, setTwoFactorStatus] = useState({ enabled: false });
 
   // Form states
@@ -49,6 +51,7 @@ function MemberDashboard() {
     balance: true,
     accounts: true,
     services: true,
+    loans: true,
     password: true,
     twofa: true
   });
@@ -97,9 +100,24 @@ function MemberDashboard() {
     }
   }, []);
 
+  const fetchLoans = useCallback(async () => {
+    try {
+      const result = await authService.getLoans();
+      if (result.success && result.data) {
+        setLoans(result.data.results || []);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error fetching loans:', error);
+      return false;
+    }
+  }, []);
+
   const menuItems = [
     { id: 'balance', name: 'Account Balance', icon: '💰', available: backendStatus.balance },
     { id: 'accounts', name: 'Account Types', icon: '🏦', available: backendStatus.accounts },
+    { id: 'loans', name: 'My Loans', icon: '💸', available: backendStatus.loans },
     { id: 'services', name: 'Request Services', icon: '📋', available: backendStatus.services },
     { id: 'password', name: 'Change Password', icon: '🔒', available: true },
     { id: 'twofa', name: 'Activate 2FA', icon: '🔐', available: true }
@@ -113,10 +131,11 @@ function MemberDashboard() {
     const loadInitialData = async () => {
       setLoading(true);
       try {
-        const [balanceOk, accountsOk, servicesOk] = await Promise.all([
+        const [balanceOk, accountsOk, servicesOk, loansOk] = await Promise.all([
           fetchAccountBalance(),
           fetchAccounts(),
-          fetchServiceRequests()
+          fetchServiceRequests(),
+          fetchLoans()
         ]);
 
         if (isMounted) {
@@ -124,6 +143,7 @@ function MemberDashboard() {
             balance: balanceOk,
             accounts: accountsOk,
             services: servicesOk,
+            loans: loansOk,
             password: true,
             twofa: true
           });
@@ -145,12 +165,35 @@ function MemberDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [fetchAccountBalance, fetchAccounts, fetchServiceRequests]);
+  }, [fetchAccountBalance, fetchAccounts, fetchServiceRequests, fetchLoans]);
 
   // --- HANDLERS ---
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const [repaymentLoading, setRepaymentLoading] = useState<number | string | null>(null);
+
+  const handleRepayLoan = async (loanId: number | string) => {
+    const amount = prompt('Enter repayment amount (GHS):');
+    if (!amount || isNaN(parseFloat(amount))) return;
+
+    setRepaymentLoading(loanId);
+    try {
+      const result = await authService.repayLoan(loanId, amount);
+      if (result.success) {
+        alert('Repayment successful!');
+        fetchLoans();
+        fetchAccountBalance();
+      } else {
+        alert('Repayment failed: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error: ' + error.message);
+    } finally {
+      setRepaymentLoading(null);
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -325,6 +368,61 @@ function MemberDashboard() {
               <p className="text-2xl font-bold text-primary-600">{formatCurrencyGHS(parseFloat(account.balance || '0'))}</p>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* --- LOANS VIEW --- */}
+      {activeView === 'loans' && (
+        <div className="space-y-6">
+          <Card>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-secondary-900">Active Loans</h3>
+            </div>
+            <div className="space-y-4">
+              {loans.map((loan, index) => (
+                <div key={index} className="p-6 bg-secondary-50 rounded-xl border border-secondary-100">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="font-bold text-secondary-900">Loan #{loan.id}</h4>
+                      <p className="text-sm text-secondary-500">{loan.purpose || 'General Purpose'}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      loan.status === 'approved' ? 'bg-success-50 text-success-700 border border-success-200' :
+                      loan.status === 'pending' ? 'bg-warning-50 text-warning-700 border border-warning-200' :
+                      'bg-error-50 text-error-700 border border-error-200'
+                    }`}>
+                      {loan.status?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <p className="text-xs text-secondary-400">Principal</p>
+                      <p className="font-bold text-secondary-900">{formatCurrencyGHS(loan.amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-secondary-400">Current Balance</p>
+                      <p className="font-bold text-primary-600">{formatCurrencyGHS(loan.balance || loan.amount)}</p>
+                    </div>
+                  </div>
+                  {loan.status === 'approved' && (
+                    <Button
+                      onClick={() => handleRepayLoan(loan.id)}
+                      disabled={repaymentLoading === loan.id}
+                      className="w-full"
+                    >
+                      {repaymentLoading === loan.id ? 'Processing...' : 'Repay Loan'}
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {loans.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">📄</div>
+                  <p className="text-secondary-500">You don't have any active loans.</p>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       )}
 

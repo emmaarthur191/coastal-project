@@ -257,7 +257,7 @@ function MobileBankerDashboard() {
     }
     setLoading(true);
     try {
-      await api.post('/operations/process-repayment/', {
+      await api.post('/mobile/repayment/', {
         member_id: paymentForm.member_id,
         amount: paymentForm.amount
       });

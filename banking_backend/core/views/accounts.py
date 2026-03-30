@@ -23,7 +23,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from core.mixins import IdempotencyMixin
 from core.models.accounts import Account, AccountClosureRequest, AccountOpeningRequest
-from core.permissions import IsCustomer, IsManagerOrAdmin, IsStaff
+from core.permissions import IsCustomer, IsManagerOrAdmin, IsStaff, IsStaffOrCustomer
 from core.serializers.accounts import (
     AccountClosureRequestSerializer,
     AccountOpeningRequestSerializer,
@@ -583,7 +583,7 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
 
     queryset = AccountClosureRequest.objects.all()
     serializer_class = AccountClosureRequestSerializer
-    permission_classes = [IsStaff]
+    permission_classes = [IsStaffOrCustomer]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["status"]
     ordering_fields = ["created_at"]

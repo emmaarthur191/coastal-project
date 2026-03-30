@@ -2348,6 +2348,23 @@ export const apiService = {
     }
   },
 
+  async repayLoan(loanId: number | string, amount: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post(`loans/${loanId}/repay/`, { amount });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Repayment failed' };
+    }
+  },
+
+  async repayLoanCashier(loanId: number | string, amount: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await api.post(`banking/cash-advances/${loanId}/repay_loan/`, { amount });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Repayment failed' };
+    }
+  },
 };
 
 export const authService = apiService;

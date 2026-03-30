@@ -105,6 +105,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
         """Apply PII masking to sensitive fields in API responses based on user role."""
         from core.utils.pii_masking import (
             mask_date_of_birth,
+            mask_email,
             mask_generic,
             mask_id_number,
             mask_phone_number,
@@ -123,6 +124,8 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             data["id_number"] = mask_id_number(data.get("id_number"))
             # Mask phone number
             data["phone_number"] = mask_phone_number(data.get("phone_number"))
+            # Mask email
+            data["email"] = mask_email(data.get("email"))
             # Mask date of birth
             data["date_of_birth"] = mask_date_of_birth(data.get("date_of_birth"))
             # Mask address/location/employment info

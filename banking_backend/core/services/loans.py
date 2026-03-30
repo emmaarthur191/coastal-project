@@ -113,6 +113,9 @@ class LoanService:
     @transaction.atomic
     def repay_loan(loan: Loan, amount: Decimal) -> Loan:
         """Record a loan repayment and update both loan balance and user account balance."""
+        # 1. Acquire Lock on the Loan record
+        loan = Loan.objects.select_for_update().get(pk=loan.pk)
+
         if loan.status not in ["approved", "active", "disbursed"]:
             raise ValidationError("Repayments can only be made on approved or active loans.")
 
@@ -163,6 +166,8 @@ class LoanService:
     @staticmethod
     def calculate_monthly_payment(loan: Loan) -> Decimal:
         """Calculate the monthly payment for a loan using simple interest."""
-        total_interest = loan.amount * (loan.interest_rate / 100) * (loan.term_months / 12)
+        total_interest = (
+            loan.amount * (loan.interest_rate / Decimal("100")) * (Decimal(str(loan.term_months)) / Decimal("12"))
+        )
         total_amount = loan.amount + total_interest
         return total_amount / loan.term_months

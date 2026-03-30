@@ -30,7 +30,7 @@ class TestAuthIntegration:
         client = APIClient()
 
         # 1. Login
-        login_url = reverse("login")
+        login_url = reverse("users:login")
         print(f"Login URL: {login_url}")
         login_data = {"email": test_user.email, "password": "securepassword123"}
         response = client.post(login_url, login_data, follow=True)
@@ -40,15 +40,17 @@ class TestAuthIntegration:
         assert "refresh" in client.cookies
 
         # 2. Check Auth (Success)
-        check_url = reverse("auth-check")
+        check_url = reverse("users:auth-check")
         response = client.get(check_url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["authenticated"] is True
-        assert response.data["user"]["email"] == test_user.email
+        from core.utils.pii_masking import mask_email
+
+        assert response.data["user"]["email"] == mask_email(test_user.email)
 
         # 3. OTP Send (Debug Mode should provide the OTP)
         # Note: We rely on settings.DEBUG being True for this to work in tests
-        otp_send_url = reverse("send-otp")
+        otp_send_url = reverse("users:send-otp")
         response = client.post(otp_send_url, {"phone_number": test_user.phone_number})
         assert response.status_code == status.HTTP_200_OK
 
@@ -60,7 +62,7 @@ class TestAuthIntegration:
             pytest.skip("DEBUG mode required for OTP integration test or mock needed")
 
         # 4. OTP Verify
-        otp_verify_url = reverse("verify-otp")
+        otp_verify_url = reverse("users:verify-otp")
         response = client.post(
             otp_verify_url,
             {"phone_number": test_user.phone_number, "otp_code": otp_code, "verification_type": "2fa_setup"},
@@ -69,7 +71,7 @@ class TestAuthIntegration:
         assert response.data["verified"] is True
 
         # 5. Logout
-        logout_url = reverse("logout")
+        logout_url = reverse("users:logout")
         # We need to send refresh token for blacklisting if possible,
         # but the view also reads from cookies
         response = client.post(logout_url)

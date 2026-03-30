@@ -7,7 +7,7 @@ and user preferences.
 import logging
 
 from django.utils import timezone
-from rest_framework import mixins, serializers, status
+from rest_framework import mixins, serializers
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -60,7 +60,7 @@ class BankingMessageViewSet(
 class MessageThreadViewSet(ModelViewSet):
     """ViewSet for message threads with full messaging functionality."""
 
-    permission_classes = [IsStaff]
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["is_archived"]
     ordering_fields = ["updated_at", "created_at"]
@@ -89,37 +89,7 @@ class MessageThreadViewSet(ModelViewSet):
         serializer = self.get_serializer(thread)
         return Response(serializer.data)
 
-    def create(self, request):
-        """Create a new message thread."""
-        from core.models.messaging import Message, MessageThread
-
-        subject = request.data.get("subject", "")
-        participant_ids = request.data.get("participants", [])
-        initial_message = request.data.get("message", "")
-
-        if not participant_ids:
-            return Response({"error": "At least one participant is required"}, status=400)
-
-        # Create thread
-        thread = MessageThread.objects.create(subject=subject, created_by=request.user)
-        thread.participants.add(request.user)
-
-        # Add other participants
-        from users.models import User
-
-        for pid in participant_ids:
-            try:
-                user = User.objects.get(pk=pid)
-                thread.participants.add(user)
-            except User.DoesNotExist:
-                pass
-
-        # Add initial message if provided
-        if initial_message:
-            Message.objects.create(thread=thread, sender=request.user, content=initial_message)
-
-        serializer = self.get_serializer(thread)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):

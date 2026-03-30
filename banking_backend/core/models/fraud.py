@@ -20,6 +20,13 @@ class FraudAlert(models.Model):
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default="medium")
     is_resolved = models.BooleanField(default=False)
     resolved_at = models.DateTimeField(null=True, blank=True)
+
+    # ML INTEGRATION FIELDS
+    risk_score = models.FloatField(null=True, blank=True)
+    risk_level = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default="low")
+    reason = models.TextField(blank=True)
+    status = models.CharField(max_length=20, default="pending")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

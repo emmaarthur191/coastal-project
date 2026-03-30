@@ -3,11 +3,12 @@
 import base64
 import logging
 import re
+import time
 
 from django.conf import settings
 from django.utils import timezone
 
-import requests
+import cloudscraper
 
 logger = logging.getLogger(__name__)
 
@@ -63,138 +64,96 @@ class SendexaService:
         return bool(_E164_PATTERN.match(phone_number))
 
     @staticmethod
-    def send_sms(phone_number, message):
-        """Send an SMS to a single recipient with outbox persistence."""
+    def send_sms(phone_number: str, message: str, max_retries: int = 3) -> tuple[bool, str]:
+        """Send an SMS via Sendexa with Cloudflare bypass and retry logic."""
         if not phone_number:
             logger.error("Sendexa: Phone number is required")
             return False, "Phone number is required"
 
-        # Normalize phone number to E.164 format
+        # 1. Normalize and Verify
         normalized_phone = SendexaService.normalize_phone_number(phone_number)
-
-        # Validate E.164 format after normalization
         if not SendexaService.is_valid_e164(normalized_phone):
-            error_msg = (
-                f"Invalid phone number format after normalization: "
-                f"'{phone_number}' -> '{normalized_phone}'. "
-                f"Expected E.164 format (e.g. +233244123456)."
-            )
+            error_msg = f"Invalid phone format: '{phone_number}' -> '{normalized_phone}'"
             logger.error(f"Sendexa: {error_msg}")
-            # Still create outbox entry for auditing
-            from core.models.reliability import SmsOutbox
-
-            outbox_entry = SmsOutbox(message=message, status="failed")
-            outbox_entry.phone_number = normalized_phone
-            outbox_entry.error_message = error_msg
-            outbox_entry.save()
             return False, error_msg
 
-        # 1. Create Outbox Entry
+        # 2. Persistence with Encryption (PII Protection)
         from core.models.reliability import SmsOutbox
 
-        outbox_entry = SmsOutbox(message=message, status="pending")
-        outbox_entry.phone_number = normalized_phone
-        outbox_entry.save()
+        outbox = SmsOutbox.objects.create(status="pending", retry_count=0)
+        outbox.phone_number = normalized_phone
+        outbox.message = message
+        outbox.save()
 
-        # Configuration from settings
+        # 3. Configure Client
         url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/sms/send")
         auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
-        api_key = getattr(settings, "SENDEXA_API_KEY", "")
-        api_secret = getattr(settings, "SENDEXA_API_SECRET", "")
 
-        # Fallback: Generate Basic Auth token if missing but keys exist
-        if not auth_token and api_key and api_secret:
-            credentials = f"{api_key}:{api_secret}"
-            auth_token = base64.b64encode(credentials.encode()).decode()
-            logger.info("Sendexa: Generated auth token from API credentials " f"(outbox_id={outbox_entry.pk})")
+        # Auth Token Fallback
+        if not auth_token:
+            api_key = getattr(settings, "SENDEXA_API_KEY", "")
+            api_secret = getattr(settings, "SENDEXA_API_SECRET", "")
+            if api_key and api_secret:
+                auth_token = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
 
         if settings.DEBUG and not auth_token:
-            logger.warning(
-                f"⚠ [DEBUG MOCK] SMS not actually sent — no auth token configured. "
-                f"Recipient: {normalized_phone}, outbox_id={outbox_entry.pk}. "
-                f"Set SENDEXA_AUTH_TOKEN or SENDEXA_API_KEY+SENDEXA_API_SECRET "
-                f"to send real SMS."
-            )
-            outbox_entry.status = "sent"
-            outbox_entry.sent_at = timezone.now()
-            outbox_entry.save()
-            return True, "Mock SMS sent successfully"
+            logger.info(f"Sendexa [DEBUG MOCK]: To {normalized_phone}, Msg: {message[:20]}...")
+            outbox.status = "sent"
+            outbox.sent_at = timezone.now()
+            outbox.save()
+            return True, "Mock success"
 
         if not auth_token:
-            error_msg = (
-                "SMS service not configured: missing SENDEXA_AUTH_TOKEN and "
-                "SENDEXA_API_KEY/SENDEXA_API_SECRET. "
-                "Set these in your environment variables."
-            )
-            logger.error(f"Sendexa: {error_msg} (outbox_id={outbox_entry.pk})")
-            outbox_entry.status = "failed"
-            outbox_entry.error_message = error_msg
-            outbox_entry.save()
-            return False, error_msg
+            msg = "SMS failed: No AUTH_TOKEN configured."
+            outbox.status = "failed"
+            outbox.error_message = msg
+            outbox.save()
+            return False, msg
 
-        # Prepare headers and payload
-        # Standard browser-like headers to reduce Cloudflare bot-detection suspicion
+        # 4. Execute with Cloudflare Bypass
+        scraper = cloudscraper.create_scraper(
+            browser={"browser": "chrome", "platform": "windows", "mobile": False}, delay=8
+        )
+
+        payload = {"to": normalized_phone, "sender": sender_id, "message": message}
         headers = {
             "Authorization": f"Basic {auth_token}",
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache",
+            "Accept": "application/json",
         }
-        payload = {"to": normalized_phone, "sender": sender_id, "message": message}
 
-        try:
-            logger.info(
-                f"Sendexa: Sending SMS to {normalized_phone} " f"(outbox_id={outbox_entry.pk}, sender={sender_id})"
-            )
-            response = requests.post(url, json=payload, headers=headers, timeout=15)
-            success, result = SendexaService._handle_response(response, outbox_entry.pk)
+        for attempt in range(max_retries):
+            try:
+                response = scraper.post(url, json=payload, headers=headers, timeout=25)
+                outbox.retry_count = attempt
 
-            if success:
-                outbox_entry.status = "sent"
-                outbox_entry.sent_at = timezone.now()
-            else:
-                outbox_entry.status = "failed"
-                outbox_entry.error_message = str(result)
+                if response.status_code in [200, 201]:
+                    outbox.status = "sent"
+                    outbox.sent_at = timezone.now()
+                    outbox.save()
+                    return True, "Sent successfully"
 
-            outbox_entry.save()
-            return success, result
+                # Check for Cloudflare challenge
+                is_cf = "Just a moment" in response.text or "challenge-platform" in response.text
+                if is_cf:
+                    logger.warning(f"Sendexa: CF challenge on attempt {attempt+1}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2**attempt)
+                        continue
 
-        except requests.RequestException as e:
-            error_msg = f"Connection error: {e!s}"
-            logger.error(
-                f"Sendexa: Connection error sending to {normalized_phone} " f"(outbox_id={outbox_entry.pk}): {e!s}"
-            )
-            outbox_entry.status = "failed"
-            outbox_entry.error_message = error_msg
-            outbox_entry.save()
-            return False, error_msg
+                outbox.status = "failed"
+                outbox.error_message = f"HTTP {response.status_code}: {response.text[:200]}"
+                outbox.save()
+                return False, outbox.error_message
 
-    @staticmethod
-    def _handle_response(response, outbox_id=None):
-        """Parse Sendexa API response and log outcomes."""
-        try:
-            if response.status_code in [200, 201]:
-                logger.info(
-                    f"Sendexa: SMS delivered successfully " f"(outbox_id={outbox_id}, status={response.status_code})"
-                )
-                return True, response.json()
-            elif response.status_code == 403 and (
-                "Just a moment..." in response.text or "cloudflare" in response.text.lower()
-            ):
-                error_msg = "BLOCKED BY CLOUDFLARE: The SMS provider is challenging this server-side request. White-listing or alternative provider may be required."
-                logger.error(f"Sendexa: {error_msg} (outbox_id={outbox_id}, status=403)")
-                return False, error_msg
-            else:
-                # Log a snippet of the response text if it's large (Cloudflare pages can be huge)
-                response_snippet = (response.text[:500] + "...") if len(response.text) > 500 else response.text
-                logger.error(
-                    f"Sendexa: API error (outbox_id={outbox_id}, " f"status={response.status_code}): {response_snippet}"
-                )
-                return False, f"Provider error ({response.status_code}): {response_snippet}"
-        except Exception as e:
-            logger.error(f"Sendexa: Response parsing error (outbox_id={outbox_id}): {e!s}")
-            return False, f"Response parsing error: {e!s}"
+            except Exception as e:
+                logger.error(f"Sendexa: Attempt {attempt+1} failed: {e}")
+                if attempt == max_retries - 1:
+                    outbox.status = "failed"
+                    outbox.error_message = str(e)[:500]
+                    outbox.save()
+                    return False, str(e)
+                time.sleep(2**attempt)
+
+        return False, "Max retries exceeded"

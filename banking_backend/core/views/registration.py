@@ -225,8 +225,6 @@ class ClientRegistrationViewSet(GenericViewSet):
             digital_address=registration.digital_address,
             location=registration.location,
             next_of_kin_data=registration.next_of_kin_data,
-            id_document=registration.id_document,
-            passport_picture=registration.passport_picture,
             status="pending",
         )
 

@@ -4,6 +4,7 @@ This module contains views for managing loan applications and approvals.
 """
 
 import logging
+from decimal import Decimal
 
 from django.db import transaction
 from rest_framework import mixins, serializers, status
@@ -158,13 +159,53 @@ class LoanViewSet(
         queryset = self.get_queryset().filter(status="pending")
 
         # Filter based on role if staff
-        if user.is_staff:
+        if user.is_staff and not user.is_superuser:
             if user.role == "operations_manager":
                 # Operations Manager sees < 1000
                 queryset = queryset.filter(amount__lt=1000)
             elif user.role == "manager":
                 # Manager sees >= 1000
                 queryset = queryset.filter(amount__gte=1000)
+            elif user.role == "admin":
+                # Admin role sees all if not superuser
+                pass
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsCustomer])
+    def repay(self, request, pk=None):
+        """Allow customers or staff to initiate a loan repayment."""
+        loan = self.get_object()
+        user = request.user
+
+        # Security: Customer can only repay their own loan (handled by get_object/get_queryset)
+        # Staff can initiate repayments for customer loans
+
+        amount = request.data.get("amount")
+        if not amount:
+            return Response({"error": "Repayment amount is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            amount = Decimal(str(amount))
+            with transaction.atomic():
+                updated_loan = LoanService.repay_loan(loan, amount)
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": f"Repayment of GHS {amount} processed.",
+                    "data": LoanSerializer(updated_loan).data,
+                }
+            )
+        except Exception as e:
+            from core.exceptions import InsufficientFundsError
+
+            if isinstance(e, (InsufficientFundsError, serializers.ValidationError)):
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            logger.error(f"Repayment failed for loan {loan.id}: {e}")
+            return Response(
+                {"status": "error", "message": "Failed to process repayment", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

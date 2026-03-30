@@ -18,6 +18,7 @@ from core.exceptions import (
     InsufficientFundsError,
     InvalidTransactionError,
 )
+from core.ml.fraud_detector import MLFraudDetector
 from core.models.accounts import Account
 from core.models.transactions import Transaction
 
@@ -71,10 +72,32 @@ class TransactionService:
         from django.conf import settings
 
         threshold = getattr(settings, "TRANSACTION_APPROVAL_THRESHOLD", Decimal("5000.00"))
-
         requires_approval = amount >= threshold
-        status = "pending_approval" if requires_approval else "completed"
-        processed_at = None if requires_approval else timezone.now()
+
+        # 4. ML Fraud Detection check
+        is_anomaly = False
+        fraud_risk_level = "low"
+        try:
+            # Prepare a candidate object for prediction
+            tx_candidate = Transaction(
+                from_account=locked_from_account,
+                to_account=locked_to_account,
+                amount=amount,
+                transaction_type=transaction_type,
+                timestamp=timezone.now(),
+            )
+            detector = MLFraudDetector()
+            fraud_result = detector.predict(tx_candidate)
+            is_anomaly = fraud_result.get("is_anomaly", False)
+            fraud_risk_level = fraud_result.get("risk_level", "low")
+
+            if is_anomaly:
+                logger.warning(f"Transaction flagged by ML Fraud Detector (Level: {fraud_risk_level})")
+        except Exception as e:
+            logger.warning(f"Fraud detector error: {e}")
+
+        status = "pending_approval" if (requires_approval or is_anomaly) else "completed"
+        processed_at = None if (requires_approval or is_anomaly) else timezone.now()
 
         # Create the transaction record
         tx = Transaction.objects.create(
@@ -82,13 +105,13 @@ class TransactionService:
             to_account=locked_to_account,
             amount=amount,
             transaction_type=transaction_type,
-            description=description,
+            description=f"{description} (Fraud Risk: {fraud_risk_level})" if is_anomaly else description,
             status=status,
             processed_at=processed_at,
         )
 
         # Update balances ONLY if approval is not required
-        if not requires_approval:
+        if status == "completed":
             if locked_from_account:
                 AccountService.update_balance(locked_from_account, -amount)
             if locked_to_account:

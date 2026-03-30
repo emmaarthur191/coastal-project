@@ -8,9 +8,11 @@ import datetime
 import logging
 from decimal import Decimal
 
+from django.conf import settings
+from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
-from rest_framework import mixins, serializers
+from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
@@ -263,62 +265,6 @@ class MobileOperationsViewSet(ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=False, methods=["post"], url_path="process-repayment")
-    def process_repayment(self, request):
-        """Process a loan repayment (permission check handled by viewset)."""
-        from core.models.loans import Loan
-        from core.services.loans import LoanService
-
-        member_id = request.data.get("member_id")
-        amount = request.data.get("amount")
-
-        if not member_id or not amount:
-            return Response({"error": "member_id and amount are required"}, status=400)
-
-        try:
-            amount = Decimal(str(amount))
-            if amount <= 0:
-                return Response({"error": "Amount must be positive"}, status=400)
-        except Exception:
-            return Response({"error": "Invalid amount"}, status=400)
-
-        # Find the oldest active loan for this member
-        loan = (
-            Loan.objects.filter(user_id=member_id, status__in=["approved", "active", "disbursed"])
-            .order_by("created_at")
-            .first()
-        )
-
-        if not loan:
-            return Response({"error": "No active loan found for this member"}, status=404)
-
-        try:
-            with transaction.atomic():
-                repaid_loan = LoanService.repay_loan(loan, amount)
-
-            return Response(
-                {
-                    "status": "success",
-                    "message": f"Repayment of GHS {amount} successful",
-                    "data": {
-                        "loan_id": repaid_loan.id,
-                        "outstanding_balance": str(repaid_loan.outstanding_balance),
-                        "loan_status": repaid_loan.status,
-                    },
-                }
-            )
-        except Exception as e:
-            logger.error(f"Mobile repayment failed for user {member_id}: {e}")
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Failed to process repayment",
-                    "code": "REPAYMENT_FAILED",
-                    "error_detail": str(e) if settings.DEBUG else None,
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
     @action(detail=False, methods=["post"], url_path="schedule-visit")
     def schedule_visit(self, request):
         """Create a new visit schedule for a client (RPC-style action)."""
@@ -430,3 +376,65 @@ class ClientAssignmentViewSet(
             assignment.save()
             return Response({"status": "success", "message": f"Status updated to {new_status}"})
         return Response({"error": "Status is required"}, status=400)
+
+
+class ProcessRepaymentView(APIView):
+    """Standalone view for mobile bankers to process loan repayments."""
+
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        member_id = request.data.get("member_id")
+        amount = request.data.get("amount")
+
+        if not member_id or not amount:
+            return Response({"error": "member_id and amount are required"}, status=400)
+
+        # SECURITY FIX (CVE-COASTAL-04): Mobile bankers only for assigned clients
+        if request.user.role == "mobile_banker":
+            from core.models.operational import ClientAssignment
+
+            is_assigned = ClientAssignment.objects.filter(
+                mobile_banker=request.user, client_id=member_id, is_active=True
+            ).exists()
+            if not is_assigned:
+                return Response({"error": "You are not assigned to this client."}, status=status.HTTP_403_FORBIDDEN)
+
+        from core.models.loans import Loan
+        from core.services.loans import LoanService
+
+        loan = Loan.objects.filter(user_id=member_id, status__in=["approved", "active", "disbursed"]).first()
+        if not loan:
+            return Response({"error": "No active loan found for this member"}, status=404)
+
+        try:
+            amount_decimal = Decimal(str(amount))
+            repaid_loan = LoanService.repay_loan(loan, amount_decimal)
+
+            # Audit Log
+            from users.models import AuditLog
+
+            AuditLog.objects.create(
+                action="repayment",
+                model_name="Loan",
+                object_id=str(repaid_loan.id),
+                object_repr=f"Mobile Loan Repayment for {repaid_loan.user.username}",
+                user=request.user,
+                changes={"amount": str(amount), "channel": "mobile"},
+            )
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": f"Repayment of GHS {amount} successful",
+                    "data": {
+                        "loan_id": repaid_loan.id,
+                        "outstanding_balance": str(repaid_loan.outstanding_balance),
+                        "loan_status": repaid_loan.status,
+                    },
+                }
+            )
+        except Exception as e:
+            logger.error(f"Mobile repayment failed: {e}")
+            return Response({"error": str(e)}, status=400)

@@ -1,4 +1,3 @@
-import time
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -74,18 +73,27 @@ class TestRedTeamAuditHardening:
 
         # 1. Trigger OTP
         with patch("users.views.SendexaService.send_sms", return_value=(True, "Mock success")):
-            api_client.post(reverse("send-otp"), {"phone_number": "+233200000000"})
+            api_client.post(reverse("core:account-opening-send-otp"), {"phone_number": "+233200000000"})
 
         # 2. Get code from session and mock expiration
         session = api_client.session
-        otp_code = session.get("otp_code")
+        from datetime import timedelta
+
+        from django.utils import timezone as tz
+
+        from core.utils.field_encryption import hash_field
+
+        session_key = f"otp_v2_{hash_field('+233200000000')}"
+        otp_code = session.get(session_key)
         assert otp_code is not None
 
-        session["otp_created_at"] = time.time() - 700  # 11+ minutes ago
+        session[f"{session_key}_time"] = (tz.now() - timedelta(minutes=11)).isoformat()
         session.save()
 
         # 3. Verify
-        response = api_client.post(reverse("verify-otp"), {"phone_number": "+233200000000", "otp_code": otp_code})
+        response = api_client.post(
+            reverse("core:account-opening-verify-and-submit"), {"phone_number": "+233200000000", "otp": otp_code}
+        )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         # Check either 'error' or 'detail' depending on exception handler

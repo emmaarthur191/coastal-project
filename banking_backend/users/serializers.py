@@ -26,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """Apply PII masking based on roles."""
-        from core.utils import mask_generic
+        from core.utils import mask_email, mask_generic
 
         data = super().to_representation(instance)
         request = self.context.get("request")
@@ -38,6 +38,8 @@ class UserSerializer(serializers.ModelSerializer):
         if not is_manager:
             data["first_name"] = mask_generic(data.get("first_name"))
             data["last_name"] = mask_generic(data.get("last_name"))
+            data["email"] = mask_email(data.get("email"))
+            data["username"] = mask_generic(data.get("username"))
             # Recalculate full name from masked components
             if data["first_name"] and data["last_name"]:
                 data["name"] = f"{data['first_name']} {data['last_name']}"
@@ -55,10 +57,20 @@ class UserSerializer(serializers.ModelSerializer):
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=12)
     password_confirm = serializers.CharField(write_only=True)
+    phone_number = serializers.CharField(required=True, max_length=15)
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "password_confirm", "first_name", "last_name"]
+        fields = ["username", "email", "password", "password_confirm", "first_name", "last_name", "phone_number"]
+
+    def validate_phone_number(self, value):
+        """Standardize and validate phone number format."""
+        import re
+
+        # Basic regex for international format (+ followed by digits)
+        if not re.match(r"^\+[1-9]\d{1,14}$", value):
+            raise serializers.ValidationError("Phone number must be in international format (e.g. +233244123456).")
+        return value
 
     def validate_password(self, value):
         """Validate password strength for banking security."""

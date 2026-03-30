@@ -183,7 +183,14 @@ class MLFraudDetector:
 
             # Get anomaly score (-1 for anomalies, 1 for normal)
             # decision_function returns negative scores for anomalies
-            raw_score = self.model.decision_function(feature_array)[0]
+            try:
+                from sklearn.utils.validation import check_is_fitted
+
+                check_is_fitted(self.model)
+                raw_score = self.model.decision_function(feature_array)[0]
+            except (Exception, AttributeError):
+                # Handle unfitted model or any sklearn version differences
+                raw_score = 0.0  # Neutral score for unfitted model
 
             # Convert to risk score (0-1, higher = riskier)
             risk_score = max(0, min(1, (self.ANOMALY_THRESHOLD - raw_score) / abs(self.ANOMALY_THRESHOLD)))
@@ -295,8 +302,18 @@ class MLFraudDetector:
             "last_trained": model_mtime.isoformat() if model_mtime else None,
             "features": self.FEATURES,
             "anomaly_threshold": self.ANOMALY_THRESHOLD,
-            "is_fitted": hasattr(self.model, "estimators_") and self.model.estimators_ is not None,
+            "is_fitted": self._is_fitted(),
         }
+
+    def _is_fitted(self) -> bool:
+        """Helper to check if model is fitted."""
+        try:
+            from sklearn.utils.validation import check_is_fitted
+
+            check_is_fitted(self.model)
+            return True
+        except (Exception, AttributeError):
+            return False
 
 
 # Singleton instance for performance

@@ -2,7 +2,6 @@
 
 import logging
 import secrets
-import string
 
 from django.conf import settings
 from django.utils import timezone
@@ -14,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from core.permissions import IsAdmin
+from core.permissions import IsAdmin, IsStaff
 
 from .models import User
 from .serializers import LoginSerializer, UserRegistrationSerializer, UserSerializer
@@ -33,21 +32,16 @@ class UserRegistrationView(generics.CreateAPIView):
 
 
 class CreateStaffView(APIView):
-    """Admin-only endpoint to create staff users.
+    """Admin-only endpoint to create staff users via secure invitations.
 
-    Auto-generates password and sends via SMS.
+    Creates an inactive user and sends a secure enrollment link via SMS.
     """
 
-    # In production, use IsAdminUser. For dev/testing flow, IsAuthenticated might be easier if using Postman
-    # But for real security: permission_classes = [IsAdminUser]
-    # We will use IsAuthenticated and check role manually or rely on custom permission
     permission_classes = [IsAuthenticated]
-    throttle_scope = "registration"  # DRF rate limiting: 3 per hour
+    throttle_scope = "registration"
 
     def post(self, request):
-        """Handle administrative creation of staff users, including auto-password generation and SMS notification."""
-        # SECURITY FIX (CVE-COASTAL-02): Removed is_staff to prevent privilege escalation
-        # Only explicit administrative roles can create staff, not just any is_staff user
+        """Handle administrative creation of staff users via secure invitation flow."""
         if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
             return Response(
                 {
@@ -60,8 +54,7 @@ class CreateStaffView(APIView):
 
         data = request.data.copy()
 
-        # SECURITY FIX: Validate allowed roles to prevent privilege escalation
-        # Only non-admin staff roles can be created through this endpoint
+        # SECURITY FIX: Validate allowed roles
         ALLOWED_STAFF_ROLES = [
             "cashier",
             "mobile_banker",
@@ -82,11 +75,9 @@ class CreateStaffView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Auto-generate username from email if not provided
         if "username" not in data and "email" in data:
             data["username"] = data["email"].split("@")[0]
 
-        # 2. Map frontend 'phone' to backend 'phone_number'
         if "phone" in data and "phone_number" not in data:
             data["phone_number"] = data["phone"]
 
@@ -97,75 +88,111 @@ class CreateStaffView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 3. Generate Random Password (with guaranteed complexity)
-        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-        while True:
-            generated_password = "".join(secrets.choice(alphabet) for i in range(12))
-            if (
-                any(c.islower() for c in generated_password)
-                and any(c.isupper() for c in generated_password)
-                and any(c.isdigit() for c in generated_password)
-                and any(c in "!@#$%^&*" for c in generated_password)
-            ):
-                break
-
-        # 4. Prepare User Data
-        # We'll use the serializer logic but override password
+        from .models import UserInvitation
         from .serializers import StaffCreationSerializer
 
-        # Add dummy password to satisfy serializer if it requires it (it usually does for write_only)
-        data["password"] = generated_password
-        data["password_confirm"] = generated_password
+        # Use a temporary secure password - user will change it via invitation
+        # Ensure it meets the strict password strength tests (Upper, Lower, Number, Special)
+        temp_password = f"Temp{secrets.token_urlsafe(16)}!1"
+        data["password"] = temp_password
+        data["password_confirm"] = temp_password
 
         serializer = StaffCreationSerializer(data=data)
         if serializer.is_valid():
             try:
-                # Create user
+                # 1. Create INACTIVE user
                 user = serializer.save()
+                user.is_active = False
+                user.save(update_fields=["is_active"])
 
-                # Ensure password is set correctly (serializer might hash it, which is good)
-                # But just to be sure we match the generated one:
-                # Actually, serializer.save() calls create() which uses create_user()
-                # So the password in 'data' was used.
+                # 2. Generate Secure Invitation Token
+                invitation = UserInvitation.create_for_user(user)
 
-                # 5. Send Credentials via SMS
-                from .services import SendexaService
+                # 3. Send Invitation via SMS
+                # In production, this would be a URL to the frontend: https://coastal.com/enroll?token=...
+                frontend_url = getattr(settings, "FRONTEND_URL", "https://coastal.com")
+                enroll_link = f"{frontend_url}/enroll/staff?token={invitation.token}"
 
-                message = f"Welcome to Coastal! Your staff login credentials. Email: {user.email}, Password: {generated_password} . Please login and change immediately."
+                message = f"Welcome to Coastal Banking! You have been enrolled as a {user.role}. Please complete your account setup here: {enroll_link} . Link expires in 24 hours."
 
                 sms_success, _sms_resp = SendexaService.send_sms(phone_number, message)
 
                 response_data = serializer.data
                 response_data["staff_id"] = user.staff_id
                 response_data["sms_sent"] = sms_success
-                # SECURITY: Never expose passwords in API responses, even in DEBUG mode
 
                 return Response(
                     {
                         "status": "success",
-                        "message": "Staff user created successfully",
+                        "message": "Staff invitation sent successfully",
                         "data": response_data,
-                        "sms_sent": sms_success,
                     },
                     status=status.HTTP_201_CREATED,
                 )
 
             except Exception as e:
-                # SECURITY FIX (CVE-COASTAL-007): prevent information leakage
-                # Log the actual error for admins
-                logger.error(f"Staff creation failed: {e!s}", exc_info=True)
+                logger.error(f"Staff enrollment failed: {e!s}", exc_info=True)
                 return Response(
                     {
                         "status": "error",
-                        "message": "Unable to create staff user. Internal error occurred.",
-                        "code": "STAFF_CREATION_FAILED",
+                        "message": "Unable to enroll staff user. Internal error occurred.",
+                        "code": "STAFF_ENROLLMENT_FAILED",
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class StaffInvitationVerifyView(APIView):
+    """Verify staff invitation token and set initial password."""
+
+    permission_classes = [AllowAny]
+    throttle_scope = "registration"
+
+    def post(self, request):
+        """Handle invitation verification and account activation."""
+        from .models import UserInvitation
+        from .security import validate_password_strength
+
+        token = request.data.get("token")
+        password = request.data.get("password")
+        password_confirm = request.data.get("password_confirm")
+
+        if not token or not password:
+            return Response({"error": "Token and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if password != password_confirm:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate password strength
+        is_valid, errors = validate_password_strength(password)
+        if not is_valid:
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            invitation = UserInvitation.objects.get(token=token)
+            if not invitation.is_valid():
+                return Response(
+                    {"error": "Invitation token is invalid or expired."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = invitation.user
+            user.set_password(password)
+            user.is_active = True
+            user.save()
+
+            invitation.is_used = True
+            invitation.used_at = timezone.now()
+            invitation.save()
+
+            return Response(
+                {"status": "success", "message": "Account activated successfully. You can now login."},
+                status=status.HTTP_200_OK,
+            )
+
+        except UserInvitation.DoesNotExist:
+            return Response({"error": "Invalid invitation token."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChangePasswordView(APIView):
@@ -523,40 +550,39 @@ class MemberDashboardView(APIView):
 
 
 class SendOTPView(APIView):
-    """Send OTP for 2FA setup or verification."""
+    """Send OTP for 2FA setup or verification with database-backed security."""
 
     permission_classes = [IsAuthenticated]
     throttle_scope = "otp_request"
 
     def post(self, request):
         """Generate and send a 6-digit OTP to the provided phone number for security verification."""
+        from core.utils.field_encryption import hash_field
+
+        from .models import OTPVerification
+
         phone_number = request.data.get("phone_number")
         verification_type = request.data.get("verification_type", "2fa_setup")
 
         if not phone_number:
             return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
-        import time
+        # SECURITY FIX: Prevent OTP spamming (Replaces session-based cooldown)
+        # Check for any active, unverified OTP sent in the last 60 seconds
+        phone_hash = hash_field(phone_number)
+        cooldown_cutoff = timezone.now() - timezone.timedelta(seconds=60)
+        recent_otp = OTPVerification.objects.filter(
+            phone_number_hash=phone_hash, is_verified=False, created_at__gt=cooldown_cutoff
+        ).exists()
 
-        last_sent = request.session.get("otp_created_at")
-        if last_sent and time.time() < last_sent + 60:
+        if recent_otp:
             return Response(
                 {"error": "Please wait 60 seconds before requesting another OTP."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        # Generate a 6-digit OTP using a cryptographically secure RNG
-        otp_code = str(secrets.SystemRandom().randint(100000, 999999))
-
-        # Store OTP in session
-        import time
-
-        request.session["otp_code"] = otp_code
-        request.session["otp_phone"] = phone_number
-        request.session["otp_type"] = verification_type
-        request.session["otp_created_at"] = time.time()
-        request.session["otp_failed_attempts"] = 0
+        # NEW: use persistent OTPVerification model for generation and hashing
+        otp_obj, otp_code = OTPVerification.create_otp(phone_number, request=request)
 
         # Send OTP via Sendexa
         message = f"Your Coastal Banking OTP is: {otp_code}. Do not share this code."
@@ -565,30 +591,32 @@ class SendOTPView(APIView):
 
         if not success:
             logger.error(f"[OTP Error] Failed to send SMS: {response}")
-            # In dev, we might still want to return success for testing flow
-            # but in prod, this should probably error
-            # Return specific error even in production to help debug provider issues (e.g. missing API key)
+            # If Sendexa fails (e.g. Cloudflare block), return a specific error to help diagnosis
             if not settings.DEBUG:
-                return Response({"error": f"Failed to send SMS: {response}"}, status=status.HTTP_502_BAD_GATEWAY)
+                return Response({"error": f"Failed to send SMS code. {response}"}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(
             {
                 "success": True,
                 "message": f"OTP sent to {phone_number}",
-                "expires_in": 300,  # 5 minutes
-                # SECURITY FIX (CVE-COASTAL-03): Never expose OTP in API response, even in DEBUG
+                "expires_in": 600,  # 10 minutes
+                # SECURITY: OTP code is only logged in memory for dispatch, never exposed in response
             }
         )
 
 
 class VerifyOTPView(APIView):
-    """Verify OTP for 2FA setup or other purposes."""
+    """Verify OTP for 2FA setup or other purposes using persistent storage."""
 
     permission_classes = [IsAuthenticated]
     throttle_scope = "otp_verify"
 
     def post(self, request):
-        """Verify the provided OTP against the stored session value and return verification status."""
+        """Verify the provided OTP against the database and return verification status."""
+        from core.utils.field_encryption import hash_field
+
+        from .models import OTPVerification
+
         phone_number = request.data.get("phone_number")
         otp_code = request.data.get("otp_code")
         verification_type = request.data.get("verification_type", "2fa_setup")
@@ -596,67 +624,34 @@ class VerifyOTPView(APIView):
         if not phone_number or not otp_code:
             return Response({"error": "Phone number and OTP code are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Verify OTP from session
-        stored_otp = request.session.get("otp_code")
-        stored_phone = request.session.get("otp_phone")
-        # stored_type intentionally unused - kept for future 2FA type checks
-        otp_created_at = request.session.get("otp_created_at")  # New timestamp
-        failed_attempts = request.session.get("otp_failed_attempts", 0)
+        # Fetch latest unverified OTP for this phone
+        phone_hash = hash_field(phone_number)
+        otp_record = (
+            OTPVerification.objects.filter(phone_number_hash=phone_hash, is_verified=False)
+            .order_by("-created_at")
+            .first()
+        )
 
-        if not stored_otp:
-            return Response({"error": "No OTP was sent. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # SECURITY FIX (CVE-COASTAL-005): Rate limiting / Max attempts
-        if failed_attempts >= 5:
-            # Clear OTP to force new request
-            del request.session["otp_code"]
+        if not otp_record:
             return Response(
-                {"error": "Too many failed attempts. Please request a new OTP."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS,
+                {"error": "No OTP was sent or it has already been used."}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # SECURITY FIX (CVE-COASTAL-006): Expiration (10 minutes)
-        if otp_created_at:
-            import time
+        # Use model-level verification logic (handles hashing, expiry, and attempts)
+        success, verify_message = otp_record.verify(otp_code)
 
-            if time.time() > otp_created_at + 600:  # 600 seconds = 10 mins
-                del request.session["otp_code"]
-                return Response(
-                    {"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST
-                )
+        if not success:
+            status_code = (
+                status.HTTP_429_TOO_MANY_REQUESTS if "Too many" in verify_message else status.HTTP_400_BAD_REQUEST
+            )
+            return Response({"error": verify_message}, status=status_code)
 
-        if stored_phone != phone_number:
-            return Response({"error": "Phone number does not match."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # SECURITY: Use constant-time comparison to prevent timing attacks
-        import hmac
-
-        # stored_otp might be int or str, ensure str
-        if not hmac.compare_digest(str(stored_otp), str(otp_code)):
-            # Increment failed attempts
-            request.session["otp_failed_attempts"] = failed_attempts + 1
-            return Response({"error": "Invalid OTP code."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # OTP verified - clear session data
-        if "otp_code" in request.session:
-            del request.session["otp_code"]
-        if "otp_phone" in request.session:
-            del request.session["otp_phone"]
-        if "otp_type" in request.session:
-            del request.session["otp_type"]
-        if "otp_created_at" in request.session:
-            del request.session["otp_created_at"]
-        if "otp_failed_attempts" in request.session:
-            del request.session["otp_failed_attempts"]
-
-        # If this is 2FA setup, enable 2FA for the user
+        # OTP verified - If this is 2FA setup, we could mark the user's phone as verified here
         if verification_type == "2fa_setup":
-            # 2FA setup logic placeholder
-            # Add 2FA enabled flag if your User model has it
-            # e.g., request.user.two_factor_enabled = True
-            # request.user.phone_number = phone_number
-            # request.user.save()
-            pass
+            user = request.user
+            user.phone_number = phone_number
+            # user.is_phone_verified = True # Add this field to User model if needed
+            user.save()
 
         return Response({"success": True, "message": "OTP verified successfully.", "verified": True})
 
@@ -731,7 +726,7 @@ class StaffSerializer(serializers.ModelSerializer):
 class StaffListView(APIView):
     """List staff users for messaging."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaff]
 
     def get(self, request):
         """Retrieve a list of staff users for selection in internal messaging."""

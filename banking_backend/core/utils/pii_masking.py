@@ -52,6 +52,26 @@ def mask_phone_number(phone: str | None) -> str:
     return "X" * (len(phone) - 4) + phone[-4:]
 
 
+def mask_email(email: str | None) -> str:
+    """Mask an email address, protecting the local part while keeping the domain.
+
+    Example: "john.doe@gmail.com" -> "j***@gmail.com"
+    Returns "REDACTED" for None/empty inputs to prevent leakage.
+    """
+    if not email or "@" not in str(email):
+        return "REDACTED"
+
+    local_part, domain = str(email).split("@", 1)
+
+    # Masking logic for local part: keep first letter, mask the rest
+    if len(local_part) <= 1:
+        masked_local = "*"
+    else:
+        masked_local = f"{local_part[0]}{'*' * (len(local_part) - 1)}"
+
+    return f"{masked_local}@{domain}"
+
+
 def mask_income(income) -> str:
     """Mask income by showing a range instead of exact value.
 

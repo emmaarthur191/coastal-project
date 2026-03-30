@@ -8,6 +8,7 @@ import logging
 from decimal import Decimal
 
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import mixins
 from rest_framework.decorators import action
@@ -122,6 +123,51 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
             return Response({"status": "success", "message": "Cash advance marked as repaid"})
         except CashAdvance.DoesNotExist:
             return Response({"error": "Cash advance not found"}, status=404)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def repay_loan(self, request, pk=None):
+        """Allow cashiers to process a standard loan repayment."""
+        from core.models.loans import Loan
+        from core.services.loans import LoanService
+
+        try:
+            loan = Loan.objects.get(pk=pk)
+            amount = request.data.get("amount")
+
+            if not amount:
+                return Response({"error": "Amount is required"}, status=400)
+
+            amount = Decimal(str(amount))
+            with transaction.atomic():
+                repaid_loan = LoanService.repay_loan(loan, amount)
+
+                # Audit Log
+                from users.models import AuditLog
+
+                AuditLog.objects.create(
+                    action="repayment",
+                    model_name="Loan",
+                    object_id=str(repaid_loan.id),
+                    object_repr=f"Cashier Loan Repayment for {repaid_loan.user.username}",
+                    user=request.user,
+                    changes={"amount": str(amount), "channel": "cashier"},
+                )
+
+            return Response(
+                {
+                    "status": "success",
+                    "message": "Loan repayment processed",
+                    "data": {
+                        "loan_id": repaid_loan.id,
+                        "outstanding_balance": str(repaid_loan.outstanding_balance),
+                    },
+                }
+            )
+        except Loan.DoesNotExist:
+            return Response({"error": "Loan not found"}, status=404)
+        except Exception as e:
+            logger.error(f"Cashier loan repayment failed: {e}")
+            return Response({"error": "Repayment failed", "detail": str(e)}, status=500)
 
 
 class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):

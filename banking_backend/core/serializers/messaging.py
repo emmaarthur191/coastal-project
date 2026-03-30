@@ -94,7 +94,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """Apply PII masking based on roles."""
-        from core.utils import mask_generic
+        from core.utils import mask_email, mask_generic
 
         data = super().to_representation(instance)
         request = self.context.get("request")
@@ -105,6 +105,7 @@ class MessageSerializer(serializers.ModelSerializer):
         if not is_manager:
             # We also mask the sender name if it's there
             data["sender_name"] = mask_generic(data.get("sender_name"))
+            data["sender_email"] = mask_email(data.get("sender_email"))
             data["content"] = mask_generic(data.get("content"), length=20)
 
         return data
@@ -125,6 +126,7 @@ class MessageThreadSerializer(serializers.ModelSerializer):
     last_message_preview = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
     participant_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
+    initial_message = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = MessageThread
@@ -135,6 +137,7 @@ class MessageThreadSerializer(serializers.ModelSerializer):
             "participants",
             "participant_list",
             "participant_ids",
+            "initial_message",
             "created_by",
             "created_by_name",
             "is_archived",
@@ -146,7 +149,67 @@ class MessageThreadSerializer(serializers.ModelSerializer):
             "unread_count",
             "last_message_preview",
         ]
-        read_only_fields = ["id", "created_by", "last_message_at", "created_at", "updated_at"]
+        read_only_fields = ["id", "participants", "created_by", "last_message_at", "created_at", "updated_at"]
+
+    def validate_participant_ids(self, value):
+        """SECURITY: Validate that the user is allowed to start a thread with these participants."""
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError("Authentication required.")
+
+        # 1. Ensure all IDs are valid users
+        participants = User.objects.filter(id__in=value)
+        if participants.count() != len(value):
+            raise serializers.ValidationError("One or more participant IDs are invalid.")
+
+        # 2. RBAC rules for thread creation
+        if user.role == "customer":
+            # Customers can only chat with Staff (non-customers)
+            invalid_participants = participants.filter(role="customer").exclude(id=user.id)
+            if invalid_participants.exists():
+                from users.security import SecurityService
+
+                SecurityService.log_payload_anomaly(
+                    request, "Unauthorized customer-to-customer thread attempt", {"participants": value}
+                )
+                raise serializers.ValidationError("Customers cannot initiate direct threads with other customers.")
+
+        return value
+
+    def create(self, validated_data):
+        """Handle thread creation with participants and initial message."""
+        participant_ids = validated_data.pop("participant_ids", [])
+        initial_message = validated_data.pop("initial_message", None)
+        request = self.context.get("request")
+        user = request.user
+
+        # Create thread
+        validated_data["created_by"] = user
+        thread = super().create(validated_data)
+
+        # Add participants
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        thread.participants.add(user)
+        if participant_ids:
+            other_participants = User.objects.filter(id__in=participant_ids)
+            thread.participants.add(*other_participants)
+
+        # Add initial message
+        if initial_message:
+            from core.models.messaging import Message
+
+            Message.objects.create(thread=thread, sender=user, content=initial_message)
+
+        return thread
 
     def get_messages(self, obj):
         # Return last 50 messages
@@ -185,7 +248,7 @@ class MessageThreadSerializer(serializers.ModelSerializer):
         user = getattr(request, "user", None)
         is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
 
-        from core.utils import mask_generic
+        from core.utils import mask_email, mask_generic
 
         result = []
         for p in obj.participants.all():
@@ -195,7 +258,7 @@ class MessageThreadSerializer(serializers.ModelSerializer):
 
             if not is_manager:
                 name = f"{mask_generic(first_name)} {mask_generic(last_name)}"
-                email = mask_generic(email)
+                email = mask_email(email)
             else:
                 name = f"{first_name} {last_name}"
 
