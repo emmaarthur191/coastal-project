@@ -15,6 +15,7 @@ export type AccountOpeningRequest = {
     card_type?: CardTypeEnum;
     id_type?: IdTypeEnum;
     id_number?: string;
+    readonly full_name: string;
     first_name: string;
     last_name: string;
     date_of_birth: string;
@@ -47,4 +48,3 @@ export type AccountOpeningRequest = {
     readonly updated_at: string;
     readonly approved_at: string | null;
 };
-
