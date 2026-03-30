@@ -103,23 +103,16 @@ class SendexaService:
             outbox.save()
             return False, msg
 
-        auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "") or api_key
-        # Auto-detect if token is base64(key:secret) or raw
-        try:
-            if ":" not in auth_token: # No colon in raw
-                decoded = base64.b64decode(auth_token).decode("utf-8")
-                if ":" in decoded:
-                    # User:Pass format, the second half (Secret) is often the Bearer token
-                    _, secret = decoded.split(":", 1)
-                    auth_token = secret
-        except Exception:
-            # If decode fails, it's likely already the raw token
-            pass
+        # 4. Construct Basic Authentication (Official Format: ID:Key)
+        client_id = getattr(settings, "SENDEXA_CLIENT_ID", "")
+        api_key = getattr(settings, "SENDEXA_API_KEY", "")
+
+        credentials = base64.b64encode(f"{client_id}:{api_key}".encode()).decode()
 
         payload: dict[str, str] = {"recipient": normalized_phone, "senderId": sender_id, "message": message}
         
         headers = {
-            "Authorization": f"Bearer {auth_token}",
+            "Authorization": f"Basic {credentials}",
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*",

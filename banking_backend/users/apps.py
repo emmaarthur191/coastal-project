@@ -20,17 +20,16 @@ def sendexa_config_check(app_configs, **kwargs):
     from django.conf import settings
 
     errors = []
-    auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "")
+    client_id = getattr(settings, "SENDEXA_CLIENT_ID", "")
     api_key = getattr(settings, "SENDEXA_API_KEY", "")
-    api_secret = getattr(settings, "SENDEXA_API_SECRET", "")
 
-    if not auth_token and not api_key:
+    if not client_id or not api_key:
         errors.append(
             Warning(
                 "Sendexa SMS credentials are not configured. " "SMS sending will fail at runtime.",
                 hint=(
-                    "Set SENDEXA_AUTH_TOKEN or both SENDEXA_API_KEY and "
-                    "SENDEXA_API_SECRET in your environment variables."
+                    "Set SENDEXA_CLIENT_ID and SENDEXA_API_KEY "
+                    "in your environment variables."
                 ),
                 id="users.W001",
             )
