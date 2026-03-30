@@ -103,38 +103,37 @@ class SendexaService:
             outbox.save()
             return False, msg
 
-        # 4. Handle authentication robustly (Split Key:Secret for Basic Auth)
+        # 4. Determine auth token (Official Documentation: Bearer)
+        # Handle cases where api_key might be the base64 encoded user:pass
+        auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "") or api_key
+        try:
+            decoded = base64.b64decode(auth_token).decode("utf-8")
+            if ":" in decoded:
+                # Often the second part of a key:secret is the actual Bearer token
+                _, secret = decoded.split(":", 1)
+                auth_token = secret
+        except Exception:
+            pass
+
         payload: dict[str, str] = {"recipient": normalized_phone, "senderId": sender_id, "message": message}
-        auth_params = None
+        
         headers = {
+            "Authorization": f"Bearer {auth_token}",
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "en-US,en;q=0.9",
-            "Origin": "https://server.sendexa.co",
-            "Referer": "https://server.sendexa.co/",
+            "Origin": "https://api.sendexa.co",
+            "Referer": "https://api.sendexa.co/",
             "DNT": "1",
             "Sec-Fetch-Dest": "empty",
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-site",
         }
 
-        try:
-            # Attempt to decode and split into user:pass
-            decoded = base64.b64decode(api_key).decode("utf-8")
-            if ":" in decoded:
-                user, password = decoded.split(":", 1)
-                auth_params = HTTPBasicAuth(user, password)
-            else:
-                # Fallback to direct token if no colon
-                headers["Authorization"] = f"Basic {api_key}"
-        except Exception as e:
-            logger.debug(f"Sendexa: Key is not base64 or contains no colon, using as raw token: {e}")
-            headers["Authorization"] = f"Basic {api_key}"
-
         for attempt in range(max_retries):
             try:
-                response = requests.post(url, json=payload, headers=headers, auth=auth_params, timeout=25)
+                response = requests.post(url, json=payload, headers=headers, timeout=25)
                 outbox.retry_count = attempt
 
                 if response.status_code in [200, 201]:

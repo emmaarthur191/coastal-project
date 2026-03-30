@@ -24,7 +24,7 @@ def sendexa_config_check(app_configs, **kwargs):
     api_key = getattr(settings, "SENDEXA_API_KEY", "")
     api_secret = getattr(settings, "SENDEXA_API_SECRET", "")
 
-    if not auth_token and not (api_key and api_secret):
+    if not auth_token and not api_key:
         errors.append(
             Warning(
                 "Sendexa SMS credentials are not configured. " "SMS sending will fail at runtime.",
