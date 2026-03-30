@@ -104,7 +104,7 @@ class SendexaService:
         # 4. Use raw API key as per user "no encode/decode" instruction
         payload: dict[str, str] = {"to": normalized_phone, "sender": sender_id, "message": message}
         headers = {
-            "Authorization": api_key,
+            "Authorization": f"Basic {api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
