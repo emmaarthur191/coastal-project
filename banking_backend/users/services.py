@@ -1,10 +1,11 @@
-import base64
 import logging
 import re
 import time
 
-import requests
 from django.conf import settings
+from django.utils import timezone
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +101,10 @@ class SendexaService:
             outbox.save()
             return False, msg
 
-        # 4. Build Basic Auth header (sendexa api_key)
-        credentials = base64.b64encode(api_key.encode()).decode()
-        payload = {"to": normalized_phone, "sender": sender_id, "message": message}
+        # 4. Use raw API key as per user "no encode/decode" instruction
+        payload: dict[str, str] = {"to": normalized_phone, "sender": sender_id, "message": message}
         headers = {
-            "Authorization": f"Basic {credentials}",
+            "Authorization": api_key,
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
@@ -123,7 +123,7 @@ class SendexaService:
                 outbox.status = "failed"
                 outbox.error_message = f"HTTP {response.status_code}: {response.text[:200]}"
                 outbox.save()
-                return False, outbox.error_message
+                return False, outbox.error_message or "Unknown error"
 
             except Exception as e:
                 logger.error(f"Sendexa: Attempt {attempt+1} failed: {e}")
