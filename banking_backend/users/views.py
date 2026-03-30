@@ -771,11 +771,11 @@ class StaffIdsView(APIView):
         staff = queryset.only(
             "id",
             "email",
-            "first_name",
-            "last_name",
             "role",
             "is_active",
             "date_joined",
+            "first_name_encrypted",
+            "last_name_encrypted",
             "staff_id_encrypted",
             "phone_number_encrypted",
         )[:100]
@@ -787,13 +787,18 @@ class StaffIdsView(APIView):
             if not staff_id_official:
                 staff_id_official = f"STAFF-{s.id:05d}"
 
+            # Decrypt names via property with fallback to email for display
+            first_name = s.first_name or ""
+            last_name = s.last_name or ""
+            full_name = f"{first_name} {last_name}".strip() or s.email
+
             results.append(
                 {
                     "id": s.id,
                     "staff_id": staff_id_official,
-                    "name": f"{s.first_name} {s.last_name}",
-                    "first_name": s.first_name or "",
-                    "last_name": s.last_name or "",
+                    "name": full_name,
+                    "first_name": first_name,
+                    "last_name": last_name,
                     "email": s.email,
                     "phone_number": s.phone_number,  # Decrypted via property
                     "role": s.role,

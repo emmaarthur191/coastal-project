@@ -1,6 +1,5 @@
 """Service for Sendexa SMS integration."""
 
-import base64
 import logging
 import re
 import time
@@ -87,25 +86,18 @@ class SendexaService:
 
         # 3. Configure Client
         url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/sms/send")
-        auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "")
+        api_key = getattr(settings, "SENDEXA_API_KEY", "")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
-        # Auth Token Fallback
-        if not auth_token:
-            api_key = getattr(settings, "SENDEXA_API_KEY", "")
-            api_secret = getattr(settings, "SENDEXA_API_SECRET", "")
-            if api_key and api_secret:
-                auth_token = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
-
-        if settings.DEBUG and not auth_token:
+        if settings.DEBUG and not api_key:
             logger.info(f"Sendexa [DEBUG MOCK]: To {normalized_phone}, Msg: {message[:20]}...")
             outbox.status = "sent"
             outbox.sent_at = timezone.now()
             outbox.save()
             return True, "Mock success"
 
-        if not auth_token:
-            msg = "SMS failed: No AUTH_TOKEN configured."
+        if not api_key:
+            msg = "SMS failed: No SENDEXA_API_KEY configured for Bearer auth."
             outbox.status = "failed"
             outbox.error_message = msg
             outbox.save()
@@ -118,7 +110,7 @@ class SendexaService:
 
         payload = {"to": normalized_phone, "sender": sender_id, "message": message}
         headers = {
-            "Authorization": f"Basic {auth_token}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
