@@ -27,4 +27,3 @@ export type ReportSchedule = {
     readonly created_at: string;
     readonly updated_at: string;
 };
-

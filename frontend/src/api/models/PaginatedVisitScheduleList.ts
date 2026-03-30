@@ -9,4 +9,3 @@ export type PaginatedVisitScheduleList = {
     previous?: string | null;
     results: Array<VisitSchedule>;
 };
-

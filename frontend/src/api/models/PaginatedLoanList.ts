@@ -9,4 +9,3 @@ export type PaginatedLoanList = {
     previous?: string | null;
     results: Array<Loan>;
 };
-

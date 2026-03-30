@@ -5,9 +5,7 @@ import time
 from django.conf import settings
 from django.utils import timezone
 
-import base64
 import requests
-from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
@@ -86,33 +84,28 @@ class SendexaService:
 
         # 3. Configure Client
         url = getattr(settings, "SENDEXA_API_URL", "https://server.sendexa.co/v1/sms/send")
-        api_key = getattr(settings, "SENDEXA_API_KEY", "")
+        api_token_b64 = getattr(settings, "SENDEXA_SERVER_KEY", "")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
-        if settings.DEBUG and not api_key:
+        if settings.DEBUG and not api_token_b64:
             logger.info(f"Sendexa [DEBUG MOCK]: To {normalized_phone}, Msg: {message[:20]}...")
             outbox.status = "sent"
             outbox.sent_at = timezone.now()
             outbox.save()
             return True, "Mock success"
 
-        if not api_key:
-            msg = "SMS failed: No SENDEXA_API_KEY configured for Basic auth."
+        if not api_token_b64:
+            msg = "SMS failed: No SENDEXA_SERVER_KEY configured for Basic auth."
             outbox.status = "failed"
             outbox.error_message = msg
             outbox.save()
             return False, msg
 
-        # 4. Construct Basic Authentication (Official Format: ID:Key)
-        client_id = getattr(settings, "SENDEXA_CLIENT_ID", "")
-        api_key = getattr(settings, "SENDEXA_API_KEY", "")
-
-        credentials = base64.b64encode(f"{client_id}:{api_key}".encode()).decode()
-
+        # 4. Use pre-encoded Base64 token from settings
         payload: dict[str, str] = {"recipient": normalized_phone, "senderId": sender_id, "message": message}
-        
+
         headers = {
-            "Authorization": f"Basic {credentials}",
+            "Authorization": f"Basic {api_token_b64}",
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*",

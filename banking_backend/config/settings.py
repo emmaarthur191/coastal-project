@@ -401,6 +401,7 @@ FLOWER_BASIC_AUTH = env("FLOWER_BASIC_AUTH", default=None)
 # Sendexa SMS Configuration
 # SECURITY: All Sendexa credentials MUST be set via environment variables
 # No default values for API keys/secrets in production
+SENDEXA_SERVER_KEY = env("SENDEXA_SERVER_KEY", default="")
 SENDEXA_CLIENT_ID = env("SENDEXA_CLIENT_ID", default="")
 SENDEXA_API_KEY = env("SENDEXA_API_KEY", default="")
 SENDEXA_API_SECRET = env("SENDEXA_API_SECRET", default="")

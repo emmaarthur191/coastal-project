@@ -9,4 +9,3 @@ export type PaginatedComplaintList = {
     previous?: string | null;
     results: Array<Complaint>;
 };
-

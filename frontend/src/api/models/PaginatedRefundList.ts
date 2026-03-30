@@ -9,4 +9,3 @@ export type PaginatedRefundList = {
     previous?: string | null;
     results: Array<Refund>;
 };
-

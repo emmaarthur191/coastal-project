@@ -40,6 +40,8 @@ services:
         sync: false
       - key: MANAGER_PASSWORD
         sync: false
+      - key: SENDEXA_SERVER_KEY
+        sync: false
       - key: SENDEXA_API_URL
         sync: false
       - key: SENDEXA_API_KEY

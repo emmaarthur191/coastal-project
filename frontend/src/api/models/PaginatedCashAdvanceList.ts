@@ -9,4 +9,3 @@ export type PaginatedCashAdvanceList = {
     previous?: string | null;
     results: Array<CashAdvance>;
 };
-

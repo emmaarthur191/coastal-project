@@ -25,4 +25,3 @@ export type CashDrawer = {
     opening_denominations?: Array<Record<string, any>>;
     closing_denominations?: Array<Record<string, any>>;
 };
-

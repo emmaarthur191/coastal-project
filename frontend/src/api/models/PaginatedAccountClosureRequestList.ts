@@ -9,4 +9,3 @@ export type PaginatedAccountClosureRequestList = {
     previous?: string | null;
     results: Array<AccountClosureRequest>;
 };
-

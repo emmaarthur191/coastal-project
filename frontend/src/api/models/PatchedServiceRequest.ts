@@ -18,4 +18,3 @@ export type PatchedServiceRequest = {
     readonly created_at?: string;
     readonly updated_at?: string;
 };
-

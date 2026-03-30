@@ -9,4 +9,3 @@ export type PaginatedAccountOpeningRequestList = {
     previous?: string | null;
     results: Array<AccountOpeningRequest>;
 };
-

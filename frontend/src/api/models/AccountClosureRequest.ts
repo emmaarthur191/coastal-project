@@ -25,4 +25,3 @@ export type AccountClosureRequest = {
     readonly updated_at: string;
     readonly closed_at: string | null;
 };
-

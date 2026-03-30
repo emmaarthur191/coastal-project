@@ -9,4 +9,3 @@ export type PaginatedChatMessageList = {
     previous?: string | null;
     results: Array<ChatMessage>;
 };
-

@@ -9,4 +9,3 @@ export type PaginatedPromotionList = {
     previous?: string | null;
     results: Array<Promotion>;
 };
-

@@ -21,4 +21,3 @@ export type Loan = {
     readonly created_at: string;
     readonly updated_at: string;
 };
-

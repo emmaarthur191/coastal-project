@@ -9,4 +9,3 @@ export type PaginatedTransactionList = {
     previous?: string | null;
     results: Array<Transaction>;
 };
-

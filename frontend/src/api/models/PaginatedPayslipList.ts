@@ -9,4 +9,3 @@ export type PaginatedPayslipList = {
     previous?: string | null;
     results: Array<Payslip>;
 };
-

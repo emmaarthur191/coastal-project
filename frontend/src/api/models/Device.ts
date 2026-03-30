@@ -16,4 +16,3 @@ export type Device = {
     readonly last_used_at: string;
     readonly created_at: string;
 };
-

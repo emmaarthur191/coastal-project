@@ -9,4 +9,3 @@ export type PaginatedReportTemplateList = {
     previous?: string | null;
     results: Array<ReportTemplate>;
 };
-
