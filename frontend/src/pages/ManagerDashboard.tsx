@@ -24,6 +24,7 @@ import AccountsTab from '../components/AccountsTab';
 import SecuritySection from '../components/manager/SecuritySection';
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 import AccountOpeningsSection from '../components/manager/AccountOpeningsSection';
+import AccountClosuresSection from '../components/manager/AccountClosuresSection';
 import PerformanceMonitoringSection from '../components/manager/PerformanceMonitoringSection';
 import ReportsSection from '../components/manager/ReportsSection';
 
@@ -40,6 +41,7 @@ function ManagerDashboard() {
     { id: 'overview', name: 'Overview', icon: '📊' },
     { id: 'accounts', name: 'Accounts', icon: '🏦' },
     { id: 'account-openings', name: 'Account Requests', icon: '📂' },
+    { id: 'account-closures', name: 'Account Closures', icon: '🔒' },
     { id: 'messaging', name: 'Messaging', icon: '💬' },
     { id: 'products-services', name: 'Products & Services', icon: '🎁' },
     { id: 'users', name: 'Staff Users', icon: '👥' },
@@ -245,6 +247,7 @@ function ManagerDashboard() {
       case 'overview': return <OverviewSection dashboardData={dashboardData} onReviewAccountOpening={handleReviewAccountOpening} onRefreshDashboard={fetchDashboardData} />;
       case 'accounts': return <AccountsTab />;
       case 'account-openings': return <AccountOpeningsSection onRefreshDashboard={fetchDashboardData} />;
+      case 'account-closures': return <AccountClosuresSection onRefreshDashboard={fetchDashboardData} />;
       case 'messaging': return (
         <MessagingSection onOpenMessaging={() => {
           if (!hasMessagingAccess) { alert('Access denied.'); return; }

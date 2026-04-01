@@ -357,3 +357,144 @@ class BankingMessageAdmin(admin.ModelAdmin):
     @admin.action(description="Mark selected as unread")
     def mark_as_unread(self, request, queryset):
         queryset.update(is_read=False, read_at=None)
+
+
+# =============================================================================
+# Account Opening Request Admin
+# =============================================================================
+from core.models.accounts import AccountOpeningRequest
+
+
+@admin.register(AccountOpeningRequest)
+class AccountOpeningRequestAdmin(admin.ModelAdmin):
+    """Admin for managing account opening requests with approval logic."""
+
+    list_display = (
+        "id",
+        "first_name_display",
+        "last_name_display",
+        "email",
+        "phone_number_display",
+        "account_type",
+        "status_display",
+        "created_at",
+    )
+    list_filter = ("status", "account_type", "created_at")
+    search_fields = ("email", "id_number_hash", "phone_number_hash")
+    readonly_fields = ("created_at", "updated_at", "approved_at", "credentials_sent_at", "processed_by", "submitted_by")
+
+    actions = ["approve_finalize_and_print", "reject_requests", export_to_csv, export_to_json]
+
+    def first_name_display(self, obj):
+        return obj.first_name
+
+    first_name_display.short_description = "First Name"
+
+    def last_name_display(self, obj):
+        return obj.last_name
+
+    last_name_display.short_description = "Last Name"
+
+    def phone_number_display(self, obj):
+        return obj.phone_number
+
+    phone_number_display.short_description = "Phone"
+
+    def status_display(self, obj):
+        colors = {
+            "pending": "orange",
+            "approved": "blue",
+            "rejected": "red",
+            "completed": "green",
+        }
+        color = colors.get(obj.status, "gray")
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_status_display())
+
+    status_display.short_description = "Status"
+    status_display.admin_order_field = "status"
+
+    @admin.action(description="Approve, Finalize & Print Letter")
+    def approve_finalize_and_print(self, request, queryset):
+        """One-click approval: Create User, Create Account, Generate Password, and Generate PDF."""
+        import secrets
+
+        from django.contrib.auth import get_user_model
+        from django.db import transaction
+        from django.http import FileResponse
+        from django.utils import timezone
+
+        from core.pdf_services import generate_account_opening_letter_pdf
+        from core.services.accounts import AccountService
+
+        # Return the PDF for the FIRST selected request (PDF response can only be one file)
+        pending_requests = queryset.filter(status="pending")
+        if not pending_requests.exists():
+            self.message_user(request, "No pending requests selected.", level="ERROR")
+            return None
+
+        opening_request = pending_requests.first()
+        User = get_user_model()
+
+        try:
+            with transaction.atomic():
+                # 1. Create/Find Client User
+                user_email = opening_request.email
+                customer_user = User.objects.filter(email=user_email).first() if user_email else None
+
+                temp_password = secrets.token_urlsafe(8)
+
+                if not customer_user:
+                    username = user_email if user_email else f"cust_{secrets.token_hex(4)}"
+                    customer_user = User.objects.create_user(
+                        username=username,
+                        email=user_email or "",
+                        password=temp_password,
+                        first_name=opening_request.first_name,
+                        last_name=opening_request.last_name,
+                        role="customer",
+                        is_approved=True,  # Auto-approve the created user
+                        is_active=True,
+                    )
+                    customer_user.phone_number = opening_request.phone_number
+                    customer_user.id_type = opening_request.id_type
+                    customer_user.id_number = opening_request.id_number
+                    customer_user.save()
+                else:
+                    # If user exists, reset password for the new account letter
+                    customer_user.set_password(temp_password)
+                    customer_user.is_approved = True
+                    customer_user.is_active = True
+                    customer_user.save()
+
+                # 2. Create the Bank Account
+                new_account = AccountService.create_account(
+                    user=customer_user,
+                    account_type=opening_request.account_type,
+                    initial_balance=opening_request.initial_deposit,
+                )
+
+                # 3. Finalize the Request
+                opening_request.status = "completed"
+                opening_request.processed_by = request.user
+                opening_request.approved_at = timezone.now()
+                opening_request.credentials_approved_by = request.user
+                opening_request.credentials_sent_at = timezone.now()
+                opening_request.created_account = new_account
+                opening_request.save()
+
+                # 4. Generate the PDF Letter
+                pdf_buffer = generate_account_opening_letter_pdf(
+                    opening_request, new_account.account_number, temp_password
+                )
+
+                filename = f"Account_Opening_{new_account.account_number}.pdf"
+                return FileResponse(pdf_buffer, as_attachment=True, filename=filename)
+
+        except Exception as e:
+            self.message_user(request, f"Critical error during approval: {e!s}", admin.messages.ERROR)
+            return None
+
+    @admin.action(description="Reject selected requests")
+    def reject_requests(self, request, queryset):
+        queryset.filter(status="pending").update(status="rejected", processed_by=request.user)
+        self.message_user(request, "Selected requests rejected.", admin.messages.SUCCESS)

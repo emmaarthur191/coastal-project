@@ -67,6 +67,37 @@ class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
         visit.save()
         return Response({"status": "success", "message": "Visit marked as completed"})
 
+    @action(detail=True, methods=["post"], url_path="check-in")
+    def check_in(self, request, pk=None):
+        """Record GPS check-in for a visit."""
+        visit = self.get_object()
+        lat = request.data.get("latitude")
+        lon = request.data.get("longitude")
+
+        if lat is None or lon is None:
+            return Response({"error": "Latitude and longitude are required for check-in"}, status=400)
+
+        try:
+            visit.check_in_latitude = Decimal(str(lat))
+            visit.check_in_longitude = Decimal(str(lon))
+            visit.check_in_at = timezone.now()
+            visit.status = "completed"  # Auto-complete on check-in for this bank's policy
+            visit.save()
+        except Exception as e:
+            return Response({"error": f"Invalid coordinates provided: {e!s}"}, status=400)
+
+        return Response(
+            {
+                "status": "success",
+                "message": "Check-in successful",
+                "data": {
+                    "at": visit.check_in_at.isoformat(),
+                    "lat": float(visit.check_in_latitude),
+                    "lon": float(visit.check_in_longitude),
+                },
+            }
+        )
+
 
 class MobileBankerMetricsView(APIView):
     """Metrics for mobile banker dashboard."""
@@ -315,7 +346,7 @@ class ClientAssignmentViewSet(
 
     def get_serializer_class(self):
         """Return the serializer class for client assignments."""
-        from core.serializers.mobile import ClientAssignmentSerializer
+        from core.serializers.operational import ClientAssignmentSerializer
 
         return ClientAssignmentSerializer
 

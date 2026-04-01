@@ -4,19 +4,36 @@ import logging
 import secrets
 
 from django.conf import settings
+from django.db import transaction
+from django.db.models import Max
+from django.http import FileResponse
 from django.utils import timezone
-from rest_framework import generics, serializers, status
+from rest_framework import generics, serializers, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from core.permissions import IsAdmin, IsStaff
+from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff
 
 from .models import User
-from .serializers import LoginSerializer, UserRegistrationSerializer, UserSerializer
+from .serializers import (
+    ChangePasswordSerializer,
+    LoginSerializer,
+    OTPRequestSerializer,
+    OTPVerifySerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    StaffCreationSerializer,
+    UserRegistrationSerializer,
+    UserSerializer,
+)
 from .services import SendexaService
 
 logger = logging.getLogger(__name__)
@@ -40,6 +57,7 @@ class CreateStaffView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_scope = "registration"
 
+    @extend_schema(request=StaffCreationSerializer, responses={201: UserSerializer})
     def post(self, request):
         """Handle administrative creation of staff users via secure invitation flow."""
         if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
@@ -100,43 +118,35 @@ class CreateStaffView(APIView):
         serializer = StaffCreationSerializer(data=data)
         if serializer.is_valid():
             try:
-                # 1. Create INACTIVE user
+                # Create user in PENDING state
                 user = serializer.save()
                 user.is_active = False
-                user.save(update_fields=["is_active"])
+                user.is_approved = False
+                user.save(update_fields=["is_active", "is_approved"])
 
-                # 2. Generate Secure Invitation Token
-                invitation = UserInvitation.create_for_user(user)
-
-                # 3. Send Invitation via SMS
-                # In production, this would be a URL to the frontend: https://coastal.com/enroll?token=...
-                frontend_url = getattr(settings, "FRONTEND_URL", "https://coastal.com")
-                enroll_link = f"{frontend_url}/enroll/staff?token={invitation.token}"
-
-                message = f"Welcome to Coastal Banking! You have been enrolled as a {user.role}. Please complete your account setup here: {enroll_link} . Link expires in 24 hours."
-
-                sms_success, _sms_resp = SendexaService.send_sms(phone_number, message)
+                # Create the enrollment invitation (letter)
+                UserInvitation.create_for_user(user)
 
                 response_data = serializer.data
-                response_data["staff_id"] = user.staff_id
-                response_data["sms_sent"] = sms_success
+                response_data["staff_id_status"] = "Pending Approval"
+                response_data["approval_required"] = True
 
                 return Response(
                     {
                         "status": "success",
-                        "message": "Staff invitation sent successfully",
+                        "message": "Staff registration submitted. Please contact the Manager for approval and credentials.",
                         "data": response_data,
                     },
                     status=status.HTTP_201_CREATED,
                 )
 
             except Exception as e:
-                logger.error(f"Staff enrollment failed: {e!s}", exc_info=True)
+                logger.error(f"Staff registration failed: {e!s}", exc_info=True)
                 return Response(
                     {
                         "status": "error",
-                        "message": "Unable to enroll staff user. Internal error occurred.",
-                        "code": "STAFF_ENROLLMENT_FAILED",
+                        "message": "Unable to register staff user. Internal error occurred.",
+                        "code": "STAFF_REGISTRATION_FAILED",
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
@@ -200,6 +210,7 @@ class ChangePasswordView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=ChangePasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         """Handle password change requests for the authenticated user, validating old password and updating security tokens."""
         from .serializers import ChangePasswordSerializer
@@ -243,6 +254,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "login"  # DRF rate limiting: 5 attempts per 5 minutes
 
+    @extend_schema(request=LoginSerializer, responses={200: UserSerializer})
     def post(self, request):
         """Authenticate user credentials and return JWT tokens and user details."""
         from .security import SecurityService
@@ -284,17 +296,20 @@ class LoginView(APIView):
         # Validate credentials
         serializer = LoginSerializer(data=request.data)
 
-        if not serializer.is_valid():
-            # If we found the user earlier, record failed attempt
-            if lookup_user:
-                is_locked = SecurityService.handle_failed_login(lookup_user, request)
-                if is_locked:
-                    return Response(
-                        {"error": "Account locked due to too many failed attempts.", "code": "ACCOUNT_LOCKED"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
+        try:
+            if not serializer.is_valid():
+                # If we found the user earlier, record failed attempt
+                if lookup_user:
+                    is_locked = SecurityService.handle_failed_login(lookup_user, request)
+                    if is_locked:
+                        return Response(
+                            {"error": "Account locked due to too many failed attempts.", "code": "ACCOUNT_LOCKED"},
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
         user = serializer.validated_data["user"]
 
@@ -555,6 +570,7 @@ class SendOTPView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_scope = "otp_request"
 
+    @extend_schema(request=OTPRequestSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         """Generate and send a 6-digit OTP to the provided phone number for security verification."""
         from core.utils.field_encryption import hash_field
@@ -595,14 +611,15 @@ class SendOTPView(APIView):
             if not settings.DEBUG:
                 return Response({"error": f"Failed to send SMS code. {response}"}, status=status.HTTP_502_BAD_GATEWAY)
 
-        return Response(
-            {
-                "success": True,
-                "message": f"OTP sent to {phone_number}",
-                "expires_in": 600,  # 10 minutes
-                # SECURITY: OTP code is only logged in memory for dispatch, never exposed in response
-            }
-        )
+        response_data = {
+            "success": True,
+            "message": f"OTP sent to {phone_number}",
+            "expires_in": 600,
+        }
+        if settings.DEBUG:
+            response_data["debug_otp"] = otp_code
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class VerifyOTPView(APIView):
@@ -611,6 +628,7 @@ class VerifyOTPView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_scope = "otp_verify"
 
+    @extend_schema(request=OTPVerifySerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         """Verify the provided OTP against the database and return verification status."""
         from core.utils.field_encryption import hash_field
@@ -938,6 +956,7 @@ class SessionTerminateView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def post(self, request, pk):
         """Terminate a specific user session, invalidating all associated JWT tokens."""
         if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
@@ -987,6 +1006,7 @@ class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "password_reset"
 
+    @extend_schema(request=PasswordResetRequestSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         """Handle request for a password reset token."""
         from .models import PasswordResetToken
@@ -1057,7 +1077,6 @@ class PasswordResetConfirmView(APIView):
         from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
         from .models import PasswordResetToken
-        from .serializers import PasswordResetConfirmSerializer
 
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if not serializer.is_valid():
@@ -1116,4 +1135,83 @@ class PasswordResetConfirmView(APIView):
             return Response(
                 {"error": "Invalid reset token. Please request a new password reset."},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class StaffManagementViewSet(viewsets.ModelViewSet):
+    """ViewSet for Manager-level staff management actions."""
+
+    queryset = User.objects.exclude(role="customer")
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        """Restrict to Manager/Admin/Ops Manager."""
+        return [IsManagerOrAdmin()]
+
+    @action(detail=True, methods=["post"], url_path="approve-and-print")
+    def approve_and_print(self, request, pk=None):
+        """Approve a staff member, generate staff ID, and return a welcome letter."""
+        user = self.get_object()
+
+        if user.is_approved:
+            return Response(
+                {"status": "error", "message": "This staff member is already approved."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # SECURITY: Prevent approving self
+        if user == request.user:
+            return Response(
+                {"status": "error", "message": "You cannot self-approve staff registration."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            with transaction.atomic():
+                # 1. Generate Staff ID if not exists (CA prefix)
+                if not user.staff_number:
+                    max_staff = User.objects.aggregate(Max("staff_number"))["staff_number__max"] or 0
+                    user.staff_number = max_staff + 1
+                    prefix = "CA"
+                    if user.staff_number > 9999:
+                        user.staff_id = f"{prefix}{user.staff_number:05d}"
+                    else:
+                        user.staff_id = f"{prefix}{user.staff_number:04d}"
+
+                # 2. Activate Account
+                import secrets
+
+                temp_password = secrets.token_urlsafe(8)
+                user.set_password(temp_password)
+                user.is_approved = True
+                user.is_active = True
+                user.save()
+
+                # 3. Generate Welcome Letter
+                from core.pdf_services import generate_staff_welcome_letter_pdf
+
+                pdf_buffer = generate_staff_welcome_letter_pdf(user, temp_password)
+
+                # 4. Optional SMS Fallback
+                message = (
+                    f"Coastal Banking: Welcome {user.first_name}! Your staff account is approved. "
+                    f"ID: {user.staff_id}. Credentials handover via Manager. Login with your email."
+                )
+                from users.services import SendexaService
+
+                SendexaService.send_sms(user.phone_number, message)
+
+                return FileResponse(
+                    pdf_buffer,
+                    as_attachment=True,
+                    filename=f"Coastal_Staff_Welcome_{user.staff_id}.pdf",
+                    content_type="application/pdf",
+                )
+
+        except Exception as e:
+            logger.error(f"Staff Approve & Print failed: {e}")
+            return Response(
+                {"status": "error", "message": f"Approval failed: {e!s}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

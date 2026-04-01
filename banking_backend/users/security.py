@@ -22,10 +22,20 @@ logger = logging.getLogger(__name__)
 class SecurityService:
     """Service class for security-related operations."""
 
-    # Rate limiting settings
+    # Rate limiting settings (Configurable via settings, with fallbacks)
     LOGIN_RATE_LIMIT_KEY = "login_attempts:{}"
-    LOGIN_RATE_LIMIT_MAX = 10  # Max attempts per window
-    LOGIN_RATE_LIMIT_WINDOW = 300  # 5 minutes in seconds
+
+    @staticmethod
+    def get_max_attempts():
+        from django.conf import settings
+
+        return getattr(settings, "LOGIN_RATE_LIMIT_MAX", 10)
+
+    @staticmethod
+    def get_window():
+        from django.conf import settings
+
+        return getattr(settings, "LOGIN_RATE_LIMIT_WINDOW", 300)
 
     @staticmethod
     def log_payload_anomaly(request, message, details=None):
@@ -90,7 +100,7 @@ class SecurityService:
         cache_key = SecurityService.LOGIN_RATE_LIMIT_KEY.format(ip)
 
         attempts = cache.get(cache_key, 0)
-        if attempts >= SecurityService.LOGIN_RATE_LIMIT_MAX:
+        if attempts >= SecurityService.get_max_attempts():
             logger.warning(f"Rate limit exceeded for IP: {ip}")
             return True
         return False
@@ -102,7 +112,7 @@ class SecurityService:
         cache_key = SecurityService.LOGIN_RATE_LIMIT_KEY.format(ip)
 
         attempts = cache.get(cache_key, 0)
-        cache.set(cache_key, attempts + 1, SecurityService.LOGIN_RATE_LIMIT_WINDOW)
+        cache.set(cache_key, attempts + 1, SecurityService.get_window())
 
     @staticmethod
     def get_location_info(ip):

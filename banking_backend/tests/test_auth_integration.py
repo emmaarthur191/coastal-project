@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -17,17 +19,39 @@ def test_user(db):
         password="securepassword123",
         phone_number="+233200000000",
         role="customer",
+        is_approved=True,
     )
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 class TestAuthIntegration:
     """Integration tests for the full authentication flow."""
 
-    def test_complete_authentication_workflow(self, test_user, settings):
-        settings.DEBUG = True
-        settings.SECURE_SSL_REDIRECT = False
+    @override_settings(
+        DEBUG=True,
+        SECURE_SSL_REDIRECT=False,
+        LOGIN_RATE_LIMIT_MAX=1000,
+        # ENSURE ABSOLUTE ISOLATION: Define entire structure to avoid
+        # picking up polluted values from settings.SIMPLE_JWT dictionary
+        SIMPLE_JWT={
+            "AUTH_COOKIE": "access",
+            "REFRESH_COOKIE": "refresh",
+            "AUTH_COOKIE_SECURE": False,
+            "AUTH_COOKIE_HTTP_ONLY": True,
+            "AUTH_COOKIE_SAMESITE": "Lax",
+            "ACCESS_TOKEN_LIFETIME": settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+            "REFRESH_TOKEN_LIFETIME": settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
+            "ROTATE_REFRESH_TOKENS": True,
+            "BLACKLIST_AFTER_ROTATION": True,
+            "ALGORITHM": "HS256",
+            "SIGNING_KEY": settings.SECRET_KEY,
+            "AUTH_HEADER_TYPES": ("Bearer",),
+        },
+    )
+    def test_complete_authentication_workflow(self, test_user):
         client = APIClient()
+        client.cookies.clear()
+        client.logout()  # Ensure no pre-existing auth state
 
         # 1. Login
         login_url = reverse("users:login")

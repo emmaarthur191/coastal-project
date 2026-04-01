@@ -9,8 +9,10 @@ import secrets
 from datetime import timedelta
 
 from django.db import transaction
+from django.http import FileResponse
 from django.utils import timezone
 from rest_framework import mixins, status
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
@@ -20,6 +22,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.mixins import IdempotencyMixin
 from core.models.accounts import Account, AccountClosureRequest, AccountOpeningRequest
@@ -30,6 +33,7 @@ from core.serializers.accounts import (
     AccountSerializer,
 )
 from core.services.accounts import AccountService
+from users.authentication import JWTCookieAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +86,21 @@ class AccountViewSet(
         account = AccountService.create_account(self.request.user, account_type)
         serializer.instance = account
 
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def freeze(self, request, pk=None):
+        """Freeze an account to prevent further transactions."""
+        account = self.get_object()
+        reason = request.data.get("reason", "Suspicious activity detected")
+        AccountService.lock_account(account, reason)
+        return Response({"status": "success", "message": f"Account {account.account_number} frozen."})
+
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def unfreeze(self, request, pk=None):
+        """Unfreeze an account to restore access."""
+        account = self.get_object()
+        AccountService.unlock_account(account)
+        return Response({"status": "success", "message": f"Account {account.account_number} unfrozen."})
+
 
 class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
     """ViewSet for staff to view and manage customer accounts."""
@@ -132,10 +151,9 @@ class StaffAccountsViewSet(mixins.ListModelMixin, GenericViewSet):
             queryset = queryset.filter(
                 Q(account_number__icontains=search)
                 | Q(user__email__icontains=search)
-                | Q(user__first_name__icontains=search)
-                | Q(user__last_name__icontains=search)
+                | Q(user__first_name_hash=search_hash)
+                | Q(user__last_name_hash=search_hash)
                 | Q(user__id_number_hash=search_hash)
-                | Q(opening_request__id_number_hash=search_hash)
             )
 
         # Apply account type filter
@@ -206,6 +224,11 @@ class AccountOpeningViewSet(
 
     queryset = AccountOpeningRequest.objects.all()
     serializer_class = AccountOpeningRequestSerializer
+    authentication_classes = [
+        JWTCookieAuthentication,
+        SessionAuthentication,
+        JWTAuthentication,
+    ]
     permission_classes = [IsStaff]  # Staff can view and create
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["status", "account_type"]
@@ -227,9 +250,9 @@ class AccountOpeningViewSet(
     def get_permissions(self):
         """Override permissions based on action.
 
-        Registration actions (OTP, verify) are public, but only staff/managers can manage requests.
+        Registration actions (OTP, verify, submit) are public, but only staff/managers can manage requests.
         """
-        if self.action in ["send_otp", "verify_and_submit"]:
+        if self.action in ["send_otp", "verify_and_submit", "submit_request"]:
             from rest_framework.permissions import AllowAny
 
             return [AllowAny()]
@@ -400,6 +423,98 @@ class AccountOpeningViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @action(detail=True, methods=["post"], url_path="approve-and-print")
+    def approve_and_print(self, request, pk=None):
+        """Approve an account opening request, create the account/user, and return a PDF letter."""
+        opening_request = self.get_object()
+
+        if opening_request.status != "pending":
+            return Response(
+                {"status": "error", "message": "Only pending requests can be approved."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Maker-Checker Enforcement
+        if opening_request.submitted_by == request.user:
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Maker-Checker Violation: You cannot approve a request you initiated.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            with transaction.atomic():
+                # 1. Find or Create Client User
+                from django.contrib.auth import get_user_model
+
+                User = get_user_model()
+
+                email = opening_request.email
+                customer_user = User.objects.filter(email=email).first() if email else None
+
+                import secrets
+
+                temp_password = secrets.token_urlsafe(8)
+
+                if not customer_user:
+                    username = email if email else f"user_{secrets.token_hex(4)}"
+                    customer_user = User.objects.create_user(
+                        username=username,
+                        email=email or "",
+                        password=temp_password,
+                        first_name=opening_request.first_name,
+                        last_name=opening_request.last_name,
+                        role="customer",
+                    )
+                    customer_user.is_approved = True  # Approve access
+                    customer_user.phone_number = opening_request.phone_number
+                    customer_user.id_type = opening_request.id_type
+                    customer_user.id_number = opening_request.id_number
+                    customer_user.save()
+                else:
+                    customer_user.is_approved = True
+                    customer_user.save(update_fields=["is_approved"])
+
+                # 2. Automated Account Creation
+                new_account = AccountService.create_account(
+                    user=customer_user,
+                    account_type=opening_request.account_type,
+                    initial_balance=opening_request.initial_deposit,
+                )
+
+                # 3. Update Request Status
+                opening_request.status = "completed"
+                opening_request.processed_by = request.user
+                opening_request.approved_at = timezone.now()
+                opening_request.created_account = new_account
+                opening_request.save()
+
+                # 4. Generate PDF Welcome Letter
+                from core.pdf_services import generate_account_opening_letter_pdf
+
+                pdf_buffer = generate_account_opening_letter_pdf(
+                    opening_request, new_account.account_number, temp_password
+                )
+
+                # 5. Optional SMS Fallback
+                self._send_credentials_sms(opening_request, customer_user.username, temp_password)
+
+                return FileResponse(
+                    pdf_buffer,
+                    as_attachment=True,
+                    filename=f"Coastal_Welcome_{new_account.account_number}.pdf",
+                    content_type="application/pdf",
+                )
+
+        except Exception as e:
+            logger.error(f"Approve & Print failed for request {opening_request.id}: {e}")
+            return Response(
+                {"status": "error", "message": f"Approval failed: {e!s}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
     def _send_account_number_sms(self, opening_request, account):
         """Step 1: Send Account Number only."""
         from users.services import SendexaService
@@ -474,6 +589,15 @@ class AccountOpeningViewSet(
         otp = str(secrets.randbelow(900000) + 100000)  # 6-digit OTP
 
         # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
+        # Handle cases where request.session might be None due to middleware bypass or DRF config
+        if not hasattr(request, "session") or request.session is None:
+            safe_phone = str(phone_number or "Unknown")[-4:]
+            logger.error(f"Session not available for OTP registration: {safe_phone}")
+            return Response(
+                {"error": "Session is required for account registration. Please ensure cookies are enabled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         otp_time_str = request.session.get(f"{session_key}_time")
         if otp_time_str:
             try:
@@ -496,7 +620,16 @@ class AccountOpeningViewSet(
         from users.services import SendexaService
 
         message = f"Your Coastal Banking account opening OTP is: {otp}. Valid for 5 minutes."
-        success, sms_resp = SendexaService.send_sms(phone_number, message)
+        # Safe call to Sendexa SMS service
+        try:
+            sms_result = SendexaService.send_sms(phone_number, message)
+            if isinstance(sms_result, tuple):
+                success, sms_resp = sms_result
+            else:
+                success, sms_resp = bool(sms_result), "No detail"
+        except Exception as e:
+            logger.error(f"SendexaService crash: {e}")
+            success, sms_resp = False, str(e)
 
         if success:
             logger.info(f"OTP sent to phone ending in ...{phone_number[-4:]}")
@@ -513,6 +646,38 @@ class AccountOpeningViewSet(
         # Mask phone in response
         masked_phone = f"***-***-{phone_number[-4:]}"
         return Response({"success": True, "message": "OTP sent successfully", "phone_number": masked_phone})
+
+    @action(detail=False, methods=["post"], url_path="submit-request")
+    def submit_request(self, request):
+        """Submit a new account opening request without OTP verification.
+
+        This is the new entry point for the manual approval workflow.
+        """
+        # Support both top-level and nested account_data
+        data = request.data.get("account_data", request.data)
+
+        # Create account opening request
+        opening_request = AccountOpeningRequest.objects.create(
+            first_name=data.get("first_name", data.get("firstName", "")),
+            last_name=data.get("last_name", data.get("lastName", "")),
+            email=data.get("email", ""),
+            phone_number=data.get("phone_number", data.get("phoneNumber", "")),
+            date_of_birth=data.get("date_of_birth", data.get("dateOfBirth")),
+            id_type=data.get("id_type", data.get("idType", "ghana_card")),
+            id_number=data.get("id_number", data.get("idNumber", "")),
+            account_type=data.get("account_type", data.get("accountType", "daily_susu")),
+            submitted_by=request.user if request.user.is_authenticated else None,
+            status="pending",
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Account opening request submitted. Please visit the Manager's office with your ID for approval.",
+                "data": AccountOpeningRequestSerializer(opening_request).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=False, methods=["post"], url_path="verify-and-submit")
     def verify_and_submit(self, request):
@@ -567,7 +732,7 @@ class AccountOpeningViewSet(
             id_type=data.get("id_type", data.get("idType", "ghana_card")),
             id_number=data.get("id_number", data.get("idNumber", "")),
             account_type=data.get("account_type", data.get("accountType", "daily_susu")),
-            submitted_by=request.user,
+            submitted_by=request.user if request.user.is_authenticated else None,
             status="pending",
         )
 

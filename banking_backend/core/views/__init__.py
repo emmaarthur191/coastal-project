@@ -23,6 +23,16 @@ from core.views.cashier import (
     CheckDepositViewSet,
 )
 
+# Chat views
+from core.views.chat_views import (
+    ChatMessageCreateView,
+    ChatMessageListView,
+    ChatRoomCreateView,
+    ChatRoomDetailView,
+    ChatRoomListView,
+    MarkMessagesReadView,
+)
+
 # Dashboard views
 from core.views.dashboard import (
     AuditDashboardView,
@@ -122,6 +132,12 @@ __all__ = [
     "CashDrawerViewSet",
     # Dashboard
     "CashFlowView",
+    # Chat
+    "ChatMessageCreateView",
+    "ChatMessageListView",
+    "ChatRoomCreateView",
+    "ChatRoomDetailView",
+    "ChatRoomListView",
     "CheckDepositViewSet",
     "ClientAssignmentViewSet",
     # Registration
@@ -139,6 +155,7 @@ __all__ = [
     "HealthCheckView",
     # Loans
     "LoanViewSet",
+    "MarkMessagesReadView",
     "MemberViewSet",
     "MessageThreadViewSet",
     "MessageViewSet",

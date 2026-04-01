@@ -19,7 +19,7 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from core.models.messaging import BankingMessage
-from core.permissions import IsCustomer, IsStaff
+from core.permissions import IsCustomer, IsStaff, IsStaffOrCustomer
 from core.serializers.messaging import BankingMessageSerializer
 
 logger = logging.getLogger(__name__)
@@ -38,14 +38,20 @@ class BankingMessageViewSet(
     def get_queryset(self):
         """Filter messages so customers only see their own communication."""
         user = self.request.user
-        if user.role == "customer":
-            return self.queryset.filter(user=user)
-        return self.queryset
+        if not user or user.is_anonymous:
+            return BankingMessage.objects.none()
+
+        role = getattr(user, "role", None)
+        if role == "customer":
+            return BankingMessage.objects.filter(user=user)
+        return BankingMessage.objects.all()
 
     def get_permissions(self):
         """Map messaging actions to staff or customer permission levels."""
         if self.action in ["create"]:
             return [IsStaff()]
+        if self.action in ["list", "retrieve"]:
+            return [IsStaffOrCustomer()]
         return [IsCustomer()]
 
     @action(detail=True, methods=["post"], permission_classes=[IsCustomer], url_path="mark-read")
@@ -89,8 +95,6 @@ class MessageThreadViewSet(ModelViewSet):
         serializer = self.get_serializer(thread)
         return Response(serializer.data)
 
-        return Response(serializer.data)
-
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
         """Send a message to a thread."""
@@ -116,7 +120,10 @@ class MessageThreadViewSet(ModelViewSet):
     def mark_as_read(self, request, pk=None):
         """Mark all messages in thread as read by current user."""
         thread = self.get_object()
-        thread.messages.filter(is_read=False).exclude(sender=request.user).update(is_read=True)
+        # Use the m2m relationship to mark as read
+        messages_to_mark = thread.messages.exclude(sender=request.user).exclude(read_by=request.user)
+        for msg in messages_to_mark:
+            msg.read_by.add(request.user)
         return Response({"status": "success", "message": "Thread marked as read"})
 
     @action(detail=True, methods=["post"])
@@ -215,7 +222,7 @@ class DeviceViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewS
         # Update or create device
         device, created = Device.objects.update_or_create(
             user=request.user,
-            token=device_token,
+            device_token=device_token,
             defaults={"device_type": device_type, "device_name": device_name, "is_active": True},
         )
 
@@ -245,10 +252,10 @@ class UserPreferencesView(APIView):
         prefs, _ = UserMessagePreference.objects.get_or_create(user=request.user)
         return Response(
             {
-                "notifications_enabled": prefs.notifications_enabled,
                 "email_notifications": prefs.email_notifications,
-                "sms_notifications": prefs.sms_notifications,
                 "push_notifications": prefs.push_notifications,
+                "sound_enabled": prefs.sound_enabled,
+                "read_receipts_enabled": prefs.read_receipts_enabled,
             }
         )
 
@@ -258,14 +265,12 @@ class UserPreferencesView(APIView):
 
         prefs, _ = UserMessagePreference.objects.get_or_create(user=request.user)
 
-        if "notifications_enabled" in request.data:
-            prefs.notifications_enabled = request.data["notifications_enabled"]
         if "email_notifications" in request.data:
             prefs.email_notifications = request.data["email_notifications"]
-        if "sms_notifications" in request.data:
-            prefs.sms_notifications = request.data["sms_notifications"]
         if "push_notifications" in request.data:
             prefs.push_notifications = request.data["push_notifications"]
+        if "sound_enabled" in request.data:
+            prefs.sound_enabled = request.data["sound_enabled"]
 
         prefs.save()
         return Response({"status": "success", "message": "Preferences updated"})
@@ -281,7 +286,7 @@ class BlockedUsersViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Generi
         """Return the list of users blocked by the current user."""
         from core.models.messaging import BlockedUser
 
-        return BlockedUser.objects.filter(user=self.request.user)
+        return BlockedUser.objects.filter(blocker=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer for blocked user entries."""
@@ -291,7 +296,7 @@ class BlockedUsersViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Generi
 
     def perform_create(self, serializer):
         """Create a new blocked user entry."""
-        serializer.save(user=self.request.user)
+        serializer.save(blocker=self.request.user)
 
     @action(detail=False, methods=["post"])
     def unblock(self, request):
@@ -303,7 +308,7 @@ class BlockedUsersViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, Generi
             return Response({"error": "user_id is required"}, status=400)
 
         try:
-            blocked = BlockedUser.objects.get(user=request.user, blocked_user_id=blocked_user_id)
+            blocked = BlockedUser.objects.get(blocker=request.user, blocked_id=blocked_user_id)
             blocked.delete()
             return Response({"status": "success", "message": "User unblocked"})
         except BlockedUser.DoesNotExist:

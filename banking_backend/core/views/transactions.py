@@ -305,3 +305,14 @@ class TransactionViewSet(
             return Response(
                 {"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
+    def reverse(self, request, pk=None):
+        """Reverse a completed transaction."""
+        reason = request.data.get("reason", "Administrative correction")
+        try:
+            tx = TransactionService.reverse_transaction(pk, request.user, reason)
+            return Response({"status": "success", "message": "Transaction reversed.", "transaction_id": tx.id})
+        except Exception as e:
+            logger.exception(f"Reversal failed: {e}")
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

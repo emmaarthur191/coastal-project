@@ -10,11 +10,9 @@ from django.utils import timezone
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-
-from core.permissions import IsStaff
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ClientRegistrationViewSet(GenericViewSet):
     """ViewSet for handling client registration submissions."""
 
-    permission_classes = [IsStaff]
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = None  # No model backing this ViewSet
     throttle_scope = ""
@@ -35,12 +33,13 @@ class ClientRegistrationViewSet(GenericViewSet):
             self.throttle_scope = "otp_verify"
         return super().get_throttles()
 
-    @action(detail=False, methods=["post"], url_path="submit-registration")
+    @action(detail=False, methods=["post"], url_path="submit-registration", permission_classes=[AllowAny])
     def submit_registration(self, request):
-        """Handle client registration form submission and persist to database."""
+        """Handle client registration form submission and transition to manager approval."""
+        from core.models.accounts import AccountOpeningRequest
         from core.models.operational import ClientRegistration
 
-        # Extract form data - handle both camelCase (from frontend) and snake_case
+        # Extract form data
         first_name = request.data.get("firstName") or request.data.get("first_name", "")
         last_name = request.data.get("lastName") or request.data.get("last_name", "")
         email = request.data.get("email", "")
@@ -51,6 +50,13 @@ class ClientRegistrationViewSet(GenericViewSet):
         digital_address = request.data.get("digitalAddress") or request.data.get("digital_address", "")
         location = request.data.get("location", "")
         notes = request.data.get("notes", "")
+        date_of_birth = request.data.get("dateOfBirth") or request.data.get("date_of_birth")
+        occupation = request.data.get("occupation", "")
+        work_address = request.data.get("workAddress") or request.data.get("work_address", "")
+        position = request.data.get("position", "")
+        next_of_kin_data = request.data.get("next_of_kin_data")
+        id_document = request.FILES.get("idDocument") or request.FILES.get("id_document")
+        passport_picture = request.FILES.get("passportPicture") or request.FILES.get("passport_picture")
 
         # Basic validation
         if not any([first_name, last_name, phone]):
@@ -61,14 +67,6 @@ class ClientRegistrationViewSet(GenericViewSet):
         # Generate registration ID
         registration_id = f"REG-{str(uuid.uuid4())[:8].upper()}"
 
-        date_of_birth = request.data.get("dateOfBirth") or request.data.get("date_of_birth")
-        occupation = request.data.get("occupation", "")
-        work_address = request.data.get("workAddress") or request.data.get("work_address", "")
-        position = request.data.get("position", "")
-        next_of_kin_data = request.data.get("next_of_kin_data")
-        id_document = request.FILES.get("idDocument") or request.FILES.get("id_document")
-        passport_picture = request.FILES.get("passportPicture") or request.FILES.get("passport_picture")
-
         # Handle JSON parsing if sent as a string
         if isinstance(next_of_kin_data, str):
             try:
@@ -78,10 +76,10 @@ class ClientRegistrationViewSet(GenericViewSet):
             except:
                 pass
 
-        # Persist to database
+        # 1. Persist to Audit/Registration log
         registration = ClientRegistration.objects.create(
             registration_id=registration_id,
-            submitted_by=request.user,
+            submitted_by=request.user if request.user.is_authenticated else None,
             first_name=first_name,
             last_name=last_name,
             date_of_birth=date_of_birth,
@@ -99,141 +97,42 @@ class ClientRegistrationViewSet(GenericViewSet):
             id_document=id_document,
             passport_picture=passport_picture,
             notes=notes,
-            status="pending_verification",
+            status="pending_manager_approval",  # Updated status
         )
 
-        logger.info(f"Client registration {registration_id} created by {request.user.email}")
+        # 2. Create the AccountOpeningRequest for Manager dashboard visibility
+        opening_request = AccountOpeningRequest.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            date_of_birth=date_of_birth or timezone.now().date(),
+            phone_number=phone,
+            email=email,
+            address=digital_address or location or "N/A",
+            id_type=id_type,
+            id_number=id_number,
+            account_type=account_type,
+            occupation=occupation,
+            work_address=work_address,
+            position=position,
+            digital_address=digital_address,
+            location=location,
+            next_of_kin_data=next_of_kin_data,
+            status="pending",
+        )
+
+        logger.info(
+            f"Client registration {registration_id} transitioned to pending AccountOpeningRequest {opening_request.id}"
+        )
 
         return Response(
             {
                 "success": True,
                 "id": registration.id,
-                "message": "Registration submitted successfully",
                 "registration_id": registration.registration_id,
-                "status": registration.status,
-                "submitted_at": registration.created_at,
-                "applicant": {
-                    "name": f"{first_name} {last_name}",
-                    "phone": phone,
-                    "email": email,
-                    "id_type": id_type,
-                    "account_type": account_type,
-                },
+                "message": "Registration submitted. Please visit the Manager's office for physical verification.",
+                "status": "pending_approval",
             },
             status=status.HTTP_201_CREATED,
-        )
-
-    @action(detail=False, methods=["post"], url_path="send-otp")
-    def send_otp(self, request):
-        """Generate and send OTP for registration verification."""
-        from core.models.operational import ClientRegistration
-        from users.services import SendexaService
-
-        registration_id = request.data.get("email")  # Frontend sends registration ID as 'email'
-
-        try:
-            registration = ClientRegistration.objects.get(registration_id=registration_id)
-        except ClientRegistration.DoesNotExist:
-            # Fallback if it's the database ID
-            try:
-                registration = ClientRegistration.objects.get(id=registration_id)
-            except:
-                return Response({"error": "Registration not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
-        expiry_key = f"reg_otp_expiry_{registration.registration_id}"
-        prev_expiry = request.session.get(expiry_key)
-        if prev_expiry:
-            # Current code sets expiry to +600s. We want cooldown of 60s from creation.
-            # So if (expiry - 540) > now, it's too soon.
-            if prev_expiry - 540 > timezone.now().timestamp():
-                return Response(
-                    {"error": "Please wait 60 seconds before requesting another OTP."},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS,
-                )
-
-        # Generate OTP
-        import secrets
-
-        otp_code = str(secrets.SystemRandom().randint(100000, 999999))
-
-        # Store in session (using registration ID as key for safety)
-        request.session[f"reg_otp_{registration.registration_id}"] = otp_code
-        request.session[f"reg_otp_expiry_{registration.registration_id}"] = timezone.now().timestamp() + 600
-
-        # Send via SMS
-        message = f"Your Coastal registration OTP is: {otp_code}. Registration ID: {registration.registration_id}"
-        success, _resp = SendexaService.send_sms(registration.phone_number, message)
-
-        if not success:
-            logger.error(f"Failed to send OTP for registration {registration.registration_id}")
-
-        return Response({"success": True, "message": "OTP sent successfully"})
-
-    @action(detail=False, methods=["post"], url_path="verify-otp")
-    def verify_otp(self, request):
-        """Verify OTP and transition to AccountOpeningRequest."""
-        from core.models.accounts import AccountOpeningRequest
-        from core.models.operational import ClientRegistration
-
-        registration_id = request.data.get("email")
-        otp_code = request.data.get("otp")
-
-        try:
-            registration = ClientRegistration.objects.get(registration_id=registration_id)
-        except ClientRegistration.DoesNotExist:
-            try:
-                registration = ClientRegistration.objects.get(id=registration_id)
-            except:
-                return Response({"error": "Registration not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Verify OTP
-        stored_otp = request.session.get(f"reg_otp_{registration.registration_id}")
-        expiry = request.session.get(f"reg_otp_expiry_{registration.registration_id}")
-
-        if not stored_otp or timezone.now().timestamp() > expiry:
-            return Response({"error": "OTP expired or not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if str(stored_otp) != str(otp_code):
-            return Response({"error": "Invalid OTP code"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Success - Clear OTP
-        if f"reg_otp_{registration.registration_id}" in request.session:
-            del request.session[f"reg_otp_{registration.registration_id}"]
-        if f"reg_otp_expiry_{registration.registration_id}" in request.session:
-            del request.session[f"reg_otp_expiry_{registration.registration_id}"]
-
-        # Update Registration status
-        registration.status = "under_review"
-        registration.save()
-
-        # Create AccountOpeningRequest for manager review
-        # This is the "bridge" to ensure it shows up in AccountOpeningsSection.tsx
-        opening_request = AccountOpeningRequest.objects.create(
-            first_name=registration.first_name,
-            last_name=registration.last_name,
-            date_of_birth=registration.date_of_birth or timezone.now().date(),
-            phone_number=registration.phone_number,
-            email=registration.email,
-            address=registration.digital_address,  # Use digital address as fallback
-            id_type=registration.id_type,
-            id_number=registration.id_number,
-            account_type=registration.account_type,
-            occupation=registration.occupation,
-            work_address=registration.work_address,
-            position=registration.position,
-            digital_address=registration.digital_address,
-            location=registration.location,
-            next_of_kin_data=registration.next_of_kin_data,
-            status="pending",
-        )
-
-        logger.info(
-            f"Account opening request {opening_request.id} created from registration {registration.registration_id}"
-        )
-
-        return Response(
-            {"success": True, "message": "OTP verified! Registration is now under review.", "account_number": "PENDING"}
         )
 
 

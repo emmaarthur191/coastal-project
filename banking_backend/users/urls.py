@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import SimpleRouter
 
 app_name = "users"
 
@@ -20,12 +21,16 @@ from .views import (
     StaffIdsView,
     StaffInvitationVerifyView,
     StaffListView,
+    StaffManagementViewSet,
     UserDetailView,
     UserListView,
     UserRegistrationView,
     UserSessionsView,
     VerifyOTPView,
 )
+
+router = SimpleRouter()
+router.register(r"staff-management", StaffManagementViewSet, basename="staff-management")
 
 urlpatterns = [
     path("auth/register/", UserRegistrationView.as_view(), name="register"),
@@ -51,4 +56,5 @@ urlpatterns = [
     path("sessions/", UserSessionsView.as_view(), name="user-sessions"),
     path("sessions/<int:pk>/terminate/", SessionTerminateView.as_view(), name="session-terminate"),
     path("csrf/", GetCSRFToken.as_view(), name="csrf-token"),
+    path("", include(router.urls)),
 ]

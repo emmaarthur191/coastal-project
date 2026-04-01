@@ -1,7 +1,26 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import User
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom JWT serializer to enforce account approval check."""
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        # Enforce administrative approval check
+        if not self.user.is_approved:
+            raise PermissionDenied("Your account is pending administrative approval. Please contact your manager.")
+
+        if not self.user.is_active:
+            raise PermissionDenied("This account has been deactivated.")
+
+        return data
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -169,10 +188,25 @@ class LoginSerializer(serializers.Serializer):
         email = attrs.get("email")
         password = attrs.get("password")
         user = authenticate(email=email, password=password)
+
         if not user:
+            # Check if it's an unapproved user (to return 403 instead of 400)
+            from django.contrib.auth import get_user_model
+
+            User = get_user_model()
+            lookup_user = User.objects.filter(email=email).first()
+            if lookup_user and not lookup_user.is_approved:
+                raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
             raise serializers.ValidationError("Invalid credentials.")
+
+        # Check if account is approved by admin (Staff or Client)
+        if hasattr(user, "is_approved") and not user.is_approved:
+            # We raise PermissionDenied to differentiate from incorrect password (403 vs 401/400)
+            raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
+
         if not user.is_active:
-            raise serializers.ValidationError("This account has been deactivated. Please contact support.")
+            raise PermissionDenied("This account has been deactivated. Please contact support.")
+
         attrs["user"] = user
         return attrs
 
@@ -215,3 +249,26 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if not is_valid:
             raise serializers.ValidationError(errors)
         return value
+
+
+class OTPRequestSerializer(serializers.Serializer):
+    """Serializer for requesting an SMS OTP."""
+
+    phone_number = serializers.CharField(required=True, max_length=15)
+    verification_type = serializers.ChoiceField(
+        choices=[("2fa_setup", "2fa_setup"), ("transaction", "transaction"), ("profile_change", "profile_change")],
+        default="2fa_setup",
+    )
+
+
+class OTPVerifySerializer(serializers.Serializer):
+    """Serializer for verifying a received SMS OTP."""
+
+    phone_number = serializers.CharField(required=True, max_length=15)
+    otp_code = serializers.CharField(required=True, min_length=6, max_length=6)
+
+
+class LoginAttemptsSerializer(serializers.Serializer):
+    """Serializer for checking login attempts for an email."""
+
+    email = serializers.EmailField(required=True)

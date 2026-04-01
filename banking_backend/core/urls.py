@@ -1,16 +1,8 @@
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from core.views.messaging import BankingMessageViewSet
 
-from .chat_views import (
-    ChatMessageCreateView,
-    ChatMessageListView,
-    ChatRoomCreateView,
-    ChatRoomDetailView,
-    ChatRoomListView,
-    MarkMessagesReadView,
-)
 from .ml.views import MLBatchAnalysisView, MLFraudAnalysisView, MLModelStatusView, MLModelTrainView
 from .report_download import ReportDownloadView
 from .views import (
@@ -29,6 +21,12 @@ from .views import (
     CashAdvanceViewSet,
     CashDrawerViewSet,
     CashFlowView,
+    # Chat views
+    ChatMessageCreateView,
+    ChatMessageListView,
+    ChatRoomCreateView,
+    ChatRoomDetailView,
+    ChatRoomListView,
     CheckDepositViewSet,
     ClientAssignmentViewSet,
     ClientRegistrationViewSet,
@@ -42,6 +40,7 @@ from .views import (
     GenerateStatementView,
     LoanViewSet,
     ManagerOverviewView,
+    MarkMessagesReadView,
     MessageThreadViewSet,
     MessageViewSet,
     MobileBankerMetricsView,
@@ -80,7 +79,7 @@ from .views import mobile as mobile_views
 
 app_name = "core"
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register(r"accounts", AccountViewSet, basename="account")
 router.register(r"transactions", TransactionViewSet)
 router.register(r"loans", LoanViewSet)

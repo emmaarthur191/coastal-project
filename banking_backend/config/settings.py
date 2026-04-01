@@ -61,6 +61,26 @@ if SENTRY_DSN and not env.bool("DEBUG", default=False):
 # Defaults to False for fail-safe production deployments
 DEBUG = env.bool("DEBUG", default=False)
 
+# =============================================================================
+# Production Security Hardening
+# =============================================================================
+if not DEBUG:
+    # SSL/HTTPS Enforcement
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    # HSTS (HTTP Strict Transport Security) - 1 Year
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Secure Cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # Referrer Policy
+    SECURE_REFERRER_POLICY = "same-origin"
+
 # SECURITY FIX: Enforce SECRET_KEY in production - no default allowed
 # In development (DEBUG=True), allow insecure default for convenience
 if DEBUG:
@@ -132,7 +152,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "csp.middleware.CSPMiddleware",  # Replace XFrameOptionsMiddleware with CSP
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware', # Removed in favor of CSP
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 

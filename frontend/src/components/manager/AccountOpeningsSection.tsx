@@ -51,8 +51,8 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
         fetchRequests();
     }, [filter, fetchRequests]);
 
-    const handleApprove = async (request: AccountOpeningRequest) => {
-        if (!confirm(`Approve account opening for ${request.first_name || ''} ${request.last_name || 'Unknown'}?`)) {
+    const handleApproveAndPrint = async (request: AccountOpeningRequest) => {
+        if (!confirm(`Approve account opening and generate Welcome Letter for ${request.first_name || ''} ${request.last_name || 'Unknown'}?`)) {
             return;
         }
 
@@ -60,14 +60,25 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             setActionLoading(true);
             setError(null);
 
-            await AccountOpeningsService.apiBankingAccountOpeningsApproveCreate(request.id!, request);
+            const blob = await AccountOpeningsService.apiBankingAccountOpeningsApproveAndPrintCreate(request.id!);
+
+            // Handle PDF Download
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `WelcomeLetter_${request.last_name}_${request.id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
 
             await fetchRequests();
             onRefreshDashboard?.();
             setSelectedRequest(null);
+            alert('Account approved and Welcome Letter downloaded successfully.');
         } catch (error: unknown) {
-            console.error('Failed to approve:', error);
-            const msg = error instanceof Error ? error.message : 'Failed to approve account opening';
+            console.error('Failed to approve and print:', error);
+            const msg = error instanceof Error ? error.message : 'Failed to approve and print welcome letter';
             setError(msg);
         } finally {
             setActionLoading(false);
@@ -99,28 +110,6 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
         }
     };
 
-    const handleDispatchCredentials = async (request: AccountOpeningRequest) => {
-        if (!confirm(`Dispatch login credentials for ${request.first_name || ''} ${request.last_name || 'Unknown'}?`)) {
-            return;
-        }
-
-        try {
-            setActionLoading(true);
-            setError(null);
-
-            await AccountOpeningsService.apiBankingAccountOpeningsDispatchCredentialsCreate(request.id!, request);
-
-            await fetchRequests();
-            onRefreshDashboard?.();
-            setSelectedRequest(null);
-        } catch (error: unknown) {
-            console.error('Failed to dispatch credentials:', error);
-            const msg = error instanceof Error ? error.message : 'Failed to dispatch credentials';
-            setError(msg);
-        } finally {
-            setActionLoading(false);
-        }
-    };
 
     if (selectedRequest) {
         return (
@@ -176,7 +165,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                             selectedRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
                                                 'bg-red-100 text-red-800'
                                         }`}>
-                                        {selectedRequest.status === 'approved' ? 'Awaiting Dispatch' : selectedRequest.status}
+                                        {selectedRequest.status}
                                     </span>
                                 </p>
                             </div>
@@ -266,11 +255,11 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                     {selectedRequest.status === 'pending' && (
                         <div className="mt-8 flex gap-4">
                             <button
-                                onClick={() => handleApprove(selectedRequest)}
+                                onClick={() => handleApproveAndPrint(selectedRequest)}
                                 disabled={actionLoading}
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
                             >
-                                {actionLoading ? 'Processing...' : 'Approve & Create Account'}
+                                {actionLoading ? 'Processing...' : 'Approve & Print Welcome Letter'}
                             </button>
                             <button
                                 onClick={() => handleReject(selectedRequest)}
@@ -282,20 +271,6 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                         </div>
                     )}
 
-                    {selectedRequest.status === 'approved' && (
-                        <div className="mt-8">
-                            <button
-                                onClick={() => handleDispatchCredentials(selectedRequest)}
-                                disabled={actionLoading}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
-                            >
-                                {actionLoading ? 'Dispatching...' : 'Dispatch Login Credentials'}
-                            </button>
-                            <p className="text-center text-xs text-slate-500 mt-2">
-                                Stage 2: This will generate a temporary password and send login details via SMS.
-                            </p>
-                        </div>
-                    )}
                 </GlassCard>
             </div>
         );
@@ -361,7 +336,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                                     request.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
                                                         'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                                 }`}>
-                                                {request.status === 'approved' ? 'Awaiting Dispatch' : request.status}
+                                                {request.status}
                                             </span>
                                         </td>
                                         <td className="py-3 text-sm text-slate-500 dark:text-slate-400">
