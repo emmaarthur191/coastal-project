@@ -204,7 +204,8 @@ if not DEBUG:
 # Connection Pooling for Production Performance
 # Reuse database connections to reduce overhead
 if not DEBUG:
-    conn_max_age = env.int("CONN_MAX_AGE", default=600)  # 10 minutes
+    # Set to 0 by default to avoid connection exhaustion on shared database tiers
+    conn_max_age = env.int("CONN_MAX_AGE", default=0)
     DATABASES["default"]["CONN_MAX_AGE"] = conn_max_age
 
 # Password validation

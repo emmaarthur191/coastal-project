@@ -15,8 +15,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 django.setup()
 
+import time
+
 from django.core.management import call_command
-from django.db import connection
 
 
 def table_exists(table_name: str) -> bool:
@@ -548,7 +549,6 @@ def sync_missing_columns():
     add_column_if_not_exists("users_user", "daily_transaction_total", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
     add_column_if_not_exists("users_user", "daily_limit_reset_date", "DATE NULL")
 
-
     # Accounts & Registration
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
     add_column_if_not_exists("core_accountopeningrequest", "initial_deposit", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
@@ -710,7 +710,30 @@ def main():
     print("=" * 60)
 
     core_tables = ["core_account", "core_transaction", "users_user", "core_loan"]
-    existing_tables = [t for t in core_tables if table_exists(t)]
+
+    # RETRY LOGIC: Handle connection exhaustion during deployment overlaps
+    max_retries = 5
+    retry_delay = 5  # Start with 5 seconds
+    existing_tables = []
+
+    for attempt in range(max_retries):
+        try:
+            existing_tables = [t for t in core_tables if table_exists(t)]
+            break  # Success!
+        except Exception as e:
+            if "remaining connection slots" in str(e).lower() or "too many connections" in str(e).lower():
+                print(
+                    f"  ! Connection Exhaustion Detected (Attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s..."
+                )
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                # If it's a different error, raise it immediately
+                print(f"  ! Fatal Connection Error: {e}")
+                raise e
+    else:
+        print("  !! Failed to connect after multiple retries. Aborting.")
+        sys.exit(1)
 
     if len(existing_tables) >= 3:
         print(f"\n[OK] Detected existing database schema ({len(existing_tables)}/{len(core_tables)} core tables)")
