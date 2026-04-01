@@ -113,4 +113,64 @@ export class AccountsService {
             mediaType: 'application/json',
         });
     }
+
+    /**
+     * List account closure requests
+     * @param status * `pending` - Pending
+     * * `approved` - Approved
+     * * `rejected` - Rejected
+     * @returns any
+     * @throws ApiError
+     */
+    public static apiBankingAccountClosuresList(
+        status?: 'approved' | 'pending' | 'rejected',
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/banking/account-closures/',
+            query: {
+                'status': status,
+            },
+        });
+    }
+
+    /**
+     * Approve an account closure
+     * @param id The ID of the closure request.
+     * @returns any
+     * @throws ApiError
+     */
+    public static apiBankingAccountClosuresApproveCreate(
+        id: number,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/account-closures/{id}/approve/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+
+    /**
+     * Reject an account closure
+     * @param id The ID of the closure request.
+     * @param requestBody
+     * @returns any
+     * @throws ApiError
+     */
+    public static apiBankingAccountClosuresRejectCreate(
+        id: number,
+        requestBody: { reason: string },
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/account-closures/{id}/reject/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
 }

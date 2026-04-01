@@ -53,21 +53,14 @@ const AccountOpeningTab: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [showSuccess, setShowSuccess] = useState(false);
   const [newAccountId, setNewAccountId] = useState('');
-  const [currentStep, setCurrentStep] = useState(1); // 1: Form, 2: OTP, 3: Success
+  const [currentStep, setCurrentStep] = useState(1); // 1: Form, 2: Success
 
   // Camera state
   const [showCamera, setShowCamera] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // OTP state
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [debugOtp, setDebugOtp] = useState('');
 
   const idTypeSelectId = useId();
   const accountTypeSelectId = useId();
@@ -206,39 +199,11 @@ const AccountOpeningTab: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setCurrentStep(2);
-    setMessage({ type: '', text: '' });
-  };
-
-  const sendOtp = async () => {
-    if (!formData.phoneNumber.trim()) {
-      setMessage({ type: 'error', text: 'Phone number is required' });
-      return;
-    }
+    
     try {
-      setOtpLoading(true);
-      const response = await api.post<OtpResponse>('banking/account-openings/send-otp/', {
-        phone_number: formData.phoneNumber,
-        operation_type: 'account_opening'
-      });
-      setOtpSent(true);
-      setDebugOtp(response.data?.debug_otp || '');
-      setMessage({ type: 'success', text: `OTP sent to ${formData.phoneNumber}` });
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      setMessage({ type: 'error', text: 'Failed to send OTP. Please try again.' });
-    } finally {
-      setOtpLoading(false);
-    }
-  };
+      setLoading(true);
+      setMessage({ type: '', text: '' });
 
-  const verifyAndSubmit = async () => {
-    if (!otpCode.trim()) {
-      setMessage({ type: 'error', text: 'Please enter the OTP code' });
-      return;
-    }
-    try {
-      setOtpLoading(true);
       const submitData = {
         account_type: formData.accountType,
         card_type: formData.cardType,
@@ -256,25 +221,20 @@ const AccountOpeningTab: React.FC = () => {
         photo: formData.photo
       };
 
-      const response = await api.post<SubmitResponse>('banking/account-openings/verify-and-submit/', {
-        otp_code: otpCode,
-        phone_number: formData.phoneNumber,
+      const response = await api.post<SubmitResponse>('banking/account-openings/submit-request/', {
         account_data: submitData
       });
 
-      if (response.data?.success) {
-        setCurrentStep(3);
-        setNewAccountId(response.data?.account_id || 'New Account');
-        resetForm();
-      } else {
-        setMessage({ type: 'error', text: response.data?.error || 'Verification failed' });
-      }
+      // api.post throws on !ok, so if we're here, it's a success
+      setCurrentStep(2);
+      setNewAccountId(response.data?.account_id || 'Pending Request');
+      resetForm();
     } catch (error) {
-      console.error('Error verifying OTP:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP.';
+      console.error('Error submitting request:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit request.';
       setMessage({ type: 'error', text: errorMessage });
     } finally {
-      setOtpLoading(false);
+      setLoading(false);
     }
   };
 
@@ -286,9 +246,6 @@ const AccountOpeningTab: React.FC = () => {
       nextOfKin: [{ name: '', relationship: '', address: '', stakePercentage: '' }],
       accountType: 'daily_susu', cardType: 'standard', photo: null
     });
-    setOtpCode('');
-    setOtpSent(false);
-    setDebugOtp('');
   };
 
   // === RENDER ===
@@ -301,20 +258,19 @@ const AccountOpeningTab: React.FC = () => {
         </h2>
 
         <div className="flex justify-center gap-4 mb-6">
-          {[1, 2, 3].map(step => (
+          {[1, 2].map(step => (
             <div key={step} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${currentStep >= step ? 'bg-coastal-primary text-white' : 'bg-gray-200 text-gray-500'
                 }`}>
                 {step}
               </div>
-              {step < 3 && <div className={`w-10 h-1 mx-2 ${currentStep > step ? 'bg-coastal-primary' : 'bg-gray-200'}`} />}
+              {step < 2 && <div className={`w-10 h-1 mx-2 ${currentStep > step ? 'bg-coastal-primary' : 'bg-gray-200'}`} />}
             </div>
           ))}
         </div>
         <div className="flex justify-center gap-10 text-sm text-gray-500">
           <span className={currentStep === 1 ? 'font-bold text-coastal-primary' : ''}>Registration Form</span>
-          <span className={currentStep === 2 ? 'font-bold text-coastal-primary' : ''}>OTP Verification</span>
-          <span className={currentStep === 3 ? 'font-bold text-coastal-primary' : ''}>Complete</span>
+          <span className={currentStep === 2 ? 'font-bold text-coastal-primary' : ''}>Submission Complete</span>
         </div>
       </GlassCard>
 
@@ -491,71 +447,37 @@ const AccountOpeningTab: React.FC = () => {
 
           {/* Submit Button */}
           <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 text-center">
-            <h3 className="text-gray-900 font-bold mb-2">Ready to Submit?</h3>
+            <h3 className="text-gray-900 font-bold mb-2">Registration Complete?</h3>
             <p className="text-gray-500 mb-4">
-              Please review all information. OTP verification will be sent to customer's phone.
+              Submitting will record the request. The customer must visit the Manager for document verification and approval.
             </p>
             <Button type="submit" disabled={loading} variant="primary" className="w-full md:w-auto md:min-w-[300px]">
-              {loading ? 'Processing...' : 'Proceed to OTP Verification 📱'}
+              {loading ? 'Submitting...' : 'Submit Request for Approval 🚀'}
             </Button>
           </div>
         </form>
       )}
 
-      {/* Step 2: OTP Verification */}
+      {/* Step 2: Success */}
       {currentStep === 2 && (
-        <GlassCard className="p-8 max-w-lg mx-auto">
-          <h3 className="text-xl font-bold text-gray-800 mb-2 text-center">Phone Verification</h3>
-          <p className="text-gray-500 mb-6 text-center">
-            For security, we need to verify the customer's phone number: <span className="font-bold text-gray-800">{formData.phoneNumber}</span>
-          </p>
-
-          {!otpSent ? (
-            <Button onClick={sendOtp} disabled={otpLoading} variant="primary" className="w-full">
-              {otpLoading ? 'Sending...' : '📤 Send OTP Code'}
-            </Button>
-          ) : (
-            <div className="space-y-6">
-              <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl text-center border border-emerald-100">
-                <div className="font-bold mb-1">✅ OTP sent successfully!</div>
-                {debugOtp && <div className="text-xs opacity-75">Debug OTP: {debugOtp}</div>}
-              </div>
-
-              <Input
-                label="Enter 6-digit OTP Code"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="123456"
-                maxLength={6}
-                className="text-center text-2xl tracking-widest font-mono"
-              />
-
-              <div className="flex gap-4">
-                <Button onClick={verifyAndSubmit} disabled={otpLoading || otpCode.length !== 6} variant="success" className="flex-1">
-                  {otpLoading ? 'Verifying...' : '✅ Verify & Submit'}
-                </Button>
-                <Button onClick={sendOtp} disabled={otpLoading} variant="secondary">🔄 Resend</Button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <Button onClick={() => setCurrentStep(1)} variant="ghost" className="w-full text-gray-500 hover:text-gray-700">
-              ← Back to Registration Form
-            </Button>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* Step 3: Success */}
-      {currentStep === 3 && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4 animate-bounce">🎉</div>
-          <h2 className="text-3xl font-bold text-emerald-600 mb-2">Account Registration Successful!</h2>
-          <p className="text-gray-500 mb-8 text-lg">
-            New account <span className="font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded-lg">{newAccountId}</span> has been created and is pending approval.
-          </p>
-          <Button onClick={() => { setCurrentStep(1); setShowSuccess(false); }} variant="primary" size="lg">
+          <div className="text-6xl mb-4 animate-bounce">📋</div>
+          <h2 className="text-3xl font-bold text-emerald-600 mb-2">Request Submitted Successfully!</h2>
+          <div className="max-w-md mx-auto bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm mb-8">
+            <p className="text-gray-600 mb-4">
+              The registration for <span className="font-bold text-gray-800">{formData.firstName} {formData.lastName}</span> has been saved in a <b>Pending</b> state.
+            </p>
+            <div className="bg-emerald-50 p-4 rounded-xl text-emerald-800 text-sm border border-emerald-200">
+              <p className="font-bold mb-2">Next Steps for Customer:</p>
+              <ol className="text-left list-decimal ml-5 space-y-1">
+                <li>Proceed to the <b>Manager's Office</b></li>
+                <li>Present physical ID for verification</li>
+                <li>Collect your printed <b>Account Opening Letter</b></li>
+                <li>Use credentials in the letter to log in</li>
+              </ol>
+            </div>
+          </div>
+          <Button onClick={() => { setCurrentStep(1); resetForm(); }} variant="primary" size="lg">
             Register Another Customer
           </Button>
         </div>

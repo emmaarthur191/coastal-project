@@ -3,6 +3,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
 import ModernStatCard from '../ui/modern/ModernStatCard';
+import { StaffManagementService } from '../../api/services/StaffManagementService';
 
 interface StaffId {
   id: string;
@@ -13,6 +14,7 @@ interface StaffId {
   staff_id: string;
   employment_date: string;
   is_active: boolean;
+  is_approved: boolean;
   date_joined: string;
 }
 
@@ -33,6 +35,7 @@ const StaffIdsSection: React.FC<StaffIdsSectionProps> = ({
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showExport, setShowExport] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const handleSearch = () => {
     const filters = {
@@ -56,12 +59,50 @@ const StaffIdsSection: React.FC<StaffIdsSectionProps> = ({
     setStaffIdFilters({});
   };
 
+  const handleApproveStaff = async (staff: StaffId) => {
+    if (!confirm(`Approve staff registration and generate ID for ${staff.first_name} ${staff.last_name}?`)) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const blob = await StaffManagementService.apiUsersStaffManagementApproveAndPrintCreate(Number(staff.id));
+      
+      // Handle PDF Download
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Staff_Welcome_${staff.last_name}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      fetchStaffIds();
+      alert('Staff member approved and Welcome Letter downloaded successfully.');
+    } catch (error: unknown) {
+      console.error('Failed to approve staff:', error);
+      const msg = error instanceof Error ? error.message : 'Failed to approve staff member';
+      alert(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <GlassCard className="p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <span>🆔</span> Staff IDs Management
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <span>🆔</span> Staff IDs Management
+          </h2>
+          {actionLoading && (
+            <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
+              <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+              Processing Approval...
+            </div>
+          )}
+        </div>
 
         {/* Filters Section */}
         <div className="bg-gray-50/80 p-6 rounded-2xl border border-gray-100 mb-6">
@@ -81,6 +122,7 @@ const StaffIdsSection: React.FC<StaffIdsSectionProps> = ({
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
+                title="Filter by Staff Role"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
               >
                 <option value="">All Roles</option>
@@ -96,6 +138,7 @@ const StaffIdsSection: React.FC<StaffIdsSectionProps> = ({
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
+                title="Filter by Staff Status"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none"
               >
                 <option value="">All Status</option>
@@ -151,23 +194,21 @@ const StaffIdsSection: React.FC<StaffIdsSectionProps> = ({
                 <th className="p-4 font-bold text-sm tracking-wider">Name</th>
                 <th className="p-4 font-bold text-sm tracking-wider">Email</th>
                 <th className="p-4 font-bold text-sm tracking-wider">Role</th>
-                <th className="p-4 font-bold text-sm tracking-wider">Employment Date</th>
-                <th className="p-4 font-bold text-sm tracking-wider">Status</th>
-                <th className="p-4 font-bold text-sm tracking-wider">Joined</th>
+                <th className="p-4 font-bold text-sm tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {staffIds.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-10 text-center text-gray-500">
+                  <td colSpan={5} className="p-10 text-center text-gray-500">
                     No staff IDs found matching the criteria.
                   </td>
                 </tr>
               ) : (
-                staffIds.map((staff, index) => (
+                staffIds.map((staff) => (
                   <tr key={staff.id} className="hover:bg-blue-50/50 transition-colors">
                     <td className="p-4 font-mono font-bold text-coastal-primary">
-                      {staff.staff_id || <span className="text-gray-400 italic">Not Generated</span>}
+                      {staff.staff_id || <span className="text-gray-400 italic font-medium">PENDING_APPROVAL</span>}
                     </td>
                     <td className="p-4 font-medium text-gray-800">
                       {staff.first_name} {staff.last_name}
@@ -178,17 +219,22 @@ const StaffIdsSection: React.FC<StaffIdsSectionProps> = ({
                         {staff.role.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="p-4 text-gray-600">
-                      {staff.employment_date ? new Date(staff.employment_date).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${staff.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                        {staff.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-500">
-                      {new Date(staff.date_joined).toLocaleDateString()}
+                    <td className="p-4 text-right">
+                      {!staff.is_approved ? (
+                        <Button 
+                          onClick={() => handleApproveStaff(staff)} 
+                          variant="success" 
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                          disabled={actionLoading}
+                        >
+                          Approve & Print
+                        </Button>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
+                          <span>✅</span> Verified
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))

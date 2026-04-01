@@ -11,6 +11,8 @@ export type AccountClosureRequest = {
     readonly id: number;
     readonly account: number;
     account_id: number;
+    readonly account_number: string;
+    readonly customer_name: string;
     closure_reason: ClosureReasonEnum;
     other_reason?: string;
     phone_number: string;

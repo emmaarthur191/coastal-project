@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 
 /**
- * Client Registration Page with SMS OTP verification
- * Features comprehensive form validation, file uploads, and accessibility
+ * Client Registration Page
+ * Refactored for Admin-Approved "Paper-First" workflow (No OTP)
  */
 function ClientRegistrationPage() {
   // State management
@@ -34,31 +34,29 @@ function ClientRegistrationPage() {
     passportPicture: null,
     idDocument: null,
 
-    // OTP
-    otpCode: '',
+    // Metadata
     registrationId: null
   });
 
-  const [formErrors, setFormErrors] = useState<Record<string, unknown>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1); // 1: Form, 2: OTP, 3: Success
+  const [currentStep, setCurrentStep] = useState(1); // 1: Form, 2: Success
   const [successMessage, setSuccessMessage] = useState('');
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
 
   // Refs for accessibility
-  const formRef = useRef(null);
-  const errorSummaryRef = useRef(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Validation rules
-  const validateField = useCallback((name, value, _allData = formData) => {
+  const validateField = useCallback((name: string, value: any) => {
     switch (name) {
       case 'firstName':
       case 'lastName': {
         if (!value) return `${name === 'firstName' ? 'First' : 'Last'} name is required`;
         if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name must contain only letters and spaces';
         if (value.length < 2) return 'Name must be at least 2 characters';
-        if (value.length > 100) return 'Name must be less than 100 characters';
         return null;
       }
 
@@ -66,761 +64,297 @@ function ClientRegistrationPage() {
         if (!value) return 'Date of birth is required';
         const birthDate = new Date(value);
         const today = new Date();
-        const ageDiff = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        const dayDiff = today.getDate() - birthDate.getDate();
-        const age = ageDiff - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
+        const age = today.getFullYear() - birthDate.getFullYear();
         if (age < 18) return 'You must be at least 18 years old';
-        if (age > 120) return 'Please enter a valid date of birth';
         return null;
       }
 
       case 'phoneNumber': {
         if (!value) return 'Phone number is required';
-        // International format validation (basic)
         if (!/^\+?[1-9]\d{1,14}$/.test(value.replace(/\s/g, ''))) {
-          return 'Please enter a valid international phone number';
+          return 'Please enter a valid phone number';
         }
         return null;
       }
 
-      case 'email': {
-        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          return 'Please enter a valid email address';
-        }
-        return null;
-      }
+      case 'idType':
+        return !value ? 'ID type is required' : null;
 
-      case 'idType': {
-        if (!value) return 'ID type is required';
-        return null;
-      }
-
-      case 'idNumber': {
-        if (!value) return 'ID number is required';
-        if (value.length < 5) return 'ID number must be at least 5 characters';
-        return null;
-      }
+      case 'idNumber':
+        return !value ? 'ID number is required' : null;
 
       case 'occupation':
       case 'workAddress':
-      case 'position': {
-        if (!value) return `${name.replace(/([A-Z])/g, ' $1').toLowerCase()} is required`;
-        if (value.length < 2) return 'Must be at least 2 characters';
+      case 'position':
+        return !value ? `${name} is required` : null;
+
+      case 'passportPicture':
+        return !value ? 'Passport picture is required' : null;
+
+      default:
         return null;
-      }
-
-      case 'nextOfKin': {
-        const errors = [];
-        value.forEach((kin, index) => {
-          if (!kin.name && !kin.relationship && !kin.address && !kin.stakePercentage) {
-            return; // Skip empty entries
-          }
-
-          if (!kin.name) errors.push(`Next of kin ${index + 1}: Name is required`);
-          if (!kin.relationship) errors.push(`Next of kin ${index + 1}: Relationship is required`);
-          if (!kin.address) errors.push(`Next of kin ${index + 1}: Address is required`);
-          if (!kin.stakePercentage) errors.push(`Next of kin ${index + 1}: Stake percentage is required`);
-          else {
-            const percentage = parseFloat(kin.stakePercentage);
-            if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
-              errors.push(`Next of kin ${index + 1}: Stake percentage must be between 0 and 100`);
-            }
-          }
-        });
-
-        // Check total stake percentage
-        const totalStake = value.reduce((sum, kin) => {
-          const percentage = parseFloat(kin.stakePercentage || 0);
-          return sum + (isNaN(percentage) ? 0 : percentage);
-        }, 0);
-
-        if (totalStake > 100) {
-          errors.push('Total stake percentage across all next of kin cannot exceed 100%');
-        }
-
-        return errors.length > 0 ? errors : null;
-      }
-
-      case 'passportPicture': {
-        if (!value) return 'Passport picture is required';
-        if (value.size > 5 * 1024 * 1024) return 'File size must be less than 5MB';
-        if (!['image/jpeg', 'image/jpg', 'image/png'].includes(value.type)) {
-          return 'File must be a JPG or PNG image';
-        }
-        return null;
-      }
-
-      case 'otpCode': {
-        if (!value) return 'OTP code is required';
-        if (!/^\d{6}$/.test(value)) return 'OTP must be 6 digits';
-        return null;
-      }
-
-      default: {
-        return null;
-      }
     }
-  }, [formData]);
+  }, []);
 
   // Handle input changes
-  const handleInputChange = useCallback((e) => {
-    const { name, value, type, files } = e.target;
-    const newValue = type === 'file' ? files[0] : value;
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const target = e.target;
+    let value: any = target.value;
+    
+    if (target instanceof HTMLInputElement && target.type === 'file' && target.files) {
+      value = target.files[0];
+    }
+
+    const { name } = target;
 
     setFormData(prev => ({
       ...prev,
-      [name]: newValue
+      [name]: value
     }));
 
-    // Real-time validation
-    if (name !== 'otpCode') { // Don't validate OTP in real-time
-      const error = validateField(name, newValue);
-      setFormErrors(prev => ({ ...prev, [name]: error }));
-    }
+    // Clear error
+    setFormErrors(prev => ({ ...prev, [name]: undefined }));
 
     // Handle file previews
-    if (type === 'file' && files[0]) {
+    if (target instanceof HTMLInputElement && target.type === 'file' && target.files?.[0]) {
       const reader = new FileReader();
       reader.onload = (e) => {
         setFilePreviews(prev => ({
           ...prev,
-          [name]: e.target.result
+          [name]: e.target?.result as string
         }));
       };
-      reader.readAsDataURL(files[0]);
+      reader.readAsDataURL(target.files[0]);
     }
-  }, [validateField]);
+  }, []);
 
-  // Handle next of kin changes
-  const handleNextOfKinChange = useCallback((index, field, value) => {
+  // Next of Kin handlers
+  const handleNextOfKinChange = (index: number, field: string, value: string) => {
     setFormData(prev => {
-      const newNextOfKin = [...prev.nextOfKin];
-      newNextOfKin[index] = { ...newNextOfKin[index], [field]: value };
-      return { ...prev, nextOfKin: newNextOfKin };
+      const newKin = [...prev.nextOfKin];
+      newKin[index] = { ...newKin[index], [field]: value };
+      return { ...prev, nextOfKin: newKin };
     });
+  };
 
-    // Validate next of kin
-    setTimeout(() => {
-      const newData = { ...formData };
-      newData.nextOfKin[index] = { ...newData.nextOfKin[index], [field]: value };
-      const error = validateField('nextOfKin', newData.nextOfKin, newData);
-      setFormErrors(prev => ({ ...prev, nextOfKin: error }));
-    }, 0);
-  }, [formData, validateField]);
-
-  // Add next of kin entry
-  const addNextOfKin = useCallback(() => {
+  const addNextOfKin = () => {
     if (formData.nextOfKin.length < 4) {
       setFormData(prev => ({
         ...prev,
         nextOfKin: [...prev.nextOfKin, { name: '', relationship: '', address: '', stakePercentage: '' }]
       }));
     }
-  }, [formData.nextOfKin.length]);
+  };
 
-  // Remove next of kin entry
-  const removeNextOfKin = useCallback((index) => {
+  const removeNextOfKin = (index: number) => {
     setFormData(prev => ({
       ...prev,
       nextOfKin: prev.nextOfKin.filter((_, i) => i !== index)
     }));
-  }, []);
+  };
 
   // Validate form
-  const validateForm = useCallback(() => {
-    const errors = {};
-
-    // Validate all fields
-    const fieldsToValidate = [
-      'firstName', 'lastName', 'dateOfBirth', 'phoneNumber', 'email',
+  const validateForm = () => {
+    const errors: Record<string, any> = {};
+    const requiredFields = [
+      'firstName', 'lastName', 'dateOfBirth', 'phoneNumber',
       'idType', 'idNumber', 'occupation', 'workAddress', 'position',
-      'nextOfKin', 'passportPicture'
+      'passportPicture'
     ];
 
-    fieldsToValidate.forEach(field => {
-      const error = validateField(field, formData[field]);
+    requiredFields.forEach(field => {
+      const error = validateField(field, (formData as any)[field]);
       if (error) errors[field] = error;
+    });
+
+    // Validate Next of Kin
+    formData.nextOfKin.forEach((kin, index) => {
+      if (!kin.name) errors[`kin_${index}_name`] = `Next of Kin ${index + 1} name is required`;
     });
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [formData, validateField]);
+  };
 
-  // Submit registration
-  const handleSubmit = async (e) => {
+  // Submit
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      errorSummaryRef.current?.focus();
+      errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
     setIsLoading(true);
-    setFormErrors({});
-
     try {
-      // Prepare form data for submission
       const submitData = new FormData();
-
-      // Add basic fields
-      Object.keys(formData).forEach(key => {
+      
+      // Append fields
+      Object.entries(formData).forEach(([key, value]) => {
         if (key === 'nextOfKin') {
-          // Filter out empty next of kin entries
-          const validKin = formData.nextOfKin.filter(kin =>
-            kin.name || kin.relationship || kin.address || kin.stakePercentage
-          );
-          submitData.append('next_of_kin_data', JSON.stringify(validKin));
-        } else if (key === 'passportPicture' || key === 'idDocument') {
-          if (formData[key]) {
-            submitData.append(key, formData[key]);
-          }
-        } else if (key !== 'otpCode' && key !== 'registrationId' && formData[key]) {
-          submitData.append(key, formData[key]);
+          submitData.append('next_of_kin_data', JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+          submitData.append(key, value);
         }
       });
 
       const result = await apiService.registerClient(submitData);
 
       if (result.success) {
-        setFormData(prev => ({
-          ...prev,
-          registrationId: result.data && typeof result.data === 'object' && 'id' in result.data ? result.data.id : null
-        }));
-
-        setCurrentStep(2); // Move to OTP step
-        setSuccessMessage('Registration submitted successfully! Please verify with OTP.');
+        setCurrentStep(2);
+        setSuccessMessage('Registration submitted! Please visit the Manager\'s office with your physical ID to receive your account credentials.');
+        
+        // Final redirect after 10s
+        setTimeout(() => navigate('/login'), 10000);
       } else {
-        setFormErrors({
-          submit: result.error || 'Registration failed. Please try again.'
-        });
+        setFormErrors({ submit: result.error || 'Submission failed' });
       }
-
-    } catch (error) {
-      setFormErrors({
-        submit: error.message || 'Registration failed. Please try again.'
-      });
+    } catch (err: any) {
+      setFormErrors({ submit: err.message || 'An unexpected error occurred' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Send OTP
-  const handleSendOTP = async () => {
-    if (!formData.registrationId) return;
-
-    setIsLoading(true);
-    try {
-      const result = await apiService.sendClientRegistrationOTP(formData.registrationId);
-      if (result.success) {
-        setSuccessMessage('OTP sent successfully to your phone number.');
-      } else {
-        setFormErrors({
-          otp: result.error || 'Failed to send OTP. Please try again.'
-        });
-      }
-    } catch (error) {
-      setFormErrors({
-        otp: error.message || 'Failed to send OTP. Please try again.'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Verify OTP
-  const handleVerifyOTP = async () => {
-    if (!formData.registrationId || !formData.otpCode) {
-      setFormErrors({ otp: 'Please enter the OTP code' });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await apiService.verifyClientRegistrationOTP(formData.registrationId, formData.otpCode);
-
-      if (result.success) {
-        setCurrentStep(3); // Move to success step
-        setSuccessMessage('Registration completed successfully! Your account will be reviewed by our team.');
-
-        // Redirect after delay
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
-      } else {
-        setFormErrors({
-          otp: result.error || 'Invalid OTP. Please try again.'
-        });
-      }
-
-    } catch (error) {
-      setFormErrors({
-        otp: error.message || 'Invalid OTP. Please try again.'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Clear field error
-  const clearFieldError = (fieldName) => {
-    setFormErrors(prev => ({ ...prev, [fieldName]: undefined }));
+  const clearFieldError = (name: string) => {
+    setFormErrors(prev => {
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-            Client Registration
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold text-neutral-900 tracking-tight mb-2">
+            Coastal Member Registration
           </h1>
-          <p className="text-neutral-600">
-            Join Coastal Auto Tech Cooperative Credit Union
+          <p className="text-lg text-neutral-600">
+            Start your journey with Coastal Auto Tech Cooperative Credit Union
           </p>
         </div>
 
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-neutral-200 text-neutral-600'
-                  }`}>
-                  {step}
-                </div>
-                {step < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${currentStep > step ? 'bg-primary-500' : 'bg-neutral-200'
-                    }`} />
-                )}
+        {/* Progress */}
+        <div className="mb-12 relative">
+          <div className="flex items-center justify-center space-x-20">
+            <div className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${currentStep === 1 ? 'bg-primary-600 text-white shadow-lg ring-4 ring-primary-100' : 'bg-emerald-500 text-white'}`}>
+                {currentStep > 1 ? '✓' : '1'}
               </div>
-            ))}
-          </div>
-          <div className="flex justify-center mt-2 text-sm text-neutral-600">
-            <span className={currentStep === 1 ? 'font-medium' : ''}>Registration Form</span>
-            <span className="mx-4">→</span>
-            <span className={currentStep === 2 ? 'font-medium' : ''}>OTP Verification</span>
-            <span className="mx-4">→</span>
-            <span className={currentStep === 3 ? 'font-medium' : ''}>Complete</span>
+              <span className="mt-2 text-sm font-semibold text-neutral-700">Form</span>
+            </div>
+            <div className={`flex-1 h-1 max-w-[100px] ${currentStep > 1 ? 'bg-emerald-500' : 'bg-neutral-200'}`} />
+            <div className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${currentStep === 2 ? 'bg-primary-600 text-white shadow-lg ring-4 ring-primary-100' : 'bg-neutral-200 text-neutral-500'}`}>
+                2
+              </div>
+              <span className="mt-2 text-sm font-semibold text-neutral-700">Visit Manager</span>
+            </div>
           </div>
         </div>
 
-        {/* Step 1: Registration Form */}
-        {currentStep === 1 && (
-          <form onSubmit={handleSubmit} ref={formRef} className="space-y-8">
-
-            {/* Error summary */}
-            {Object.keys(formErrors).length > 0 && (
-              <div ref={errorSummaryRef} className="bg-error-50 border border-error-200 rounded-xl p-4" role="alert">
-                <h2 className="text-sm font-semibold text-error-800 mb-2">Please fix the following errors:</h2>
-                <ul className="list-disc list-inside text-sm text-error-700 space-y-1">
-                  {Object.entries(formErrors).map(([field, error]) => (
-                    <li key={field}>
-                      {Array.isArray(error) ? error.join(', ') : String(error)}
-                    </li>
-                  ))}
-                </ul>
+        {currentStep === 1 ? (
+          <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-3xl shadow-xl border border-neutral-100">
+            {formErrors.submit && (
+              <div ref={errorSummaryRef} className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl animate-pulse">
+                {String(formErrors.submit)}
               </div>
             )}
 
-            {/* Personal Information */}
-            <div className="bg-white border border-neutral-200 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4">Personal Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-neutral-700 mb-2">
-                    First Name <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    title="First Name"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('firstName')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Last Name <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    title="Last Name"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('lastName')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Date of Birth <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    title="Date of Birth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('dateOfBirth')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Phone Number <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    title="Phone Number"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('phoneNumber')}
-                    placeholder="+1234567890"
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    title="Email Address"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('email')}
-                    placeholder="john.doe@example.com"
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Identification */}
-            <div className="bg-white border border-neutral-200 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4">Identification</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="idType" className="block text-sm font-medium text-neutral-700 mb-2">
-                    ID Type <span className="text-error-500">*</span>
-                  </label>
-                  <select
-                    id="idType"
-                    name="idType"
-                    title="ID Type"
-                    value={formData.idType}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('idType')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  >
-                    <option value="">Select ID Type</option>
-                    <option value="passport">Passport</option>
-                    <option value="national_id">National ID</option>
-                    <option value="drivers_license">Driver's License</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="idNumber" className="block text-sm font-medium text-neutral-700 mb-2">
-                    ID Number <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="idNumber"
-                    name="idNumber"
-                    value={formData.idNumber}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('idNumber')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Employment Information */}
-            <div className="bg-white border border-neutral-200 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4">Employment Information</h2>
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="occupation" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Occupation <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="occupation"
-                    name="occupation"
-                    title="Occupation"
-                    value={formData.occupation}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('occupation')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="workAddress" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Work Address <span className="text-error-500">*</span>
-                  </label>
-                  <textarea
-                    id="workAddress"
-                    name="workAddress"
-                    title="Work Address"
-                    value={formData.workAddress}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('workAddress')}
-                    rows={3}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="position" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Position <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="position"
-                    name="position"
-                    title="Position"
-                    value={formData.position}
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('position')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Next of Kin */}
-            <div className="bg-white border border-neutral-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-neutral-900">Next of Kin</h2>
-                {formData.nextOfKin.length < 4 && (
-                  <button
-                    type="button"
-                    onClick={addNextOfKin}
-                    className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                  >
-                    Add Next of Kin
-                  </button>
-                )}
-              </div>
-
-              {formData.nextOfKin.map((kin, index) => (
-                <div key={index} className="border border-neutral-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium">Next of Kin {index + 1}</h3>
-                    {formData.nextOfKin.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeNextOfKin(index)}
-                        className="text-error-500 hover:text-error-700"
-                      >
-                        Remove
-                      </button>
-                    )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Personal Info */}
+              <div className="space-y-6 md:col-span-2">
+                <h2 className="text-2xl font-bold text-neutral-800 border-b pb-2 flex items-center gap-2">
+                  <span className="text-primary-600">👤</span> Personal Details
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="firstName" className="text-sm font-bold text-neutral-700">First Name *</label>
+                    <input id="firstName" name="firstName" title="First Name" placeholder="First Name" className="px-4 py-3 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-primary-50" value={formData.firstName} onChange={handleInputChange} required />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor={`nextOfKin-name-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
-                        Name <span className="text-error-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id={`nextOfKin-name-${index}`}
-                        title={`Next of Kin ${index + 1} Name`}
-                        value={kin.name}
-                        onChange={(e) => handleNextOfKinChange(index, 'name', e.target.value)}
-                        className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={`nextOfKin-relationship-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
-                        Relationship <span className="text-error-500">*</span>
-                      </label>
-                      <select
-                        id={`nextOfKin-relationship-${index}`}
-                        title={`Next of Kin ${index + 1} Relationship`}
-                        value={kin.relationship}
-                        onChange={(e) => handleNextOfKinChange(index, 'relationship', e.target.value)}
-                        className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                      >
-                        <option value="">Select Relationship</option>
-                        <option value="spouse">Spouse</option>
-                        <option value="parent">Parent</option>
-                        <option value="child">Child</option>
-                        <option value="sibling">Sibling</option>
-                        <option value="friend">Friend</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label htmlFor={`nextOfKin-address-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
-                        Address <span className="text-error-500">*</span>
-                      </label>
-                      <textarea
-                        id={`nextOfKin-address-${index}`}
-                        title={`Next of Kin ${index + 1} Address`}
-                        value={kin.address}
-                        onChange={(e) => handleNextOfKinChange(index, 'address', e.target.value)}
-                        rows={2}
-                        className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={`nextOfKin-stake-${index}`} className="block text-sm font-medium text-neutral-700 mb-2">
-                        Stake Percentage <span className="text-error-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        id={`nextOfKin-stake-${index}`}
-                        title={`Next of Kin ${index + 1} Stake Percentage`}
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={kin.stakePercentage}
-                        onChange={(e) => handleNextOfKinChange(index, 'stakePercentage', e.target.value)}
-                        className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                      />
-                    </div>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="lastName" className="text-sm font-bold text-neutral-700">Last Name *</label>
+                    <input id="lastName" name="lastName" title="Last Name" placeholder="Last Name" className="px-4 py-3 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-primary-50" value={formData.lastName} onChange={handleInputChange} required />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="phoneNumber" className="text-sm font-bold text-neutral-700">Phone Number *</label>
+                    <input id="phoneNumber" name="phoneNumber" type="tel" title="Phone Number" placeholder="e.g., +233 24 000 0000" className="px-4 py-3 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-primary-50" value={formData.phoneNumber} onChange={handleInputChange} required />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="dateOfBirth" className="text-sm font-bold text-neutral-700">Date of Birth *</label>
+                    <input id="dateOfBirth" name="dateOfBirth" type="date" title="Date of Birth" className="px-4 py-3 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-primary-50" value={formData.dateOfBirth} onChange={handleInputChange} required />
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Document Upload */}
-            <div className="bg-white border border-neutral-200 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4">Document Upload</h2>
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="passportPicture" className="block text-sm font-medium text-neutral-700 mb-2">
-                    Passport Picture <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="file"
-                    id="passportPicture"
-                    name="passportPicture"
-                    title="Passport Picture"
-                    accept="image/jpeg,image/jpg,image/png"
-                    onChange={handleInputChange}
-                    onFocus={() => clearFieldError('passportPicture')}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500"
-                    required
-                  />
-                  {filePreviews.passportPicture && (
-                    <div className="mt-2">
-                      <img
-                        src={filePreviews.passportPicture}
-                        alt="Passport preview"
-                        className="w-32 h-32 object-cover border border-neutral-300 rounded-lg"
-                      />
-                    </div>
-                  )}
-                  <p className="text-sm text-neutral-500 mt-1">
-                    JPG or PNG, max 5MB
-                  </p>
+              {/* ID Info */}
+              <div className="space-y-6 md:col-span-2">
+                <h2 className="text-2xl font-bold text-neutral-800 border-b pb-2 flex items-center gap-2">
+                  <span className="text-primary-600">💳</span> Identification
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="idType" className="text-sm font-bold text-neutral-700">ID Type *</label>
+                    <select id="idType" name="idType" title="ID Type" className="px-4 py-3 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-primary-50" value={formData.idType} onChange={handleInputChange} required>
+                      <option value="">Select ID Type</option>
+                      <option value="ghana_card">Ghana Card</option>
+                      <option value="passport">Passport</option>
+                      <option value="voters_id">Voter's ID</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="idNumber" className="text-sm font-bold text-neutral-700">ID Number *</label>
+                    <input id="idNumber" name="idNumber" title="ID Number" placeholder="ID Number" className="px-4 py-3 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-primary-50" value={formData.idNumber} onChange={handleInputChange} required />
+                  </div>
+                </div>
+              </div>
+
+              {/* Files */}
+              <div className="space-y-6 md:col-span-2">
+                <h2 className="text-2xl font-bold text-neutral-800 border-b pb-2 flex items-center gap-2">
+                  <span className="text-primary-600">📁</span> Upload Documents
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="passportPicture" className="text-sm font-bold text-neutral-700">Passport Picture *</label>
+                    <input id="passportPicture" name="passportPicture" title="Passport Picture" type="file" accept="image/*" onChange={handleInputChange} required />
+                    {filePreviews.passportPicture && <img src={filePreviews.passportPicture} className="w-24 h-24 rounded-lg object-cover mt-2 shadow" alt="Preview"/>}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-4 px-6 bg-primary-500 text-white rounded-xl hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-            >
-              {isLoading ? 'Submitting...' : 'Submit Registration'}
+            <button type="submit" disabled={isLoading} className="w-full py-4 px-8 bg-primary-600 text-white rounded-2xl font-bold text-xl hover:bg-primary-700 transition-all shadow-xl disabled:bg-neutral-300">
+              {isLoading ? 'Processing Registration...' : 'Complete Registration'}
             </button>
           </form>
-        )}
-
-        {/* Step 2: OTP Verification */}
-        {currentStep === 2 && (
-          <div className="bg-white border border-neutral-200 rounded-xl p-6 max-w-md mx-auto">
-            <h2 className="text-xl font-semibold text-neutral-900 mb-4 text-center">OTP Verification</h2>
-
-            {successMessage && (
-              <div className="mb-4 p-4 bg-success-50 border border-success-200 rounded-xl">
-                <p className="text-sm text-success-800">{successMessage}</p>
+        ) : (
+          <div className="bg-white p-12 rounded-3xl shadow-2xl border border-emerald-100 text-center animate-in fade-in zoom-in duration-500">
+            <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">
+              ✓
+            </div>
+            <h2 className="text-3xl font-black text-neutral-900 mb-4 tracking-tight">Registration Submitted!</h2>
+            <div className="max-w-md mx-auto space-y-6">
+              <p className="text-lg text-neutral-600 leading-relaxed">
+                {successMessage}
+              </p>
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-4 text-left rounded-r-xl">
+                <p className="text-sm text-amber-800 font-bold mb-1">Next Step:</p>
+                <p className="text-sm text-amber-700">
+                  Visit the Manager's office with your physical ID card to finalize the account opening and receive your login credentials.
+                </p>
               </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Enter 6-digit OTP <span className="text-error-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="otpCode"
-                  value={formData.otpCode}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('otpCode')}
-                  placeholder="000000"
-                  className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 text-center text-2xl tracking-widest"
-                  maxLength={6}
-                />
-                {formErrors.otp && (
-                  <p className="text-sm text-error-600 mt-1">{formErrors.otp && String(formErrors.otp)}</p>
-                )}
-              </div>
-
-              <button
-                onClick={handleVerifyOTP}
-                disabled={isLoading || !formData.otpCode}
-                className="w-full py-3 px-6 bg-primary-500 text-white rounded-xl hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-              >
-                {isLoading ? 'Verifying...' : 'Verify OTP'}
-              </button>
-
-              <button
-                onClick={handleSendOTP}
-                disabled={isLoading}
-                className="w-full py-2 px-4 text-primary-600 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-              >
-                Resend OTP
+              <p className="text-xs text-neutral-400 italic">
+                You will be redirected back to the login page in 10 seconds.
+              </p>
+              <button onClick={() => navigate('/login')} className="w-full py-3 px-6 bg-neutral-900 text-white rounded-xl font-bold hover:bg-neutral-800 transition-all">
+                Back to Login
               </button>
             </div>
           </div>
         )}
-
-        {/* Step 3: Success */}
-        {currentStep === 3 && (
-          <div className="bg-white border border-neutral-200 rounded-xl p-6 max-w-md mx-auto text-center">
-            <div className="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-neutral-900 mb-2">Registration Complete!</h2>
-            <p className="text-neutral-600 mb-4">{successMessage}</p>
-            <p className="text-sm text-neutral-500">
-              You will be redirected to the login page shortly...
-            </p>
-          </div>
-        )}
-
       </div>
     </div>
   );

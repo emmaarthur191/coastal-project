@@ -13,5 +13,6 @@ export type ApiRequestOptions = {
     readonly body?: any;
     readonly mediaType?: string;
     readonly responseHeader?: string;
+    readonly responseType?: 'blob' | 'json' | 'text' | 'arraybuffer';
     readonly errors?: Record<number, string>;
 };

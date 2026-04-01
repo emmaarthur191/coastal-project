@@ -140,4 +140,24 @@ export class AccountOpeningsService {
             mediaType: 'application/json',
         });
     }
+
+    /**
+     * Approve and print an account opening request
+     * Approve an account opening request, create the account/user, and return a PDF letter.
+     * @param id A unique integer value identifying this Account Opening Request.
+     * @returns any
+     * @throws ApiError
+     */
+    public static apiBankingAccountOpeningsApproveAndPrintCreate(
+        id: number,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/banking/account-openings/{id}/approve-and-print/',
+            path: {
+                'id': id,
+            },
+            responseType: 'blob',
+        });
+    }
 }
