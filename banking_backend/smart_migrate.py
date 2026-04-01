@@ -626,6 +626,7 @@ def sync_missing_columns():
     drop_column_if_exists("core_accountopeningrequest", "position")
     drop_column_if_exists("core_accountopeningrequest", "digital_address")
     drop_column_if_exists("core_accountopeningrequest", "location")
+    drop_column_if_exists("core_accountopeningrequest", "nationality")
 
     # SMS Reliability (migration 0047: message field encrypted)
     add_column_if_not_exists("sms_outbox", "message_encrypted", "TEXT DEFAULT '' NOT NULL")
