@@ -15,9 +15,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 django.setup()
 
-import time
-
+from django.db import connection
 from django.core.management import call_command
+import time
 
 
 def table_exists(table_name: str) -> bool:
@@ -611,6 +611,21 @@ def sync_missing_columns():
     # Migration 0047: old plaintext message column on sms_outbox
     drop_column_if_exists("sms_outbox", "message")
     drop_column_if_exists("sms_outbox", "phone_number")
+
+    # [CLEANUP] Legacy Plaintext PII Columns in AccountOpeningRequest
+    # These were replaced by properties mapping to encrypted fields.
+    # We must drop them because they are NOT NULL in the DB, causing IntegrityErrors on new inserts.
+    drop_column_if_exists("core_accountopeningrequest", "first_name")
+    drop_column_if_exists("core_accountopeningrequest", "last_name")
+    drop_column_if_exists("core_accountopeningrequest", "date_of_birth")
+    drop_column_if_exists("core_accountopeningrequest", "phone_number")
+    drop_column_if_exists("core_accountopeningrequest", "id_number")
+    drop_column_if_exists("core_accountopeningrequest", "address")
+    drop_column_if_exists("core_accountopeningrequest", "occupation")
+    drop_column_if_exists("core_accountopeningrequest", "work_address")
+    drop_column_if_exists("core_accountopeningrequest", "position")
+    drop_column_if_exists("core_accountopeningrequest", "digital_address")
+    drop_column_if_exists("core_accountopeningrequest", "location")
 
     # SMS Reliability (migration 0047: message field encrypted)
     add_column_if_not_exists("sms_outbox", "message_encrypted", "TEXT DEFAULT '' NOT NULL")
