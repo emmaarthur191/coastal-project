@@ -9,6 +9,14 @@ db.sqlite3
 .DS_Store
 media/
 staticfiles/
+.gemini/
+
+# Test Artifacts
+.coverage
+.hypothesis/
+.pytest_cache/
+htmlcov/
+*.pyc
 
 # Developer Scratch Scripts & Verification Tools
 verify_*.py
@@ -24,3 +32,8 @@ tmp_*.py
 # Project Logs
 logs/
 *.log
+
+# Scratch scripts
+reproduce_*.py
+test_*.py
+list_urls.py
