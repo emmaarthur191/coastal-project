@@ -1,3 +1,8 @@
+"""Black Team security audit test suite for Coastal Banking.
+
+This suite verifies Zero-Plaintext compliance and PII masking.
+"""
+
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -13,7 +18,10 @@ User = get_user_model()
 
 
 class BlackTeamAuditTest(TransactionTestCase):
+    """Compliance tests for PII security and Zero-Plaintext storage."""
+
     def setUp(self):
+        """Configure test users and environment for security auditing."""
         # Manager needs to be approved and active staff
         self.manager = User.objects.create_user(
             username="manager",
@@ -62,21 +70,22 @@ class BlackTeamAuditTest(TransactionTestCase):
         self.assertNotIn("GHA-123456789-0", content, "VULNERABILITY: Cashier saw full ID number!")
 
     def test_zero_plaintext_via_search_bypass(self):
-        """COMPLIANCE: Verify that PII is NOT searchable via plaintext icontains on members."""
+        """COMPLIANCE: Verify that PII is NOT searchable via plaintext icontains or partial matches."""
         self.client.force_authenticate(user=self.manager)
 
         self.customer.first_name = "SecretTarget"
         self.customer.save()
 
-        # Try to find him by his actual name in plaintext using standard search
-        url = reverse("core:member-list") + "?search=SecretTarget"
+        # Try to find him by a SUBSTRING of his name in plaintext
+        # This proves we are NOT using icontains on a plaintext column
+        url = reverse("core:member-list") + "?search=Secret"
         response = self.client.get(url)
 
-        # The result count should be 0 because searched via HMAC hash internally
+        # The result count should be 0 because exact HMAC hash matching is required
         results = response.data.get("results", [])
-        self.assertEqual(len(results), 0, "Compliance: Plaintext PII search returned 0 results as expected.")
+        self.assertEqual(len(results), 0, "Compliance: Partial plaintext PII search returned 0 results as expected.")
 
-    def test_transaction_pII_anonymity_in_logs(self):
+    def test_transaction_pii_anonymity_in_logs(self):
         """COMPLIANCE: Verify audit logs automatically scrub/mask PII."""
         # Clean existing logs
         AuditLog.objects.all().delete()

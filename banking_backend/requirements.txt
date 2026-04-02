@@ -1,9 +1,9 @@
-django>=5.2.1
+django>=5.2.12
 django-environ>=0.11.0
-daphne>=4.1.2
-django-cors-headers>=4.4.0
-djangorestframework>=3.15.2
-djangorestframework-simplejwt>=5.5.1
+daphne>=4.2.1
+django-cors-headers>=4.5.0
+djangorestframework>=3.14.0
+djangorestframework-simplejwt>=5.3.1
 drf-spectacular>=0.28.0
 django-prometheus>=2.3.1
 django-filter>=24.3
@@ -14,9 +14,9 @@ django-csp>=4.0
 setuptools>=82.0.1
 sentry-sdk>=2.56.0
 pyyaml>=6.0.3
-redis>=5.1.1
+redis>=5.2.0
 celery>=5.4.0
-requests>=2.33.0
+requests>=2.33.1
 pytest>=8.3.5
 pytest-django>=4.9.0
 pytest-cov>=7.0.0
@@ -29,7 +29,7 @@ cryptography>=44.0.3
 pillow>=12.1.1
 python-dateutil>=2.9.0
 pytz>=2024.1
-gunicorn>=23.0.0
+gunicorn>=23.1.0
 uvicorn>=0.42.0
 websockets>=16.0
 service-identity>=24.2.0
@@ -43,13 +43,13 @@ user-agents>=2.2.0
 
 # Security Mitigations
 # pygments 2.19.2 is currently the latest but has CVE-2026-4539; fix pending
-pyjwt==2.12.1     # Mitigate CVE-2026-32597
-pyopenssl==26.0.0 # Mitigate CVE-2026-27448
-ujson==5.12.0     # Mitigate CVE-2026-32874
-werkzeug==3.1.7   # Mitigate CVE-2026-27199
-tornado==6.5.5    # Mitigate GHSA-78cv-mqj4-43f7
-jinja2==3.1.6     # Mitigate CVE-2026-0925
-aiohttp==3.13.3   # Mitigate CVE-2026-1736
+pyjwt==2.12.1
+pyopenssl==26.0.0
+ujson==5.12.0
+werkzeug==3.1.7
+tornado==6.5.5
+jinja2==3.1.6
+aiohttp==3.13.3
 idna==3.11        # Mitigate CVE-2026-27827
 authlib==1.6.9     # Mitigate CVE-2026-28802
 black==26.3.1      # Mitigate CVE-2026-32274
