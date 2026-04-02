@@ -724,6 +724,21 @@ def sync_missing_columns():
     print("  Column sync complete!\n")
 
 
+def backfill_existing_user_approvals():
+    """Approve all existing users in the database to resolve the 403 login lockout after the schema update.
+    This ensures that 'old' users are grandfathered in, while new registrations still require manual approval.
+    """
+    from users.models import User
+
+    print("--> Backfilling approvals for existing users...")
+    try:
+        # We approve everyone who is currently unapproved to recover from the migration lockout
+        count = User.objects.filter(is_approved=False).update(is_approved=True)
+        print(f"    + Approved {count} existing users. Access restored.")
+    except Exception as e:
+        print(f"    ! Error backfilling approvals: {e}")
+
+
 def main():
     """Run the smart migration sync."""
     print("=" * 60)
@@ -771,6 +786,9 @@ def main():
 
         print("Step 3: Syncing missing columns...")
         sync_missing_columns()
+
+        print("\nStep 4: Restoring access for existing users (Backfill)...")
+        backfill_existing_user_approvals()
     else:
         print("\n--> Fresh database detected. Running migrations normally...")
         call_command("migrate", "--noinput", verbosity=1)

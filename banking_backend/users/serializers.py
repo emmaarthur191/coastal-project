@@ -14,7 +14,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
 
         # Enforce administrative approval check
-        if not self.user.is_approved:
+        # SECURITY: Superusers bypass this to prevent total lockout
+        if not self.user.is_approved and not self.user.is_superuser:
             raise PermissionDenied("Your account is pending administrative approval. Please contact your manager.")
 
         if not self.user.is_active:
@@ -195,12 +196,13 @@ class LoginSerializer(serializers.Serializer):
 
             User = get_user_model()
             lookup_user = User.objects.filter(email=email).first()
-            if lookup_user and not lookup_user.is_approved:
+            if lookup_user and not lookup_user.is_approved and not lookup_user.is_superuser:
                 raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
             raise serializers.ValidationError("Invalid credentials.")
 
         # Check if account is approved by admin (Staff or Client)
-        if hasattr(user, "is_approved") and not user.is_approved:
+        # SECURITY: Superusers bypass this check for absolute system access
+        if hasattr(user, "is_approved") and not user.is_approved and not user.is_superuser:
             # We raise PermissionDenied to differentiate from incorrect password (403 vs 401/400)
             raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
 
