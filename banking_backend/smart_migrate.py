@@ -15,9 +15,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 django.setup()
 
-from django.db import connection
-from django.core.management import call_command
 import time
+
+from django.core.management import call_command
+from django.db import connection
 
 
 def table_exists(table_name: str) -> bool:
@@ -548,6 +549,7 @@ def sync_missing_columns():
     add_column_if_not_exists("users_user", "daily_transaction_limit", "NUMERIC(12,2) DEFAULT 10000.00 NOT NULL")
     add_column_if_not_exists("users_user", "daily_transaction_total", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
     add_column_if_not_exists("users_user", "daily_limit_reset_date", "DATE NULL")
+    add_column_if_not_exists("users_user", "is_approved", "BOOLEAN DEFAULT FALSE NOT NULL")
 
     # Accounts & Registration
     add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
@@ -585,6 +587,9 @@ def sync_missing_columns():
     # Visits & Assignments
     add_column_if_not_exists("visit_schedule", "client_name_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("visit_schedule", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("visit_schedule", "check_in_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("visit_schedule", "check_in_latitude", "NUMERIC(9,6) NULL")
+    add_column_if_not_exists("visit_schedule", "check_in_longitude", "NUMERIC(9,6) NULL")
     # NOTE: client_assignment.client_name_encrypted removed in migration 0048 — do NOT re-add it.
     add_column_if_not_exists("client_assignment", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
 
@@ -708,7 +713,7 @@ def sync_missing_columns():
     # Fraud & Audit
     add_column_if_not_exists("core_fraudalert", "resolved_at", "TIMESTAMP WITH TIME ZONE NULL")
     add_column_if_not_exists("core_fraudalert", "risk_score", "DOUBLE PRECISION NULL")
-    add_column_if_not_exists("core_fraudalert", "risk_level", "VARCHAR(20) DEFAULT 'medium' NOT NULL")
+    add_column_if_not_exists("core_fraudalert", "risk_level", "VARCHAR(20) DEFAULT 'low' NOT NULL")
     add_column_if_not_exists("core_fraudalert", "reason", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("core_fraudalert", "status", "VARCHAR(20) DEFAULT 'pending' NOT NULL")
 
