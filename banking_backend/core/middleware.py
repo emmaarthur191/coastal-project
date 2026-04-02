@@ -1,4 +1,4 @@
-import threading
+import contextvars
 import uuid
 from urllib.parse import parse_qs
 
@@ -65,13 +65,13 @@ class JWTAuthMiddleware(BaseMiddleware):
         return await super().__call__(scope, receive, send)
 
 
-# Thread-local storage for correlation IDs
-_thread_locals = threading.local()
+# ContextVar for correlation IDs (Async-safe alternative to threading.local)
+_correlation_id_ctx = contextvars.ContextVar("correlation_id", default="NO_ID")
 
 
 def get_correlation_id():
-    """Retrieve the correlation ID for the current thread."""
-    return getattr(_thread_locals, "correlation_id", "NO_ID")
+    """Retrieve the correlation ID for the current context (Sync or Async)."""
+    return _correlation_id_ctx.get()
 
 
 class LogCorrelationMiddleware:
@@ -83,11 +83,16 @@ class LogCorrelationMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Generate a new correlation ID or use one from the header (if provided by proxy/gateway)
+        # Generate a new correlation ID or use one from the header
         correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
-        _thread_locals.correlation_id = correlation_id
+        token = _correlation_id_ctx.set(correlation_id)
 
-        response = self.get_response(request)
+        try:
+            response = self.get_response(request)
+        finally:
+            # We don't strictly need to reset in standard Django, but it's good practice
+            # for contextvars to avoid leaks if this runs in a nested context.
+            _correlation_id_ctx.reset(token)
 
         # Include the correlation ID in the response headers for debugging
         response["X-Correlation-ID"] = correlation_id

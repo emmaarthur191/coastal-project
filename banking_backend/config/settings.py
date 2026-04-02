@@ -1,5 +1,4 @@
 import os
-import threading
 from decimal import Decimal
 from urllib.parse import urlparse
 
@@ -48,7 +47,7 @@ if SENTRY_DSN and not env.bool("DEBUG", default=False):
         # Before send hook to add correlation ID
         before_send=lambda event, hint: (
             event.get("tags", {}).update(
-                {"correlation_id": getattr(getattr(threading, "local", lambda: None)(), "correlation_id", "NO_ID")}
+                {"correlation_id": __import__("core.middleware", fromlist=["get_correlation_id"]).get_correlation_id()}
             )
             or event
         ),
@@ -565,10 +564,8 @@ if DEBUG:
 # (Scheme mismatch: Django sees http, Origin is https)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-CSRF_COOKIE_SAMESITE = (
-    "Lax"  # 'Lax' allows cross-origin with top-level navigation; 'Strict' blocks cookies on cross-origin POST
-)
-SESSION_COOKIE_SAMESITE = "Lax"  # 'Strict' can break OAuth redirection flows if any used
+CSRF_COOKIE_SAMESITE = "Lax" if DEBUG else "None"
+SESSION_COOKIE_SAMESITE = "Lax" if DEBUG else "None"
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)

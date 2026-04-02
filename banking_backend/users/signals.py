@@ -71,20 +71,20 @@ def log_failed_login(sender, credentials, request, **kwargs):
         pass
 
 
-# Thread-local storage for request context in signals
-import threading
+# ContextVar for request context in signals (Async-safe alternative to threading.local)
+import contextvars
 
-_thread_locals = threading.local()
+_request_ctx = contextvars.ContextVar("current_request", default=None)
 
 
 def set_current_request(request):
-    """Store current request in thread-local storage."""
-    _thread_locals.request = request
+    """Store current request in context-local storage."""
+    return _request_ctx.set(request)
 
 
 def get_current_request():
-    """Get current request from thread-local storage."""
-    return getattr(_thread_locals, "request", None)
+    """Get current request from context-local storage."""
+    return _request_ctx.get()
 
 
 def get_current_user():
