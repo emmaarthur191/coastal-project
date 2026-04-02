@@ -159,7 +159,7 @@ class TestAuthentication:
 
     def test_login_success(self):
         client = APIClient()
-        User.objects.create_user(username="testuser", password="password123", email="test@auth.com")
+        User.objects.create_user(username="testuser", password="password123", email="test@auth.com", is_approved=True)
         url = reverse("users:login")
         data = {"email": "test@auth.com", "password": "password123"}
         response = client.post(url, data, format="json")
@@ -169,7 +169,7 @@ class TestAuthentication:
 
     def test_login_invalid_credentials(self):
         client = APIClient()
-        User.objects.create_user(username="testuser", password="password123", email="test@auth.com")
+        User.objects.create_user(username="testuser", password="password123", email="test@auth.com", is_approved=True)
         url = reverse("users:login")
         data = {"email": "test@auth.com", "password": "wrongpassword"}
         response = client.post(url, data, format="json")

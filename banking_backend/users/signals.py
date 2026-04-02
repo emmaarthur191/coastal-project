@@ -107,8 +107,8 @@ def generate_staff_id(sender, instance, created, **kwargs):
 
     logger = logging.getLogger(__name__)
 
-    # Check if this user needs a staff ID (is staff role and doesn't have a staff_number yet)
-    if instance.staff_number is None and instance.role in [
+    # Check if this user needs a staff ID (is staff role and doesn't have a staff_number or staff_id yet)
+    if (instance.staff_number is None or not instance.staff_id) and instance.role in [
         "cashier",
         "mobile_banker",
         "manager",
@@ -132,7 +132,8 @@ def generate_staff_id(sender, instance, created, **kwargs):
                     # Set the numeric sequence
                     instance.staff_number = new_seq
 
-                    # Format and set the encrypted/hashed ID via property
+                    # Format and set the encrypted/hashed ID via property (CA prefix)
+                    prefix = "CA"
                     if new_seq > 9999:
                         instance.staff_id = f"{prefix}{new_seq:05d}"
                     else:

@@ -38,14 +38,19 @@ class BankingMessageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """Apply PII masking based on roles."""
-        from core.utils import mask_generic
+        from core.utils.pii_masking import mask_generic
 
         data = super().to_representation(instance)
         request = self.context.get("request")
         user = getattr(request, "user", None)
+        if not user or user.is_anonymous:
+            # Mask by default for safety
+            data["body"] = mask_generic(data.get("body"), length=20)
+            return data
 
         # Standard staff see masked bodies
-        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+        role = getattr(user, "role", None)
+        is_manager = role in ["manager", "operations_manager", "admin"] or user.is_superuser
         if not is_manager:
             data["body"] = mask_generic(data.get("body"), length=20)
 
@@ -235,7 +240,7 @@ class MessageThreadSerializer(serializers.ModelSerializer):
                     "sender": m.sender.id if m.sender else None,
                     "sender_name": sender_name,
                     "content": content,
-                    "encrypted_content": m.content_encrypted,  # naming mismatch in model ChatMessage has content_encrypted
+                    "encrypted_content": m.encrypted_content,
                     "message_type": m.message_type if hasattr(m, "message_type") else "text",
                     "created_at": m.created_at.isoformat(),
                     "is_system_message": getattr(m, "is_system_message", False),

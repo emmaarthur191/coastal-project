@@ -20,12 +20,14 @@ def api_client():
 @pytest.fixture
 def users(db):
     customer1 = User.objects.create_user(
-        username="customer1", email="c1@example.com", password="password123", role="customer"
+        username="customer1", email="c1@example.com", password="password123", role="customer", is_approved=True
     )
     customer2 = User.objects.create_user(
-        username="customer2", email="c2@example.com", password="password123", role="customer"
+        username="customer2", email="c2@example.com", password="password123", role="customer", is_approved=True
     )
-    staff = User.objects.create_user(username="staff1", email="staff@example.com", password="password123", role="staff")
+    staff = User.objects.create_user(
+        username="staff1", email="staff@example.com", password="password123", role="staff", is_approved=True
+    )
     return {"c1": customer1, "c2": customer2, "staff": staff}
 
 

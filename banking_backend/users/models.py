@@ -49,6 +49,7 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="customer")
     email = models.EmailField(unique=True, blank=False)
+    is_approved = models.BooleanField(default=False)
 
     objects = UserManager()
 
@@ -280,6 +281,45 @@ class AuditLog(models.Model):
     def __str__(self):
         """Return a string representation of the audit log."""
         return f"{self.action} {self.model_name} ({self.object_id}) by {self.user}"
+
+    def save(self, *args, **kwargs):
+        """Override save to automatically scrub PII from changes log."""
+        if self.changes:
+            self.changes = self._mask_pii(self.changes)
+        super().save(*args, **kwargs)
+
+    def _mask_pii(self, data):
+        """Recursively mask PII in dictionary data."""
+        if not isinstance(data, dict):
+            return data
+
+        sensitive_keys = [
+            "phone_number",
+            "id_number",
+            "ssnit_number",
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "digital_address",
+            "address",
+            "ghana_card",
+        ]
+
+        masked_data = {}
+        for key, value in data.items():
+            if any(s in key.lower() for s in sensitive_keys):
+                if isinstance(value, str) and value:
+                    # Mask most of it
+                    masked_data[key] = f"{value[:3]}...[MASKED]"
+                else:
+                    masked_data[key] = "[MASKED]"
+            elif isinstance(value, dict):
+                masked_data[key] = self._mask_pii(value)
+            elif isinstance(value, list):
+                masked_data[key] = [self._mask_pii(v) if isinstance(v, dict) else v for v in value]
+            else:
+                masked_data[key] = value
+        return masked_data
 
 
 class AdminNotification(models.Model):

@@ -209,3 +209,33 @@ class LoanViewSet(
                 {"status": "error", "message": "Failed to process repayment", "detail": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    @action(detail=False, methods=["get"], permission_classes=[IsStaff])
+    def search(self, request):
+        """Search loans by member name, email or ID using HMAC hashes."""
+        queryset = self.get_queryset()
+
+        # Filter by member (user name, email, or ID)
+        member = request.query_params.get("member")
+        if member:
+            from core.utils.field_encryption import hash_field
+
+            search_hash = hash_field(member)
+
+            queryset = queryset.filter(
+                models.Q(user__email__icontains=member)
+                | models.Q(user__id__icontains=member)
+                | models.Q(user__first_name_hash=search_hash)
+                | models.Q(user__last_name_hash=search_hash)
+            )
+
+        # Filter by status
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            queryset = queryset.filter(status__iexact=status_filter)
+
+        # Order by created_at desc
+        queryset = queryset.order_by("-created_at")[:100]
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({"count": len(serializer.data), "results": serializer.data})

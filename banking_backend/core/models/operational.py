@@ -305,6 +305,9 @@ class VisitSchedule(models.Model):
     scheduled_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="scheduled")
     notes = models.TextField(blank=True)
+    check_in_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    check_in_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    check_in_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -416,6 +419,8 @@ class ClientRegistration(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="submitted_registrations",
+        null=True,
+        blank=True,
     )
     first_name_encrypted = models.TextField(blank=True, default="")
     last_name_encrypted = models.TextField(blank=True, default="")

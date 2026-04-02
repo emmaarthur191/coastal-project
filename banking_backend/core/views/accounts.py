@@ -245,7 +245,20 @@ class AccountOpeningViewSet(
             self.throttle_scope = "otp_request"
         elif self.action == "verify_and_submit":
             self.throttle_scope = "otp_verify"
+        elif self.action == "submit_request":
+            self.throttle_scope = "registration"
         return super().get_throttles()
+
+    def get_authenticators(self):
+        """Override authenticators based on action.
+
+        Public registration endpoints should not try to validate stale or expired
+        JWT/Session tokens, which would result in 401 Unauthorized before
+        reaching the get_permissions logic.
+        """
+        if self.action in ["send_otp", "verify_and_submit", "submit_request"]:
+            return []
+        return super().get_authenticators()
 
     def get_permissions(self):
         """Override permissions based on action.

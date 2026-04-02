@@ -31,6 +31,8 @@ class ClientRegistrationViewSet(GenericViewSet):
             self.throttle_scope = "otp_request"
         elif self.action == "verify_otp":
             self.throttle_scope = "otp_verify"
+        elif self.action == "submit_registration":
+            self.throttle_scope = "registration"
         return super().get_throttles()
 
     @action(detail=False, methods=["post"], url_path="submit-registration", permission_classes=[AllowAny])
@@ -157,15 +159,17 @@ class MemberViewSet(mixins.ListModelMixin, GenericViewSet):
             search_hash = hash_field(search)
 
             queryset = queryset.filter(
-                Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-                | Q(email__icontains=search)
+                Q(email__icontains=search)
                 | Q(id_number_hash=search_hash)
                 | Q(phone_number_hash=search_hash)
+                | Q(first_name_hash=search_hash)
+                | Q(last_name_hash=search_hash)
             )
 
         # Pull objects to allow property-based PII decryption in loop
-        members = queryset.only("id", "email", "first_name", "last_name", "id_number_encrypted")[:50]
+        members = queryset.only("id", "email", "first_name_encrypted", "last_name_encrypted", "id_number_encrypted")[
+            :50
+        ]
         return Response(
             {
                 "results": [

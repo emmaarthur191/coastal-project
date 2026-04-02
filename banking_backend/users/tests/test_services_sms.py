@@ -38,13 +38,13 @@ class TestSendexaServiceDelivery:
         mock_response.json.return_value = {"success": True}
         mock_post.return_value = mock_response
 
-        with patch.object(settings, "SENDEXA_API_KEY", "test_key"):
+        with patch.object(settings, "SENDEXA_SERVER_KEY", "test_key"):
             success, result = SendexaService.send_sms("0244123456", "Hello Test")
 
         assert success is True
         # Verify Basic Auth header (base64 of test_key)
 
-        expected_auth = "test_key"
+        expected_auth = "Basic test_key"
 
         args, kwargs = mock_post.call_args
         assert args[0] == "https://server.sendexa.co/v1/sms/send"
@@ -59,7 +59,7 @@ class TestSendexaServiceDelivery:
         mock_response.text = "Unauthorized"
         mock_post.return_value = mock_response
 
-        with patch.object(settings, "SENDEXA_API_KEY", "wrong_key"):
+        with patch.object(settings, "SENDEXA_SERVER_KEY", "wrong_key"):
             success, result = SendexaService.send_sms("0244123456", "Hello Test")
 
         assert success is False

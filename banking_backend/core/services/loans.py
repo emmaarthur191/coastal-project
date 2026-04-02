@@ -57,7 +57,10 @@ class LoanService:
             target_account = Account.objects.filter(user=loan.user, is_active=True).order_by("created_at").first()
 
         if not target_account:
-            raise ValidationError("User has no active accounts for loan disbursement.")
+            # IAO SECURITY CHECK: Prevent disbursement if no active account is available.
+            raise ValidationError(
+                detail=f"User {loan.user.email} has no active accounts for loan disbursement. Activate an account first."
+            )
 
         loan.status = "approved"
         loan.approved_at = timezone.now()

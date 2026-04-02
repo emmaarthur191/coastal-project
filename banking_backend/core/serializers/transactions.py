@@ -26,6 +26,15 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Amount must be positive.")
         return value
 
+    def validate_description(self, value):
+        """Sanitize description to prevent stored XSS."""
+        if value:
+            import bleach
+
+            # Remove all HTML tags for pure-text storage
+            return bleach.clean(value, tags=[], strip=True)
+        return value
+
     def validate(self, attrs):
         transaction_type = attrs.get("transaction_type")
         from_account = attrs.get("from_account")

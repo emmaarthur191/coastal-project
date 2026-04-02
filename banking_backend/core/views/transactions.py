@@ -40,11 +40,28 @@ class TransactionViewSet(
     ordering = ["-timestamp"]
 
     def get_queryset(self):
-        """Filter transactions based on user involvement (sender or receiver)."""
+        """Filter transactions based on user involvement (sender or receiver).
+
+        Red Team Hardening: Enforce client assignment scoping for Mobile Bankers.
+        """
         user = self.request.user
         if user.role == "customer":
             # Show transactions where user is involved
             return self.queryset.filter(models.Q(from_account__user=user) | models.Q(to_account__user=user)).distinct()
+
+        if user.role == "mobile_banker":
+            # Filter transactions to only those belonging to assigned clients
+            from core.models.operational import ClientAssignment
+
+            assigned_client_ids = ClientAssignment.objects.filter(mobile_banker=user, is_active=True).values_list(
+                "client_id", flat=True
+            )
+
+            return self.queryset.filter(
+                models.Q(from_account__user_id__in=assigned_client_ids)
+                | models.Q(to_account__user_id__in=assigned_client_ids)
+            ).distinct()
+
         return self.queryset
 
     def get_permissions(self):
@@ -92,7 +109,7 @@ class TransactionViewSet(
     @action(detail=False, methods=["get"], permission_classes=[IsStaff])
     def search(self, request):
         """Search transactions with filters for cashier dashboard."""
-        queryset = Transaction.objects.all()
+        queryset = self.get_queryset()
 
         # Filter by reference number
         reference = request.query_params.get("reference")
@@ -113,14 +130,22 @@ class TransactionViewSet(
             except (ValueError, TypeError):
                 pass
 
-        # Filter by member (user email or ID)
+        # Filter by member (user name, email, or ID)
         member = request.query_params.get("member")
         if member:
+            from core.utils.field_encryption import hash_field
+
+            search_hash = hash_field(member)
+
             queryset = queryset.filter(
                 Q(from_account__user__email__icontains=member)
                 | Q(to_account__user__email__icontains=member)
                 | Q(from_account__user__id__icontains=member)
                 | Q(to_account__user__id__icontains=member)
+                | Q(from_account__user__first_name_hash=search_hash)
+                | Q(to_account__user__last_name_hash=search_hash)
+                | Q(from_account__user__last_name_hash=search_hash)
+                | Q(to_account__user__first_name_hash=search_hash)
             )
 
         # Filter by transaction type

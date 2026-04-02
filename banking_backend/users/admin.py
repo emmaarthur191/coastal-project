@@ -106,7 +106,10 @@ class UserAdmin(BaseUserAdmin):
     # factory to raise FieldError.  We expose them as read-only admin methods below.
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
-        ("Personal Info", {"fields": ("display_first_name", "display_last_name"), "description": "Decrypted PII (read-only)"}),
+        (
+            "Personal Info",
+            {"fields": ("display_first_name", "display_last_name"), "description": "Decrypted PII (read-only)"},
+        ),
         (
             "Role & Permissions",
             {
@@ -141,6 +144,7 @@ class UserAdmin(BaseUserAdmin):
     actions = [
         "activate_users",
         "deactivate_users",
+        "approve_and_print_staff_letter",
         "force_password_reset",
         "set_role_customer",
         "set_role_staff",
@@ -233,6 +237,48 @@ class UserAdmin(BaseUserAdmin):
             )
         except Exception:
             pass  # Don't fail if logging fails
+
+    @admin.action(description="Approve & Print Staff Welcome Letter")
+    def approve_and_print_staff_letter(self, request, queryset):
+        """Finalize staff registration and return a printable welcome letter."""
+        import secrets
+
+        from django.http import FileResponse
+
+        from core.pdf_services import generate_staff_welcome_letter_pdf
+
+        # Only process staff who are not yet approved
+        pending_staff = queryset.filter(is_approved=False, is_staff=True)
+        if not pending_staff.exists():
+            self.message_user(request, "No pending staff users selected.", messages.WARNING)
+            return None
+
+        # For printing, we process one at a time via this action to return a single PDF
+        # If multiple are selected, we process the first one and notify the user
+        user = pending_staff.first()
+
+        try:
+            # 1. Generate random temporary password
+            temp_password = secrets.token_urlsafe(8)
+            user.set_password(temp_password)
+
+            # 2. Approve and Activate
+            user.is_approved = True
+            user.is_active = True
+            user.save()
+
+            # 3. Log the action
+            self._log_admin_action(request, user, "staff_approved_and_printed")
+
+            # 4. Generate PDF
+            pdf_buffer = generate_staff_welcome_letter_pdf(user, temp_password)
+
+            filename = f"Staff_Welcome_{user.staff_id or user.username}.pdf"
+            return FileResponse(pdf_buffer, as_attachment=True, filename=filename)
+
+        except Exception as e:
+            self.message_user(request, f"Error approving staff: {e!s}", messages.ERROR)
+            return None
 
     def _get_client_ip(self, request):
         """Get client IP address from request."""

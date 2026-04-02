@@ -355,3 +355,236 @@ def generate_statement_pdf(statement, transactions):
     doc.build(elements)
     buffer.seek(0)
     return buffer
+
+
+def generate_account_opening_letter_pdf(opening_request, account_number, temp_password):
+    """Generate a formal Account Opening Letter for a new client."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=20 * mm,
+        leftMargin=20 * mm,
+        topMargin=20 * mm,
+        bottomMargin=20 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("Title", parent=styles["Heading1"], fontSize=16, alignment=TA_CENTER, spaceAfter=10)
+    subtitle_style = ParagraphStyle("Subtitle", parent=styles["Normal"], fontSize=10, alignment=TA_CENTER, spaceAfter=5)
+    heading_style = ParagraphStyle("Heading", parent=styles["Heading2"], fontSize=12, spaceBefore=10, spaceAfter=10)
+    normal_style = styles["Normal"]
+
+    elements = []
+
+    # Header / Branding
+    elements.append(Paragraph(COMPANY_NAME, title_style))
+    elements.append(Paragraph(COMPANY_ADDRESS, subtitle_style))
+    elements.append(Paragraph(COMPANY_PHONE, subtitle_style))
+    elements.append(Spacer(1, 10 * mm))
+
+    # Letter Title
+    elements.append(Paragraph("<b>OFFICIAL ACCOUNT OPENING LETTER</b>", title_style))
+    elements.append(Spacer(1, 5 * mm))
+
+    # Date and Salutation
+    elements.append(Paragraph(f"Date: {timezone.now().strftime('%B %d, %Y')}", normal_style))
+    elements.append(Spacer(1, 5 * mm))
+    elements.append(Paragraph(f"Dear {opening_request.first_name} {opening_request.last_name},", normal_style))
+    elements.append(Spacer(1, 5 * mm))
+    elements.append(
+        Paragraph(
+            "We are pleased to inform you that your account with Coastal Auto Tech Credit Union has been successfully opened and approved.",
+            normal_style,
+        )
+    )
+    elements.append(Spacer(1, 10 * mm))
+
+    # Account Details Table
+    elements.append(Paragraph("<b>YOUR ACCOUNT DETAILS</b>", heading_style))
+    account_data = [
+        ["Account Number:", account_number],
+        ["Account Type:", opening_request.get_account_type_display()],
+        ["Initial Deposit:", f"GHS {opening_request.initial_deposit:,.2f}"],
+    ]
+    account_table = Table(account_data, colWidths=[60 * mm, 100 * mm])
+    account_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 11),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ]
+        )
+    )
+    elements.append(account_table)
+    elements.append(Spacer(1, 10 * mm))
+
+    # Login Credentials Section
+    elements.append(Paragraph("<b>DIGITAL BANKING ACCESS</b>", heading_style))
+    elements.append(
+        Paragraph(
+            "You can now access your account online or via our mobile application using the following temporary credentials:",
+            normal_style,
+        )
+    )
+    elements.append(Spacer(1, 5 * mm))
+
+    # Determine Username (priority: Email -> Phone -> Generated)
+    username = opening_request.email or opening_request.phone_number
+
+    cred_data = [
+        ["Login Username:", username],
+        ["Temporary Password:", temp_password],
+    ]
+    cred_table = Table(cred_data, colWidths=[60 * mm, 100 * mm])
+    cred_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), colors.Color(0.9, 0.9, 0.9)),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ]
+        )
+    )
+    elements.append(cred_table)
+    elements.append(Spacer(1, 10 * mm))
+
+    # Security Warning
+    elements.append(
+        Paragraph(
+            "<b>IMPORTANT SECURITY NOTICE:</b> For your protection, please log in immediately and change your temporary password. Never share your password or OTP with anyone, including our staff.",
+            ParagraphStyle("Warning", parent=normal_style, textColor=colors.red),
+        )
+    )
+    elements.append(Spacer(1, 15 * mm))
+
+    # Closing
+    elements.append(Paragraph("Thank you for choosing Coastal Auto Tech Credit Union.", normal_style))
+    elements.append(Spacer(1, 10 * mm))
+    elements.append(Paragraph("Regards,", normal_style))
+    elements.append(Spacer(1, 5 * mm))
+    elements.append(Paragraph("<b>The Management</b>", normal_style))
+    elements.append(Paragraph(COMPANY_NAME, normal_style))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+
+def generate_staff_welcome_letter_pdf(user, temp_password):
+    """Generate a formal Welcome Letter for a new staff member."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=20 * mm,
+        leftMargin=20 * mm,
+        topMargin=20 * mm,
+        bottomMargin=20 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("Title", parent=styles["Heading1"], fontSize=16, alignment=TA_CENTER, spaceAfter=10)
+    subtitle_style = ParagraphStyle("Subtitle", parent=styles["Normal"], fontSize=10, alignment=TA_CENTER, spaceAfter=5)
+    heading_style = ParagraphStyle("Heading", parent=styles["Heading2"], fontSize=12, spaceBefore=10, spaceAfter=10)
+    normal_style = styles["Normal"]
+
+    elements = []
+
+    # Header / Branding
+    elements.append(Paragraph(COMPANY_NAME, title_style))
+    elements.append(Paragraph(COMPANY_ADDRESS, subtitle_style))
+    elements.append(Spacer(1, 10 * mm))
+
+    # Letter Title
+    elements.append(Paragraph("<b>STAFF ENROLLMENT & WELCOME LETTER</b>", title_style))
+    elements.append(Spacer(1, 5 * mm))
+
+    # Date and Salutation
+    elements.append(Paragraph(f"Date: {timezone.now().strftime('%B %d, %Y')}", normal_style))
+    elements.append(Spacer(1, 5 * mm))
+    elements.append(Paragraph(f"Dear {user.first_name} {user.last_name},", normal_style))
+    elements.append(Spacer(1, 5 * mm))
+    elements.append(
+        Paragraph(
+            f"Welcome to the Coastal Auto Tech Credit Union team! We are excited to have you on board as a <b>{user.get_role_display()}</b>.",
+            normal_style,
+        )
+    )
+    elements.append(Spacer(1, 10 * mm))
+
+    # Employment Details Table
+    elements.append(Paragraph("<b>STAFF INFORMATION</b>", heading_style))
+    staff_data = [
+        ["Staff Name:", f"{user.first_name} {user.last_name}"],
+        ["Assigned Role:", user.get_role_display()],
+        ["Staff ID:", user.staff_id or "Pending Generation"],
+        ["Employment Date:", timezone.now().strftime("%B %d, %Y")],
+    ]
+    staff_table = Table(staff_data, colWidths=[60 * mm, 100 * mm])
+    staff_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 11),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ]
+        )
+    )
+    elements.append(staff_table)
+    elements.append(Spacer(1, 10 * mm))
+
+    # System Access Credentials
+    elements.append(Paragraph("<b>SYSTEM ACCESS CREDENTIALS</b>", heading_style))
+    elements.append(
+        Paragraph(
+            "Use the following credentials to log in to the banking portal for the first time:",
+            normal_style,
+        )
+    )
+    elements.append(Spacer(1, 5 * mm))
+
+    cred_data = [
+        ["Login Username:", user.email],
+        ["Temporary Password:", temp_password],
+    ]
+    cred_table = Table(cred_data, colWidths=[60 * mm, 100 * mm])
+    cred_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), colors.Color(0.85, 0.9, 1.0)),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 1, colors.Color(0.1, 0.3, 0.5)),
+            ]
+        )
+    )
+    elements.append(cred_table)
+    elements.append(Spacer(1, 10 * mm))
+
+    # Compliance and Security
+    elements.append(
+        Paragraph(
+            "<b>COMPLIANCE NOTICE:</b> Access to the banking system is audited. You are required to change your password upon first login. You must adhere to all internal security protocols and never share your credentials.",
+            ParagraphStyle("Compliance", parent=normal_style, spaceBefore=5),
+        )
+    )
+    elements.append(Spacer(1, 15 * mm))
+
+    # Closing
+    elements.append(Paragraph("We look forward to your contributions to the Credit Union.", normal_style))
+    elements.append(Spacer(1, 15 * mm))
+    elements.append(Paragraph("__________________________", normal_style))
+    elements.append(Paragraph("<b>Operations Manager / HR</b>", normal_style))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer

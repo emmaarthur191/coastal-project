@@ -129,3 +129,50 @@ class LoanSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Term must be positive.")
         return value
+
+    def _sanitize_string(self, value):
+        """Helper to strip HTML/scripts from string inputs."""
+        if value and isinstance(value, str):
+            import bleach
+
+            # Remove all tags for strict text-only storage
+            return bleach.clean(value, tags=[], strip=True)
+        return value
+
+    def validate_purpose(self, value):
+        if value and len(value) > 1000:
+            raise serializers.ValidationError("Loan purpose exceeds maximum length of 1000 characters.")
+        return self._sanitize_string(value)
+
+    def validate_town(self, value):
+        return self._sanitize_string(value)
+
+    def validate_city(self, value):
+        return self._sanitize_string(value)
+
+    def validate_digital_address(self, value):
+        return self._sanitize_string(value)
+
+    def validate_next_of_kin_1_name(self, value):
+        return self._sanitize_string(value)
+
+    def validate_next_of_kin_1_address(self, value):
+        return self._sanitize_string(value)
+
+    def validate_next_of_kin_2_name(self, value):
+        return self._sanitize_string(value)
+
+    def validate_next_of_kin_2_address(self, value):
+        return self._sanitize_string(value)
+
+    def validate_guarantor_1_name(self, value):
+        return self._sanitize_string(value)
+
+    def validate_guarantor_1_address(self, value):
+        return self._sanitize_string(value)
+
+    def validate_guarantor_2_name(self, value):
+        return self._sanitize_string(value)
+
+    def validate_guarantor_2_address(self, value):
+        return self._sanitize_string(value)

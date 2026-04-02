@@ -11,7 +11,7 @@ import pytest
 
 from core.models.accounts import Account
 from core.models.loans import Loan
-from core.models.operational import VisitSchedule
+from core.models.operational import ClientAssignment, VisitSchedule
 from core.models.transactions import Transaction
 
 User = get_user_model()
@@ -20,7 +20,7 @@ User = get_user_model()
 @pytest.fixture
 def mobile_banker(db):
     return User.objects.create_user(
-        username="mb1", email="mb1@coastal.com", password="pwd", role="mobile_banker", is_staff=True
+        username="mb1", email="mb1@coastal.com", password="pwd", role="mobile_banker", is_staff=True, is_approved=True
     )
 
 
@@ -33,7 +33,9 @@ def mb_client(mobile_banker):
 
 @pytest.fixture
 def customer_user(db):
-    return User.objects.create_user(username="cust_mobile", email="cust_m@test.com", password="pwd", role="customer")
+    return User.objects.create_user(
+        username="cust_mobile", email="cust_m@test.com", password="pwd", role="customer", is_approved=True
+    )
 
 
 @pytest.mark.django_db
@@ -90,10 +92,15 @@ class TestMobileBankerWorkflows:
     def test_mobile_repayment_flow(self, mb_client, mobile_banker, customer_user):
         # Add active account for repayment deduction
         Account.objects.create(user=customer_user, account_number="REPAY-ACC", balance=5000, is_active=True)
+
+        # SECURITY: Assign client to mobile banker to pass the 403 gate
+        ClientAssignment.objects.create(
+            mobile_banker=mobile_banker, client=customer_user, status="assigned", is_active=True
+        )
         loan = Loan.objects.create(
             user=customer_user, amount=1000, outstanding_balance=1000, interest_rate=10, term_months=12, status="active"
         )
-        url = reverse("core:mobile-ops-process-repayment")
+        url = reverse("core:mobile-process-repayment")
         data = {"member_id": customer_user.id, "amount": 200.0}
         # Note: Repayment logic is complex, might need more mocking if LoanService is heavy.
         # But let's see if the view handles it.

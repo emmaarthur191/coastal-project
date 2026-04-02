@@ -176,6 +176,8 @@ class AccountClosureRequestSerializer(serializers.ModelSerializer):
     """Serializer for account closure requests."""
 
     account_id = serializers.IntegerField(write_only=True)
+    account_number = serializers.CharField(source="account.account_number", read_only=True)
+    customer_name = serializers.CharField(source="account.user.get_full_name", read_only=True)
 
     class Meta:
         """Metadata for AccountClosureRequestSerializer."""
@@ -185,6 +187,8 @@ class AccountClosureRequestSerializer(serializers.ModelSerializer):
             "id",
             "account",
             "account_id",
+            "account_number",
+            "customer_name",
             "closure_reason",
             "other_reason",
             "phone_number",
@@ -225,4 +229,6 @@ class AccountClosureRequestSerializer(serializers.ModelSerializer):
             validated_data["submitted_by"] = user
             return super().create(validated_data)
         except Account.DoesNotExist:
-            raise serializers.ValidationError({"account_id": "Account not found or access denied."})
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Account not found or access denied.")

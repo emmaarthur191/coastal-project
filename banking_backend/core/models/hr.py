@@ -13,13 +13,28 @@ from django.utils import timezone
 class Payslip(models.Model):
     """Staff payslips with automated earning/deduction calculation."""
 
+    MONTH_CHOICES = [
+        (1, "January"),
+        (2, "February"),
+        (3, "March"),
+        (4, "April"),
+        (5, "May"),
+        (6, "June"),
+        (7, "July"),
+        (8, "August"),
+        (9, "September"),
+        (10, "October"),
+        (11, "November"),
+        (12, "December"),
+    ]
+
     staff = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="payslips",
         limit_choices_to={"role__in": ["manager", "operations_manager", "cashier", "mobile_banker"]},
     )
-    month = models.IntegerField()
+    month = models.IntegerField(choices=MONTH_CHOICES)
     year = models.IntegerField()
     pay_period_start = models.DateField()
     pay_period_end = models.DateField()

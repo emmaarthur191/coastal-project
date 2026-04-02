@@ -202,6 +202,36 @@ class TransactionService:
         return tx
 
     @staticmethod
+    @transaction.atomic
+    def reverse_transaction(transaction_id: str, reversed_by: "User", reason: str = "") -> Transaction:
+        """Reverse a completed transaction and adjust balances accordingly."""
+        tx = Transaction.objects.select_for_update().get(pk=transaction_id)
+        if tx.status != "completed":
+            raise InvalidTransactionError(message="Only completed transactions can be reversed.")
+
+        # 1. Acquire locks on involved accounts
+        from_acc = None
+        to_acc = None
+        if tx.from_account:
+            from_acc = Account.objects.select_for_update().get(pk=tx.from_account_id)
+        if tx.to_account:
+            to_acc = Account.objects.select_for_update().get(pk=tx.to_account_id)
+
+        # 2. Reverse balance changes
+        if from_acc:
+            AccountService.update_balance(from_acc, tx.amount)  # Add back
+        if to_acc:
+            AccountService.update_balance(to_acc, -tx.amount)  # Deduct back
+
+        # 3. Update status
+        tx.status = "reversed"
+        tx.description = f"{tx.description} | REVERSED by {reversed_by.email}. Reason: {reason}"
+        tx.save()
+
+        logger.info(f"Transaction {transaction_id} reversed by {reversed_by.email}")
+        return tx
+
+    @staticmethod
     def _enqueue_notification(tx: Transaction):
         """Helper to enqueue SMS notification."""
         if tx.from_account:

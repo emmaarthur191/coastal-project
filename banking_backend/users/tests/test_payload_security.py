@@ -25,19 +25,27 @@ class TestPayloadSecurity:
     @pytest.fixture
     def admin_user(self):
         return User.objects.create_superuser(
-            email="admin@coastal.com", username="admin", password="StrongPassword123!", role="admin"
+            email="admin@coastal.com", username="admin", password="StrongPassword123!", role="admin", is_approved=True
         )
 
     @pytest.fixture
     def customer_user(self):
         return User.objects.create_user(
-            email="customer1@gmail.com", username="customer1", password="StrongPassword123!", role="customer"
+            email="customer1@gmail.com",
+            username="customer1",
+            password="StrongPassword123!",
+            role="customer",
+            is_approved=True,
         )
 
     @pytest.fixture
     def cashier_user(self):
         return User.objects.create_user(
-            email="cashier1@coastal.com", username="cashier1", password="StrongPassword123!", role="cashier"
+            email="cashier1@coastal.com",
+            username="cashier1",
+            password="StrongPassword123!",
+            role="cashier",
+            is_approved=True,
         )
 
     # --- Staff Invitation Flow Tests ---
