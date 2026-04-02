@@ -5,8 +5,6 @@ and account closure requests.
 """
 
 import logging
-import secrets
-from datetime import timedelta
 
 from django.db import transaction
 from django.http import FileResponse
@@ -26,7 +24,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.mixins import IdempotencyMixin
 from core.models.accounts import Account, AccountClosureRequest, AccountOpeningRequest
-from core.permissions import IsCustomer, IsManagerOrAdmin, IsStaff, IsStaffOrCustomer
+from core.permissions import IsClientRegistrar, IsCustomer, IsManagerOrAdmin, IsStaff, IsStaffOrCustomer
 from core.serializers.accounts import (
     AccountClosureRequestSerializer,
     AccountOpeningRequestSerializer,
@@ -66,11 +64,12 @@ class AccountViewSet(
 
     def get_permissions(self):
         """Map specific actions to their required permission classes."""
-        if self.action in ["update", "partial_update"]:
+        action = getattr(self, "action", None)
+        if action in ["update", "partial_update"]:
             return [IsStaff()]
-        if self.action == "create":
+        if action == "create":
             return [IsCustomer()]
-        if self.action == "retrieve":
+        if action == "retrieve":
             # Object-level permission: only owner or staff can view individual account
             from core.permissions import IsOwnerOrStaff
 
@@ -236,53 +235,11 @@ class AccountOpeningViewSet(
     ordering = ["-created_at"]
     throttle_scope = ""
 
-    def get_throttles(self):
-        """Configure DRF ScopedRateThrottle to look for view.throttle_scope.
-
-        Since we have different scopes for different actions, we set it here.
-        """
-        if self.action == "send_otp":
-            self.throttle_scope = "otp_request"
-        elif self.action == "verify_and_submit":
-            self.throttle_scope = "otp_verify"
-        elif self.action == "submit_request":
-            self.throttle_scope = "registration"
-        return super().get_throttles()
-
-    def get_authenticators(self):
-        """Override authenticators based on action.
-
-        Public registration endpoints should not try to validate stale or expired
-        JWT/Session tokens, which would result in 401 Unauthorized before
-        reaching the get_permissions logic.
-        """
-        if self.action in ["send_otp", "verify_and_submit", "submit_request"]:
-            return []
-        return super().get_authenticators()
-
-    def get_permissions(self):
-        """Override permissions based on action.
-
-        Registration actions (OTP, verify, submit) are public, but only staff/managers can manage requests.
-        """
-        if self.action in ["send_otp", "verify_and_submit", "submit_request"]:
-            from rest_framework.permissions import AllowAny
-
-            return [AllowAny()]
-
-        if self.action in ["approve", "reject"]:
-            from core.permissions import IsManagerOrAdmin
-
-            return [IsManagerOrAdmin()]
-
-        # Fallback to class-level permission_classes (IsStaff)
-        return super().get_permissions()
-
     def perform_create(self, serializer):
         """Set the submitted_by field when creating a new request."""
         serializer.save(submitted_by=self.request.user)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
     def approve(self, request, pk=None):
         """Stage 1: Approve an account opening request and create client account."""
         opening_request = self.get_object()
@@ -377,7 +334,7 @@ class AccountOpeningViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=True, methods=["post"], url_path="dispatch-credentials")
+    @action(detail=True, methods=["post"], url_path="dispatch-credentials", permission_classes=[IsManagerOrAdmin])
     def dispatch_credentials(self, request, pk=None):
         """Stage 2: Approve and dispatch login credentials to the client."""
         opening_request = self.get_object()
@@ -436,7 +393,7 @@ class AccountOpeningViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=True, methods=["post"], url_path="approve-and-print")
+    @action(detail=True, methods=["post"], url_path="approve-and-print", permission_classes=[IsManagerOrAdmin])
     def approve_and_print(self, request, pk=None):
         """Approve an account opening request, create the account/user, and return a PDF letter."""
         opening_request = self.get_object()
@@ -561,7 +518,7 @@ class AccountOpeningViewSet(
         )
         SendexaService.send_sms(phone, message)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
     def reject(self, request, pk=None):
         """Reject an account opening request."""
         from django.utils import timezone
@@ -585,82 +542,12 @@ class AccountOpeningViewSet(
             }
         )
 
-    @action(detail=False, methods=["post"], url_path="send-otp")
-    def send_otp(self, request):
-        """Send OTP to customer phone number for account opening verification."""
-        phone_number = request.data.get("phone_number")
-
-        if not phone_number:
-            return Response({"error": "Phone number is required"}, status=400)
-
-        # SECURITY FIX: Use hashed session keys for privacy
-        from core.utils.field_encryption import hash_field
-
-        session_key = f"otp_v2_{hash_field(phone_number)}"
-
-        # SECURITY FIX: Use cryptographically secure random for OTP generation (NIST Standard)
-        otp = str(secrets.randbelow(900000) + 100000)  # 6-digit OTP
-
-        # SECURITY FIX: Prevent OTP spamming (Cooldown - 60 seconds)
-        # Handle cases where request.session might be None due to middleware bypass or DRF config
-        if not hasattr(request, "session") or request.session is None:
-            safe_phone = str(phone_number or "Unknown")[-4:]
-            logger.error(f"Session not available for OTP registration: {safe_phone}")
-            return Response(
-                {"error": "Session is required for account registration. Please ensure cookies are enabled."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        otp_time_str = request.session.get(f"{session_key}_time")
-        if otp_time_str:
-            try:
-                from datetime import datetime
-
-                prev_time = datetime.fromisoformat(otp_time_str)
-                if timezone.is_naive(prev_time):
-                    prev_time = timezone.make_aware(prev_time)
-                if timezone.now() - prev_time < timedelta(seconds=60):
-                    return Response(
-                        {"error": "Please wait 60 seconds before requesting another OTP."},
-                        status=status.HTTP_429_TOO_MANY_REQUESTS,
-                    )
-            except (ValueError, TypeError):
-                pass
-
-        request.session[session_key] = otp
-        request.session[f"{session_key}_time"] = timezone.now().isoformat()
-
-        from users.services import SendexaService
-
-        message = f"Your Coastal Banking account opening OTP is: {otp}. Valid for 5 minutes."
-        # Safe call to Sendexa SMS service
-        try:
-            sms_result = SendexaService.send_sms(phone_number, message)
-            if isinstance(sms_result, tuple):
-                success, sms_resp = sms_result
-            else:
-                success, sms_resp = bool(sms_result), "No detail"
-        except Exception as e:
-            logger.error(f"SendexaService crash: {e}")
-            success, sms_resp = False, str(e)
-
-        if success:
-            logger.info(f"OTP sent to phone ending in ...{phone_number[-4:]}")
-        else:
-            logger.error(f"[OTP Error] Failed to send SMS to {phone_number[-4:]}: {sms_resp}")
-            from django.conf import settings
-
-            if not settings.DEBUG:
-                return Response(
-                    {"error": "Failed to deliver OTP. Please check the number or try again later."},
-                    status=status.HTTP_502_BAD_GATEWAY,
-                )
-
-        # Mask phone in response
-        masked_phone = f"***-***-{phone_number[-4:]}"
-        return Response({"success": True, "message": "OTP sent successfully", "phone_number": masked_phone})
-
-    @action(detail=False, methods=["post"], url_path="submit-request")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="submit-request",
+        permission_classes=[IsClientRegistrar],
+    )
     def submit_request(self, request):
         """Submit a new account opening request without OTP verification.
 
@@ -692,72 +579,6 @@ class AccountOpeningViewSet(
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["post"], url_path="verify-and-submit")
-    def verify_and_submit(self, request):
-        """Verify OTP and submit account opening request."""
-        phone_number = request.data.get("phone_number")
-        submitted_otp = request.data.get("otp")
-
-        if not phone_number or not submitted_otp:
-            return Response({"error": "Phone number and OTP are required"}, status=400)
-
-        # Verify OTP using hashed session key
-        from core.utils.field_encryption import hash_field
-
-        session_key = f"otp_v2_{hash_field(phone_number)}"
-
-        stored_otp = request.session.get(session_key)
-        otp_time_str = request.session.get(f"{session_key}_time")
-
-        # SECURITY FIX: Check OTP expiration (5 minute validity)
-        if otp_time_str:
-            try:
-                from datetime import datetime
-
-                otp_time = datetime.fromisoformat(otp_time_str)
-                if timezone.is_naive(otp_time):
-                    otp_time = timezone.make_aware(otp_time)
-                if timezone.now() - otp_time > timedelta(minutes=5):
-                    # Clear expired OTP
-                    del request.session[session_key]
-                    del request.session[f"{session_key}_time"]
-                    return Response({"error": "OTP has expired. Please request a new one."}, status=400)
-            except (ValueError, TypeError):
-                pass
-
-        if not stored_otp or stored_otp != submitted_otp:
-            return Response({"error": "Invalid or expired OTP"}, status=400)
-
-        # Clear OTP from session
-        del request.session[session_key]
-        del request.session[f"{session_key}_time"]
-
-        # Support both top-level and nested account_data (Frontend sends inside account_data)
-        data = request.data.get("account_data", request.data)
-
-        # Create account opening request
-        opening_request = AccountOpeningRequest.objects.create(
-            first_name=data.get("first_name", data.get("firstName", "")),
-            last_name=data.get("last_name", data.get("lastName", "")),
-            email=data.get("email", ""),
-            phone_number=phone_number,
-            date_of_birth=data.get("date_of_birth", data.get("dateOfBirth")),
-            id_type=data.get("id_type", data.get("idType", "ghana_card")),
-            id_number=data.get("id_number", data.get("idNumber", "")),
-            account_type=data.get("account_type", data.get("accountType", "daily_susu")),
-            submitted_by=request.user if request.user.is_authenticated else None,
-            status="pending",
-        )
-
-        return Response(
-            {
-                "success": True,
-                "message": "Account opening request submitted successfully",
-                "data": AccountOpeningRequestSerializer(opening_request).data,
-            },
-            status=status.HTTP_201_CREATED,
-        )
-
 
 class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
     """ViewSet for handling account closure requests."""
@@ -770,17 +591,11 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
     ordering_fields = ["created_at"]
     ordering = ["-created_at"]
 
-    def get_permissions(self):
-        """Allow only managers/admins to approve or reject closures."""
-        if self.action in ["approve", "reject"]:
-            return [IsManagerOrAdmin()]
-        return super().get_permissions()
-
     def perform_create(self, serializer):
         """Set the submitted_by field when creating a new request."""
         serializer.save(submitted_by=self.request.user)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
     def approve(self, request, pk=None):
         """Approve an account closure request and close the account."""
         from django.utils import timezone
@@ -818,7 +633,7 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
             }
         )
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
     def reject(self, request, pk=None):
         """Reject an account closure request."""
         from django.utils import timezone

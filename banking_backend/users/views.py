@@ -48,163 +48,6 @@ class UserRegistrationView(generics.CreateAPIView):
     throttle_scope = "registration"  # DRF rate limiting: 3 per hour
 
 
-class CreateStaffView(APIView):
-    """Admin-only endpoint to create staff users via secure invitations.
-
-    Creates an inactive user and sends a secure enrollment link via SMS.
-    """
-
-    permission_classes = [IsAuthenticated]
-    throttle_scope = "registration"
-
-    @extend_schema(request=StaffCreationSerializer, responses={201: UserSerializer})
-    def post(self, request):
-        """Handle administrative creation of staff users via secure invitation flow."""
-        if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
-            return Response(
-                {
-                    "status": "error",
-                    "message": "You do not have permission to create staff users.",
-                    "code": "PERMISSION_DENIED",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        data = request.data.copy()
-
-        # SECURITY FIX: Validate allowed roles
-        ALLOWED_STAFF_ROLES = [
-            "cashier",
-            "mobile_banker",
-            "accountant",
-            "loan_officer",
-            "customer_service",
-            "teller",
-            "operations_manager",
-        ]
-        requested_role = data.get("role", "cashier")
-        if requested_role not in ALLOWED_STAFF_ROLES:
-            return Response(
-                {
-                    "status": "error",
-                    "message": f"Invalid role. Allowed roles: {', '.join(ALLOWED_STAFF_ROLES)}",
-                    "code": "INVALID_ROLE",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if "username" not in data and "email" in data:
-            data["username"] = data["email"].split("@")[0]
-
-        if "phone" in data and "phone_number" not in data:
-            data["phone_number"] = data["phone"]
-
-        phone_number = data.get("phone_number")
-        if not phone_number:
-            return Response(
-                {"status": "error", "message": "Phone number is required.", "code": "REQUIRED_FIELD_MISSING"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        from .models import UserInvitation
-        from .serializers import StaffCreationSerializer
-
-        # Use a temporary secure password - user will change it via invitation
-        # Ensure it meets the strict password strength tests (Upper, Lower, Number, Special)
-        temp_password = f"Temp{secrets.token_urlsafe(16)}!1"
-        data["password"] = temp_password
-        data["password_confirm"] = temp_password
-
-        serializer = StaffCreationSerializer(data=data)
-        if serializer.is_valid():
-            try:
-                # Create user in PENDING state
-                user = serializer.save()
-                user.is_active = False
-                user.is_approved = False
-                user.save(update_fields=["is_active", "is_approved"])
-
-                # Create the enrollment invitation (letter)
-                UserInvitation.create_for_user(user)
-
-                response_data = serializer.data
-                response_data["staff_id_status"] = "Pending Approval"
-                response_data["approval_required"] = True
-
-                return Response(
-                    {
-                        "status": "success",
-                        "message": "Staff registration submitted. Please contact the Manager for approval and credentials.",
-                        "data": response_data,
-                    },
-                    status=status.HTTP_201_CREATED,
-                )
-
-            except Exception as e:
-                logger.error(f"Staff registration failed: {e!s}", exc_info=True)
-                return Response(
-                    {
-                        "status": "error",
-                        "message": "Unable to register staff user. Internal error occurred.",
-                        "code": "STAFF_REGISTRATION_FAILED",
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class StaffInvitationVerifyView(APIView):
-    """Verify staff invitation token and set initial password."""
-
-    permission_classes = [AllowAny]
-    throttle_scope = "registration"
-
-    def post(self, request):
-        """Handle invitation verification and account activation."""
-        from .models import UserInvitation
-        from .security import validate_password_strength
-
-        token = request.data.get("token")
-        password = request.data.get("password")
-        password_confirm = request.data.get("password_confirm")
-
-        if not token or not password:
-            return Response({"error": "Token and password are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if password != password_confirm:
-            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate password strength
-        is_valid, errors = validate_password_strength(password)
-        if not is_valid:
-            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            invitation = UserInvitation.objects.get(token=token)
-            if not invitation.is_valid():
-                return Response(
-                    {"error": "Invitation token is invalid or expired."}, status=status.HTTP_400_BAD_REQUEST
-                )
-
-            user = invitation.user
-            user.set_password(password)
-            user.is_active = True
-            user.save()
-
-            invitation.is_used = True
-            invitation.used_at = timezone.now()
-            invitation.save()
-
-            return Response(
-                {"status": "success", "message": "Account activated successfully. You can now login."},
-                status=status.HTTP_200_OK,
-            )
-
-        except UserInvitation.DoesNotExist:
-            return Response({"error": "Invalid invitation token."}, status=status.HTTP_400_BAD_REQUEST)
-
-
 class ChangePasswordView(APIView):
     """Endpoint for authenticated users to change their password."""
 
@@ -294,7 +137,7 @@ class LoginView(APIView):
             pass  # Continue with normal flow - don't reveal if user exists
 
         # Validate credentials
-        serializer = LoginSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data, context={"request": request})
 
         try:
             if not serializer.is_valid():
@@ -1149,7 +992,144 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
         """Restrict to Manager/Admin/Ops Manager."""
         return [IsManagerOrAdmin()]
 
-    @action(detail=True, methods=["post"], url_path="approve-and-print")
+    @extend_schema(request=StaffCreationSerializer, responses={201: UserSerializer})
+    def create(self, request, *args, **kwargs):
+        """Handle administrative creation of staff users via secure invitation flow."""
+        # Use existing serializer logic but simplify permissions
+        data = request.data.copy()
+
+        # SECURITY FIX: Validate allowed roles
+        ALLOWED_STAFF_ROLES = [
+            "cashier",
+            "mobile_banker",
+            "accountant",
+            "loan_officer",
+            "customer_service",
+            "teller",
+            "operations_manager",
+        ]
+        requested_role = data.get("role", "cashier")
+        if requested_role not in ALLOWED_STAFF_ROLES:
+            return Response(
+                {
+                    "status": "error",
+                    "message": f"Invalid role. Allowed roles: {', '.join(ALLOWED_STAFF_ROLES)}",
+                    "code": "INVALID_ROLE",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if "username" not in data and "email" in data:
+            data["username"] = data["email"].split("@")[0]
+
+        if "phone" in data and "phone_number" not in data:
+            data["phone_number"] = data["phone"]
+
+        phone_number = data.get("phone_number")
+        if not phone_number:
+            return Response(
+                {"status": "error", "message": "Phone number is required.", "code": "REQUIRED_FIELD_MISSING"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from .models import UserInvitation
+        from .serializers import StaffCreationSerializer
+
+        # Use a temporary secure password - user will change it via invitation
+        temp_password = f"Temp{secrets.token_urlsafe(16)}!1"
+        data["password"] = temp_password
+        data["password_confirm"] = temp_password
+
+        serializer = StaffCreationSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                with transaction.atomic():
+                    # Create user in PENDING state
+                    user = serializer.save()
+                    user.is_active = False
+                    user.is_approved = False
+                    user.save(update_fields=["is_active", "is_approved"])
+
+                    # Create the enrollment invitation (letter)
+                    UserInvitation.create_for_user(user)
+
+                response_data = serializer.data
+                response_data["staff_id_status"] = "Pending Approval"
+                response_data["approval_required"] = True
+
+                return Response(
+                    {
+                        "status": "success",
+                        "message": "Staff registration submitted. Please contact the Manager for approval and credentials.",
+                        "data": response_data,
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
+            except Exception as e:
+                logger.error(f"Staff registration failed: {e!s}", exc_info=True)
+                return Response(
+                    {
+                        "status": "error",
+                        "message": "Unable to register staff user. Internal error occurred.",
+                        "code": "STAFF_REGISTRATION_FAILED",
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="verify-invitation",
+        authentication_classes=[],
+        permission_classes=[AllowAny],
+    )
+    def verify_invitation(self, request):
+        """Handle invitation verification and account activation without OTP."""
+        from .models import UserInvitation
+        from .security import validate_password_strength
+
+        token = request.data.get("token")
+        password = request.data.get("password")
+        password_confirm = request.data.get("password_confirm")
+
+        if not token or not password:
+            return Response({"error": "Token and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if password != password_confirm:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate password strength
+        is_valid, errors = validate_password_strength(password)
+        if not is_valid:
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            invitation = UserInvitation.objects.get(token=token)
+            if not invitation.is_valid():
+                return Response(
+                    {"error": "Invitation token is invalid or expired."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = invitation.user
+            user.set_password(password)
+            user.is_active = True
+            # For staff, final is_approved status is handled by approve_and_print Stage
+            user.save()
+
+            invitation.is_used = True
+            invitation.used_at = timezone.now()
+            invitation.save()
+
+            return Response(
+                {"status": "success", "message": "Account activated successfully. You can now login."},
+                status=status.HTTP_200_OK,
+            )
+        except UserInvitation.DoesNotExist:
+            return Response({"error": "Invalid invitation token."}, status=status.HTTP_404_NOT_FOUND)
+
     def approve_and_print(self, request, pk=None):
         """Approve a staff member, generate staff ID, and return a welcome letter."""
         user = self.get_object()

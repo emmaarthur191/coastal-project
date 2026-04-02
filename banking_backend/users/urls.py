@@ -7,7 +7,6 @@ from .views import (
     AuthCheckView,
     ChangePasswordView,
     CookieTokenRefreshView,
-    CreateStaffView,
     GetCSRFToken,
     LoginAttemptsView,
     LoginView,
@@ -19,7 +18,6 @@ from .views import (
     SendOTPView,
     SessionTerminateView,
     StaffIdsView,
-    StaffInvitationVerifyView,
     StaffListView,
     StaffManagementViewSet,
     UserDetailView,
@@ -34,8 +32,6 @@ router.register(r"staff-management", StaffManagementViewSet, basename="staff-man
 
 urlpatterns = [
     path("auth/register/", UserRegistrationView.as_view(), name="register"),
-    path("create/", CreateStaffView.as_view(), name="create-staff"),
-    path("enroll/staff/", StaffInvitationVerifyView.as_view(), name="staff-enroll"),
     path("auth/change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),

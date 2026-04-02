@@ -140,8 +140,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "core.middleware.LogCorrelationMiddleware",
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",  # Moved after SecurityMiddleware as requested
     "whitenoise.middleware.WhiteNoiseMiddleware",

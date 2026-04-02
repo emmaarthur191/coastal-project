@@ -96,3 +96,17 @@ class IsCashierOrTeller(BasePermission):
             and request.user.is_authenticated
             and (request.user.role in ["cashier", "teller"] or request.user.is_superuser)
         )
+
+
+class IsClientRegistrar(BasePermission):
+    """Allows access to cashiers, mobile bankers, and managers for client registration."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and (
+                request.user.role in ["cashier", "mobile_banker", "teller", "manager", "operations_manager", "admin"]
+                or request.user.is_superuser
+            )
+        )

@@ -1,6 +1,10 @@
+import logging
+
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
+
+logger = logging.getLogger(__name__)
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -8,17 +12,32 @@ from .models import User
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Custom JWT serializer to enforce account approval check."""
+    """Custom JWT serializer to enforce account approval check.
+
+    Ensures 'email' is used for authentication if provided.
+    """
 
     def validate(self, attrs):
-        data = super().validate(attrs)
+        # SECURITY: SimpleJWT uses 'username' for the USERNAME_FIELD content.
+        # We ensure 'email' input maps to 'username' for the underlying authenticate()
+        if "email" in attrs and "username" not in attrs:
+            attrs["username"] = attrs["email"]
+
+        try:
+            data = super().validate(attrs)
+        except Exception as e:
+            email = attrs.get("username", attrs.get("email", "unknown"))
+            logger.warning(f"JWT Login Rejection for {email}: {e}")
+            raise e
 
         # Enforce administrative approval check
         # SECURITY: Superusers bypass this to prevent total lockout
         if not self.user.is_approved and not self.user.is_superuser:
+            logger.warning(f"JWT Login Blocked: Account NOT APPROVED for {self.user.email}")
             raise PermissionDenied("Your account is pending administrative approval. Please contact your manager.")
 
         if not self.user.is_active:
+            logger.warning(f"JWT Login Blocked: Account DEACTIVATED for {self.user.email}")
             raise PermissionDenied("This account has been deactivated.")
 
         return data
@@ -143,12 +162,6 @@ class StaffCreationSerializer(UserRegistrationSerializer):
         validated_data.pop("password_confirm")
         # We use create_user to handle hashing
         user = User.objects.create_user(**validated_data)
-
-        # Ensure staff_id is generated if not provided?
-        # Model default handles it? No.
-        # But CreateStaffView handles password.
-        # The serializer.save() in view calls this create().
-
         return user
 
     def validate_ssnit_number(self, value):
@@ -188,25 +201,39 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
-        user = authenticate(email=email, password=password)
+
+        # SECURITY: USERNAME_FIELD='email', but pass as 'username=' to ensure 100%
+        # compatibility with all Auth Backends (some older ones only look for 'username').
+        user = authenticate(request=self.context.get("request"), username=email, password=password)
 
         if not user:
-            # Check if it's an unapproved user (to return 403 instead of 400)
+            # Check for unapproved state for better error reporting (403 vs 401)
             from django.contrib.auth import get_user_model
 
             User = get_user_model()
             lookup_user = User.objects.filter(email=email).first()
-            if lookup_user and not lookup_user.is_approved and not lookup_user.is_superuser:
-                raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
+            if lookup_user:
+                if not lookup_user.is_approved and not lookup_user.is_superuser:
+                    logger.warning(f"Login rejection: Account NOT APPROVED for {email}")
+                    raise PermissionDenied(
+                        "Your account is pending administrative approval. Please contact the manager."
+                    )
+                if not lookup_user.is_active:
+                    logger.warning(f"Login rejection: Account DEACTIVATED for {email}")
+                    raise PermissionDenied("This account has been deactivated. Please contact support.")
+
+            logger.warning(f"Login rejection: Invalid credentials for {email}")
             raise serializers.ValidationError("Invalid credentials.")
 
         # Check if account is approved by admin (Staff or Client)
         # SECURITY: Superusers bypass this check for absolute system access
         if hasattr(user, "is_approved") and not user.is_approved and not user.is_superuser:
             # We raise PermissionDenied to differentiate from incorrect password (403 vs 401/400)
+            logger.warning(f"Login rejection: Account NOT APPROVED for user {user.email}")
             raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
 
         if not user.is_active:
+            logger.warning(f"Login rejection: Account DEACTIVATED for user {user.email}")
             raise PermissionDenied("This account has been deactivated. Please contact support.")
 
         attrs["user"] = user
