@@ -94,7 +94,7 @@ def mask_date_of_birth(dob) -> str | None:
     Example: "1990-05-15" -> "****-**-** (1990)"
     """
     if not dob:
-        return None
+        return "REDACTED"
     try:
         # Handle both string and date objects
         if hasattr(dob, "year"):
@@ -112,7 +112,7 @@ def mask_generic(value: str | None, length: int = 4) -> str | None:
     Useful for addresses, names, etc. when full privacy is needed.
     """
     if not value:
-        return value
+        return "REDACTED"
 
     if length == 4 and " " not in value and len(value) > 1:
         # If it looks like a single name/word, show first char + ***

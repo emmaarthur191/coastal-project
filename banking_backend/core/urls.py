@@ -1,3 +1,5 @@
+"""URL configuration for the core banking application."""
+
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
@@ -29,7 +31,7 @@ from .views import (
     ChatRoomListView,
     CheckDepositViewSet,
     ClientAssignmentViewSet,
-    ClientRegistrationViewSet,
+    # ClientRegistrationViewSet,
     ComplaintViewSet,
     DeviceViewSet,
     ExpensesView,
@@ -41,7 +43,7 @@ from .views import (
     LoanViewSet,
     ManagerOverviewView,
     MarkMessagesReadView,
-    MemberViewSet,
+    # MemberViewSet,
     MessageThreadViewSet,
     MessageViewSet,
     MobileBankerMetricsView,
@@ -122,8 +124,8 @@ router.register(r"products/promotions", PromotionViewSet, basename="promotion")
 router.register(r"check-deposits", CheckDepositViewSet, basename="check-deposit")
 
 # Client registrations and member listing
-router.register(r"banking/client-registrations", ClientRegistrationViewSet, basename="client-registration")
-router.register(r"banking/members", MemberViewSet, basename="member")
+# router.register(r"banking/client-registrations", ClientRegistrationViewSet, basename="client-registration")
+# router.register(r"banking/members", MemberViewSet, basename="member")
 
 # Messaging - blocked users viewset
 

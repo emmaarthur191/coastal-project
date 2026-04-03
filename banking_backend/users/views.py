@@ -31,7 +31,6 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     StaffCreationSerializer,
-    UserRegistrationSerializer,
     UserSerializer,
 )
 from .services import SendexaService
@@ -39,13 +38,13 @@ from .services import SendexaService
 logger = logging.getLogger(__name__)
 
 
-class UserRegistrationView(generics.CreateAPIView):
-    """ViewSet for new member/customer self-registration."""
-
-    queryset = User.objects.all()
-    serializer_class = UserRegistrationSerializer
-    permission_classes = [AllowAny]
-    throttle_scope = "registration"  # DRF rate limiting: 3 per hour
+# class UserRegistrationView(generics.CreateAPIView):
+#     """ViewSet for new member/customer self-registration."""
+#
+#     queryset = User.objects.all()
+#     serializer_class = UserRegistrationSerializer
+#     permission_classes = [AllowAny]
+#     throttle_scope = "registration"  # DRF rate limiting: 3 per hour
 
 
 class ChangePasswordView(APIView):
@@ -421,7 +420,6 @@ class SendOTPView(APIView):
         from .models import OTPVerification
 
         phone_number = request.data.get("phone_number")
-        verification_type = request.data.get("verification_type", "2fa_setup")
 
         if not phone_number:
             return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)

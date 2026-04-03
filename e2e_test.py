@@ -315,8 +315,8 @@ def main():
         if response.status_code != 200:
             print("ERROR: Backend server not responding properly")
             sys.exit(1)
-    except:
-        print("ERROR: Cannot connect to backend server at http://localhost:8000")
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Cannot connect to backend server: {e}")
         print("Please ensure the Django server is running")
         sys.exit(1)
 
@@ -332,6 +332,7 @@ def main():
     print(f"Passed: {results['passed']}")
     print(f"Failed: {results['failed']}")
     print(f"Success Rate: {results['success_rate']:.1f}%")
+
     print(f"\nDetailed results saved to e2e_test_results.json")
 
     # Exit with appropriate code

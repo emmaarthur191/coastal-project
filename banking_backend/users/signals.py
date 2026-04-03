@@ -101,56 +101,49 @@ def generate_staff_id(sender, instance, created, **kwargs):
 
     Uses staff_number (integer) to track the sequence, and the staff_id property
     to handle Zero-Plaintext encryption/hashing.
-    Format: CA + 4 sequential digits (e.g., CA0001, CA0002, ...)
+    Format: CA + 5 sequential digits (e.g., CA00001, CA00002, ...)
     """
     import logging
 
     logger = logging.getLogger(__name__)
 
     # Check if this user needs a staff ID (is staff role and doesn't have a staff_number or staff_id yet)
-    if (instance.staff_number is None or not instance.staff_id) and instance.role in [
-        "cashier",
-        "mobile_banker",
-        "manager",
-        "operations_manager",
-        "admin",
-    ]:
-        from django.db import IntegrityError, transaction
+    # We use a broad check for staff roles to ensure all relevant users get an ID
+    STAFF_ROLES = ["cashier", "mobile_banker", "manager", "operations_manager", "admin"]
+
+    if (instance.staff_number is None or not instance.staff_id) and instance.role in STAFF_ROLES:
+        from django.db import transaction
+
+        from .models import User
 
         prefix = "CA"
-        logger.info(f"Generating staff ID for {instance.email} with prefix {prefix}")
+        logger.info(f"Generating staff ID for {instance.email}")
 
-        max_attempts = 10
-        for attempt in range(max_attempts):
-            try:
-                with transaction.atomic():
-                    # Find the highest existing staff_number
-                    latest_user = sender.objects.select_for_update().order_by("-staff_number").first()
+        # SECURITY: Use select_for_update within an atomic transaction to handle race conditions
+        try:
+            with transaction.atomic():
+                # Find the highest existing staff_number
+                # select_for_update() locks the selected rows.
+                # For more scale, consider a dedicated Sequence table.
+                latest_user = (
+                    User.objects.select_for_update()
+                    .filter(staff_number__isnull=False)
+                    .order_by("-staff_number")
+                    .first()
+                )
 
-                    new_seq = (latest_user.staff_number + 1) if (latest_user and latest_user.staff_number) else 1
+                new_seq = (latest_user.staff_number + 1) if (latest_user and latest_user.staff_number) else 1
 
-                    # Set the numeric sequence
-                    instance.staff_number = new_seq
+                # Set the numeric sequence
+                instance.staff_number = new_seq
 
-                    # Format and set the encrypted/hashed ID via property (CA prefix)
-                    prefix = "CA"
-                    if new_seq > 9999:
-                        instance.staff_id = f"{prefix}{new_seq:05d}"
-                    else:
-                        instance.staff_id = f"{prefix}{new_seq:04d}"
+                # Format and set the encrypted/hashed ID via property (CA prefix)
+                # Use CA00001 format (5 digits)
+                instance.staff_id = f"{prefix}{new_seq:05d}"
 
-                    # Explicitly save the correct database fields
-                    instance.save(update_fields=["staff_number", "staff_id_encrypted", "staff_id_hash"])
+                # Explicitly save the correct database fields to minimize lock duration
+                instance.save(update_fields=["staff_number", "staff_id_encrypted", "staff_id_hash"])
 
-                    logger.info(f"Generated staff ID {instance.staff_id} (seq: {new_seq}) for {instance.email}")
-                    return
-
-            except IntegrityError:
-                logger.warning(f"IntegrityError on staff ID attempt {attempt+1} for {instance.email}")
-                if attempt == max_attempts - 1:
-                    # Final fallback: use a very large number or just let it fail
-                    pass
-                continue
-            except Exception as e:
-                logger.error(f"Failed to generate staff ID for {instance.email}: {e}")
-                return
+                logger.info(f"Generated staff ID {instance.staff_id} (seq: {new_seq}) for {instance.email}")
+        except Exception as e:
+            logger.error(f"Failed to generate staff ID for {instance.email}: {e!s}")

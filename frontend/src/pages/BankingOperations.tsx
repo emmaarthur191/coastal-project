@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Priority5f3Enum } from '../api/models/Priority5f3Enum';
 import { useAuth } from '../context/AuthContext';
-import { apiService as authService, LoanExtended as Loan, MessageThreadExtended } from '../services/api';
+import { apiService as authService, LoanExtended as Loan, MessageThreadExtended, PerformanceMetric } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import GlassCard from '../components/ui/modern/GlassCard';
@@ -48,10 +48,6 @@ interface ReportsData {
 
 // Local Loan interface removed in favor of LoanExtended from api.ts
 
-interface PerformanceMetric {
-  name: string;
-  score: number;
-}
 
 function BankingOperations() {
   const { user, logout } = useAuth();
@@ -59,6 +55,7 @@ function BankingOperations() {
 
   const [activeView, setActiveView] = useState('loans');
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   // Banking data state
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -75,14 +72,12 @@ function BankingOperations() {
   const [newMessage, setNewMessage] = useState('');
   const [reportsData, setReportsData] = useState<Partial<ReportsData>>({});
   const [fraudAlerts, setFraudAlerts] = useState<ExtendedFraudAlert[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [reportFilters, setReportFilters] = useState({
-    dateRange: '30d',
-    category: 'all',
-    user: 'all'
-  });
+
+  // Helper for structured notifications (replaces browser alerts)
+  const showNotification = (type: 'success' | 'error' | 'info', text: string) => {
+    setNotification({ type, text });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   // Form states
   const [newLoan, setNewLoan] = useState({
@@ -285,9 +280,9 @@ function BankingOperations() {
     if (result.success && result.data) {
       setLoans([...loans, result.data]);
       setNewLoan({ amount: '', purpose: '', term_months: '', account: '' });
-      alert('Loan application submitted successfully!');
+      showNotification('success', 'Loan application submitted successfully!');
     } else {
-      alert('Failed to create loan: ' + result.error);
+      showNotification('error', 'Failed to create loan: ' + result.error);
     }
   };
 
@@ -296,20 +291,19 @@ function BankingOperations() {
     if (result.success) {
       setComplaints([...complaints, result.data]);
       setNewComplaint({ subject: '', description: '', category: 'service', priority: 'medium' });
-      alert('Complaint submitted successfully!');
+      showNotification('success', 'Complaint submitted successfully!');
     } else {
-      alert('Failed to create complaint: ' + result.error);
+      showNotification('error', 'Failed to create complaint: ' + result.error);
     }
   };
 
   const handleApproveLoan = async (loanId: string | number) => {
     const result = await authService.approveLoan(loanId);
     if (result.success) {
-      alert('Loan approved successfully!');
-      fetchLoans();
-      fetchPendingLoans();
+      setPendingLoans(pendingLoans.filter(l => l.id !== loanId));
+      showNotification('success', 'Loan approved successfully!');
     } else {
-      alert('Failed to approve loan: ' + result.error);
+      showNotification('error', 'Failed to approve loan: ' + result.error);
     }
   };
 
@@ -337,7 +331,7 @@ function BankingOperations() {
       setNewMessage('');
       await fetchMessages(selectedThread.id);
     } else {
-      alert('Failed to send message: ' + result.error);
+      showNotification('error', 'Failed to send message: ' + result.error);
     }
   };
 
@@ -348,24 +342,22 @@ function BankingOperations() {
     });
 
     if (result.success) {
-      await fetchMessageThreads();
-      setSelectedThread(result.data);
+      setMessageThreads([...messageThreads, result.data as MessageThreadExtended]);
+      setSelectedThread(result.data as MessageThreadExtended);
+      setActiveView('messaging');
     } else {
-      alert('Failed to create thread: ' + result.error);
+      showNotification('error', 'Failed to create thread: ' + result.error);
     }
   };
 
   // Fraud detection handlers
   const handleReviewFraudAlert = async (alertId: string, action: string) => {
     // This would call a backend endpoint to update the alert status
-    alert(`Fraud alert ${alertId} marked as ${action}`);
-    await fetchFraudAlerts();
+    showNotification('info', `Fraud alert ${alertId} marked as ${action}`);
   };
 
-  const handleRunFraudCheck = async (transactionId: string) => {
-    // Placeholder for fraud check - would integrate with backend
-    alert(`Fraud check completed for transaction ${transactionId}`);
-    await fetchFraudAlerts();
+  const handleRunFraudCheck = (transactionId: string) => {
+    showNotification('info', `Fraud check completed for transaction ${transactionId}`);
   };
 
   const menuItems = [
@@ -973,6 +965,28 @@ function BankingOperations() {
             </div>
           </div>
         </header>
+
+        {notification && (
+          <div className={`mb-6 p-4 rounded-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ${
+            notification.type === 'error'
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : notification.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : 'bg-blue-50 border-blue-200 text-blue-700'
+          }`}>
+            <span className="text-xl">
+              {notification.type === 'error' ? '❌' : notification.type === 'success' ? '✅' : 'ℹ️'}
+            </span>
+            <span className="font-bold text-sm">{notification.text}</span>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-auto text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {renderContent()}
       </div>

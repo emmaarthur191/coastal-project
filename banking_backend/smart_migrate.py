@@ -18,7 +18,7 @@ django.setup()
 import time
 
 from django.core.management import call_command
-from django.db import connection
+from django.db import OperationalError, connection
 
 
 def table_exists(table_name: str) -> bool:
@@ -725,7 +725,8 @@ def sync_missing_columns():
 
 
 def backfill_existing_user_approvals():
-    """Approve all existing users in the database to resolve the 403 login lockout after the schema update.
+    """Approve all existing users in the database.
+
     This ensures that 'old' users are grandfathered in, while new registrations still require manual approval.
     """
     from users.models import User
@@ -756,17 +757,25 @@ def main():
         try:
             existing_tables = [t for t in core_tables if table_exists(t)]
             break  # Success!
-        except Exception as e:
-            if "remaining connection slots" in str(e).lower() or "too many connections" in str(e).lower():
+        except OperationalError as e:
+            error_msg = str(e).lower()
+            # Detect connection exhaustion or timeouts
+            if any(
+                s in error_msg
+                for s in ["remaining connection slots", "too many connections", "exhausted", "timeout", "pool"]
+            ):
                 print(
                     f"  ! Connection Exhaustion Detected (Attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s..."
                 )
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
-                # If it's a different error, raise it immediately
-                print(f"  ! Fatal Connection Error: {e}")
+                # If it's a different database error, raise it
+                print(f"  ! Fatal Database Error: {e}")
                 raise e
+        except Exception as e:
+            print(f"  ! Unexpected Connection Error: {e}")
+            raise e
     else:
         print("  !! Failed to connect after multiple retries. Aborting.")
         sys.exit(1)

@@ -82,8 +82,13 @@ const ComplaintsTab: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get<any>('banking/complaints/');
-      const data = response.data?.results || response.data || [];
-      setComplaints(Array.isArray(data) ? data : []);
+      const result = response.data;
+      // Log unexpected API contract violations
+      if (!Array.isArray(result) && !(result as any)?.results) {
+        console.warn('[ComplaintsTab] API returned unexpected data format. Expected array or paginated results.', result);
+      }
+      const data = Array.isArray(result) ? result : (result as any)?.results || [];
+      setComplaints(data);
     } catch (error) {
       console.error('Error fetching complaints:', error);
       setMessage({ type: 'error', text: 'Failed to load complaints' });

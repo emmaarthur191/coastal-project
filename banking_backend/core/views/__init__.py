@@ -79,9 +79,7 @@ from core.views.mobile import (
 # Product views
 from core.views.products import ProductViewSet, PromotionViewSet
 
-# Registration views
-from core.views.registration import ClientRegistrationViewSet, MemberViewSet
-
+# Registration views removed - consolidated into AccountOpeningViewSet and user-app listings.
 # Report views
 from core.views.reports import (
     AccountStatementViewSet,
@@ -113,6 +111,7 @@ from core.views.transactions import TransactionViewSet
 
 # Export all views for backward compatibility
 __all__ = [
+    "AccountBalanceView",
     "AccountClosureViewSet",
     "AccountOpeningViewSet",
     "AccountStatementViewSet",
@@ -141,7 +140,7 @@ __all__ = [
     "CheckDepositViewSet",
     "ClientAssignmentViewSet",
     # Registration
-    "ClientRegistrationViewSet",
+    # ClientRegistrationViewSet removed,
     "ComplaintViewSet",
     "DeviceViewSet",
     "ExpensesView",
@@ -155,8 +154,9 @@ __all__ = [
     "HealthCheckView",
     # Loans
     "LoanViewSet",
+    "ManagerOverviewView",
     "MarkMessagesReadView",
-    "MemberViewSet",
+    # MemberViewSet removed,
     "MessageThreadViewSet",
     "MessageViewSet",
     "MobileBankerMetricsView",
