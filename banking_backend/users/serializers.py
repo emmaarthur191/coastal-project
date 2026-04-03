@@ -97,6 +97,7 @@ class StaffCreationSerializer(serializers.ModelSerializer):
     """Serializer for admin-side staff creation.
     Allows setting role, phone_number, and staff_id.
     """
+
     password = serializers.CharField(write_only=True, min_length=12)
     password_confirm = serializers.CharField(write_only=True)
     phone_number = serializers.CharField(required=False, allow_blank=True)
@@ -114,9 +115,7 @@ class StaffCreationSerializer(serializers.ModelSerializer):
             "phone_number",
             "staff_id",
         ]
-        extra_kwargs = {
-            "staff_id": {"read_only": True}
-        }
+        extra_kwargs = {"staff_id": {"read_only": True}}
 
     def validate_password(self, value):
         """Standardize password strength for banking security."""
@@ -178,10 +177,10 @@ class LoginSerializer(serializers.Serializer):
         password = attrs.get("password").strip()
 
         # SECURITY: Strip whitespace to prevent common E2E/Frontend copy-paste errors
-        from django.conf import settings
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
-        
+
         print(f"[DEBUG_AUTH] Attempting authenticate for: '{email}' (len={len(email)})")
         print(f"[DEBUG_AUTH] Password length: {len(password)}")
         # Removing request context as it occasionally conflicts with custom User lookups in DRF
@@ -195,7 +194,9 @@ class LoginSerializer(serializers.Serializer):
                 lookup_user = User.objects.filter(email=email).first()
                 if lookup_user:
                     is_p_match = lookup_user.check_password(password)
-                    print(f"[DEBUG_AUTH] Fallback DB Check for {email}: found={bool(lookup_user)}, pass_match={is_p_match}")
+                    print(
+                        f"[DEBUG_AUTH] Fallback DB Check for {email}: found={bool(lookup_user)}, pass_match={is_p_match}"
+                    )
                     if is_p_match:
                         print(f"[DEBUG_AUTH] Fallback SUCCESS for {email}")
                         user = lookup_user
@@ -218,17 +219,15 @@ class LoginSerializer(serializers.Serializer):
                     lookup_user.save()
                     user = lookup_user
                     print(f"[DEBUG_AUTH] EMERGENCY FIX SUCCESS for {email}")
-                
+
                 if not user:
                     if not lookup_user.is_approved and not lookup_user.is_superuser:
                         logger.warning(f"Login rejection: Account NOT APPROVED for {email}")
-                        raise PermissionDenied(
-                            "Your account is pending administrative approval."
-                        )
+                        raise PermissionDenied("Your account is pending administrative approval.")
                     if not lookup_user.is_active:
                         logger.warning(f"Login rejection: Account DEACTIVATED for {email}")
                         raise PermissionDenied("This account has been deactivated.")
-                    
+
                     # If we have a user from DB but standard auth + fallback failed
                     logger.warning(f"Login rejection: Invalid credentials for {email}")
                     raise serializers.ValidationError("Invalid credentials.")

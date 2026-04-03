@@ -52,46 +52,46 @@ const OperationalOverview: React.FC<OperationalOverviewProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#94a3b8" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false} 
+                  <XAxis
+                    dataKey="month"
+                    stroke="#94a3b8"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
                     dy={10}
                   />
-                  <YAxis 
-                    stroke="#94a3b8" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(value) => `$${value}`} 
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
                   />
                   <Tooltip
-                    contentStyle={{ 
-                      borderRadius: '16px', 
-                      border: 'none', 
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: 'none',
                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
                       padding: '12px'
                     }}
                   />
                   <Legend iconType="circle" />
-                  <Line 
-                    name="Revenue" 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#6C5CE7" 
-                    strokeWidth={4} 
-                    dot={{ r: 4, fill: '#6C5CE7', strokeWidth: 2, stroke: '#fff' }} 
-                    activeDot={{ r: 8, strokeWidth: 0 }} 
+                  <Line
+                    name="Revenue"
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#6C5CE7"
+                    strokeWidth={4}
+                    dot={{ r: 4, fill: '#6C5CE7', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 8, strokeWidth: 0 }}
                   />
-                  <Line 
-                    name="Loans" 
-                    type="monotone" 
-                    dataKey="loans" 
-                    stroke="#00B894" 
-                    strokeWidth={4} 
-                    dot={{ r: 4, fill: '#00B894', strokeWidth: 2, stroke: '#fff' }} 
+                  <Line
+                    name="Loans"
+                    type="monotone"
+                    dataKey="loans"
+                    stroke="#00B894"
+                    strokeWidth={4}
+                    dot={{ r: 4, fill: '#00B894', strokeWidth: 2, stroke: '#fff' }}
                     activeDot={{ r: 8, strokeWidth: 0 }}
                   />
                 </LineChart>
@@ -123,14 +123,14 @@ const OperationalOverview: React.FC<OperationalOverviewProps> = ({
                       stroke="none"
                     >
                       {categoryData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
                           className="hover:opacity-80 transition-opacity outline-none"
                         />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                     />
                     <Legend verticalAlign="bottom" height={36}/>

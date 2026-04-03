@@ -80,12 +80,13 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
 
             # Audit Log
             from users.models import AuditLog
+
             AuditLog.objects.create(
                 user=request.user,
                 action="approve_cash_advance",
                 model_name="CashAdvance",
                 object_id=str(advance.id),
-                description=f"Approved cash advance of {advance.amount} for {advance.user.email}"
+                description=f"Approved cash advance of {advance.amount} for {advance.user.email}",
             )
 
             return Response({"status": "success", "message": "Cash advance approved"})
@@ -99,6 +100,7 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
     def reject(self, request, pk=None):
         """Reject a cash advance request."""
         from django.core.exceptions import PermissionDenied
+
         from core.models.operational import CashAdvance
 
         try:
@@ -106,24 +108,25 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
 
             # SECURITY: Maker-Checker Enforcement (Optional for reject but usually enforced for consistency)
             if advance.submitted_by and advance.submitted_by == request.user:
-                 raise PermissionDenied("You cannot reject a cash advance that you submitted.")
+                raise PermissionDenied("You cannot reject a cash advance that you submitted.")
 
             if advance.status != "pending":
                 return Response({"error": "Can only reject pending requests"}, status=400)
 
             advance.status = "rejected"
             advance.notes = request.data.get("notes", advance.notes)
-            advance.processed_at = timezone.now() # Not on model directly but good for general usage if it were
+            advance.processed_at = timezone.now()  # Not on model directly but good for general usage if it were
             advance.save()
 
             # Audit Log
             from users.models import AuditLog
+
             AuditLog.objects.create(
                 user=request.user,
                 action="reject_cash_advance",
                 model_name="CashAdvance",
                 object_id=str(advance.id),
-                description=f"Rejected cash advance of {advance.amount} for {advance.user.email}. Notes: {request.data.get('notes', 'None')}"
+                description=f"Rejected cash advance of {advance.amount} for {advance.user.email}. Notes: {request.data.get('notes', 'None')}",
             )
 
             return Response({"status": "success", "message": "Cash advance rejected"})

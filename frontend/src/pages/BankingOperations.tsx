@@ -58,7 +58,7 @@ function BankingOperations() {
   const [messageThreads, setMessageThreads] = useState<MessageThreadExtended[]>([]);
   const [selectedThread, setSelectedThread] = useState<MessageThreadExtended | null>(null);
   const [newMessage, setNewMessage] = useState('');
-  
+
   // Reports & Analytics state
   const [reportsData, setReportsData] = useState<Partial<ReportsData>>({});
   const [reportParams, setReportParams] = useState<ReportParams>({
@@ -71,11 +71,15 @@ function BankingOperations() {
   const [fraudAlerts, setFraudAlerts] = useState<ExtendedFraudAlert[]>([]);
   const [isProcessing, setIsProcessing] = useState<string | number | null>(null);
 
-  // Helper for structured notifications
-  const showNotification = (type: 'success' | 'error' | 'info', text: string) => {
+  const showNotification = useCallback((type: 'success' | 'error' | 'info', text: string) => {
     setNotification({ type, text });
-    setTimeout(() => setNotification(null), 5000);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!notification) return;
+    const timer = setTimeout(() => setNotification(null), 5000);
+    return () => clearTimeout(timer);
+  }, [notification]);
 
   const [newLoan, setNewLoan] = useState({
     amount: '',
@@ -91,25 +95,23 @@ function BankingOperations() {
     priority: 'medium'
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const safeFetch = async <T,>(p: Promise<T>) => p.catch(e => ({ success: false, error: String(e), data: undefined } as unknown as T));
+
       const [
         loansRes, complaintsRes, advancesRes, refundsRes, accountsRes,
         pendingLoansRes, threadsRes, fraudRes
       ] = await Promise.all([
-        authService.getLoans(),
-        authService.getComplaints(),
-        authService.getCashAdvances(),
-        authService.getRefunds(),
-        authService.getAccounts(),
-        authService.getPendingLoans(),
-        authService.getMessageThreads(),
-        authService.getFraudAlerts()
+        safeFetch(authService.getLoans()),
+        safeFetch(authService.getComplaints()),
+        safeFetch(authService.getCashAdvances()),
+        safeFetch(authService.getRefunds()),
+        safeFetch(authService.getAccounts()),
+        safeFetch(authService.getPendingLoans()),
+        safeFetch(authService.getMessageThreads()),
+        safeFetch(authService.getFraudAlerts())
       ]);
 
       if (loansRes.success) {
@@ -146,6 +148,10 @@ function BankingOperations() {
       console.error('Error fetching operations data:', error);
     } finally { setLoading(false); }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleCreateLoan = async () => {
     if (!newLoan.amount || !newLoan.purpose || !newLoan.account) {
@@ -249,8 +255,8 @@ function BankingOperations() {
     setSelectedThread(thread);
     const res = await authService.getThreadMessages(String(thread.id));
     if (res.success) {
-      const data = res.data as any;
-      setMessages(Array.isArray(data) ? data : data?.results || []);
+      const data = res.data;
+      setMessages((Array.isArray(data) ? data : (data as { results?: ExtendedMessage[] })?.results || []) as ExtendedMessage[]);
     }
   };
 
@@ -265,8 +271,8 @@ function BankingOperations() {
       setNewMessage('');
       const res = await authService.getThreadMessages(String(selectedThread.id));
       if (res.success) {
-        const data = res.data as any;
-        setMessages(Array.isArray(data) ? data : data?.results || []);
+        const data = res.data;
+        setMessages((Array.isArray(data) ? data : (data as { results?: ExtendedMessage[] })?.results || []) as ExtendedMessage[]);
       }
     } catch (err) {
       showNotification('error', 'Message failed to send.');
@@ -312,7 +318,7 @@ function BankingOperations() {
     switch (activeView) {
       case 'loans':
         return (
-          <FinancialRequestsHub 
+          <FinancialRequestsHub
             view="loans"
             loans={loans}
             accounts={accounts}
@@ -323,7 +329,7 @@ function BankingOperations() {
         );
       case 'pending-loans':
         return (
-          <FinancialRequestsHub 
+          <FinancialRequestsHub
             view="pending-loans"
             pendingLoans={pendingLoans}
             onApproveLoan={handleApproveLoan}
@@ -332,8 +338,8 @@ function BankingOperations() {
         );
       case 'cash-advances':
         return (
-          <FinancialRequestsHub 
-            view="cash-advances" 
+          <FinancialRequestsHub
+            view="cash-advances"
             cashAdvances={cashAdvances}
             isProcessing={isProcessing}
             onApproveCashAdvance={handleApproveCashAdvance}
@@ -342,7 +348,7 @@ function BankingOperations() {
         );
       case 'refunds':
         return (
-          <FinancialRequestsHub 
+          <FinancialRequestsHub
             view="refunds"
             refunds={refunds}
             isProcessing={isProcessing}
@@ -352,7 +358,7 @@ function BankingOperations() {
         );
       case 'complaints':
         return (
-          <AdministrativeHub 
+          <AdministrativeHub
             view="complaints"
             complaints={complaints}
             onCreateComplaint={(c) => {
@@ -364,7 +370,7 @@ function BankingOperations() {
         );
       case 'accounts':
         return (
-          <AdministrativeHub 
+          <AdministrativeHub
             view="accounts"
             accounts={accounts}
             loading={loading}
@@ -372,7 +378,7 @@ function BankingOperations() {
         );
       case 'messaging':
         return (
-          <OperationalMessenger 
+          <OperationalMessenger
             threads={messageThreads as any}
             selectedThread={selectedThread as any}
             messages={messages as any}
@@ -386,13 +392,13 @@ function BankingOperations() {
       case 'reports':
         return (
           <div className="space-y-8">
-            <OperationalReports 
+            <OperationalReports
               reportParams={reportParams}
               onParamsChange={setReportParams}
               onGenerateReport={handleGenerateReport}
               isGenerating={isProcessing === 'generating-report'}
             />
-            <OperationalOverview 
+            <OperationalOverview
               monthlyData={reportsData.monthlyData}
               categoryData={reportsData.categoryData}
               loading={loading}
@@ -401,7 +407,7 @@ function BankingOperations() {
         );
       case 'fraud-detection':
         return (
-          <SecurityOversight 
+          <SecurityOversight
             view="alerts"
             alerts={fraudAlerts}
             onInvestigate={(id) => showNotification('info', `Security check initiated for ${id}`)}
@@ -444,8 +450,8 @@ function BankingOperations() {
               onClick={() => setActiveView(item.id)}
               className={`
                 w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all
-                ${activeView === item.id 
-                  ? 'bg-emerald-50 text-emerald-700 shadow-sm border border-emerald-100' 
+                ${activeView === item.id
+                  ? 'bg-emerald-50 text-emerald-700 shadow-sm border border-emerald-100'
                   : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 border border-transparent'}
               `}
             >

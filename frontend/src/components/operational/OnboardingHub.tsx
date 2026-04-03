@@ -54,7 +54,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
   const handleReject = async (id: string | number) => {
     const reason = prompt('Please enter rejection reason:');
     if (!reason) return;
-    
+
     setLoading(true);
     const res = await apiService.rejectAccountOpening(id, reason);
     if (res.success) {

@@ -98,7 +98,9 @@ class GlobalSequence(models.Model):
     like Staff IDs, membership numbers, or internal reference codes.
     """
 
-    name = models.CharField(max_length=64, unique=True, help_text="Unique identifier for the sequence (e.g., 'staff_id')")
+    name = models.CharField(
+        max_length=64, unique=True, help_text="Unique identifier for the sequence (e.g., 'staff_id')"
+    )
     last_value = models.PositiveBigIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -116,7 +118,9 @@ class GlobalSequence(models.Model):
         from django.db import transaction
 
         with transaction.atomic():
-            seq, created = cls.objects.select_for_update().get_or_create(name=name, defaults={"last_value": initial_value - 1})
+            seq, created = cls.objects.select_for_update().get_or_create(
+                name=name, defaults={"last_value": initial_value - 1}
+            )
             seq.last_value += 1
             seq.save(update_fields=["last_value", "updated_at"])
             return seq.last_value

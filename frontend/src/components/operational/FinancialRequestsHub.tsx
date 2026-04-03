@@ -13,7 +13,7 @@ interface FinancialRequestsHubProps {
   refunds?: Refund[];
   accounts?: Account[];
   isProcessing?: string | number | null;
-  
+
   // Handlers
   onApproveLoan?: (id: number | string) => void;
   onRejectLoan?: (id: number | string) => void;
@@ -21,7 +21,7 @@ interface FinancialRequestsHubProps {
   onRejectCashAdvance?: (id: number | string) => void;
   onApproveRefund?: (id: number | string) => void;
   onRejectRefund?: (id: number | string) => void;
-  
+
   // Form State / Handlers (Simplified for extraction)
   newLoan?: { amount: string, purpose: string, term_months: string, account: string };
   setNewLoan?: (val: any) => void;
@@ -46,7 +46,7 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
   setNewLoan,
   handleCreateLoan
 }) => {
-  
+
   const renderLoans = () => (
     <div className="space-y-6">
       {newLoan && setNewLoan && handleCreateLoan && (
@@ -190,7 +190,7 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                 </div>
                 <span className={`
                   px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter
-                  ${advance.status === CashAdvanceStatusEnum.APPROVED ? 'bg-emerald-100 text-emerald-700' : 
+                  ${advance.status === CashAdvanceStatusEnum.APPROVED ? 'bg-emerald-100 text-emerald-700' :
                     advance.status === CashAdvanceStatusEnum.PENDING ? 'bg-amber-100 text-amber-700' :
                     advance.status === CashAdvanceStatusEnum.REJECTED ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}
                 `}>
@@ -198,21 +198,21 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                 </span>
               </div>
               <p className="text-xs text-gray-600 mb-6 line-clamp-3 bg-gray-50 p-2 rounded-lg italic">"{advance.reason || 'No reason provided'}"</p>
-              
+
               {advance.status === CashAdvanceStatusEnum.PENDING && (
                 <div className="flex gap-2 pt-4 border-t border-gray-50 mt-auto">
-                  <Button 
-                    className="flex-1 text-[10px] h-9" 
-                    size="sm" 
+                  <Button
+                    className="flex-1 text-[10px] h-9"
+                    size="sm"
                     onClick={() => onApproveCashAdvance?.(advance.id)}
                     disabled={isProcessing === advance.id}
                   >
                     {isProcessing === advance.id ? 'Processing...' : 'Approve ✅'}
                   </Button>
-                  <Button 
-                    className="flex-1 text-[10px] h-9" 
-                    variant="danger" 
-                    size="sm" 
+                  <Button
+                    className="flex-1 text-[10px] h-9"
+                    variant="danger"
+                    size="sm"
                     onClick={() => onRejectCashAdvance?.(advance.id)}
                     disabled={isProcessing === advance.id}
                   >
@@ -253,21 +253,21 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                 </span>
               </div>
               <p className="text-xs text-gray-600 mb-6 line-clamp-3 bg-gray-50 p-2 rounded-lg italic">"{refund.reason || 'No reason provided'}"</p>
-              
+
               {refund.status === RefundStatusEnum.PENDING && (
                 <div className="flex gap-2 pt-4 border-t border-gray-50 mt-auto">
-                  <Button 
-                    className="flex-1 text-[10px] h-9" 
-                    size="sm" 
+                  <Button
+                    className="flex-1 text-[10px] h-9"
+                    size="sm"
                     onClick={() => onApproveRefund?.(refund.id)}
                     disabled={isProcessing === refund.id}
                   >
                     {isProcessing === refund.id ? '...' : 'Approve ✅'}
                   </Button>
-                  <Button 
-                    className="flex-1 text-[10px] h-9" 
-                    variant="danger" 
-                    size="sm" 
+                  <Button
+                    className="flex-1 text-[10px] h-9"
+                    variant="danger"
+                    size="sm"
                     onClick={() => onRejectRefund?.(refund.id)}
                     disabled={isProcessing === refund.id}
                   >

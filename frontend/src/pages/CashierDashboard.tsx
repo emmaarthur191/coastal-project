@@ -47,6 +47,14 @@ import CheckDepositTab from '../components/cashier/CheckDepositTab';
 
 // --- HELPER COMPONENTS ---
 
+interface NewServiceRequestForm {
+  member_id: string; priority: string; notes: string; quantity: number;
+  delivery_method: string; delivery_address: string; special_instructions: string;
+  statement_type: string; delivery_method_statement: string; start_date: string;
+  end_date: string; account_number: string; info_type: string; delivery_method_loan: string;
+  loan_account_number: string;
+}
+
 // --- HELPER COMPONENTS ---
 
 // Error Boundary
@@ -129,7 +137,7 @@ const CashierDashboard: React.FC = () => {
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [serviceRequestStats, setServiceRequestStats] = useState<Record<string, number>>({});
   const [selectedRequestType, setSelectedRequestType] = useState('checkbook');
-  const [newServiceRequest, setNewServiceRequest] = useState({
+  const [newServiceRequest, setNewServiceRequest] = useState<NewServiceRequestForm>({
     member_id: '', priority: 'normal', notes: '', quantity: 1, delivery_method: 'pickup', delivery_address: '', special_instructions: '', statement_type: 'monthly', delivery_method_statement: 'digital', start_date: '', end_date: '', account_number: '', info_type: 'balance', delivery_method_loan: 'digital', loan_account_number: ''
   });
   const [serviceRequestLoading, setServiceRequestLoading] = useState(false);
@@ -222,8 +230,19 @@ const CashierDashboard: React.FC = () => {
   const fetchCashAdvances = async () => { setCashAdvancesLoading(true); try { const r = await api.get<PaginatedResponse<CashAdvance>>('banking/cash-advances/'); setCashAdvances(r.data.results || []); } catch (e) { console.error(e); } finally { setCashAdvancesLoading(false); } };
   const fetchRefunds = async () => { setRefundsLoading(true); try { const r = await api.get<PaginatedResponse<Refund>>('banking/refunds/'); setRefunds(r.data.results || []); } catch (e) { console.error(e); } finally { setRefundsLoading(false); } };
   const fetchComplaints = async () => { setComplaintsLoading(true); try { const r = await api.get<PaginatedResponse<Complaint>>('banking/complaints/'); setComplaints(r.data.results || []); } catch (e) { console.error(e); } finally { setComplaintsLoading(false); } };
-  // @ts-expect-error - compatibility layer for authService.getFraudAlerts expected return type
-  const fetchFraudAlerts = async () => { setFraudLoading(true); try { const r = await authService.getFraudAlerts({ status: 'all' }); setFraudAlerts(Array.isArray(r.data) ? r.data : (r.data?.results || [])); } catch (e) { console.error(e); } finally { setFraudLoading(false); } };
+  const fetchFraudAlerts = async () => {
+    setFraudLoading(true);
+    try {
+      const r = await authService.getFraudAlerts();
+      if (r.success && r.data) {
+        setFraudAlerts((Array.isArray(r.data) ? r.data : (r.data as { results?: FraudAlert[] })?.results || []) as FraudAlert[]);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setFraudLoading(false);
+    }
+  };
   const fetchFraudStats = async () => { try { const r = await api.get<Record<string, number>>('fraud/alerts/dashboard-stats/'); setFraudStats(r.data || {}); } catch (e) { console.error(e); } };
   const fetchPerformanceData = async () => {
     setPerformanceLoading(true);

@@ -5,7 +5,6 @@ import secrets
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Max
 from django.http import FileResponse
 from django.utils import timezone
 from rest_framework import generics, serializers, status, viewsets
@@ -30,7 +29,6 @@ from .serializers import (
     OTPVerifySerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
-    StaffCreationSerializer,
     StaffCreationSerializer,
     UserSerializer,
 )
@@ -151,13 +149,15 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
 
         # Base response with tokens in JSON body for E2E and standard API clients
-        response = Response({
-            "status": "success",
-            "message": "Login successful",
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "user": UserSerializer(user).data
-        })
+        response = Response(
+            {
+                "status": "success",
+                "message": "Login successful",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": UserSerializer(user).data,
+            }
+        )
 
         # Set Cookies
         from django.conf import settings
@@ -364,9 +364,11 @@ class MemberDashboardView(APIView):
         # Get recent transactions (last 10) - use Q objects instead of union to avoid ORDER BY in subquery
         from django.db.models import Q
 
-        recent_transactions = Transaction.objects.filter(
-            Q(from_account__user=user) | Q(to_account__user=user)
-        ).select_related("from_account", "to_account").order_by("-timestamp")[:10]
+        recent_transactions = (
+            Transaction.objects.filter(Q(from_account__user=user) | Q(to_account__user=user))
+            .select_related("from_account", "to_account")
+            .order_by("-timestamp")[:10]
+        )
 
         # Build response
         accounts_data = [
@@ -511,8 +513,6 @@ class VerifyOTPView(APIView):
             user.save()
 
         return Response({"success": True, "message": "OTP verified successfully.", "verified": True})
-
-
 
 
 class StaffSerializer(serializers.ModelSerializer):

@@ -376,9 +376,11 @@ class OperationsMetricsView(APIView):
 
             # Staff Performance: Optimized with annotation to avoid N+1 queries in loop
             staff_perf_list = []
-            from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Value, When
+            from django.db.models import Count, Exists, OuterRef
 
-            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True).annotate(
+            active_staff_list = User.objects.filter(
+                role__in=["cashier", "manager", "mobile_banker"], is_active=True
+            ).annotate(
                 activity_count=Count("useractivity", filter=Q(useractivity__created_at__date=_today)),
                 logged_in_today=Exists(
                     UserActivity.objects.filter(user=OuterRef("pk"), action="login", created_at__date=_today)
@@ -640,7 +642,9 @@ class PerformanceMetricsView(APIView):
         cpu_usage_avg = 0
         health_checks = SystemHealth.objects.filter(checked_at__gte=yesterday).only("details")
         if health_checks.exists():
-            cpu_usage_avg = int(sum(float(h.details.get("cpu_usage", 0)) for h in health_checks) / health_checks.count())
+            cpu_usage_avg = int(
+                sum(float(h.details.get("cpu_usage", 0)) for h in health_checks) / health_checks.count()
+            )
 
         stats = [
             {"name": "Avg Response Time", "score": int(performance_stats["avg_resp"] or 0)},

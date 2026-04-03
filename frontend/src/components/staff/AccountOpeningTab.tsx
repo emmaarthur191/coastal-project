@@ -199,7 +199,7 @@ const AccountOpeningTab: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     try {
       setLoading(true);
       setMessage({ type: '', text: '' });

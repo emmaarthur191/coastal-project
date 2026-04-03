@@ -116,11 +116,9 @@ class GenerateReportView(APIView):
                 queryset = queryset.filter(created_at__date__gte=start_date)
             if end_date:
                 queryset = queryset.filter(created_at__date__lte=end_date)
-            
+
             report_data_list = list(
-                queryset.order_by("-created_at")[:limit].values(
-                    "id", "amount", "status", "created_at", "reason"
-                )
+                queryset.order_by("-created_at")[:limit].values("id", "amount", "status", "created_at", "reason")
             )
             report_data_list = [
                 {
@@ -140,9 +138,7 @@ class GenerateReportView(APIView):
                 queryset = queryset.filter(timestamp__date__lte=end_date)
 
             report_data_list = list(
-                queryset.order_by("-timestamp")[:limit].values(
-                    "id", "action", "description", "timestamp"
-                )
+                queryset.order_by("-timestamp")[:limit].values("id", "action", "description", "timestamp")
             )
             report_data_list = [
                 {

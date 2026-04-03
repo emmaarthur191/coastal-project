@@ -93,9 +93,10 @@ function PerformanceDashboard() {
   };
 
   const fetchAnalytics = async () => {
+    const safeFetch = async <T,>(p: Promise<T>) => p.catch(e => ({ success: false, data: undefined } as unknown as T));
     const [volumeResult, chartResult] = await Promise.all([
-      authService.getTransactionVolume({ time_range: '24h' }),
-      authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' })
+      safeFetch(authService.getTransactionVolume({ time_range: '24h' })),
+      safeFetch(authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' }))
     ]);
 
     if (volumeResult.success && volumeResult.data) {

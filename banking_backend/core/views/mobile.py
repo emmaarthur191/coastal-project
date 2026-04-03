@@ -36,7 +36,11 @@ class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
     def get_queryset(self):
         """Return the list of scheduled visits, optimized with select_related."""
-        return VisitSchedule.objects.filter(mobile_banker=self.request.user).select_related("mobile_banker").order_by("-scheduled_time")
+        return (
+            VisitSchedule.objects.filter(mobile_banker=self.request.user)
+            .select_related("mobile_banker")
+            .order_by("-scheduled_time")
+        )
 
     def get_serializer_class(self):
         """Define and return a serializer for visit schedules."""

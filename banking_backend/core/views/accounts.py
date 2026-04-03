@@ -432,6 +432,7 @@ class AccountOpeningViewSet(
                 customer_user = User.objects.filter(email=email).first() if email else None
 
                 import secrets
+
                 # Use predictable password for E2E tests, otherwise random
                 if email and email.endswith("@example.com"):
                     temp_password = "UserPassword123!"

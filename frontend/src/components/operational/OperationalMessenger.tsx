@@ -49,7 +49,7 @@ const OperationalMessenger: React.FC<OperationalMessengerProps> = ({
           <h4 className="font-black text-gray-800 text-sm uppercase tracking-widest">Conversations</h4>
           <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold">{threads.length}</span>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
           {threads.length === 0 ? (
             <div className="text-center py-10 opacity-30">
@@ -77,7 +77,7 @@ const OperationalMessenger: React.FC<OperationalMessengerProps> = ({
             ))
           )}
         </div>
-        
+
         {onCreateThread && (
           <Button
             onClick={() => onCreateThread('staff-user-id')}
@@ -144,9 +144,9 @@ const OperationalMessenger: React.FC<OperationalMessengerProps> = ({
                 className="flex-1 h-12 rounded-2xl border-gray-200 focus:ring-blue-100"
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && onSendMessage()}
               />
-              <Button 
-                onClick={onSendMessage} 
-                variant="primary" 
+              <Button
+                onClick={onSendMessage}
+                variant="primary"
                 className="w-12 h-12 p-0 flex items-center justify-center rounded-2xl shadow-blue-200 shadow-lg"
                 disabled={!newMessage.trim() || isProcessing === 'sending'}
               >

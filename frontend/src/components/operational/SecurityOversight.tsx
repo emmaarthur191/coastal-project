@@ -20,7 +20,7 @@ interface SecurityOversightProps {
   alerts?: FraudAlert[];
   cases?: FraudCase[];
   isProcessing?: string | number | null;
-  
+
   // Handlers
   onInvestigate?: (id: string | number) => void;
   onConfirmFraud?: (id: string | number) => void;
@@ -99,25 +99,25 @@ const SecurityOversight: React.FC<SecurityOversightProps> = ({
                 </div>
               </div>
               <div className="flex gap-2 mt-4 md:mt-0 w-full md:w-auto">
-                <Button 
-                  size="sm" 
-                  variant="primary" 
+                <Button
+                  size="sm"
+                  variant="primary"
                   className="flex-1 md:flex-none h-9 text-xs"
                   onClick={() => onInvestigate?.(alert.id)}
                 >
                   Investigate 🔍
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="danger" 
+                <Button
+                  size="sm"
+                  variant="danger"
                   className="flex-1 md:flex-none h-9 text-xs"
                   onClick={() => onConfirmFraud?.(alert.id)}
                 >
                   Confirm 🛡️
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
+                <Button
+                  size="sm"
+                  variant="secondary"
                    className="flex-1 md:flex-none h-9 text-xs text-gray-400 border-gray-200 hover:bg-gray-50"
                   onClick={() => onDismissAlert?.(alert.id)}
                 >
@@ -160,7 +160,7 @@ const SecurityOversight: React.FC<SecurityOversightProps> = ({
                     {c.status}
                   </span>
                 </div>
-                
+
                 <p className="text-xs text-gray-600 bg-gray-50 p-3 rounded-xl mb-4 line-clamp-3">
                   {c.description}
                 </p>
@@ -177,16 +177,16 @@ const SecurityOversight: React.FC<SecurityOversightProps> = ({
                 </div>
 
                 <div className="flex gap-2 mt-auto pt-4 border-t border-gray-50">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="flex-1 text-xs"
                     onClick={() => onAssignCase?.(c.id)}
                   >
                     Manage 📁
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
+                  <Button
+                    size="sm"
+                    variant="secondary"
                     className="flex-1 text-xs"
                     onClick={() => onCloseCase?.(c.id, 'resolved')}
                   >

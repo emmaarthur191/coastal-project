@@ -205,7 +205,7 @@ class LoanService:
     @staticmethod
     def calculate_monthly_payment(loan: Loan) -> Decimal:
         """Calculate the monthly payment for a loan using simple interest.
-        
+
         Formula: (Principal + (Principal * Rate * Time)) / Time
         """
         if not loan.term_months or loan.term_months <= 0:

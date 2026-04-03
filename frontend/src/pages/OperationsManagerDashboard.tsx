@@ -71,7 +71,7 @@ function OperationsManagerDashboard() {
   const [cashAdvances, setCashAdvances] = useState<any[]>([]);
   const [refunds, setRefunds] = useState<any[]>([]);
   const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>([]);
-  
+
   // Messaging state
   const [messageThreads, setMessageThreads] = useState<MessageThreadExtended[]>([]);
   const [selectedThread, setSelectedThread] = useState<MessageThreadExtended | null>(null);
@@ -175,7 +175,7 @@ function OperationsManagerDashboard() {
         const data = (complaintsRes as any).data;
         setComplaints((Array.isArray(data) ? data : data?.results || []) as Complaint[]);
       }
-      
+
       if (statsRes.success && statsRes.data) {
         setReportsData({
           monthlyData: (statsRes.data as any).monthly_volume || [],
@@ -359,7 +359,7 @@ function OperationsManagerDashboard() {
         );
       case 'complaints':
         return (
-          <AdministrativeHub 
+          <AdministrativeHub
             view="complaints"
             complaints={complaints}
             onCreateComplaint={(c) => {
@@ -371,7 +371,7 @@ function OperationsManagerDashboard() {
         );
       case 'accounts':
         return (
-          <AdministrativeHub 
+          <AdministrativeHub
             view="accounts"
             accounts={accounts}
             loading={loading}
@@ -389,13 +389,13 @@ function OperationsManagerDashboard() {
       case 'reports':
         return (
           <div className="space-y-8">
-            <OperationalReports 
+            <OperationalReports
               reportParams={reportParams}
               onParamsChange={setReportParams}
               onGenerateReport={handleGenerateReport}
               isGenerating={isProcessing === 'generating-report'}
             />
-            <OperationalOverview 
+            <OperationalOverview
               monthlyData={reportsData.monthlyData}
               categoryData={reportsData.categoryData}
               loading={loading}
@@ -404,7 +404,7 @@ function OperationsManagerDashboard() {
         );
       case 'security':
         return (
-          <SecurityOversight 
+          <SecurityOversight
             view="alerts"
             alerts={fraudAlerts}
             onInvestigate={(id) => navigate(`/fraud/alerts`)}
@@ -414,7 +414,7 @@ function OperationsManagerDashboard() {
         );
       case 'messaging':
         return (
-          <OperationalMessenger 
+          <OperationalMessenger
             threads={messageThreads as any}
             selectedThread={selectedThread as any}
             messages={messages as any}

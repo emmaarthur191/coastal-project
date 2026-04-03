@@ -27,10 +27,10 @@ const OperationalReports: React.FC<OperationalReportsProps> = ({
     <div className="space-y-8">
       <GlassCard className="p-8 border-t-[8px] border-t-emerald-500 shadow-xl">
         <h3 className="text-2xl font-black text-gray-800 mb-8 flex items-center gap-3">
-          <span className="p-2 bg-emerald-100 rounded-xl">📑</span> 
+          <span className="p-2 bg-emerald-100 rounded-xl">📑</span>
           On-Demand Financial Reporting
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
           <div className="lg:col-span-1">
             <label className="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 ml-1">Report Domain</label>
@@ -46,7 +46,7 @@ const OperationalReports: React.FC<OperationalReportsProps> = ({
               <option value="audit_logs">System Audit Logs</option>
             </select>
           </div>
-          
+
           <div className="lg:col-span-1">
             <label className="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 ml-1">Export Format</label>
             <div className="flex p-1.5 bg-gray-100 rounded-2xl shadow-inner h-[54px] items-center">
@@ -66,36 +66,36 @@ const OperationalReports: React.FC<OperationalReportsProps> = ({
           </div>
 
           <div className="lg:col-span-1">
-            <Input 
-              label="Start Date" 
-              type="date" 
+            <Input
+              label="Start Date"
+              type="date"
               className="h-[54px] rounded-2xl bg-gray-50 border-gray-100"
-              value={reportParams.date_from} 
-              onChange={(e) => onParamsChange({ ...reportParams, date_from: e.target.value })} 
-            />
-          </div>
-          
-          <div className="lg:col-span-1">
-            <Input 
-              label="End Date" 
-              type="date" 
-              className="h-[54px] rounded-2xl bg-gray-50 border-gray-100"
-              value={reportParams.date_to} 
-              onChange={(e) => onParamsChange({ ...reportParams, date_to: e.target.value })} 
+              value={reportParams.date_from}
+              onChange={(e) => onParamsChange({ ...reportParams, date_from: e.target.value })}
             />
           </div>
 
           <div className="lg:col-span-1">
-            <Button 
-              className="w-full h-[54px] rounded-2xl shadow-emerald-200 shadow-lg text-xs font-black uppercase tracking-widest" 
-              onClick={onGenerateReport} 
+            <Input
+              label="End Date"
+              type="date"
+              className="h-[54px] rounded-2xl bg-gray-50 border-gray-100"
+              value={reportParams.date_to}
+              onChange={(e) => onParamsChange({ ...reportParams, date_to: e.target.value })}
+            />
+          </div>
+
+          <div className="lg:col-span-1">
+            <Button
+              className="w-full h-[54px] rounded-2xl shadow-emerald-200 shadow-lg text-xs font-black uppercase tracking-widest"
+              onClick={onGenerateReport}
               disabled={isGenerating}
             >
               {isGenerating ? 'Compiling...' : 'Export Now 📥'}
             </Button>
           </div>
         </div>
-        
+
         <p className="mt-8 pt-6 border-t border-gray-50 text-[10px] text-gray-400 uppercase font-bold tracking-widest flex items-center justify-center gap-2">
           <span>🔒</span> All reports are automatically watermarked and logged for security auditing.
         </p>

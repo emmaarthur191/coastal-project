@@ -388,5 +388,3 @@ class ClientAssignment(models.Model):
 
     def __str__(self):
         return f"{self.client_name or self.client.email} assigned to {self.mobile_banker.email}"
-
-

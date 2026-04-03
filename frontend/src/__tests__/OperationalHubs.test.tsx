@@ -76,11 +76,11 @@ describe('Operational Unified Hubs', () => {
         id_number: 'P123',
         status: 'pending'
       }];
-      
+
       (apiService.getAccountOpenings as any).mockResolvedValue({ success: true, data: mockRequests });
 
       render(<OnboardingHub mode="manager" />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('John Doe')).toBeInTheDocument();
         expect(screen.getByText(/Approve & Print/i)).toBeInTheDocument();
@@ -102,10 +102,10 @@ describe('Operational Unified Hubs', () => {
         (apiService.approveAndPrintAccountOpening as any).mockResolvedValue({ success: true, blob: new Blob() });
 
         render(<OnboardingHub mode="manager" />);
-        
+
         const approveBtn = await screen.findByText(/Approve & Print/i);
         fireEvent.click(approveBtn);
-        
+
         expect(apiService.approveAndPrintAccountOpening).toHaveBeenCalledWith('req1');
     });
   });
@@ -115,7 +115,7 @@ describe('Operational Unified Hubs', () => {
         const mockLoans = [{ id: 'loan1', amount: 5000, status: 'pending', purpose: 'business' }];
         const onApprove = vi.fn();
         render(<FinancialRequestsHub view="pending-loans" pendingLoans={mockLoans as any} onApproveLoan={onApprove} />);
-        
+
         const approveBtn = screen.getByText(/Approve/i);
         fireEvent.click(approveBtn);
         expect(onApprove).toHaveBeenCalledWith('loan1');
@@ -125,7 +125,7 @@ describe('Operational Unified Hubs', () => {
         const mockAdvances = [{ id: 'adv1', amount: 1000, status: 'pending', requester_name: 'Bob' }];
         const onApprove = vi.fn();
         render(<FinancialRequestsHub view="cash-advances" cashAdvances={mockAdvances as any} onApproveCashAdvance={onApprove} />);
-        
+
         const approveBtn = screen.getByText(/Approve/i);
         fireEvent.click(approveBtn);
         expect(onApprove).toHaveBeenCalledWith('adv1');

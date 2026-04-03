@@ -32,40 +32,36 @@ const StaffOTPVerificationPage = () => {
 
     // Countdown timer for OTP expiration
     useEffect(() => {
-        let timer;
-        if (otpExpiresIn > 0) {
-            timer = setInterval(() => {
-                setOtpExpiresIn(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        setError('OTP code has expired. Please request a new one.');
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        }
+        if (!otpSent) return;
+        const timer = setInterval(() => {
+            setOtpExpiresIn(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setError('OTP code has expired. Please request a new one.');
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
         return () => clearInterval(timer);
-    }, [otpExpiresIn]);
+    }, [otpSent]);
 
     // Block timer countdown
     useEffect(() => {
-        let timer;
-        if (blockTimeRemaining > 0) {
-            timer = setInterval(() => {
-                setBlockTimeRemaining(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        setIsBlocked(false);
-                        setAttempts(0);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        }
+        if (!isBlocked) return;
+        const timer = setInterval(() => {
+            setBlockTimeRemaining(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setIsBlocked(false);
+                    setAttempts(0);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
         return () => clearInterval(timer);
-    }, [blockTimeRemaining]);
+    }, [isBlocked]);
 
     // If user is already verified, redirect to dashboard
     useEffect(() => {

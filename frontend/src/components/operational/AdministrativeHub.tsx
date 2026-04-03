@@ -27,12 +27,12 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
     priority: 'medium'
   });
 
-  const filteredAccounts = accounts.filter(acc => 
+  const filteredAccounts = accounts.filter(acc =>
     acc.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
     (acc.account_number && acc.account_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const filteredComplaints = complaints.filter(c => 
+  const filteredComplaints = complaints.filter(c =>
     c.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.description && c.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -45,8 +45,8 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
             <span>🏦</span> Active Accounts Overview
           </h3>
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <Input 
-              placeholder="Search accounts..." 
+            <Input
+              placeholder="Search accounts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-xs"
@@ -101,8 +101,8 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
           <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <span>🚨</span> Incident & Complaint Logging
           </h3>
-          <Input 
-            placeholder="Search recent logs..." 
+          <Input
+            placeholder="Search recent logs..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-xs"
@@ -117,7 +117,7 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
                 Log all staff performance issues, technical errors, or customer escalations here. High priority items will trigger a manager notification.
               </p>
             </div>
-            
+
             <Input
               label="Subject"
               type="text"
@@ -125,10 +125,10 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
               value={newComplaint.subject}
               onChange={(e) => setNewComplaint({ ...newComplaint, subject: e.target.value })}
             />
-            
+
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">Category</label>
-              <select 
+              <select
                 title="Select Category"
                 className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
                 value={newComplaint.category}
@@ -143,7 +143,7 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">Priority</label>
-              <select 
+              <select
                 title="Select Priority"
                 className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
                 value={newComplaint.priority}
@@ -156,7 +156,7 @@ const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
               </select>
             </div>
 
-            <Button 
+            <Button
               className="w-full py-4 bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-200 text-xs font-black uppercase tracking-widest"
               onClick={() => {
                 onCreateComplaint?.(newComplaint);

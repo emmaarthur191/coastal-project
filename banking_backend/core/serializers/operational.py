@@ -267,5 +267,3 @@ class ClientAssignmentSerializer(serializers.ModelSerializer):
             data["location"] = mask_generic(data.get("location"))
 
         return data
-
-
