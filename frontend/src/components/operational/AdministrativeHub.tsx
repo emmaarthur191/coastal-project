@@ -1,215 +1,345 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import EnhancedUserManagementForm from '../EnhancedUserManagementForm';
+import { authService, AccountWithDetails, ServiceCharge, User } from '../../services/api';
+import { StaffManagementService } from '../../api/services/StaffManagementService';
 import GlassCard from '../ui/modern/GlassCard';
-import { Button } from '../ui/Button';
+import ModernStatCard from '../ui/modern/ModernStatCard';
 import { Input } from '../ui/Input';
-import { Account, Complaint } from '../../services/api';
+import { Button } from '../ui/Button';
+
+interface StaffId {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    staff_id: string;
+    employment_date: string;
+    is_active: boolean;
+    is_approved: boolean;
+    date_joined: string;
+}
 
 interface AdministrativeHubProps {
-  view: 'accounts' | 'complaints';
-  accounts?: Account[];
-  complaints?: Complaint[];
-  onCreateComplaint?: (complaint: { subject: string; description: string; category: string; priority: string }) => void;
-  loading?: boolean;
+    initialTab?: 'accounts' | 'closures' | 'users' | 'staff-ids' | 'charges';
+    mode?: 'manager' | 'staff';
+    accounts?: AccountWithDetails[];
+    loading?: boolean;
 }
 
 const AdministrativeHub: React.FC<AdministrativeHubProps> = ({
-  view,
-  accounts = [],
-  complaints = [],
-  onCreateComplaint,
-  loading = false
+    initialTab = 'accounts',
+    mode = 'staff',
+    accounts: propAccounts,
+    loading: propLoading
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [newComplaint, setNewComplaint] = useState({
-    subject: '',
-    description: '',
-    category: 'service',
-    priority: 'medium'
-  });
+    const [activeTab, setActiveTab] = useState(initialTab);
+    const [accounts, setAccounts] = useState<AccountWithDetails[]>(propAccounts || []);
+    const [closures, setClosures] = useState<any[]>([]);
+    const [loading, setLoading] = useState(propLoading ?? true);
+    const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredAccounts = accounts.filter(acc =>
-    acc.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (acc.account_number && acc.account_number.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    // Administrative State (Staff/Manager management)
+    const [staffMembers, setStaffMembers] = useState<User[]>([]);
+    const [staffIds, setStaffIds] = useState<StaffId[]>([]);
+    const [staffIdFilters, _setStaffIdFilters] = useState<any>({});
+    const [actionLoading, setActionLoading] = useState(false);
 
-  const filteredComplaints = complaints.filter(c =>
-    c.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.description && c.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    // Service Charges State
+    const [charges, setCharges] = useState<ServiceCharge[]>([]);
+    const [newCharge, setNewCharge] = useState<ServiceCharge>({
+        name: '',
+        description: '',
+        charge_type: 'fixed',
+        rate: '',
+        applicable_to: []
+    });
 
-  if (view === 'accounts') {
+    // Form data for staff creation
+    const [staffFormData, setStaffFormData] = useState<any>({
+        first_name: '', last_name: '', email: '', phone: '', role: 'cashier',
+        house_address: '', contact_address: '', government_id: '', ssnit_number: '',
+        passport_picture: null, application_letter: null, appointment_letter: null,
+        bank_name: '', account_number: '', branch_code: '', routing_number: ''
+    });
+
+    useEffect(() => {
+        if (!propAccounts || activeTab !== 'accounts') {
+            fetchData();
+        } else {
+            setLoading(false);
+        }
+    }, [activeTab, propAccounts]);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            if (activeTab === 'accounts') {
+                const res = await authService.getStaffAccounts();
+                if (res.success) setAccounts(res.data || []);
+            } else if (activeTab === 'closures') {
+                const res = await authService.getAccountClosures();
+                if (res.success) setClosures(res.data || []);
+            } else if (activeTab === 'users') {
+                const res = await authService.getAllStaff();
+                if (res.success) setStaffMembers(res.data || []);
+            } else if (activeTab === 'staff-ids') {
+                const res = await authService.getStaffIds(staffIdFilters);
+                if (res.success) setStaffIds(res.data as StaffId[] || []);
+            } else if (activeTab === 'charges') {
+                const res = await authService.getServiceCharges();
+                if (res.success) setCharges(res.data || []);
+            }
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch administrative data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApproveStaff = async (staff: StaffId) => {
+        if (!confirm(`Approve staff registration and generate ID for ${staff.first_name} ${staff.last_name}?`)) return;
+        try {
+            setActionLoading(true);
+            const blob = await StaffManagementService.apiUsersStaffManagementApproveAndPrintCreate(Number(staff.id));
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Staff_Welcome_${staff.last_name}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            fetchData();
+            alert('Staff member approved and Welcome Letter downloaded successfully.');
+        } catch (error: any) {
+            alert(error.message || 'Failed to approve staff member');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const renderStaffIds = () => {
+        return (
+            <div className="space-y-6">
+                <GlassCard className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <span>🆔</span> Staff IDs Management
+                        </h2>
+                        {actionLoading && (
+                            <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
+                                <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                                Processing...
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="overflow-x-auto rounded-xl border border-gray-200">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="bg-coastal-primary text-white text-left">
+                                    <th className="p-4 font-bold text-sm tracking-wider">Staff ID</th>
+                                    <th className="p-4 font-bold text-sm tracking-wider">Name</th>
+                                    <th className="p-4 font-bold text-sm tracking-wider text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-100">
+                                {staffIds.length === 0 ? (
+                                    <tr><td colSpan={3} className="p-10 text-center text-gray-500">No staff IDs found.</td></tr>
+                                ) : (
+                                    staffIds.map((staff) => (
+                                        <tr key={staff.id} className="hover:bg-blue-50/50 transition-colors">
+                                            <td className="p-4 font-mono font-bold text-coastal-primary">
+                                                {staff.staff_id || <span className="text-gray-400 italic">PENDING</span>}
+                                            </td>
+                                            <td className="p-4 font-medium text-gray-800">{staff.first_name} {staff.last_name}</td>
+                                            <td className="p-4 text-right">
+                                                {!staff.is_approved ? (
+                                                    <Button onClick={() => handleApproveStaff(staff)} variant="success" size="sm" disabled={actionLoading}>
+                                                        Approve & Print
+                                                    </Button>
+                                                ) : <span className="text-xs font-bold text-emerald-600">✅ Verified</span>}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </GlassCard>
+            </div>
+        );
+    };
+
+    const renderServiceCharges = () => {
+        return (
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <GlassCard className="p-6 border-t-[6px] border-t-blue-500">
+                        <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2"><span>➕</span> Create New Charge</h4>
+                        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Saved (MOCK)'); }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input label="Charge Name *" required value={newCharge.name} onChange={(e) => setNewCharge({ ...newCharge, name: e.target.value })} />
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">Type *</label>
+                                    <select 
+                                        value={newCharge.charge_type} 
+                                        onChange={(e) => setNewCharge({ ...newCharge, charge_type: e.target.value })} 
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200"
+                                        title="Select charge type"
+                                    >
+                                        <option value="fixed">Fixed (GHS)</option>
+                                        <option value="percentage">Percentage (%)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <Input label="Rate/Amount *" type="number" step="0.01" required value={newCharge.rate} onChange={(e) => setNewCharge({ ...newCharge, rate: e.target.value })} />
+                            <Button type="submit" variant="primary" className="w-full">Save Charge</Button>
+                        </form>
+                    </GlassCard>
+
+                    <GlassCard className="p-6">
+                        <h4 className="text-lg font-bold text-gray-800 mb-6">Existing Charges ({charges.length})</h4>
+                        <div className="space-y-3">
+                            {charges.map(c => (
+                                <div key={c.id} className="p-3 border rounded-xl flex justify-between items-center">
+                                    <div>
+                                        <div className="font-bold text-gray-800">{c.name}</div>
+                                        <div className="text-xs text-gray-500 uppercase">{c.charge_type}</div>
+                                    </div>
+                                    <div className="text-lg font-black text-coastal-primary">
+                                        {c.charge_type === 'percentage' ? `${c.rate}%` : `GHS ${c.rate}`}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </GlassCard>
+                </div>
+            </div>
+        );
+    };
+
+    const renderContent = () => {
+        if (loading) return <div className="p-12 text-center text-gray-500">Loading administrative data...</div>;
+        if (error) return <div className="p-12 text-center text-red-500">Error: {error}</div>;
+
+        const filteredAccounts = accounts.filter(acc =>
+            (acc.user?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            acc.account_number.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        switch (activeTab) {
+            case 'accounts':
+                return (
+                    <div className="space-y-6">
+                         <div className="flex bg-white p-2 rounded-2xl shadow-sm border border-gray-100 max-w-md">
+                            <Input
+                                placeholder="Search accounts..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="border-none shadow-none mb-0 focus:ring-0"
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredAccounts.map(acc => (
+                                <div key={acc.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                                    <h3 
+                                        className="font-bold text-gray-800 mb-2 truncate" 
+                                        title={acc.user?.full_name || acc.account_number}
+                                    >
+                                        {acc.user?.full_name || acc.account_number}
+                                    </h3>
+                                    <div className="text-sm text-gray-500 mb-4 font-mono">{acc.account_number}</div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full border border-blue-100">{acc.account_type}</span>
+                                        <span className="font-black text-coastal-primary">GHS {acc.balance.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            ))}
+                            {filteredAccounts.length === 0 && <div className="col-span-full p-8 text-center text-gray-400 italic">No accounts found.</div>}
+                        </div>
+                    </div>
+                );
+            case 'closures':
+                return (
+                    <div className="space-y-4">
+                        {closures.length === 0 ? <p className="text-center text-gray-500 p-8 bg-gray-50 rounded-2xl border border-dashed">No pending closure requests.</p> :
+                            closures.map(c => (
+                                <div key={c.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center hover:border-coastal-primary transition-colors">
+                                    <div>
+                                        <div className="font-bold">{c.user_name || c.account_number}</div>
+                                        <div className="text-sm text-gray-500">Reason: {c.reason || 'Not specified'}</div>
+                                    </div>
+                                    <Button variant="danger" size="sm">Review Closure</Button>
+                                </div>
+                            ))}
+                    </div>
+                );
+            case 'users':
+                return (
+                    <EnhancedUserManagementForm
+                        formData={staffFormData}
+                        setFormData={setStaffFormData}
+                        staffMembers={staffMembers.map(u => ({ id: String(u.id), name: `${u.first_name} ${u.last_name}`, role: u.role, status: u.is_active ? 'active' : 'inactive' }))}
+                        fetchStaffMembers={() => fetchData()}
+                        handleCreateUser={() => { }}
+                    />
+                );
+            case 'staff-ids':
+                return renderStaffIds();
+            case 'charges':
+                return renderServiceCharges();
+            default:
+                return null;
+        }
+    };
+
+    const tabs = [
+        { id: 'accounts', label: 'Accounts', icon: '🏦', roles: ['manager', 'staff'] },
+        { id: 'closures', label: 'Closures', icon: '🚫', roles: ['manager'] },
+        { id: 'users', label: 'Users', icon: '👥', roles: ['manager'] },
+        { id: 'staff-ids', label: 'IDs', icon: '🆔', roles: ['manager'] },
+        { id: 'charges', label: 'Charges', icon: '🏷️', roles: ['manager'] },
+    ];
+
+    const visibleTabs = tabs.filter(t => t.roles.includes(mode));
+
     return (
-      <GlassCard className="p-6 border-t-[6px] border-t-indigo-500">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-          <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <span>🏦</span> Active Accounts Overview
-          </h3>
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <Input
-              placeholder="Search accounts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-xs"
-            />
-            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest whitespace-nowrap">
-              {filteredAccounts.length} Filtered
-            </span>
-          </div>
-        </div>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex flex-wrap gap-2">
+                {visibleTabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border ${activeTab === tab.id
+                            ? 'bg-coastal-primary text-white border-coastal-primary shadow-lg shadow-blue-100'
+                            : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-100'
+                            }`}
+                    >
+                        <span>{tab.icon}</span>
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-32 bg-gray-100 rounded-3xl"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAccounts.map((acc) => (
-              <div key={acc.id} className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group">
-                <div className="flex justify-between items-start mb-4">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-indigo-500 transition-colors">
-                    {acc.account_type_display || acc.account_type}
-                  </p>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                </div>
-                <p className="text-2xl font-black text-slate-800 tracking-tight">
-                  ${acc.calculated_balance?.toLocaleString() || '0.00'}
-                </p>
-                <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-slate-400">ID: {acc.id}</span>
-                  {acc.account_number && <span className="text-[10px] font-black text-indigo-500">#{acc.account_number}</span>}
-                  <button className="text-[10px] font-black text-indigo-600 uppercase hover:underline text-left mt-2">View History →</button>
-                </div>
-              </div>
-            ))}
-            {filteredAccounts.length === 0 && (
-              <div className="col-span-full py-12 text-center text-gray-400 italic bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
-                No matching accounts found.
-              </div>
-            )}
-          </div>
-        )}
-      </GlassCard>
+            <div className="mt-6">
+                {renderContent()}
+            </div>
+
+            {/* Quick Stats Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12 pb-8">
+                <ModernStatCard label="Total Items" value={String(
+                    activeTab === 'accounts' ? accounts.length :
+                    activeTab === 'closures' ? closures.length :
+                    activeTab === 'users' ? staffMembers.length :
+                    activeTab === 'staff-ids' ? staffIds.length :
+                    charges.length
+                )} icon={<span>📊</span>} trend="neutral" />
+            </div>
+        </div>
     );
-  }
-
-  return (
-    <div className="space-y-6">
-      <GlassCard className="p-6 border-t-[6px] border-t-rose-500">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-          <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <span>🚨</span> Incident & Complaint Logging
-          </h3>
-          <Input
-            placeholder="Search recent logs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-xs"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100">
-              <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest mb-2">Internal Protocol</h4>
-              <p className="text-xs text-rose-700 leading-relaxed font-medium">
-                Log all staff performance issues, technical errors, or customer escalations here. High priority items will trigger a manager notification.
-              </p>
-            </div>
-
-            <Input
-              label="Subject"
-              type="text"
-              placeholder="e.g., Transaction Error"
-              value={newComplaint.subject}
-              onChange={(e) => setNewComplaint({ ...newComplaint, subject: e.target.value })}
-            />
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Category</label>
-              <select
-                title="Select Category"
-                className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
-                value={newComplaint.category}
-                onChange={(e) => setNewComplaint({ ...newComplaint, category: e.target.value })}
-              >
-                <option value="service">Customer Service</option>
-                <option value="technical">Technical Issue</option>
-                <option value="fraud">Fraud Suspicion</option>
-                <option value="staff">Staff Performance</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Priority</label>
-              <select
-                title="Select Priority"
-                className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
-                value={newComplaint.priority}
-                onChange={(e) => setNewComplaint({ ...newComplaint, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
-
-            <Button
-              className="w-full py-4 bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-200 text-xs font-black uppercase tracking-widest"
-              onClick={() => {
-                onCreateComplaint?.(newComplaint);
-                setNewComplaint({ subject: '', description: '', category: 'service', priority: 'medium' });
-              }}
-            >
-              Log Incident 🚀
-            </Button>
-          </div>
-
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-full">
-              <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Recent Logs</h4>
-                <div className="flex gap-2">
-                  <span className="w-3 h-3 rounded-full bg-rose-500"></span>
-                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                </div>
-              </div>
-              <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {filteredComplaints.length > 0 ? (
-                  <div className="space-y-3">
-                    {filteredComplaints.map((c) => (
-                      <div key={c.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-rose-200 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                          <h5 className="font-bold text-slate-800 text-sm">{c.subject}</h5>
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            c.priority === 'high' || c.priority === 'critical' ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-600'
-                          }`}>
-                            {c.priority}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 line-clamp-2">{c.description || 'No description provided.'}</p>
-                        <div className="mt-3 pt-3 border-t border-slate-200/50 flex justify-between items-center">
-                          <span className="text-[10px] font-bold text-slate-400 capitalize">{c.category} • {new Date(c.created_at || '').toLocaleDateString()}</span>
-                          <span className="text-[10px] font-black text-rose-600 uppercase italic">Status: {c.status || 'open'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-20 text-center">
-                    <p className="text-sm text-slate-400 font-medium italic">No matching incidents found.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-    </div>
-  );
 };
 
 export default AdministrativeHub;

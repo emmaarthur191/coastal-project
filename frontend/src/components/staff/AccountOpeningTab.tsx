@@ -9,11 +9,6 @@ import GlassCard from '../ui/modern/GlassCard';
  * Unified form matching Mobile Banker's ClientRegistrationTab with camera capture
  */
 const AccountOpeningTab: React.FC = () => {
-  // Response interfaces
-  interface OtpResponse {
-    debug_otp?: string;
-  }
-
   interface SubmitResponse {
     success: boolean;
     account_id?: string;

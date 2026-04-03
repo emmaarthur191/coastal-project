@@ -14,11 +14,24 @@ import ClientsTab from '../components/mobile/ClientsTab';
 import VisitsTab from '../components/mobile/VisitsTab';
 import MessagingTab from '../components/mobile/MessagingTab';
 import FieldToolbox from '../components/mobile/FieldToolbox';
-import AccountOpeningTab from '../components/staff/AccountOpeningTab';
+import OnboardingHub from '../components/operational/OnboardingHub';
+import FinancialRequestsHub from '../components/operational/FinancialRequestsHub';
+import SupportHub from '../components/operational/SupportHub';
 import {
-  DepositModal, WithdrawalModal, PaymentModal, LoanModal, ScheduleModal, MessageModal, KycModal
+  DepositModal, WithdrawalModal, PaymentModal, ScheduleModal, MessageModal, KycModal
 } from '../components/mobile/MobileModals';
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
+
+// Error Boundary Component
+interface ErrorBoundaryState { hasError: boolean; }
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: React.ReactNode }) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return <div className="p-4 bg-red-50 text-red-600 rounded-lg">Something went wrong in this section.</div>;
+    return this.props.children;
+  }
+}
 
 interface MappedClient extends AssignedClient {
   name: string;
@@ -31,7 +44,9 @@ function MobileBankerDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const hasMessagingAccess = ['manager', 'operations_manager', 'cashier', 'mobile_banker'].includes(user?.role);
+  const hasMessagingAccess = ['manager', 'operations_manager', 'cashier', 'mobile_banker'].includes(user?.role || '');
+  const isMounted = React.useRef(true);
+  useEffect(() => { return () => { isMounted.current = false; }; }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -42,6 +57,7 @@ function MobileBankerDashboard() {
   const menuItems = React.useMemo(() => [
     { id: 'account-opening', name: 'Account Opening', icon: '👤' },
     { id: 'clients', name: 'My Clients', icon: '👥' },
+    { id: 'financial-requests', name: 'Fin. Requests', icon: '💰' },
     { id: 'visits', name: 'Visits', icon: '🛵' },
     { id: 'messaging', name: 'Messaging', icon: '💬' },
     { id: 'my_payslips', name: 'My Payslips', icon: '💰' },
@@ -187,7 +203,7 @@ function MobileBankerDashboard() {
   // --- HANDLERS ---
   const handleQuickAction = (action: string) => {
     switch (action) {
-      case 'loan': setShowLoanModal(true); break;
+      case 'loan': setActiveTab('financial-requests'); break;
       case 'payment': setShowPaymentModal(true); break;
       case 'deposit': setShowDepositModal(true); break;
       case 'withdrawal': setShowWithdrawalModal(true); break;
@@ -442,7 +458,8 @@ function MobileBankerDashboard() {
         {/* LEFT COLUMN: Dynamic Tab Content (Spans 2 cols on Large) */}
         <div className="lg:col-span-2">
           <Card className="min-h-[500px]">
-            {activeTab === 'account-opening' && <AccountOpeningTab />}
+            {activeTab === 'account-opening' && <ErrorBoundary><OnboardingHub mode="staff" /></ErrorBoundary>}
+            {activeTab === 'financial-requests' && <ErrorBoundary><FinancialRequestsHub mode="staff" initialView="loans" /></ErrorBoundary>}
             {activeTab === 'clients' && (
               <ClientsTab
                 assignedClients={assignedClients}
@@ -499,14 +516,6 @@ function MobileBankerDashboard() {
         formData={withdrawalForm}
         setFormData={setWithdrawalForm}
         onSubmit={handleWithdrawalSubmit}
-        loading={loading}
-      />
-      <LoanModal
-        isOpen={showLoanModal}
-        onClose={() => setShowLoanModal(false)}
-        formData={loanForm}
-        setFormData={setLoanForm}
-        onSubmit={handleLoanSubmit}
         loading={loading}
       />
       <PaymentModal

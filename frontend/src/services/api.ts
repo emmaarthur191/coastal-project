@@ -62,6 +62,31 @@ export interface MessageExtended extends Message {
 }
 
 /**
+ * Extended Service Request interface including fields for UI.
+ */
+export interface ServiceRequestExtended extends ServiceRequest {
+  service_type: string;
+  member_name: string;
+  member_id: string;
+}
+
+/**
+ * Extended Cash Advance interface including fields for UI.
+ */
+export interface CashAdvanceExtended extends CashAdvance {
+  member_name?: string;
+  member_id: string;
+}
+
+/**
+ * Extended Refund interface including fields for UI.
+ */
+export interface RefundExtended extends Refund {
+  original_transaction_ref: string;
+  requested_amount: number;
+}
+
+/**
  * Interface for the new Chat API rooms.
  */
 export interface ChatRoomData {
@@ -256,6 +281,8 @@ export interface CreateComplaintData {
   subject: string;
   description: string;
   priority?: string;
+  account_number?: string;
+  related_transaction_id?: string | number;
 }
 
 /**
@@ -439,13 +466,23 @@ export interface CreateUserData {
  * Input data for creating a service request
  */
 export interface CreateServiceRequestData {
-  request_type: string;
+  service_type: string;
   account_id?: number | string;
   notes?: string;
   priority?: string;
   quantity?: number;
   delivery_method?: string;
   [key: string]: string | number | undefined;
+}
+
+export interface ComplaintStats {
+  total_complaints: number;
+  open_complaints: number;
+  investigating_complaints: number;
+  resolved_complaints: number;
+  closed_complaints: number;
+  escalated_complaints: number;
+  avg_resolution_time_days: number;
 }
 
 
@@ -1551,9 +1588,27 @@ export const apiService = {
     }
   },
 
-  async getServiceRequests(): Promise<{ success: boolean; data?: PaginatedResponse<ServiceRequest>; error?: string }> {
+  async getServiceRequests(): Promise<{ success: boolean; data?: PaginatedResponse<ServiceRequestExtended>; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<ServiceRequest>>('services/requests/');
+      const response = await api.get<PaginatedResponse<ServiceRequestExtended>>('services/requests/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async submitServiceRequest(data: CreateServiceRequestData): Promise<{ success: boolean; data?: ServiceRequestExtended; error?: string }> {
+    try {
+      const response = await api.post<ServiceRequestExtended>('services/requests/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Submission failed' };
+    }
+  },
+
+  async getServiceRequestStats(): Promise<{ success: boolean; data?: Record<string, number>; error?: string }> {
+    try {
+      const response = await api.get<Record<string, number>>('services/stats/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
@@ -1645,6 +1700,24 @@ export const apiService = {
     try {
       const response = await api.get<PaginatedResponse<Complaint>>('banking/complaints/');
       return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async submitComplaint(data: CreateComplaintData): Promise<{ success: boolean; data?: Complaint; error?: string }> {
+    try {
+      const response = await api.post<Complaint>('banking/complaints/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Submission failed' };
+    }
+  },
+
+  async getComplaintSummary(): Promise<{ success: boolean; data?: ComplaintStats; error?: string }> {
+    try {
+      const response = await api.get<{ summary: ComplaintStats }>('banking/complaints/reports/summary/');
+      return { success: true, data: response.data?.summary };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
@@ -2333,6 +2406,16 @@ export const apiService = {
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch account summary' };
+    }
+  },
+
+  async getAccountClosures(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.get('banking/account-closures/');
+      const data = (response.data as any).results || response.data;
+      return { success: true, data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 

@@ -25,35 +25,20 @@ import { Button } from '../components/ui/Button';
 // Input and ModernStatCard available for future use
 
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
-
-
-import ComplaintsTab from '../components/cashier/ComplaintsTab';
-import FraudAlertsTab from '../components/cashier/FraudAlertsTab';
-import AccountOpeningTab from '../components/staff/AccountOpeningTab';
+import OnboardingHub from '../components/operational/OnboardingHub';
+import FinancialRequestsHub from '../components/operational/FinancialRequestsHub';
+import SupportHub from '../components/operational/SupportHub';
 import AccountClosureTab from '../components/cashier/AccountClosureTab';
 import ProductsPromotionsTab from '../components/cashier/ProductsPromotionsTab';
-import ServiceRequestsTab from '../components/cashier/ServiceRequestsTab';
 import CashDrawerTab from '../components/cashier/CashDrawerTab';
 import SecurityMonitoringTab from '../components/cashier/SecurityMonitoringTab';
 import MessagingTab from '../components/cashier/MessagingTab';
-import CashAdvancesTab from '../components/cashier/CashAdvancesTab';
 import TransactionSearchTab from '../components/cashier/TransactionSearchTab';
-import RefundsTab from '../components/cashier/RefundsTab';
 import OverviewTab from '../components/cashier/OverviewTab';
 import DepositTab from '../components/cashier/DepositTab';
 import WithdrawalTab from '../components/cashier/WithdrawalTab';
 import CheckDepositTab from '../components/cashier/CheckDepositTab';
 
-
-// --- HELPER COMPONENTS ---
-
-interface NewServiceRequestForm {
-  member_id: string; priority: string; notes: string; quantity: number;
-  delivery_method: string; delivery_address: string; special_instructions: string;
-  statement_type: string; delivery_method_statement: string; start_date: string;
-  end_date: string; account_number: string; info_type: string; delivery_method_loan: string;
-  loan_account_number: string;
-}
 
 // --- HELPER COMPONENTS ---
 
@@ -92,7 +77,10 @@ const CashierDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const onboardingMode = (user?.role === 'manager' || user?.role === 'admin' || user?.role === 'operations_manager') ? 'manager' : 'staff';
   const hasMessagingAccess = ['manager', 'operations_manager', 'cashier', 'mobile_banker'].includes(user?.role || '');
+  const isMounted = React.useRef(true);
+  useEffect(() => { return () => { isMounted.current = false; }; }, []);
 
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('deposit');
@@ -106,73 +94,21 @@ const CashierDashboard: React.FC = () => {
   const [checkDepositAccountType, setCheckDepositAccountType] = useState('daily_susu');
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
-  const [cameraMode, setCameraMode] = useState(false);
   const [members, setMembers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [cashDrawers, setCashDrawers] = useState<CashDrawer[]>([]);
   const [currentDrawer, setCurrentDrawer] = useState<CashDrawer | null>(null);
-  const [drawerLoading, setDrawerLoading] = useState(false);
-  const [openingBalance, setOpeningBalance] = useState('');
-  const [closingBalance, setClosingBalance] = useState('');
-  const [showOpenDrawer, setShowOpenDrawer] = useState(false);
-  const [showCloseDrawer, setShowCloseDrawer] = useState(false);
-  const [showReconcile, setShowReconcile] = useState(false);
-  const [denominations, setDenominations] = useState({
-    '100.00': 0, '50.00': 0, '20.00': 0, '10.00': 0, '5.00': 0, '2.00': 0, '1.00': 0,
-    '0.50': 0, '0.25': 0, '0.10': 0, '0.05': 0, '0.01': 0
-  });
-  const [accountOpeningData, setAccountOpeningData] = useState({
-    account_type: 'daily_susu', card_type: 'standard', first_name: '', last_name: '', date_of_birth: '', nationality: '', address: '', phone_number: '', email: '', photo: null
-  });
-  const [accountClosureData, setAccountClosureData] = useState({ account_id: '', closure_reason: '', other_reason: '' });
-  const [products, setProducts] = useState<Product[]>([]);
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [recommendations, setRecommendations] = useState<any[]>([]); // Recommendations coming from dynamic logic
-  const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState('');
-  const [selectedPromotion, setSelectedPromotion] = useState('');
-  const [enrollmentLoading, setEnrollmentLoading] = useState(false);
-  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
-  const [serviceRequestStats, setServiceRequestStats] = useState<Record<string, number>>({});
-  const [selectedRequestType, setSelectedRequestType] = useState('checkbook');
-  const [newServiceRequest, setNewServiceRequest] = useState<NewServiceRequestForm>({
-    member_id: '', priority: 'normal', notes: '', quantity: 1, delivery_method: 'pickup', delivery_address: '', special_instructions: '', statement_type: 'monthly', delivery_method_statement: 'digital', start_date: '', end_date: '', account_number: '', info_type: 'balance', delivery_method_loan: 'digital', loan_account_number: ''
-  });
-  const [serviceRequestLoading, setServiceRequestLoading] = useState(false);
   const [auditData, setAuditData] = useState<AuditData | null>(null);
-  const [auditLoading, setAuditLoading] = useState(false);
   const [auditTimeRange, setAuditTimeRange] = useState(24);
   const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>([]);
-  const [fraudStats, setFraudStats] = useState<Record<string, number>>({});
   const [fraudLoading, setFraudLoading] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceDashboardData | null>(null);
   const [systemHealth, setSystemHealth] = useState<HealthCheckData[]>([]);
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
-  const [transactionVolume, setTransactionVolume] = useState([]);
-  const [performanceAlerts, setPerformanceAlerts] = useState([]);
-  const [performanceRecommendations, setPerformanceRecommendations] = useState([]);
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
-  const [selectedMetricType, setSelectedMetricType] = useState('response_time');
-  const [performanceChartData, setPerformanceChartData] = useState<any>(null);
-  const [cashAdvances, setCashAdvances] = useState<CashAdvance[]>([]);
-  const [cashAdvancesLoading, setCashAdvancesLoading] = useState(false);
-  const [refunds, setRefunds] = useState<Refund[]>([]);
-  const [refundsLoading, setRefundsLoading] = useState(false);
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [complaintsLoading, setComplaintsLoading] = useState(false);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [reportTemplates, setReportTemplates] = useState<ReportTemplate[]>([]);
-  const [reportSchedules, setReportSchedules] = useState<ReportSchedule[]>([]);
-  const [reportAnalytics, setReportAnalytics] = useState<ReportAnalytics | []>([]);
-  const [reportsLoading, setReportsLoading] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
-  const [transactionFilters, setTransactionFilters] = useState({ type: '', status: '', dateRange: 'today', amountRange: { min: '', max: '' } });
-  const [serviceRequestFilters, setServiceRequestFilters] = useState({ status: '', priority: '', type: '' });
-  const [startAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [announcements, setAnnouncements] = useState<string[]>([]);
 
   // --- MENU ---
   const tabs = [
@@ -203,54 +139,39 @@ const CashierDashboard: React.FC = () => {
       return txDate.toDateString() === today.toDateString();
     });
     const totalAmount = todayTransactions.reduce((sum: number, tx: any) => sum + Math.abs(tx.amount || 0), 0);
-    const srArray = Array.isArray(serviceRequests) ? serviceRequests : [];
     return {
       transactions: todayTransactions.length,
       totalAmount: formatCurrencyGHS(totalAmount),
       cashOnHand: formatCurrencyGHS(currentDrawer ? (currentDrawer as any).current_balance || 0 : 0),
-      pendingApprovals: srArray.filter((sr: any) => sr.status === 'pending').length
+      pendingApprovals: 0 // Delegated to Hubs
     };
-  }, [transactions, currentDrawer, serviceRequests]);
+  }, [transactions, currentDrawer]);
 
 
 
   // --- API CALLS ---
   const fetchMembers = async () => { try { const r = await api.get<PaginatedResponse<User>>('users/members/'); setMembers(r.data.results || []); } catch (e) { console.error(e); } };
   const fetchTransactions = async () => { try { const r = await api.get<PaginatedResponse<Transaction>>('transactions/'); setTransactions(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchCashDrawers = async () => { try { const r = await api.get<PaginatedResponse<CashDrawer>>('banking/cash-drawers/'); setCashDrawers(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchProducts = async () => { try { const r = await api.get<PaginatedResponse<Product>>('products/products/'); setProducts(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchPromotions = async () => { try { const r = await api.get<PaginatedResponse<Promotion>>('products/promotions/active/'); setPromotions(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchServiceRequests = async () => { try { const r = await api.get<PaginatedResponse<ServiceRequest>>('services/requests/'); setServiceRequests(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchServiceRequestStats = async () => { try { const r = await api.get<Record<string, number>>('services/stats/'); setServiceRequestStats(r.data || {}); } catch (e) { console.error(e); } };
   const fetchAuditData = useCallback(async () => { try { const r = await api.get<AuditData>(`audit/dashboard/?hours=${auditTimeRange}`); setAuditData(r.data); } catch (e) { console.error(e); } }, [auditTimeRange]);
-  const fetchReports = async () => { setReportsLoading(true); try { const r = await api.get<PaginatedResponse<Report>>('reports/reports/'); setReports(r.data.results || []); } catch (e) { console.error(e); } finally { setReportsLoading(false); } };
-  const fetchReportTemplates = async () => { try { const r = await api.get<PaginatedResponse<ReportTemplate>>('reports/templates/'); setReportTemplates(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchReportSchedules = async () => { try { const r = await api.get<PaginatedResponse<ReportSchedule>>('reports/schedules/'); setReportSchedules(r.data.results || []); } catch (e) { console.error(e); } };
-  const fetchReportAnalytics = async () => { try { const r = await api.get<ReportAnalytics>('reports/analytics/'); setReportAnalytics(r.data); } catch (e) { console.error(e); } };
-  const fetchCashAdvances = async () => { setCashAdvancesLoading(true); try { const r = await api.get<PaginatedResponse<CashAdvance>>('banking/cash-advances/'); setCashAdvances(r.data.results || []); } catch (e) { console.error(e); } finally { setCashAdvancesLoading(false); } };
-  const fetchRefunds = async () => { setRefundsLoading(true); try { const r = await api.get<PaginatedResponse<Refund>>('banking/refunds/'); setRefunds(r.data.results || []); } catch (e) { console.error(e); } finally { setRefundsLoading(false); } };
-  const fetchComplaints = async () => { setComplaintsLoading(true); try { const r = await api.get<PaginatedResponse<Complaint>>('banking/complaints/'); setComplaints(r.data.results || []); } catch (e) { console.error(e); } finally { setComplaintsLoading(false); } };
   const fetchFraudAlerts = async () => {
     setFraudLoading(true);
     try {
       const r = await authService.getFraudAlerts();
-      if (r.success && r.data) {
-        setFraudAlerts((Array.isArray(r.data) ? r.data : (r.data as { results?: FraudAlert[] })?.results || []) as FraudAlert[]);
+      if (r.success && r.data && isMounted.current) {
+        setFraudAlerts(r.data.results || []);
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setFraudLoading(false);
+      if (isMounted.current) setFraudLoading(false);
     }
   };
-  const fetchFraudStats = async () => { try { const r = await api.get<Record<string, number>>('fraud/alerts/dashboard-stats/'); setFraudStats(r.data || {}); } catch (e) { console.error(e); } };
   const fetchPerformanceData = async () => {
     setPerformanceLoading(true);
     try {
       const d = await api.get<PerformanceDashboardData>('performance/dashboard-data/'); setPerformanceData(d.data);
       const h = await api.get<PaginatedResponse<HealthCheckData>>('performance/system-health/'); setSystemHealth(h.data.results || []);
       const m = await api.get<PaginatedResponse<PerformanceMetric>>('performance/metrics/'); setPerformanceMetrics(m.data.results || []);
-      // ... other performance fetches omitted for brevity but assumed safe ...
     } catch (e) { console.error(e); } finally { setPerformanceLoading(false); }
   };
 
@@ -258,22 +179,9 @@ const CashierDashboard: React.FC = () => {
   useEffect(() => {
     fetchMembers();
     fetchTransactions();
-    fetchCashDrawers();
-    fetchProducts();
-    fetchPromotions();
-    fetchServiceRequests();
-    fetchServiceRequestStats();
-    fetchCashAdvances();
-    fetchRefunds();
-    fetchComplaints();
     fetchFraudAlerts();
-    fetchFraudStats();
     fetchAuditData();
     fetchPerformanceData();
-    fetchReports();
-    fetchReportTemplates();
-    fetchReportSchedules();
-    fetchReportAnalytics();
   }, [auditTimeRange, selectedTimeRange, fetchAuditData]);
 
   // Keyboard Shortcuts (Preserved)
@@ -287,7 +195,6 @@ const CashierDashboard: React.FC = () => {
           case 'd': event.preventDefault(); setActiveTab('deposit'); break;
           case 'w': event.preventDefault(); setActiveTab('withdrawal'); break;
           case 'c': event.preventDefault(); setActiveTab('check_deposit'); break;
-          case 'f': event.preventDefault(); setShowAdvancedFilters(!startAdvancedFilters); break;
           case 'o': event.preventDefault(); setActiveTab('overview'); break;
           case '/': event.preventDefault(); (document.querySelector('input[placeholder*="Search"]') as HTMLInputElement)?.focus(); break;
         }
@@ -295,7 +202,7 @@ const CashierDashboard: React.FC = () => {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [startAdvancedFilters]);
+  }, []);
 
   const showMessage = (type: string, text: string) => {
     setMessage({ type, text });
@@ -304,9 +211,8 @@ const CashierDashboard: React.FC = () => {
 
   const handleLogout = async () => { await logout(); navigate('/login'); };
   const announceToScreenReader = (msg: string) => {
-    // eslint-disable-next-line no-console
     logger.log(msg);
-  }; // Simplified
+  };
 
   // --- HANDLERS ---
   const handleTabChange = (tabId: string) => {
@@ -347,7 +253,7 @@ const CashierDashboard: React.FC = () => {
       formData.append('account_type', checkDepositAccountType);
       formData.append('front_image', frontImage);
       if (backImage) formData.append('back_image', backImage);
-      const r = await api.post<any>('check-deposits/process-check-deposit/', formData);
+      const r = await api.post<{ transaction_id: string }>('check-deposits/process-check-deposit/', formData);
       showMessage('success', `Check Deposited! ID: ${r.data.transaction_id} `);
       setCheckDepositAmount(''); setCheckDepositMemberId(''); setFrontImage(null); setBackImage(null);
       fetchTransactions();
@@ -407,19 +313,18 @@ const CashierDashboard: React.FC = () => {
             handleCheckDepositSubmit={handleCheckDepositSubmit}
           />
         );
-      case 'refunds': return <RefundsTab />;
-      case 'complaints': return <ComplaintsTab />;
-      case 'fraud_alerts': return <FraudAlertsTab />;
-      case 'cash_advances': return <CashAdvancesTab />;
+      case 'complaints': return <ErrorBoundary><SupportHub mode="staff" initialTab="complaints" /></ErrorBoundary>;
+      case 'fraud_alerts': return <Card><h2>Fraud Alerts handled in security module</h2></Card>;
+      case 'cash_advances': return <ErrorBoundary><FinancialRequestsHub mode="staff" initialView="cash_advances" /></ErrorBoundary>;
       case 'transaction_search': return <TransactionSearchTab />;
-      case 'account_opening': return <ErrorBoundary><AccountOpeningTab /></ErrorBoundary>;
+      case 'account_opening': return <ErrorBoundary><OnboardingHub mode="staff" /></ErrorBoundary>;
       case 'account_closure': return <ErrorBoundary><AccountClosureTab /></ErrorBoundary>;
       case 'products_promotions': return <ErrorBoundary><ProductsPromotionsTab /></ErrorBoundary>;
-      case 'service_requests': return <ErrorBoundary><ServiceRequestsTab /></ErrorBoundary>;
-      case 'cash_drawer': return <ErrorBoundary><CashDrawerTab /></ErrorBoundary>;
-      case 'my_payslips': return <ErrorBoundary><StaffPayslipViewer /></ErrorBoundary>;
+      case 'service_requests': return <ErrorBoundary><SupportHub mode="staff" initialTab="service_requests" /></ErrorBoundary>;
+      case 'cash_drawer': return <CashDrawerTab />;
       case 'security_monitoring': return <SecurityMonitoringTab />;
       case 'messaging': return <MessagingTab onOpenMessaging={() => hasMessagingAccess ? navigate('/messaging') : alert('Access Denied')} />;
+      case 'refunds': return <ErrorBoundary><FinancialRequestsHub mode="staff" initialView="refunds" /></ErrorBoundary>;
       default: return <Card><h2>🚧 Under Construction</h2></Card>;
     }
   };

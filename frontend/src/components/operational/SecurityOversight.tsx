@@ -94,7 +94,7 @@ const SecurityOversight: React.FC<SecurityOversightProps> = ({
                   <p className="text-sm text-gray-500 mt-1 max-w-xl">{alert.message}</p>
                   <div className="flex gap-4 mt-2 text-[10px] font-bold text-gray-400 uppercase">
                     <span>📅 {new Date(alert.created_at || '').toLocaleDateString()}</span>
-                    <span>🆔 Transaction: {typeof alert.user === 'object' ? (alert.user as any)?.id : alert.user || 'N/A'}</span>
+                    <span>🆔 User ID: {typeof alert.user === 'object' ? (alert.user as any)?.id : (alert.user || 'N/A')}</span>
                   </div>
                 </div>
               </div>
