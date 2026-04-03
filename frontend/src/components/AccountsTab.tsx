@@ -153,8 +153,8 @@ const AccountsTab: React.FC = () => {
             <h3 className="text-xl font-bold text-gray-900">
               Request #{selectedRequest.id} — {selectedRequest.full_name || `${selectedRequest.first_name} ${selectedRequest.last_name}`}
             </h3>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[selectedRequest.status!] || ''}`}>
-              {selectedRequest.status === 'approved' ? 'Awaiting Credentials Dispatch' : selectedRequest.status}
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[selectedRequest.status || ''] || ''}`}>
+              {selectedRequest.status === 'approved' ? 'Awaiting Credentials Dispatch' : (selectedRequest.status || 'Unknown')}
             </span>
           </div>
 
@@ -302,8 +302,8 @@ const AccountsTab: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">{req.account_type}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[req.status!] || 'bg-gray-100 text-gray-600'}`}>
-                        {req.status === 'approved' ? 'Awaiting Dispatch' : req.status}
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${STATUS_BADGE[req.status || ''] || 'bg-gray-100 text-gray-600'}`}>
+                        {req.status === 'approved' ? 'Awaiting Dispatch' : (req.status || 'Unknown')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-400">

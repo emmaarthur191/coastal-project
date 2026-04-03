@@ -124,7 +124,7 @@ const OperationalOverview: React.FC<OperationalOverviewProps> = ({
                     >
                       {categoryData.map((entry, index) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={`cell-${entry.name}-${index}`}
                           fill={entry.color}
                           className="hover:opacity-80 transition-opacity outline-none"
                         />

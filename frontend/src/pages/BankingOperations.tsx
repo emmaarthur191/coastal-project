@@ -141,7 +141,7 @@ function BankingOperations() {
       }
       if (fraudRes.success) {
         const data = fraudRes.data;
-        setFraudAlerts((Array.isArray(data) ? data : data?.results || []) as any[]);
+        setFraudAlerts((Array.isArray(data) ? data : data?.results || []) as ExtendedFraudAlert[]);
       }
 
     } catch (error) {

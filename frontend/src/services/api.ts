@@ -11,6 +11,7 @@ import type { Refund } from '../api/models/Refund';
 import type { Report } from '../api/models/Report';
 import type { ReportSchedule } from '../api/models/ReportSchedule';
 import type { ReportTemplate } from '../api/models/ReportTemplate';
+import type { AccountOpeningRequest } from '../api/models/AccountOpeningRequest';
 import type { Transaction } from '../api/models/Transaction';
 import type { User } from '../api/models/User';
 
@@ -27,6 +28,7 @@ export type {
   Report,
   ReportSchedule,
   ReportTemplate,
+  AccountOpeningRequest,
   Transaction,
   User
 };
@@ -275,28 +277,7 @@ export interface SendMessageData {
   message_type?: string; // Add for compatibility
 }
 
-/**
- * Data structure for Account Opening Requests (Onboarding)
- */
-export interface AccountOpeningRequest {
-  id: number | string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  id_type: string;
-  id_number: string;
-  account_type: string;
-  initial_deposit: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  submitted_by?: number | string;
-  processed_by?: number | string;
-  created_at: string;
-  updated_at: string;
-  approved_at?: string;
-  rejection_reason?: string;
-  notes?: string;
-}
+// AccountOpeningRequest is now imported from models
 
 /**
  * Input data for submitting a new account opening request

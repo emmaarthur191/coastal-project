@@ -43,40 +43,19 @@ interface StaffMember {
   status: string;
 }
 
-interface EnhancedUserManagementFormProps {
-  formData: UserFormData;
-  setFormData: React.Dispatch<React.SetStateAction<UserFormData>>;
-  otpCode: string;
-  setOtpCode: React.Dispatch<React.SetStateAction<string>>;
-  phoneVerified: boolean;
-  setPhoneVerified: React.Dispatch<React.SetStateAction<boolean>>;
-  otpSent: boolean;
-  setOtpSent: React.Dispatch<React.SetStateAction<boolean>>;
-  otpExpiresIn: number;
-  setOtpExpiresIn: React.Dispatch<React.SetStateAction<number>>;
-  otpLoading?: boolean;
-  handleSendOTP: () => void;
-  handleVerifyOTP: () => void;
+interface UserManagementSectionProps {
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  handleCreateUser: (e: React.FormEvent) => void;
   staffMembers: StaffMember[];
   fetchStaffMembers: () => void;
 }
 
-const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
+const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
   formData,
   setFormData,
-  otpCode,
-  setOtpCode,
-  phoneVerified,
-  setPhoneVerified,
-  otpSent,
-  setOtpSent,
-  otpExpiresIn,
-  setOtpExpiresIn,
-  handleSendOTP,
-  handleVerifyOTP,
   staffMembers,
   fetchStaffMembers,
-  otpLoading = false
 }) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -151,10 +130,6 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    if (!phoneVerified) {
-      alert('Please verify your phone number with OTP before creating the user.');
-      return;
-    }
     try {
       setIsSubmitting(true);
       const response = await authService.createUser(formData);
@@ -166,9 +141,6 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
           passport_picture: null, application_letter: null, appointment_letter: null,
           bank_name: '', account_number: '', branch_code: '', routing_number: ''
         });
-        setOtpCode('');
-        setPhoneVerified(false);
-        setOtpSent(false);
         fetchStaffMembers();
       } else {
         alert('Failed to create user: ' + response.error);
@@ -357,70 +329,15 @@ const EnhancedUserManagementForm: React.FC<EnhancedUserManagementFormProps> = ({
             </div>
           </div>
 
-          {/* OTP Verification Section */}
-          <div>
-            <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📱 Phone Verification</h4>
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-              {!otpSent ? (
-                <Button
-                  type="button"
-                  disabled={otpLoading}
-                  onClick={() => {
-                    if (!formData.phone) {
-                      alert('Please enter a phone number first.');
-                      return;
-                    }
-                    handleSendOTP();
-                  }}
-                >
-                  {otpLoading ? 'Sending...' : 'Send OTP Code'}
-                </Button>
-              ) : !phoneVerified ? (
-                <div className="space-y-4">
-                  <Input
-                    label="Enter OTP"
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    maxLength={6}
-                  />
-                  <div className="flex gap-4">
-                    <Button type="button" onClick={handleVerifyOTP} variant="success">
-                      Verify OTP
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtpCode('');
-                        setOtpExpiresIn(0);
-                      }}
-                      variant="secondary"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Code expires in: {Math.floor(otpExpiresIn / 60)}:{String(otpExpiresIn % 60).padStart(2, '0')}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-emerald-600 font-bold flex items-center gap-2">
-                  ✅ Phone Verified!
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={!phoneVerified || isSubmitting}
-            variant={phoneVerified && !isSubmitting ? "primary" : "secondary"}
+            disabled={isSubmitting}
+            variant={!isSubmitting ? "primary" : "secondary"}
             className="w-full text-lg py-4"
           >
-            {isSubmitting ? 'Creating User...' : phoneVerified ? 'Create User' : 'Verify Phone to Create User'}
+            {isSubmitting ? 'Creating User...' : 'Create User'}
           </Button>
         </form>
       </GlassCard>

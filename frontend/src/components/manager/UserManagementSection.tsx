@@ -12,17 +12,6 @@ interface StaffMember {
 interface UserManagementSectionProps {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
-  otpCode: string;
-  setOtpCode: React.Dispatch<React.SetStateAction<string>>;
-  phoneVerified: boolean;
-  setPhoneVerified: React.Dispatch<React.SetStateAction<boolean>>;
-  otpSent: boolean;
-  setOtpSent: React.Dispatch<React.SetStateAction<boolean>>;
-  otpExpiresIn: number;
-  setOtpExpiresIn: React.Dispatch<React.SetStateAction<number>>;
-  otpLoading: boolean;
-  handleSendOTP: () => void;
-  handleVerifyOTP: () => void;
   handleCreateUser: (e: React.FormEvent) => void;
   staffMembers: StaffMember[];
   fetchStaffMembers: () => void;
@@ -35,6 +24,5 @@ const UserManagementSection: React.FC<UserManagementSectionProps> = (props) => {
     </div>
   );
 };
-
 
 export default UserManagementSection;

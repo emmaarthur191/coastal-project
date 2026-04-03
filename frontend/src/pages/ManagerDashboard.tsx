@@ -80,11 +80,6 @@ function ManagerDashboard() {
   // unused: const [commissionCalculation, setCommissionCalculation] = useState(null);
   // unused: const [showDropdown, setShowDropdown] = useState(false);
   const [staffMembers, setStaffMembers] = useState([]);
-  const [otpCode, setOtpCode] = useState('');
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpExpiresIn, setOtpExpiresIn] = useState(0);
-  const [otpLoading, setOtpLoading] = useState(false); // Prevent double-clicks
   const [expenses, setExpenses] = useState([]);
   const [newExpense, setNewExpense] = useState({
     category: '', amount: '', description: '', date_incurred: new Date().toISOString().split('T')[0]
@@ -149,74 +144,12 @@ function ManagerDashboard() {
   // --- HANDLERS ---
   const handleLogout = async () => { await logout(); navigate('/login'); };
 
-  const handleSendOTP = async () => {
-    // Prevent double-clicks
-    if (otpLoading) {
-      logger.debug('[OTP] Request already in progress, ignoring');
-      return;
-    }
-
-    // Validate phone number exists and is not just whitespace
-    const phoneNumber = formData.phone?.trim();
-    if (!phoneNumber) {
-      alert('Please enter a phone number first');
-      return;
-    }
-
-    // Set loading state to prevent duplicate requests
-    setOtpLoading(true);
-    logger.debug('[OTP] Sending OTP to phone:', phoneNumber);
-
-    try {
-      const response = await authService.sendOTP(formData.phone) as { success: boolean; error?: string; data?: { test_mode?: boolean; otp_code?: string } };
-
-      logger.debug('[OTP] Response received');  // Do NOT log actual response - contains sensitive OTP data
-
-      if (response.success) {
-        setOtpSent(true);
-        setOtpExpiresIn(300);
-        if (response.data.test_mode && response.data.otp_code) {
-          alert(`TEST MODE OTP: ${response.data.otp_code}`);
-        } else {
-          alert('OTP sent to your phone number.');
-        }
-        const timer = setInterval(() => {
-          setOtpExpiresIn(prev => {
-            if (prev <= 1) { clearInterval(timer); setOtpSent(false); return 0; }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        alert('Failed to send OTP: ' + response.error);
-      }
-    } catch (error) {
-      console.error('[OTP] Error:', error);
-      alert('Failed to send OTP. Please try again.');
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (!otpCode) { alert('Please enter the OTP code'); return; }
-    const phoneNumber = formData.phone?.trim();
-    const response = await authService.verifyOTP(otpCode, phoneNumber) as { success: boolean; error?: string };
-    if (response.success) {
-      setPhoneVerified(true);
-      setOtpSent(false);
-      alert('Phone number verified successfully!');
-    } else {
-      alert('Failed to verify OTP: ' + response.error);
-    }
-  };
-
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phoneVerified) { alert('Please verify your phone number with OTP before creating the user.'); return; }
     const response = await (authService as unknown as { createUser: (data: Record<string, string>) => Promise<{ success: boolean; error?: string; data?: { staff_id?: string } }> }).createUser(formData);
     if (response.success) {
       alert(`User created! ID: ${response.data.staff_id || 'N/A'}`);
-      setFormData({}); setOtpCode(''); setPhoneVerified(false); setOtpSent(false);
+      setFormData({});
     } else { alert('Failed to create user: ' + response.error); }
   };
 
@@ -269,12 +202,6 @@ function ManagerDashboard() {
       case 'users': return (
         <UserManagementSection
           formData={formData} setFormData={setFormData}
-          otpCode={otpCode} setOtpCode={setOtpCode}
-          phoneVerified={phoneVerified} setPhoneVerified={setPhoneVerified}
-          otpSent={otpSent} setOtpSent={setOtpSent}
-          otpExpiresIn={otpExpiresIn} setOtpExpiresIn={setOtpExpiresIn}
-          otpLoading={otpLoading}
-          handleSendOTP={handleSendOTP} handleVerifyOTP={handleVerifyOTP}
           handleCreateUser={handleCreateUser}
           staffMembers={staffMembers} fetchStaffMembers={fetchStaffMembers}
         />

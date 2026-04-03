@@ -60,46 +60,59 @@ const SecuritySection: React.FC = () => {
     const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
     const [loading, setLoading] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(true);
+    const isMounted = React.useRef(true);
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
 
     const fetchAuditLogs = useCallback(async () => {
         try {
             const response = await api.get<{ audit_logs: AuditLog[] }>('audit/dashboard/');
-            setAuditLogs(response.data?.audit_logs || []);
+            if (isMounted.current) {
+                setAuditLogs(response.data?.audit_logs || []);
+            }
         } catch (error) {
-            console.error('Error fetching audit logs:', error);
+            if (isMounted.current) console.error('Error fetching audit logs:', error);
         }
     }, []);
 
     const fetchLoginAttempts = useCallback(async () => {
         try {
             const response = await api.get<LoginAttempt[]>('users/auth/login-attempts/');
-            setLoginAttempts(response.data || []);
+            if (isMounted.current) {
+                setLoginAttempts(response.data || []);
+            }
         } catch (error) {
-            console.error('Error fetching login attempts:', error);
+            if (isMounted.current) console.error('Error fetching login attempts:', error);
         }
     }, []);
 
     const fetchFraudAlerts = useCallback(async () => {
         try {
             const response = await api.get<FraudAlert[] | { results?: FraudAlert[] }>('fraud/alerts/');
-            const data = response.data;
-
-            if (Array.isArray(data)) {
-                setFraudAlerts(data);
-            } else {
-                setFraudAlerts(data?.results || []);
+            if (isMounted.current) {
+                const data = response.data;
+                if (Array.isArray(data)) {
+                    setFraudAlerts(data);
+                } else {
+                    setFraudAlerts(data?.results || []);
+                }
             }
         } catch (error) {
-            console.error('Error fetching fraud alerts:', error);
+            if (isMounted.current) console.error('Error fetching fraud alerts:', error);
         }
     }, []);
 
     const fetchActiveSessions = useCallback(async () => {
         try {
             const response = await api.get<ActiveSession[]>('users/sessions/');
-            setActiveSessions(response.data || []);
+            if (isMounted.current) {
+                setActiveSessions(response.data || []);
+            }
         } catch (error) {
-            console.error('Error fetching active sessions:', error);
+            if (isMounted.current) console.error('Error fetching active sessions:', error);
         }
     }, []);
 
