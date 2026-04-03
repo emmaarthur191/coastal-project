@@ -276,6 +276,44 @@ export interface SendMessageData {
 }
 
 /**
+ * Data structure for Account Opening Requests (Onboarding)
+ */
+export interface AccountOpeningRequest {
+  id: number | string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  id_type: string;
+  id_number: string;
+  account_type: string;
+  initial_deposit: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  submitted_by?: number | string;
+  processed_by?: number | string;
+  created_at: string;
+  updated_at: string;
+  approved_at?: string;
+  rejection_reason?: string;
+  notes?: string;
+}
+
+/**
+ * Input data for submitting a new account opening request
+ */
+export interface CreateAccountOpeningData {
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone_number: string;
+  date_of_birth?: string;
+  id_type: string;
+  id_number: string;
+  account_type: string;
+  initial_deposit?: number | string;
+}
+
+/**
  * Performance dashboard analytics data
  */
 export interface PerformanceDashboardData {
@@ -366,6 +404,18 @@ export interface PerformanceMetric {
   unit: string;
   status: 'good' | 'warning' | 'critical';
   description: string;
+}
+
+/**
+ * Statistics for operational service requests (refunds, complaints, etc.)
+ */
+export interface ServiceStats {
+  total_requests: number;
+  pending: number;
+  completed: number;
+  in_progress: number;
+  by_type: Record<string, number>;
+  average_resolution_time: string | null;
 }
 
 /**
@@ -1538,48 +1588,30 @@ export const apiService = {
     }
   },
 
-  async submitClientRegistration(formData: FormData): Promise<{ success: boolean; data?: { id: number }; error?: string }> {
-    try {
-      const response = await api.post<{ id: number }>('banking/client-registrations/submit-registration/', formData);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Registration failed' };
-    }
-  },
-
-  async registerClient(data: FormData | Record<string, unknown>): Promise<{ success: boolean; data?: { id: string | number } | unknown; error?: string }> {
-    try {
-      const response = await api.post('banking/client-registrations/', data);
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Client registration failed' };
-    }
-  },
-
-  async sendClientRegistrationOTP(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
-    try {
-      const response = await api.post<{ message: string }>('banking/client-registrations/send-otp/', { email });
-      return { success: true, message: response.data.message };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'OTP sending failed' };
-    }
-  },
-
-  async verifyClientRegistrationOTP(email: string, otp: string): Promise<{ success: boolean; data?: { account_number: string }; error?: string }> {
-    try {
-      const response = await api.post<{ account_number: string }>('banking/client-registrations/verify-otp/', { email, otp });
-      return { success: true, data: response.data };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Verification failed' };
-    }
-  },
-
   async getFraudAlerts(): Promise<{ success: boolean; data?: PaginatedResponse<FraudAlert>; error?: string }> {
     try {
       const response = await api.get<PaginatedResponse<FraudAlert>>('banking/fraud-alerts/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async resolveFraudAlert(alertId: string | number): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<{ status: string }>(`banking/fraud-alerts/${alertId}/resolve/`, {});
+      return { success: response.data.status === 'success', data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Resolution failed' };
+    }
+  },
+
+  async runFraudCheck(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<{ status: string }>('banking/fraud-alerts/run-check/', {});
+      return { success: response.data.status === 'success', data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fraud sweep failed' };
     }
   },
 
@@ -1619,9 +1651,9 @@ export const apiService = {
     }
   },
 
-  async getPendingLoans(): Promise<{ success: boolean; data?: PaginatedResponse<LoanExtended>; error?: string }> {
+  async getPendingLoans(page = 1): Promise<{ success: boolean; data?: PaginatedResponse<LoanExtended>; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<LoanExtended>>('banking/loans/pending/');
+      const response = await api.get<PaginatedResponse<LoanExtended>>(`banking/loans/pending/?page=${page}`);
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
@@ -1655,12 +1687,48 @@ export const apiService = {
     }
   },
 
+  async approveCashAdvance(advanceId: string | number): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<any>(`banking/cash-advances/${advanceId}/approve/`, {});
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
+    }
+  },
+
+  async rejectCashAdvance(advanceId: string | number, notes?: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<any>(`banking/cash-advances/${advanceId}/reject/`, { notes });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
+    }
+  },
+
   async getRefunds(): Promise<{ success: boolean; data?: PaginatedResponse<Refund>; error?: string }> {
     try {
       const response = await api.get<PaginatedResponse<Refund>>('banking/refunds/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async approveRefund(refundId: string | number, admin_notes?: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<any>(`banking/refunds/${refundId}/approve/`, { admin_notes });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
+    }
+  },
+
+  async rejectRefund(refundId: string | number, admin_notes?: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<any>(`banking/refunds/${refundId}/reject/`, { admin_notes });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 
@@ -1691,12 +1759,102 @@ export const apiService = {
     }
   },
 
-  async sendMessage(data: SendMessageData): Promise<{ success: boolean; data?: MessageExtended; error?: string }> {
+  async createMessage(data: { thread_id: string | number; content: string }): Promise<{ success: boolean; data?: MessageExtended; error?: string }> {
     try {
-      const response = await api.post<MessageExtended>('banking/messages/', data);
+      const response = await api.post<MessageExtended>(`banking/message-threads/${data.thread_id}/messages/`, { content: data.content });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Send failed' };
+    }
+  },
+
+  async reviewLoan(loanId: string | number, status: 'approved' | 'rejected'): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/loans/${loanId}/review/`, { status });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Loan review failed' };
+    }
+  },
+
+  async reviewCashAdvance(advanceId: string | number, status: 'approved' | 'rejected'): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/cash-advances/${advanceId}/review/`, { status });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Cash advance review failed' };
+    }
+  },
+
+  async reviewRefund(refundId: string | number, status: 'approved' | 'rejected'): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/refunds/${refundId}/review/`, { status });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Refund review failed' };
+    }
+  },
+
+  async reviewFraudAlert(alertId: string | number, status: 'confirmed' | 'dismissed'): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post(`banking/fraud-alerts/${alertId}/review/`, { status });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fraud review failed' };
+    }
+  },
+
+  async getAccountOpenings(): Promise<{ success: boolean; data?: AccountOpeningRequest[]; error?: string }> {
+    try {
+      const response = await api.get<AccountOpeningRequest[]>('banking/account-openings/');
+      return { success: true, data: (response.data as any).results || response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async submitAccountOpening(data: CreateAccountOpeningData): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+    try {
+      const response = await api.post<AccountOpeningRequest>('banking/account-openings/submit-request/', data);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Submission failed' };
+    }
+  },
+
+  async approveAccountOpening(id: string | number): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+    try {
+      const response = await api.post<AccountOpeningRequest>(`banking/account-openings/${id}/approve/`);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
+    }
+  },
+
+  async rejectAccountOpening(id: string | number, reason: string): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+    try {
+      const response = await api.post<AccountOpeningRequest>(`banking/account-openings/${id}/reject/`, { reason });
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
+    }
+  },
+
+  async dispatchCredentials(id: string | number): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+    try {
+      const response = await api.post<AccountOpeningRequest>(`banking/account-openings/${id}/dispatch-credentials/`);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Dispatch failed' };
+    }
+  },
+
+  async approveAndPrintAccountOpening(id: string | number): Promise<{ success: boolean; blob?: Blob; error?: string }> {
+    try {
+      const response = await api.post(`banking/account-openings/${id}/approve-and-print/`, {}, { responseType: 'blob' });
+      return { success: true, blob: response.data as any };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Approval & Print failed' };
     }
   },
 
@@ -1712,6 +1870,15 @@ export const apiService = {
   async getPerformanceMetrics(): Promise<{ success: boolean; data?: PerformanceMetric[]; error?: string }> {
     try {
       const response = await api.get<PerformanceMetric[]>('performance/metrics/');
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async getServiceStats(): Promise<{ success: boolean; data?: ServiceStats; error?: string }> {
+    try {
+      const response = await api.get<ServiceStats>('services/stats/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
@@ -1778,6 +1945,21 @@ export const apiService = {
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+    }
+  },
+
+  async generateOperationalReport(params: {
+    type: string;
+    format: 'pdf' | 'csv';
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await api.post<any>('operations/generate-report/', params);
+      return { success: true, data: response.data };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Report generation failed' };
     }
   },
 

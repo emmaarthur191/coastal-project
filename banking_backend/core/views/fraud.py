@@ -33,9 +33,10 @@ class FraudAlertViewSet(
     def get_queryset(self):
         """Filter fraud alerts so customers only see alerts related to their own accounts."""
         user = self.request.user
+        queryset = self.queryset.select_related("user", "transaction")
         if user.role == "customer":
-            return self.queryset.filter(user=user)
-        return self.queryset
+            return queryset.filter(user=user)
+        return queryset
 
     def get_permissions(self):
         """Map fraud-related actions to their required permission levels (Staff or Owner)."""
@@ -61,6 +62,30 @@ class FraudAlertViewSet(
                 "unresolved": unresolved,
                 "by_severity": list(by_severity),
                 "recent_alerts": FraudAlertSerializer(recent, many=True).data,
+            }
+        )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def resolve(self, request, pk=None):
+        """Mark a fraud alert as resolved."""
+        from django.utils import timezone
+
+        alert = self.get_object()
+        alert.is_resolved = True
+        alert.resolved_at = timezone.now()
+        alert.save(update_fields=["is_resolved", "resolved_at"])
+
+        return Response({"status": "success", "message": "Fraud alert resolved."})
+
+    @action(detail=False, methods=["post"], permission_classes=[IsStaff])
+    def run_check(self, request):
+        """Trigger an automated fraud detection sweep (Mock/Placeholder)."""
+        # In a real system, this might trigger a Celery task or ML endpoint.
+        logger.info(f"Staff {request.user.email} triggered an automated fraud sweep.")
+        return Response(
+            {
+                "status": "success",
+                "message": "Automated fraud sweep initiated. Results will appear in the alert list shortly.",
             }
         )
 

@@ -124,7 +124,7 @@ class SendexaService:
                     return True, "Sent successfully"
 
                 outbox.status = "failed"
-                outbox.error_message = f"HTTP {response.status_code}: {response.text[:200]}"
+                outbox.error_message = f"HTTP {response.status_code}: {response.text[:1000]}"
                 outbox.save()
                 return False, outbox.error_message or "Unknown error"
 
@@ -132,7 +132,7 @@ class SendexaService:
                 logger.error(f"Sendexa: Attempt {attempt+1} failed: {e}")
                 if attempt == max_retries - 1:
                     outbox.status = "failed"
-                    outbox.error_message = str(e)[:500]
+                    outbox.error_message = str(e)[:1000]
                     outbox.save()
                     return False, str(e)
                 time.sleep(2**attempt)

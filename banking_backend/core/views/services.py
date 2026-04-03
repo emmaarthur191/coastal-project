@@ -160,9 +160,10 @@ class ServiceRequestViewSet(
 
     def get_queryset(self):
         user = self.request.user
+        queryset = self.queryset.select_related("user", "processed_by")
         if user.role == "customer":
-            return self.queryset.filter(user=user)
-        return self.queryset
+            return queryset.filter(user=user)
+        return queryset
 
     def get_permissions(self):
         from ..permissions import IsStaffOrCustomer
@@ -265,15 +266,33 @@ class ServiceStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Retrieve aggregated statistics for service requests."""
+        """Retrieve aggregated statistics for service requests using database-level aggregation."""
+        from django.db.models import Avg, Count, F, Q
+
+        stats = ServiceRequest.objects.aggregate(
+            total=Count("id"),
+            pending=Count("id", filter=Q(status="pending")),
+            completed=Count("id", filter=Q(status="completed")),
+            processing=Count("id", filter=Q(status="processing")),
+            avg_resolution_time=Avg(F("processed_at") - F("created_at"), filter=Q(status="completed")),
+        )
+
+        by_type = list(ServiceRequest.objects.values("request_type").annotate(count=Count("id")))
+
+        avg_time = stats["avg_resolution_time"]
+        avg_time_str = "N/A"
+        if avg_time:
+            hours = int(avg_time.total_seconds() // 3600)
+            avg_time_str = f"{hours} hours"
+
         return Response(
             {
-                "total_requests": 0,
-                "pending": 0,
-                "completed": 0,
-                "in_progress": 0,
-                "by_type": {},
-                "average_resolution_time": "0 hours",
+                "total_requests": stats["total"],
+                "pending": stats["pending"],
+                "completed": stats["completed"],
+                "in_progress": stats["processing"],
+                "by_type": {item["request_type"]: item["count"] for item in by_type},
+                "average_resolution_time": avg_time_str,
             }
         )
 
@@ -292,9 +311,10 @@ class RefundViewSet(
 
     def get_queryset(self):
         user = self.request.user
+        queryset = self.queryset.select_related("user", "transaction", "processed_by")
         if user.role == "customer":
-            return self.queryset.filter(user=user)
-        return self.queryset
+            return queryset.filter(user=user)
+        return queryset
 
     def get_permissions(self):
         from ..permissions import IsStaffOrCustomer
@@ -359,9 +379,10 @@ class ComplaintViewSet(
 
     def get_queryset(self):
         user = self.request.user
+        queryset = self.queryset.select_related("user", "resolved_by", "assigned_to")
         if user.role == "customer":
-            return self.queryset.filter(user=user)
-        return self.queryset
+            return queryset.filter(user=user)
+        return queryset
 
     def get_permissions(self):
         from ..permissions import IsStaffOrCustomer

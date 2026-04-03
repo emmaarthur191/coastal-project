@@ -68,6 +68,7 @@ function ManagerDashboard() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [_transactions, setTransactions] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [loanPagination, setLoanPagination] = useState({ current_page: 1, total_pages: 1, total_count: 0 });
   const [cashFlow, setCashFlow] = useState(null);
   const [interestData, setInterestData] = useState(null);
   const [commissionData, setCommissionData] = useState(null);
@@ -115,7 +116,17 @@ function ManagerDashboard() {
   }, []);
 
   const fetchTransactions = async () => { const r = await authService.getAllTransactions(); if (r.success) setTransactions(Array.isArray(r.data) ? r.data : []); };
-  const fetchLoans = async () => { const r = await authService.getPendingLoans(); if (r.success && r.data) setLoans(r.data.results || []); };
+  const fetchLoans = async (page = 1) => {
+    const r = await authService.getPendingLoans(page);
+    if (r.success && r.data) {
+      setLoans(r.data.results || []);
+      setLoanPagination({
+        current_page: page,
+        total_pages: Math.ceil((r.data.count || 0) / 20),
+        total_count: r.data.count || 0
+      });
+    }
+  };
   const fetchCashFlow = async () => { const r = await authService.getCashFlow(); if (r.success) setCashFlow(r.data); };
   const fetchInterest = async () => { const r = await authService.calculateInterest({}); if (r.success) setInterestData(r.data); };
   const fetchCommission = async () => { const r = await authService.calculateCommission({}); if (r.success) setCommissionData(r.data); };
@@ -275,7 +286,14 @@ function ManagerDashboard() {
         />
       );
       case 'transactions': return <TransactionsSection />;
-      case 'loans': return <LoansSection loans={loans} handleApproveLoan={handleApproveLoan} />;
+      case 'loans': return (
+        <LoansSection
+          loans={loans}
+          handleApproveLoan={handleApproveLoan}
+          pagination={loanPagination}
+          onPageChange={fetchLoans}
+        />
+      );
       case 'charges': return (
         <ServiceChargesSection
           newCharge={newCharge} setNewCharge={setNewCharge}

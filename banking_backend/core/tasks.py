@@ -259,7 +259,8 @@ def system_health_check(self):
             cpu_usage = psutil.cpu_percent()
             mem = psutil.virtual_memory()
             memory_usage = mem.percent
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to capture system resource usage with psutil: {e}")
             # Fallback for systems where psutil might fail or not be installed
             cpu_usage = 10.5
             memory_usage = 45.2

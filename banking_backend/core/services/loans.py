@@ -34,6 +34,9 @@ class LoanService:
     @transaction.atomic
     def approve_loan(loan: Loan, approved_by=None) -> Loan:
         """Approve a pending loan application and disburse funds."""
+        # 1. Acquire Lock on the Loan record to prevent double-approval/race conditions
+        loan = Loan.objects.select_for_update().get(pk=loan.pk)
+
         if loan.status != "pending":
             raise ValidationError("Only pending loans can be approved.")
 
@@ -47,19 +50,26 @@ class LoanService:
                 if loan.amount >= D("1000.00"):
                     raise PermissionDenied("Operations Managers can only approve loans below 1000 GHS.")
 
+        # 2. Find and lock the target account for disbursement
         target_account = (
-            Account.objects.filter(user=loan.user, account_type="member_savings", is_active=True)
+            Account.objects.select_for_update()
+            .filter(user=loan.user, account_type="member_savings", is_active=True)
             .order_by("created_at")
             .first()
         )
 
         if not target_account:
-            target_account = Account.objects.filter(user=loan.user, is_active=True).order_by("created_at").first()
+            target_account = (
+                Account.objects.select_for_update()
+                .filter(user=loan.user, is_active=True)
+                .order_by("created_at")
+                .first()
+            )
 
         if not target_account:
             # IAO SECURITY CHECK: Prevent disbursement if no active account is available.
             raise ValidationError(
-                detail=f"User {loan.user.email} has no active accounts for loan disbursement. Activate an account first."
+                "User {loan.user.email} has no active accounts for loan disbursement. Activate an account first."
             )
 
         loan.status = "approved"
@@ -79,6 +89,25 @@ class LoanService:
         transaction.on_commit(lambda: LoanService._send_loan_notification(loan, "approved"))
 
         logger.info(f"Loan {loan.id} approved and disbursed to account {target_account.account_number}.")
+        return loan
+
+    @staticmethod
+    @transaction.atomic
+    def reject_loan(loan: Loan, notes: str = None) -> Loan:
+        """Reject a pending loan application."""
+        loan = Loan.objects.select_for_update().get(pk=loan.pk)
+
+        if loan.status != "pending":
+            raise ValidationError("Only pending loans can be rejected.")
+
+        loan.status = "rejected"
+        if notes:
+            loan.purpose = f"{loan.purpose}\n\nREJECTION NOTES: {notes}"
+        loan.save(update_fields=["status", "purpose", "updated_at"])
+
+        transaction.on_commit(lambda: LoanService._send_loan_notification(loan, "rejected"))
+
+        logger.info(f"Loan {loan.id} rejected by staff.")
         return loan
 
     @staticmethod
@@ -125,13 +154,20 @@ class LoanService:
         if amount <= 0:
             raise ValidationError("Repayment amount must be positive.")
 
+        # 2. Acquire Lock on the Client's source Account
         source_account = (
-            Account.objects.filter(user=loan.user, account_type="member_savings", is_active=True)
+            Account.objects.select_for_update()
+            .filter(user=loan.user, account_type="member_savings", is_active=True)
             .order_by("created_at")
             .first()
         )
         if not source_account:
-            source_account = Account.objects.filter(user=loan.user, is_active=True).order_by("created_at").first()
+            source_account = (
+                Account.objects.select_for_update()
+                .filter(user=loan.user, is_active=True)
+                .order_by("created_at")
+                .first()
+            )
 
         if not source_account:
             raise ValidationError("Client has no active account to deduct repayment from.")
@@ -168,7 +204,14 @@ class LoanService:
 
     @staticmethod
     def calculate_monthly_payment(loan: Loan) -> Decimal:
-        """Calculate the monthly payment for a loan using simple interest."""
+        """Calculate the monthly payment for a loan using simple interest.
+        
+        Formula: (Principal + (Principal * Rate * Time)) / Time
+        """
+        if not loan.term_months or loan.term_months <= 0:
+            # Defensive check: if term is 0, return the full amount as the "monthly" payment
+            return loan.amount
+
         total_interest = (
             loan.amount * (loan.interest_rate / Decimal("100")) * (Decimal(str(loan.term_months)) / Decimal("12"))
         )

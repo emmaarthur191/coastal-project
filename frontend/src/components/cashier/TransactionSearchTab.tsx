@@ -36,6 +36,11 @@ const TransactionSearchTab: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+    const [pagination, setPagination] = useState({
+        total_pages: 1,
+        total_count: 0
+    });
+    const [currentPage, setCurrentPage] = useState(1);
     const [filters, setFilters] = useState({
         reference: '',
         member: '',
@@ -47,16 +52,22 @@ const TransactionSearchTab: React.FC = () => {
         max_amount: ''
     });
 
-    const handleSearch = async () => {
+    const handleSearch = async (page = 1) => {
         setLoading(true);
+        setCurrentPage(page);
         try {
             const params = new URLSearchParams();
             Object.entries(filters).forEach(([key, value]) => {
                 if (value) params.append(key, value);
             });
+            params.append('page', page.toString());
 
             const response = await api.get<PaginatedTransactionResponse>(`transactions/search/?${params.toString()}`);
             setTransactions(response.data?.results || []);
+            setPagination({
+                total_pages: Math.ceil((response.data?.count || 0) / 20),
+                total_count: response.data?.count || 0
+            });
         } catch (error) {
             console.error('Error searching transactions:', error);
             setTransactions([]);
@@ -184,7 +195,7 @@ const TransactionSearchTab: React.FC = () => {
                     <Button variant="secondary" onClick={clearFilters}>
                         Clear Filters
                     </Button>
-                    <Button variant="primary" onClick={handleSearch} disabled={loading} className="px-8 shadow-lg shadow-blue-100">
+                    <Button variant="primary" onClick={() => handleSearch(1)} disabled={loading} className="px-8 shadow-lg shadow-blue-100">
                         {loading ? 'Searching...' : 'Search Transactions 🔍'}
                     </Button>
                 </div>
@@ -244,6 +255,32 @@ const TransactionSearchTab: React.FC = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {pagination.total_pages > 1 && (
+                    <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
+                        <div className="text-xs text-gray-500">
+                            Showing page {currentPage} of {pagination.total_pages} ({pagination.total_count} total)
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={currentPage <= 1 || loading}
+                                onClick={() => handleSearch(currentPage - 1)}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={currentPage >= pagination.total_pages || loading}
+                                onClick={() => handleSearch(currentPage + 1)}
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
                 )}
             </GlassCard>

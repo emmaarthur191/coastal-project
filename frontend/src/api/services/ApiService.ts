@@ -465,17 +465,7 @@ export class ApiService {
             mediaType: 'application/json',
         });
     }
-    /**
-     * Handle client registration form submission.
-     * @returns any No response body
-     * @throws ApiError
-     */
-    public static apiBankingClientRegistrationsSubmitRegistrationCreate(): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/client-registrations/submit-registration/',
-        });
-    }
+
     /**
      * ViewSet for handling customer complaints.
      * @param category * `account` - Account Issues

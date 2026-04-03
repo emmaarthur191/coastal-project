@@ -1,28 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authService, OperationsMetrics, BranchActivity, SystemAlert, WorkflowStatus, ServiceCharge } from '../services/api';
+import { apiService as authService, LoanExtended as Loan, MessageThreadExtended, OperationsMetrics, BranchActivity, SystemAlert, WorkflowStatus, ServiceCharge, Complaint, CashAdvance, Refund, Account } from '../services/api';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 
-// Import Sub-components
+// Modular Operational Components (Unified Hub)
+import FinancialRequestsHub from '../components/operational/FinancialRequestsHub';
+import SecurityOversight from '../components/operational/SecurityOversight';
+import OperationalOverview from '../components/operational/OperationalOverview';
+import OperationalMessenger from '../components/operational/OperationalMessenger';
+import OperationalReports, { ReportParams } from '../components/operational/OperationalReports';
+import AdministrativeHub from '../components/operational/AdministrativeHub';
+
+// Legacy/Specialized Sub-components
 import OverviewTab from '../components/OverviewTab';
 import ServiceChargesTab from '../components/ServiceChargesTab';
-import ReportsSection from '../components/manager/ReportsSection';
-import LoanApprovalsSection from '../components/LoanApprovalsSection';
-import ClientRegistrationTab from '../components/ClientRegistrationTab';
-import AccountsTab from '../components/AccountsTab';
-
+import AccountOpeningTab from '../components/staff/AccountOpeningTab';
 import StaffIdsSection from '../components/manager/StaffIdsSection';
 import MobileBankerManagementSection from '../components/manager/MobileBankerManagementSection';
 import ProductsServicesManagement from '../components/manager/ProductsServicesManagement';
-import SecuritySection from '../components/manager/SecuritySection';
 
-// --- Types ---
-// Local WorkflowStatus interface removed in favor of imported one
+import { FraudAlert } from '../api/models/FraudAlert';
+import { Message } from '../api/models/Message';
 
-type ActiveView = 'overview' | 'accounts' | 'client-registration' | 'loan-approvals' | 'staff-ids' | 'mobile-banker-management' | 'branches' | 'reports' | 'alerts' | 'charges' | 'messaging' | 'products-services' | 'security';
+type ActiveView = 'overview' | 'accounts' | 'complaints' | 'account-opening' | 'loan-approvals' | 'cash-advances' | 'refunds' | 'staff-ids' | 'mobile-banker-management' | 'branches' | 'reports' | 'alerts' | 'charges' | 'messaging' | 'products-services' | 'security';
 
 interface StaffId {
   id: string;
@@ -33,25 +36,24 @@ interface StaffId {
   staff_id: string;
   employment_date: string;
   is_active: boolean;
+  is_approved: boolean;
   date_joined: string;
 }
-
-type StaffIdApiResponse = StaffId[] | { results: StaffId[] };
 
 function OperationsManagerDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const hasMessagingAccess = ['manager', 'operations_manager', 'cashier', 'mobile_banker'].includes(user?.role || '');
 
   // --- STATE ---
   const [activeView, setActiveView] = useState<ActiveView>('overview');
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState<string | number | null>(null);
 
   const [dashboardData, setDashboardData] = useState<{
     metrics: OperationsMetrics | null;
     branchActivity: BranchActivity[];
     systemAlerts: SystemAlert[];
-    workflowStatus: WorkflowStatus | Record<string, never>; // Allow empty object for initial state if needed
+    workflowStatus: WorkflowStatus | Record<string, never>;
     serviceCharges: ServiceCharge[];
   }>({
     metrics: null,
@@ -61,102 +63,271 @@ function OperationsManagerDashboard() {
     serviceCharges: [],
   });
 
+  // Operational Hub Data State
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [pendingLoans, setPendingLoans] = useState<Loan[]>([]);
+  const [cashAdvances, setCashAdvances] = useState<any[]>([]);
+  const [refunds, setRefunds] = useState<any[]>([]);
+  const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>([]);
+  
+  // Messaging state
+  const [messageThreads, setMessageThreads] = useState<MessageThreadExtended[]>([]);
+  const [selectedThread, setSelectedThread] = useState<MessageThreadExtended | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+
+  // Reporting state
+  const [reportsData, setReportsData] = useState<any>({});
+  const [reportParams, setReportParams] = useState<ReportParams>({
+    type: 'transactions',
+    format: 'pdf',
+    date_from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    date_to: new Date().toISOString().split('T')[0]
+  });
+
   const [newCharge, setNewCharge] = useState({
     name: '', description: '', charge_type: 'percentage', rate: '', applicable_to: []
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [serviceChargeCalculation, setServiceChargeCalculation] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [reportData, setReportData] = useState<unknown>(null);
+
   const [staffIds, setStaffIds] = useState<StaffId[]>([]);
   const [staffIdFilters, setStaffIdFilters] = useState({});
+  const [newComplaint, setNewComplaint] = useState({
+    subject: '', description: '', category: 'service', priority: 'medium'
+  });
 
   // --- HANDLERS ---
   const handleLogout = useCallback(async () => { await logout(); navigate('/login'); }, [logout, navigate]);
 
-  const _handleGenerateReport = useCallback(async (reportType: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const reportDataPayload = { type: reportType, date_from: lastWeek, date_to: today };
-
-    const result = await authService.generateOperationsReport(reportDataPayload);
-    if (result.success) {
-      alert(`Report '${reportType}' generated!`);
-      setReportData(result.data);
-    } else {
-      alert('Failed: ' + result.error);
+  const handleCreateComplaint = async () => {
+    try {
+      await authService.createComplaint(newComplaint);
+      alert('Incident logged in the priority queue.');
+      setNewComplaint({ subject: '', description: '', category: 'service', priority: 'medium' });
+      fetchData();
+    } catch (err) {
+      alert('Incident logging failed.');
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [metricsRes, branchRes, alertsRes, workflowRes, chargesRes] = await Promise.all([
-          authService.getOperationalMetrics(),
-          authService.getBranchActivity(),
-          authService.getSystemAlerts(),
-          authService.getWorkflowStatus(),
-          authService.getServiceCharges()
-        ]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [
+        metricsRes, branchRes, alertsRes, workflowRes, chargesRes,
+        loansRes, pendingLoansRes, advancesRes, refundsRes, fraudRes,
+        threadsRes, statsRes, accountsRes, complaintsRes
+      ] = await Promise.all([
+        authService.getOperationalMetrics(),
+        authService.getBranchActivity(),
+        authService.getSystemAlerts(),
+        authService.getWorkflowStatus(),
+        authService.getServiceCharges(),
+        authService.getLoans(),
+        authService.getPendingLoans(),
+        authService.getCashAdvances(),
+        authService.getRefunds(),
+        authService.getFraudAlerts(),
+        authService.getMessageThreads(),
+        authService.getServiceStats(),
+        authService.getAccounts(),
+        authService.getComplaints()
+      ]);
 
-        setDashboardData({
-          metrics: metricsRes.success && metricsRes.data ? metricsRes.data : null,
-          branchActivity: branchRes.success && Array.isArray(branchRes.data) ? branchRes.data : [],
-          systemAlerts: alertsRes.success && Array.isArray(alertsRes.data) ? alertsRes.data : [],
-          workflowStatus: workflowRes.success && workflowRes.data ? workflowRes.data : {},
-          serviceCharges: chargesRes.success && Array.isArray(chargesRes.data) ? chargesRes.data : [],
+      setDashboardData({
+        metrics: metricsRes.success && metricsRes.data ? metricsRes.data : null,
+        branchActivity: branchRes.success && Array.isArray(branchRes.data) ? branchRes.data : [],
+        systemAlerts: alertsRes.success && Array.isArray(alertsRes.data) ? alertsRes.data : [],
+        workflowStatus: workflowRes.success && workflowRes.data ? workflowRes.data : {},
+        serviceCharges: chargesRes.success && Array.isArray(chargesRes.data) ? chargesRes.data : [],
+      });
+
+      if (loansRes.success) {
+        const data = (loansRes as any).data;
+        setLoans((Array.isArray(data) ? data : data?.results || []) as Loan[]);
+      }
+      if (pendingLoansRes.success) {
+        const data = (pendingLoansRes as any).data;
+        setPendingLoans((Array.isArray(data) ? data : data?.results || []) as Loan[]);
+      }
+      if (advancesRes.success) {
+        const data = (advancesRes as any).data;
+        setCashAdvances(Array.isArray(data) ? data : data?.results || []);
+      }
+      if (refundsRes.success) {
+        const data = (refundsRes as any).data;
+        setRefunds(Array.isArray(data) ? data : data?.results || []);
+      }
+      if (fraudRes.success) {
+        const data = (fraudRes as any).data;
+        setFraudAlerts(Array.isArray(data) ? data : data?.results || []);
+      }
+      if (threadsRes.success) {
+        const data = (threadsRes as any).data;
+        setMessageThreads((Array.isArray(data) ? data : data?.results || []) as MessageThreadExtended[]);
+      }
+      if (accountsRes.success) {
+        setAccounts((accountsRes as any).data || []);
+      }
+      if (complaintsRes.success) {
+        const data = (complaintsRes as any).data;
+        setComplaints((Array.isArray(data) ? data : data?.results || []) as Complaint[]);
+      }
+      
+      if (statsRes.success && statsRes.data) {
+        setReportsData({
+          monthlyData: (statsRes.data as any).monthly_volume || [],
+          categoryData: (statsRes.data as any).type_distribution || []
         });
-      } catch (error) {
-        console.error('Error fetching operations data:', error);
-      } finally { setLoading(false); }
-    };
-    fetchData();
+      }
+    } catch (error) {
+      console.error('Error fetching operations data:', error);
+    } finally { setLoading(false); }
   }, []);
 
-  // Fetch staff IDs when view is active or filters change
-  const fetchStaffIds = useCallback(async () => {
-    const result = await authService.getStaffIds(staffIdFilters);
-    if (result.success) {
-      const data = result.data as StaffIdApiResponse;
-      setStaffIds(Array.isArray(data) ? data : data?.results || []);
-    }
-  }, [staffIdFilters]);
-
   useEffect(() => {
-    if (activeView === 'staff-ids') {
-      fetchStaffIds();
+    fetchData();
+  }, [fetchData]);
+
+  const handleSelectThread = async (thread: MessageThreadExtended) => {
+    setSelectedThread(thread);
+    try {
+      const res = await authService.getThreadMessages(String(thread.id));
+      if (res.success) {
+        const data = res.data as any;
+        setMessages(Array.isArray(data) ? data : data?.results || []);
+      }
+    } catch (err) {
+      console.error('Failed to load thread');
     }
-  }, [activeView, fetchStaffIds]);
+  };
+
+  const handleSendMessage = async () => {
+    if (!selectedThread || !newMessage.trim()) return;
+    setIsProcessing('sending');
+    try {
+      await authService.createMessage({
+        thread_id: String(selectedThread.id),
+        content: newMessage
+      });
+      setNewMessage('');
+      const res = await authService.getThreadMessages(String(selectedThread.id));
+      if (res.success) {
+        const data = res.data as any;
+        setMessages(Array.isArray(data) ? data : data?.results || []);
+      }
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setIsProcessing('generating-report');
+    try {
+      const res = await authService.generateOperationalReport(reportParams as any);
+      if (res.success && res.data) {
+        const blob = new Blob([res.data]);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `OM-Report-${reportParams.type}.${reportParams.format}`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+      }
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  const handleApproveLoan = async (id: string | number) => {
+    try {
+      await authService.reviewLoan(String(id), 'approved');
+      alert('Loan request approved');
+      fetchData();
+    } catch (err) {
+      alert('Approval failed');
+    }
+  };
+
+  const handleRejectLoan = async (id: string | number) => {
+    const reason = prompt('Please enter rejection reason:');
+    if (!reason) return;
+    try {
+      await authService.reviewLoan(String(id), 'rejected');
+      alert('Loan request rejected');
+      fetchData();
+    } catch (err) {
+      alert('Rejection failed');
+    }
+  };
+
+  const handleApproveCash = async (id: string | number) => {
+    try {
+      await authService.reviewCashAdvance(String(id), 'approved');
+      alert('Cash advance approved');
+      fetchData();
+    } catch (err) {
+      alert('Approval failed');
+    }
+  };
+
+  const handleRejectCash = async (id: string | number) => {
+    const reason = prompt('Please enter rejection reason:');
+    if (!reason) return;
+    try {
+      await authService.reviewCashAdvance(String(id), 'rejected');
+      alert('Cash advance rejected');
+      fetchData();
+    } catch (err) {
+      alert('Rejection failed');
+    }
+  };
+
+  const handleApproveRefund = async (id: string | number) => {
+    try {
+      await authService.reviewRefund(String(id), 'approved');
+      alert('Refund request approved');
+      fetchData();
+    } catch (err) {
+      alert('Approval failed');
+    }
+  };
+
+  const handleRejectRefund = async (id: string | number) => {
+    const reason = prompt('Please enter rejection reason:');
+    if (!reason) return;
+    try {
+      await authService.reviewRefund(String(id), 'rejected');
+      alert('Refund request rejected');
+      fetchData();
+    } catch (err) {
+      alert('Rejection failed');
+    }
+  };
 
   // --- MENU ---
   const menuItems = [
     { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'accounts', name: 'Accounts', icon: '🏦' },
-    { id: 'client-registration', name: 'Client Registration', icon: '👤' },
     { id: 'loan-approvals', name: 'Loan Approvals', icon: '✅' },
+    { id: 'cash-advances', name: 'Cash Advances', icon: '💵' },
+    { id: 'refunds', name: 'Refunds', icon: '🔄' },
+    { id: 'account-opening', name: 'Member Onboarding', icon: '👤' },
     { id: 'staff-ids', name: 'Staff IDs', icon: '🆔' },
+    { id: 'reports', name: 'Analytics & Reports', icon: '📋' },
+    { id: 'complaints', name: 'Performance & Incidents', icon: '🚨' },
+    { id: 'security', name: 'Security Hub', icon: '🛡️' },
+    { id: 'messaging', name: 'Staff Chat', icon: '💬' },
     { id: 'mobile-banker-management', name: 'Mobile Bankers', icon: '🛵' },
-    { id: 'branches', name: 'Branches', icon: '🏢' },
-    { id: 'reports', name: 'Reports', icon: '📋' },
-    { id: 'alerts', name: 'Alerts', icon: '🚨' },
-    { id: 'charges', name: 'Charges', icon: '🏷️' },
-    { id: 'products-services', name: 'Products & Services', icon: '🎁' },
-    { id: 'messaging', name: 'Messaging', icon: '💬' },
-    { id: 'security', name: 'Security', icon: '🛡️' }
+    { id: 'charges', name: 'Charges Config', icon: '🏷️' },
+    { id: 'products-services', name: 'Products', icon: '🎁' }
   ];
-
-  if (loading && !dashboardData.metrics) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   // --- CONTENT ---
   const renderContent = () => {
-    const { metrics, branchActivity, workflowStatus, serviceCharges, systemAlerts } = dashboardData;
+    const { metrics, branchActivity, workflowStatus, serviceCharges } = dashboardData;
 
     switch (activeView) {
       case 'overview':
@@ -168,73 +339,91 @@ function OperationsManagerDashboard() {
             workflowStatus={workflowStatus}
           />
         );
-      case 'accounts': return <Card><AccountsTab /></Card>;
-      case 'client-registration': return <Card><ClientRegistrationTab /></Card>;
-      case 'loan-approvals': return <Card><LoanApprovalsSection /></Card>;
+      case 'account-opening': return <Card><AccountOpeningTab /></Card>;
+      case 'loan-approvals':
+      case 'cash-advances':
+      case 'refunds':
+        return (
+          <FinancialRequestsHub
+            view={activeView === 'loan-approvals' ? 'pending-loans' : activeView as 'loans' | 'cash-advances' | 'refunds'}
+            pendingLoans={loans.filter(l => l.status === 'pending')}
+            cashAdvances={cashAdvances}
+            refunds={refunds}
+            onApproveLoan={handleApproveLoan}
+            onRejectLoan={handleRejectLoan}
+            onApproveCashAdvance={handleApproveCash}
+            onRejectCashAdvance={handleRejectCash}
+            onApproveRefund={handleApproveRefund}
+            onRejectRefund={handleRejectRefund}
+          />
+        );
+      case 'complaints':
+        return (
+          <AdministrativeHub 
+            view="complaints"
+            complaints={complaints}
+            onCreateComplaint={(c) => {
+              setNewComplaint({ subject: c.subject, description: c.description, category: c.category, priority: c.priority });
+              handleCreateComplaint();
+            }}
+            loading={loading}
+          />
+        );
+      case 'accounts':
+        return (
+          <AdministrativeHub 
+            view="accounts"
+            accounts={accounts}
+            loading={loading}
+          />
+        );
       case 'staff-ids':
         return (
           <StaffIdsSection
             staffIds={staffIds}
             staffIdFilters={staffIdFilters}
             setStaffIdFilters={setStaffIdFilters}
-            fetchStaffIds={fetchStaffIds}
+            fetchStaffIds={() => authService.getStaffIds(staffIdFilters).then(res => setStaffIds((res as any).data || []))}
           />
-        );
-      case 'mobile-banker-management':
-        return (
-          <Card>
-            <MobileBankerManagementSection />
-          </Card>
-        );
-      case 'branches':
-        return (
-          <Card>
-            <h2 className="text-2xl font-bold mb-4 text-secondary-900">Branch Activity Details</h2>
-            <div className="text-center py-8 text-secondary-500">Detailed branch activity view coming soon.</div>
-          </Card>
         );
       case 'reports':
         return (
-          <Card>
-            <ReportsSection />
-          </Card>
+          <div className="space-y-8">
+            <OperationalReports 
+              reportParams={reportParams}
+              onParamsChange={setReportParams}
+              onGenerateReport={handleGenerateReport}
+              isGenerating={isProcessing === 'generating-report'}
+            />
+            <OperationalOverview 
+              monthlyData={reportsData.monthlyData}
+              categoryData={reportsData.categoryData}
+              loading={loading}
+            />
+          </div>
         );
-      case 'alerts':
+      case 'security':
         return (
-          <Card>
-            <h2 className="text-2xl font-bold mb-6 text-secondary-900">System Alerts</h2>
-            {systemAlerts && systemAlerts.length > 0 ? (
-              <div className="space-y-4">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {systemAlerts.map((alert: any, index: number) => (
-                  <div key={alert.id || index} className={`p-4 rounded-lg border-l-4 ${alert.type === 'warning' ? 'bg-warning-50 border-l-warning-500' :
-                    alert.type === 'error' ? 'bg-error-50 border-l-error-500' :
-                      alert.type === 'info' ? 'bg-primary-50 border-l-primary-500' : 'bg-success-50 border-l-success-500'
-                    }`}>
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">
-                        {alert.type === 'warning' ? '⚠️' : alert.type === 'error' ? '❌' : alert.type === 'info' ? 'ℹ️' : '✅'}
-                      </span>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg text-secondary-900 mb-1">{alert.message}</h3>
-                        <div className="flex flex-wrap gap-3 text-sm text-secondary-600">
-                          <span>🆔 {alert.id}</span>
-                          <span className="uppercase font-semibold">📊 {alert.type}</span>
-                          <span className="uppercase font-semibold">⚡ {alert.severity}</span>
-                          <span>🕒 {new Date(alert.timestamp).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-secondary-500">
-                <div className="text-4xl mb-4">✅</div>
-                <p>No system alerts at this time.</p>
-              </div>
-            )}
-          </Card>
+          <SecurityOversight 
+            view="alerts"
+            alerts={fraudAlerts}
+            onInvestigate={(id) => navigate(`/fraud/alerts`)}
+            onConfirmFraud={(id) => authService.reviewFraudAlert(String(id), 'confirmed').then(() => fetchData())}
+            onDismissAlert={(id) => authService.reviewFraudAlert(String(id), 'dismissed').then(() => fetchData())}
+          />
+        );
+      case 'messaging':
+        return (
+          <OperationalMessenger 
+            threads={messageThreads as any}
+            selectedThread={selectedThread as any}
+            messages={messages as any}
+            newMessage={newMessage}
+            onSelectThread={handleSelectThread as any}
+            onSendMessage={handleSendMessage}
+            onNewMessageChange={setNewMessage}
+            isProcessing={isProcessing}
+          />
         );
       case 'charges':
         return (
@@ -246,50 +435,28 @@ function OperationsManagerDashboard() {
               serviceChargeCalculation={serviceChargeCalculation}
               setServiceChargeCalculation={setServiceChargeCalculation}
               authService={authService}
-              refetchCharges={async () => {
-                const chargesRes = await authService.getServiceCharges();
-                if (chargesRes.success && chargesRes.data) {
-                  const newCharges = chargesRes.data;
-                  setDashboardData(d => ({ ...d, serviceCharges: newCharges }));
-                }
-              }}
+              refetchCharges={fetchData}
             />
           </Card>
         );
-      case 'messaging':
-        return (
-          <Card className="text-center py-16 bg-gradient-to-br from-secondary-50 to-white">
-            <div className="text-6xl mb-4">💬</div>
-            <h3 className="text-2xl font-bold text-secondary-900 mb-2">Secure Staff Messaging</h3>
-            <p className="text-secondary-600 mb-8 max-w-md mx-auto">Encrypted internal communication channel.</p>
-            <Button onClick={() => hasMessagingAccess ? navigate('/messaging') : alert('Access Denied')} size="lg" variant="primary">
-              Open Secure Chat
-            </Button>
-          </Card>
-        );
-
       case 'products-services':
-        return (
-          <Card>
-            <ProductsServicesManagement />
-          </Card>
-        );
-      case 'security':
-        return <SecuritySection />;
-      default: return null;
+        return <Card><ProductsServicesManagement /></Card>;
+      default: return <div>Select a module from the sidebar.</div>;
     }
   };
 
   return (
     <DashboardLayout
-      title="Operations Portal"
+      title="Coastal Operations Master"
       user={user}
       menuItems={menuItems}
       activeView={activeView}
       onNavigate={(id) => setActiveView(id as ActiveView)}
       onLogout={handleLogout}
     >
-      {renderContent()}
+      <div className="max-w-[1400px] mx-auto">
+        {renderContent()}
+      </div>
     </DashboardLayout>
   );
 }

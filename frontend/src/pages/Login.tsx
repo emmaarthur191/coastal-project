@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
@@ -436,13 +436,8 @@ function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-secondary-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-semibold text-primary-600 hover:text-primary-500">
-                Create an account
-              </Link>
-            </p>
+          <div className="mt-8 text-center text-xs text-secondary-400">
+            Secure multi-factor authentication enforced.
           </div>
         </div>
       </main>

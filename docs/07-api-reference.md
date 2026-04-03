@@ -11,7 +11,6 @@ Base URL: `/api/`
 | `auth/logout/` | POST | Blacklist token & clear cookies | Auth |
 | `auth/refresh/` | POST | Refresh access token | Public |
 | `auth/check/` | GET | Verify current session status | Public |
-| `auth/register/` | POST | Register new customer | Public |
 | `create/` | POST | Create staff account | Manager+ |
 | `send-otp/` | POST | Trigger OTP via SMS/Email | Auth |
 | `verify-otp/` | POST | Verify OTP code | Auth |

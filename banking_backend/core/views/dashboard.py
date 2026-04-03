@@ -135,7 +135,7 @@ class WorkflowStatusView(APIView):
 
         # Calculate real KPIs from database
         total_requests = pending + in_progress + completed
-        efficiency_rate = round((completed / total_requests * 100), 1) if total_requests > 0 else 0
+        efficiency_rate = round((completed / total_requests * 100), 1) if total_requests > 0 else 0.0
 
         # Calculate average processing time from completed requests
         completed_requests = ServiceRequest.objects.filter(
@@ -221,8 +221,10 @@ class SystemAlertsView(APIView):
                 }
             )
 
-        # Add recent failed login attempts as alerts
-        failed_logins = UserActivity.objects.filter(action="failed_login").order_by("-created_at")[:5]
+        # Add recent failed login attempts as alerts (Optimized with select_related)
+        failed_logins = (
+            UserActivity.objects.filter(action="failed_login").select_related("user").order_by("-created_at")[:5]
+        )
 
         for login in failed_logins:
             alerts.append(
@@ -289,7 +291,7 @@ class OperationsMetricsView(APIView):
                 ) * 100
                 transaction_change = round(float(transaction_change), 1)
             else:
-                transaction_change = 0 if total_transactions_today == 0 else 100
+                transaction_change = 0.0 if total_transactions_today == 0 else 100.0
 
             # Failed transactions
             failed_today = Transaction.objects.filter(status="failed", timestamp__date=_today).count()
@@ -372,21 +374,25 @@ class OperationsMetricsView(APIView):
             # Staff Performance
             from users.models import UserActivity
 
+            # Staff Performance: Optimized with annotation to avoid N+1 queries in loop
             staff_perf_list = []
-            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True)[
-                :5
-            ]
+            from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Value, When
+
+            active_staff_list = User.objects.filter(role__in=["cashier", "manager", "mobile_banker"], is_active=True).annotate(
+                activity_count=Count("useractivity", filter=Q(useractivity__created_at__date=_today)),
+                logged_in_today=Exists(
+                    UserActivity.objects.filter(user=OuterRef("pk"), action="login", created_at__date=_today)
+                ),
+            )[:5]
 
             for s in active_staff_list:
-                activity_count = UserActivity.objects.filter(user=s, created_at__date=_today).count()
-                logged_in_today = UserActivity.objects.filter(user=s, action="login", created_at__date=_today).exists()
-                efficiency = "100%" if logged_in_today else "0%"
+                efficiency = "100%" if s.logged_in_today else "0%"
 
                 staff_perf_list.append(
                     {
                         "name": s.get_full_name() or s.username,
                         "role": s.get_role_display(),
-                        "transactions": activity_count,
+                        "transactions": s.activity_count,
                         "efficiency": efficiency,
                     }
                 )
@@ -470,14 +476,12 @@ class PerformanceDashboardView(APIView):
         latest_health = SystemHealth.objects.order_by("-checked_at").first()
         status_val = latest_health.status if latest_health else "healthy"  # Default to healthy if no checks yet
 
-        # 2. Performance Summary Calculation
+        # 2. Performance Summary Calculation - Optimized with DB Aggregation
         # Avg response time in last 24h
-        avg_resp_time = (
-            SystemHealth.objects.filter(checked_at__gte=day_ago, status="healthy").aggregate(
-                avg=Avg("response_time_ms")
-            )["avg"]
-            or 125
+        performance_stats = SystemHealth.objects.filter(checked_at__gte=day_ago, status="healthy").aggregate(
+            avg_resp=Avg("response_time_ms")
         )
+        avg_resp_time = performance_stats["avg_resp"] or 125
 
         # Throughput (req/sec proxy) based on transactions in last 15 mins
         t_count_15m = Transaction.objects.filter(timestamp__gte=fifteen_mins_ago).count()
@@ -486,7 +490,7 @@ class PerformanceDashboardView(APIView):
         # Error Rate in last 24h
         total_t_24h = Transaction.objects.filter(timestamp__gte=day_ago).count()
         failed_t_24h = Transaction.objects.filter(timestamp__gte=day_ago, status="failed").count()
-        error_rate = round((failed_t_24h / total_t_24h * 100), 1) if total_t_24h > 0 else 0
+        error_rate = round((failed_t_24h / total_t_24h * 100), 1) if total_t_24h > 0 else 0.0
 
         # 3. System Health Breakdown
         total_checks_week = SystemHealth.objects.filter(checked_at__gte=week_ago).count()
@@ -625,17 +629,22 @@ class PerformanceMetricsView(APIView):
         now = timezone.now()
         yesterday = now - datetime.timedelta(hours=24)
 
-        # Get response time series
-        health_checks = SystemHealth.objects.filter(checked_at__gte=yesterday).order_by("checked_at")
-
-        labels = [h.checked_at.strftime("%H:%M") for h in health_checks]
-        resp_times = [float(h.response_time_ms) for h in health_checks]
-        cpu_usage = [float(h.details.get("cpu_usage", 0)) for h in health_checks]
+        # Get response time series - Optimized with DB Aggregation
+        performance_stats = SystemHealth.objects.filter(checked_at__gte=yesterday, status="healthy").aggregate(
+            avg_resp=Avg("response_time_ms")
+        )
 
         # Result for "metrics" view (array of stats)
+        # Note: We still calculate CPU avg in Python for now as it's in a JSON field 'details'
+        # unless using specialized Postgres jsonb aggregation paths.
+        cpu_usage_avg = 0
+        health_checks = SystemHealth.objects.filter(checked_at__gte=yesterday).only("details")
+        if health_checks.exists():
+            cpu_usage_avg = int(sum(float(h.details.get("cpu_usage", 0)) for h in health_checks) / health_checks.count())
+
         stats = [
-            {"name": "Avg Response Time", "score": int(sum(resp_times) / len(resp_times)) if resp_times else 0},
-            {"name": "Avg CPU Usage", "score": int(sum(cpu_usage) / len(cpu_usage)) if cpu_usage else 0},
+            {"name": "Avg Response Time", "score": int(performance_stats["avg_resp"] or 0)},
+            {"name": "Avg CPU Usage", "score": cpu_usage_avg},
             {"name": "System Stability", "score": 98},
         ]
 

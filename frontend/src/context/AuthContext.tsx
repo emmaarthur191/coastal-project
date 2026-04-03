@@ -128,9 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const getDashboardRoute = () => {
     if (isManager) return '/manager-dashboard';
-    if (isCashier) return '/cashier-dashboard';
-    if (isMobileBanker) return '/mobile-banker-dashboard';
-    if (isOperationsManager) return '/operations-dashboard';
+    if (isCashier || isOperationsManager) return '/banking-operations';
     return '/dashboard';
   };
 

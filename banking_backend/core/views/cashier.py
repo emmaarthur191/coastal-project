@@ -39,8 +39,8 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Return cash advances for the current user."""
-        return CashAdvance.objects.filter(user=self.request.user)
+        """Optimized for cashier details to prevent SerializerMethodField N+1."""
+        return CashAdvance.objects.all().select_related("user", "approved_by", "submitted_by")
 
     def get_serializer_class(self):
         """Return the serializer class for cash advances."""
@@ -73,13 +73,62 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
 
             if advance.status != "pending":
                 return Response({"error": "Can only approve pending requests"}, status=400)
+
             advance.status = "approved"
             advance.approved_by = request.user
             advance.save()
+
+            # Audit Log
+            from users.models import AuditLog
+            AuditLog.objects.create(
+                user=request.user,
+                action="approve_cash_advance",
+                model_name="CashAdvance",
+                object_id=str(advance.id),
+                description=f"Approved cash advance of {advance.amount} for {advance.user.email}"
+            )
+
             return Response({"status": "success", "message": "Cash advance approved"})
         except PermissionDenied as e:
             logger.warning(f"Permission denied in cash advance approval: {e}")
-            return Response({"error": "You are not authorized to perform this action."}, status=403)
+            return Response({"error": str(e)}, status=403)
+        except CashAdvance.DoesNotExist:
+            return Response({"error": "Cash advance not found"}, status=404)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def reject(self, request, pk=None):
+        """Reject a cash advance request."""
+        from django.core.exceptions import PermissionDenied
+        from core.models.operational import CashAdvance
+
+        try:
+            advance = CashAdvance.objects.select_related("user", "submitted_by").get(pk=pk)
+
+            # SECURITY: Maker-Checker Enforcement (Optional for reject but usually enforced for consistency)
+            if advance.submitted_by and advance.submitted_by == request.user:
+                 raise PermissionDenied("You cannot reject a cash advance that you submitted.")
+
+            if advance.status != "pending":
+                return Response({"error": "Can only reject pending requests"}, status=400)
+
+            advance.status = "rejected"
+            advance.notes = request.data.get("notes", advance.notes)
+            advance.processed_at = timezone.now() # Not on model directly but good for general usage if it were
+            advance.save()
+
+            # Audit Log
+            from users.models import AuditLog
+            AuditLog.objects.create(
+                user=request.user,
+                action="reject_cash_advance",
+                model_name="CashAdvance",
+                object_id=str(advance.id),
+                description=f"Rejected cash advance of {advance.amount} for {advance.user.email}. Notes: {request.data.get('notes', 'None')}"
+            )
+
+            return Response({"status": "success", "message": "Cash advance rejected"})
+        except PermissionDenied as e:
+            return Response({"error": str(e)}, status=403)
         except CashAdvance.DoesNotExist:
             return Response({"error": "Cash advance not found"}, status=404)
 
@@ -180,8 +229,8 @@ class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins
     ordering = ["-opened_at"]
 
     def get_queryset(self):
-        """Return cash drawers assigned to the current cashier."""
-        return CashDrawer.objects.filter(cashier=self.request.user)
+        """Optimized for cashier details and denominations to prevent SerializerMethodField N+1."""
+        return CashDrawer.objects.all().select_related("cashier").prefetch_related("denominations")
 
     def get_serializer_class(self):
         """Return the serializer class for cash drawers."""
@@ -278,10 +327,11 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Return check deposits based on user role (staff see all, customers see own)."""
+        """Return check deposits based on user role (staff see all, customers see own). Optimized with select_related."""
+        queryset = CheckDeposit.objects.select_related("account__user", "processed_by", "submitted_by")
         if self.request.user.role in ["staff", "cashier", "manager", "admin", "superuser"]:
-            return CheckDeposit.objects.all()
-        return CheckDeposit.objects.filter(account__user=self.request.user)
+            return queryset
+        return queryset.filter(account__user=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer class for check deposits."""

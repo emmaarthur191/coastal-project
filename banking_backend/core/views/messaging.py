@@ -43,8 +43,8 @@ class BankingMessageViewSet(
 
         role = getattr(user, "role", None)
         if role == "customer":
-            return BankingMessage.objects.filter(user=user)
-        return BankingMessage.objects.all()
+            return BankingMessage.objects.filter(user=user).select_related("user")
+        return BankingMessage.objects.all().select_related("user")
 
     def get_permissions(self):
         """Map messaging actions to staff or customer permission levels."""
@@ -145,8 +145,8 @@ class MessageViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cr
         """Return messages from threads where the current user is a participant."""
         from core.models.messaging import Message
 
-        # Only show messages from threads user is part of
-        return Message.objects.filter(thread__participants=self.request.user)
+        # Only show messages from threads user is part of, optimized with select_related
+        return Message.objects.filter(thread__participants=self.request.user).select_related("sender", "thread")
 
     def get_serializer_class(self):
         """Return the serializer for individual messages."""
@@ -321,10 +321,14 @@ class OperationsMessagesViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, 
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Return operations-related technical messages for the current user."""
+        """Return operations-related technical messages for the current user, optimized with select_related."""
         from core.models.messaging import OperationsMessage
 
-        return OperationsMessage.objects.filter(recipient=self.request.user).order_by("-created_at")
+        return (
+            OperationsMessage.objects.filter(recipient=self.request.user)
+            .select_related("sender", "recipient")
+            .order_by("-created_at")
+        )
 
     def get_serializer_class(self):
         """Define and return a serializer for operations messages."""

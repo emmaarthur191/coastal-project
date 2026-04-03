@@ -27,6 +27,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from core.models.accounts import Account
 from core.models.hr import Payslip
 from core.models.loans import Loan
+from core.models.operational import CashAdvance
 from core.models.reporting import Report, ReportSchedule, ReportTemplate
 from core.models.transactions import AccountStatement, Transaction
 from core.permissions import IsStaff
@@ -36,6 +37,7 @@ from core.serializers.reporting import (
     ReportTemplateSerializer,
 )
 from core.serializers.transactions import AccountStatementSerializer
+from users.models import AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,50 @@ class GenerateReportView(APIView):
                 for item in report_data_list
             ]
 
+        elif report_type == "cash_advances":
+            queryset = CashAdvance.objects.all()
+            if start_date:
+                queryset = queryset.filter(created_at__date__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(created_at__date__lte=end_date)
+            
+            report_data_list = list(
+                queryset.order_by("-created_at")[:limit].values(
+                    "id", "amount", "status", "created_at", "reason"
+                )
+            )
+            report_data_list = [
+                {
+                    "date": item["created_at"].strftime("%Y-%m-%d") if item["created_at"] else "",
+                    "description": item["reason"] or f"Cash Advance #{item['id']}",
+                    "amount": float(item["amount"]),
+                    "status": item["status"].title(),
+                }
+                for item in report_data_list
+            ]
+
+        elif report_type == "audit_logs":
+            queryset = AuditLog.objects.all()
+            if start_date:
+                queryset = queryset.filter(timestamp__date__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(timestamp__date__lte=end_date)
+
+            report_data_list = list(
+                queryset.order_by("-timestamp")[:limit].values(
+                    "id", "action", "description", "timestamp"
+                )
+            )
+            report_data_list = [
+                {
+                    "date": item["timestamp"].strftime("%Y-%m-%d") if item["timestamp"] else "",
+                    "description": f"[{item['action']}] {item['description']}",
+                    "amount": 0.0,  # Audit logs don't have amounts
+                    "status": "Logged",
+                }
+                for item in report_data_list
+            ]
+
         else:
             report_data_list = []
 
@@ -122,10 +168,32 @@ class GenerateReportView(APIView):
             response["Content-Disposition"] = f'attachment; filename="{report_id}.csv"'
             return response
 
-        # For PDF/other formats, return JSON with download info
-        total_amount = sum(item["amount"] for item in report_data_list) if report_data_list else 0
-        completed_count = len([i for i in report_data_list if i.get("status", "").lower() == "completed"])
-        success_rate = round((completed_count / len(report_data_list) * 100), 1) if report_data_list else 0
+        # For PDF format, generate and return the file directly using the PDF service
+        if format_type == "pdf" and report_data_list:
+            from core.pdf_services import generate_generic_report_pdf
+
+            title = f'{report_type.replace("_", " ").title()} Report'
+            subtitle = f"Period: {date_from} to {date_to}"
+            headers = list(report_data_list[0].keys())
+            data = [list(item.values()) for item in report_data_list]
+
+            # Prepare summary data for PDF service
+            total_amount = sum(item.get("amount", 0) for item in report_data_list)
+            summary_data = [
+                ["Total Records", str(len(report_data_list))],
+                ["Total Amount", f"GHS {total_amount:,.2f}"],
+                ["Generated At", timezone.now().strftime("%Y-%m-%d %H:%M")],
+            ]
+
+            pdf_buffer = generate_generic_report_pdf(title, subtitle, headers, data, summary_data=summary_data)
+            response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
+            response["Content-Disposition"] = f'attachment; filename="{report_id}.pdf"'
+            return response
+
+        # Fallback: For other types or if JSON specifically requested, return structured data
+        total_amount = sum(item.get("amount", 0) for item in report_data_list) if report_data_list else 0
+        completed_count = len([i for i in report_data_list if str(i.get("status", "")).lower() == "completed"])
+        success_rate = round((completed_count / len(report_data_list) * 100), 1) if report_data_list else 0.0
 
         report_data = {
             "id": report_id,
@@ -137,7 +205,6 @@ class GenerateReportView(APIView):
             "period": {"from": date_from, "to": date_to},
             "status": "completed",
             "format": format_type,
-            "report_url": f"/api/reports/download/{report_id}/",
             "data": report_data_list,
             "summary": {
                 "total_records": len(report_data_list),
@@ -149,7 +216,7 @@ class GenerateReportView(APIView):
         return Response(
             {
                 "success": True,
-                "message": f'{report_type.replace("_", " ").title()} report generated successfully',
+                "message": f'{report_type.replace("_", " ").title()} report data generated successfully',
                 "data": report_data,
             },
             status=status.HTTP_201_CREATED,
@@ -230,11 +297,12 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
 
             elif report_type == "loans":
                 headers = ["Date", "Amount (GHS)", "Term", "Status", "Applicant"]
-                queryset = Loan.objects.all().order_by("-created_at")[:50]
+                # Optimized with select_related for member details
+                queryset = Loan.objects.all().select_related("member").order_by("-created_at")[:50]
                 for loan in queryset:
                     data.append(
                         [
-                            loan.created_at.strftime("%Y-%m-%d"),
+                            loan.created_at.strftime("%Y-%m-%d") if loan.created_at else "N/A",
                             f"{loan.amount:,.2f}",
                             f"{loan.repayment_period_months} mo",
                             loan.status.title(),
@@ -242,6 +310,10 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
+            elif report_type == "accounts":
+                headers = ["Account Number", "Type", "Balance (GHS)", "Owner", "Status"]
+                # Optimized with select_related for user details
+                queryset = Account.objects.all().select_related("user").order_by("-created_at")[:50]
                 is_manager = (
                     request.user.role in ["manager", "operations_manager", "admin"] or request.user.is_superuser
                 )
@@ -259,7 +331,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                             acc_num,
                             acc.get_account_type_display(),
                             f"{acc.balance:,.2f}",
-                            acc.user.get_full_name(),
+                            acc.user.get_full_name() if acc.user else "N/A",
                             "Active" if acc.is_active else "Inactive",
                         ]
                     )
@@ -471,8 +543,19 @@ class GeneratePayslipView(APIView):
             pay_period_start = now.replace(day=1).date()
             pay_period_end = now.date()
 
-        base_pay = Decimal(str(request.data.get("base_pay", "0")))
-        allowances = Decimal(str(request.data.get("allowances", "0")))
+        try:
+            base_pay = Decimal(str(request.data.get("base_pay", "0")))
+            allowances = Decimal(str(request.data.get("allowances", "0")))
+            if base_pay < 0 or allowances < 0:
+                return Response(
+                    {"status": "error", "message": "Pay and allowances cannot be negative", "code": "INVALID_INPUT"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except Exception:
+            return Response(
+                {"status": "error", "message": "Invalid numeric format for pay or allowances", "code": "INVALID_INPUT"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Check if payslip already exists for this period
         existing = Payslip.objects.filter(staff=staff, month=month, year=year).first()
@@ -591,12 +674,13 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Filter payslips based on role; staff see their own, managers see all."""
+        """Filter payslips based on role, optimized with select_related."""
         from core.models.hr import Payslip
 
+        queryset = Payslip.objects.all().select_related("staff", "generated_by")
         if self.request.user.role in ["manager", "admin", "superuser"]:
-            return Payslip.objects.all()
-        return Payslip.objects.filter(staff=self.request.user)
+            return queryset
+        return queryset.filter(staff=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer for staff payslips."""
@@ -678,10 +762,11 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Return account statements accessible to the current user."""
+        """Return account statements accessible to the current user, optimized with select_related."""
+        queryset = AccountStatement.objects.all().select_related("account", "requested_by")
         if self.request.user.role in ["staff", "cashier", "manager", "admin", "superuser"]:
-            return AccountStatement.objects.all()
-        return AccountStatement.objects.filter(account__user=self.request.user)
+            return queryset
+        return queryset.filter(account__user=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer for account statements."""

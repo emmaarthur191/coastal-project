@@ -1,6 +1,21 @@
 node_modules/
 dist/
+build/
 coverage/
+htmlcov/
 .env
+.env.*
+!.env.example
+!.env.production.template
 .DS_Store
 .vscode/
+
+# Capacitor mobile build output
+android/
+ios/
+
+# npm auth tokens — never commit
+.npmrc
+
+# Test caches
+.pytest_cache/

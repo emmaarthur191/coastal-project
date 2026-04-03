@@ -26,6 +26,12 @@ db.sqlite3
 media/
 staticfiles/
 
+# Cache & Coverage
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
 # Node / Frontend
 node_modules/
 dist/
@@ -69,3 +75,21 @@ security_audit_*.json
 !frontend/package-lock.json
 !frontend/tsconfig.json
 !frontend/tsconfig.node.json
+
+# Generated artifacts & large files
+commit_log.txt
+verify_error.txt
+e2e_test_results.json
+
+# Scratch & debug scripts (root level)
+debug_*.py
+e2e_test.py
+setup_e2e_env.py
+unlock_test_user.py
+verify_*.py
+
+# Local dev folders
+desktop/
+
+# Locust load test (optional: remove if you want to track this)
+# locustfile.py

@@ -30,14 +30,13 @@ from core.models.operational import (
     CashDrawer,
     CashDrawerDenomination,
     ClientAssignment,
-    ClientRegistration,
     Complaint,
     Device,
     ServiceCharge,
     ServiceRequest,
     VisitSchedule,
 )
-from core.models.reliability import IdempotencyKey, SmsOutbox
+from core.models.reliability import GlobalSequence, IdempotencyKey, SmsOutbox
 from core.models.reporting import (
     PerformanceMetric,
     Report,

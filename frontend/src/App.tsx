@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, ReactNode } from 'react'
+import { lazy, Suspense, ReactNode } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
@@ -29,6 +29,7 @@ const FraudCases = lazy(() => import('./pages/FraudCases'));
 const FraudRules = lazy(() => import('./pages/FraudRules'));
 const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage'));
 const StaffOTPVerificationPage = lazy(() => import('./pages/StaffOTPVerificationPage'));
+const BankingOperations = lazy(() => import('./pages/BankingOperations'));
 
 // Import components
 import ProtectedMemberRoute from './components/ProtectedMemberRoute'
@@ -205,6 +206,13 @@ function AppContent() {
                   <MessagingPage />
                 </Suspense>
               </ProtectedRoute>
+            } />
+            <Route path="/banking-operations" element={
+              <ProtectedStaffRoute allowedRoles={['manager', 'operations_manager', 'cashier']}>
+                <Suspense fallback={<PageLoading />}>
+                  <BankingOperations />
+                </Suspense>
+              </ProtectedStaffRoute>
             } />
             <Route path="/fraud/alerts" element={
               <ProtectedRoute>

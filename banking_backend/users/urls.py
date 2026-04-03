@@ -23,7 +23,6 @@ from .views import (
     StaffManagementViewSet,
     UserDetailView,
     UserListView,
-    # UserRegistrationView,
     UserSessionsView,
     VerifyOTPView,
 )
@@ -32,7 +31,6 @@ router = SimpleRouter()
 router.register(r"staff-management", StaffManagementViewSet, basename="staff-management")
 
 urlpatterns = [
-    # path("auth/register/", UserRegistrationView.as_view(), name="register"),
     path("auth/change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
@@ -44,7 +42,6 @@ urlpatterns = [
     path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     path("me/", UserDetailView.as_view(), name="user-detail"),
     path("list/", UserListView.as_view(), name="user-list"),
-    # path("members/", MembersListView.as_view(), name="members-list"),
     path("staff/", StaffListView.as_view(), name="staff-list"),
     path("staff-ids/", StaffIdsView.as_view(), name="staff-ids"),
     path("member-dashboard/", MemberDashboardView.as_view(), name="member-dashboard"),
@@ -54,4 +51,6 @@ urlpatterns = [
     path("sessions/<int:pk>/terminate/", SessionTerminateView.as_view(), name="session-terminate"),
     path("csrf/", GetCSRFToken.as_view(), name="csrf-token"),
     path("", include(router.urls)),
+    # LEGACY COMPATIBILITY: Aliases for tests that expect these specific URL names
+    path("create-staff/", StaffManagementViewSet.as_view({"post": "create"}), name="create-staff"),
 ]

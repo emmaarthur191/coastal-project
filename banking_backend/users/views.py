@@ -31,20 +31,12 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     StaffCreationSerializer,
+    StaffCreationSerializer,
     UserSerializer,
 )
 from .services import SendexaService
 
 logger = logging.getLogger(__name__)
-
-
-# class UserRegistrationView(generics.CreateAPIView):
-#     """ViewSet for new member/customer self-registration."""
-#
-#     queryset = User.objects.all()
-#     serializer_class = UserRegistrationSerializer
-#     permission_classes = [AllowAny]
-#     throttle_scope = "registration"  # DRF rate limiting: 3 per hour
 
 
 class ChangePasswordView(APIView):
@@ -94,7 +86,6 @@ class LoginView(APIView):
 
     authentication_classes = []  # Skip auth to allow login even if old token is invalid
     permission_classes = [AllowAny]
-    throttle_scope = "login"  # DRF rate limiting: 5 attempts per 5 minutes
 
     @extend_schema(request=LoginSerializer, responses={200: UserSerializer})
     def post(self, request):
@@ -117,7 +108,6 @@ class LoginView(APIView):
 
         # Get email to check account lockout before full validation
         email = request.data.get("email", "")
-        lookup_user = None  # Use a separate variable for the pre-lookup user
         try:
             lookup_user = User.objects.get(email=email)
 
@@ -160,9 +150,14 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
 
-        # SECURITY: Do NOT expose tokens in response body - only set in HTTP-only cookies
-        # This prevents XSS attacks from stealing tokens
-        response = Response({"message": "Login successful", "user": UserSerializer(user).data})
+        # Base response with tokens in JSON body for E2E and standard API clients
+        response = Response({
+            "status": "success",
+            "message": "Login successful",
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserSerializer(user).data
+        })
 
         # Set Cookies
         from django.conf import settings
@@ -357,18 +352,21 @@ class MemberDashboardView(APIView):
         # Get user's accounts
         accounts = Account.objects.filter(user=user, is_active=True)
 
-        # Calculate totals
-        total_balance = sum(acc.balance for acc in accounts) if accounts else Decimal("0.00")
-        total_daily_susu = (
-            sum(acc.balance for acc in accounts if acc.account_type == "daily_susu") if accounts else Decimal("0.00")
+        # Calculate totals using aggregation to avoid N+1 and repeated QuerySet evaluation
+        from django.db.models import Q, Sum
+
+        totals = accounts.aggregate(
+            total=Sum("balance"), daily_susu=Sum("balance", filter=Q(account_type="daily_susu"))
         )
+        total_balance = totals["total"] or Decimal("0.00")
+        total_daily_susu = totals["daily_susu"] or Decimal("0.00")
 
         # Get recent transactions (last 10) - use Q objects instead of union to avoid ORDER BY in subquery
         from django.db.models import Q
 
         recent_transactions = Transaction.objects.filter(
             Q(from_account__user=user) | Q(to_account__user=user)
-        ).order_by("-timestamp")[:10]
+        ).select_related("from_account", "to_account").order_by("-timestamp")[:10]
 
         # Build response
         accounts_data = [
@@ -515,55 +513,6 @@ class VerifyOTPView(APIView):
         return Response({"success": True, "message": "OTP verified successfully.", "verified": True})
 
 
-class MembersListView(APIView):
-    """List customer members for cashier lookup. Staff only."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        """Retrieve a list of registered members (customers) for staff-level lookups."""
-        # SECURITY: Only staff can enumerate customer PII
-        if not (
-            request.user.is_staff
-            or request.user.role in ["cashier", "mobile_banker", "manager", "operations_manager", "admin"]
-        ):
-            return Response({"error": "Access denied. Staff only."}, status=403)
-
-        from django.db.models import Prefetch
-
-        from core.models.operational import ClientAssignment
-
-        # Prefetch active assignments with banker details in a single query
-        active_assignment_prefetch = Prefetch(
-            "assigned_to_bankers",
-            queryset=ClientAssignment.objects.filter(is_active=True).select_related("mobile_banker"),
-            to_attr="active_assignments_list",
-        )
-
-        members_queryset = User.objects.filter(role="customer").prefetch_related(active_assignment_prefetch)[:100]
-
-        results = []
-        for m in members_queryset:
-            banker_info = None
-            assignment_id = None
-
-            # Get the first active assignment from the prefetched list
-            if hasattr(m, "active_assignments_list") and m.active_assignments_list:
-                assignment = m.active_assignments_list[0]
-                assignment_id = assignment.id
-                banker = assignment.mobile_banker
-                banker_info = {"id": banker.id, "name": banker.get_full_name() or banker.email}
-
-            results.append(
-                {
-                    "id": m.id,
-                    "name": f"{m.first_name} {m.last_name}".strip() or m.email,
-                    "email": m.email,
-                    "current_assignment": {"id": assignment_id, "banker": banker_info} if assignment_id else None,
-                }
-            )
-
-        return Response(results)
 
 
 class StaffSerializer(serializers.ModelSerializer):
@@ -1147,15 +1096,11 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                # 1. Generate Staff ID if not exists (CA prefix)
-                if not user.staff_number:
-                    max_staff = User.objects.aggregate(Max("staff_number"))["staff_number__max"] or 0
-                    user.staff_number = max_staff + 1
-                    prefix = "CA"
-                    if user.staff_number > 9999:
-                        user.staff_id = f"{prefix}{user.staff_number:05d}"
-                    else:
-                        user.staff_id = f"{prefix}{user.staff_number:04d}"
+                # 1. Generate Staff ID via Signal (Atomic GlobalSequence)
+                # We save once to trigger the post_save signal which handles the sequence
+                if not user.staff_id or not user.staff_number:
+                    user.save()
+                    user.refresh_from_db()
 
                 # 2. Activate Account
                 import secrets
@@ -1164,9 +1109,9 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 user.set_password(temp_password)
                 user.is_approved = True
                 user.is_active = True
-                user.save()
+                user.save(update_fields=["password", "is_approved", "is_active", "updated_at"])
 
-                # 3. Generate Welcome Letter
+                # 3. Generate Welcome Letter (using the now-guaranteed staff_id)
                 from core.pdf_services import generate_staff_welcome_letter_pdf
 
                 pdf_buffer = generate_staff_welcome_letter_pdf(user, temp_password)

@@ -31,7 +31,6 @@ from .views import (
     ChatRoomListView,
     CheckDepositViewSet,
     ClientAssignmentViewSet,
-    # ClientRegistrationViewSet,
     ComplaintViewSet,
     DeviceViewSet,
     ExpensesView,
@@ -43,7 +42,6 @@ from .views import (
     LoanViewSet,
     ManagerOverviewView,
     MarkMessagesReadView,
-    # MemberViewSet,
     MessageThreadViewSet,
     MessageViewSet,
     MobileBankerMetricsView,
@@ -122,10 +120,6 @@ router.register(r"products/promotions", PromotionViewSet, basename="promotion")
 
 # Check deposits
 router.register(r"check-deposits", CheckDepositViewSet, basename="check-deposit")
-
-# Client registrations and member listing
-# router.register(r"banking/client-registrations", ClientRegistrationViewSet, basename="client-registration")
-# router.register(r"banking/members", MemberViewSet, basename="member")
 
 # Messaging - blocked users viewset
 

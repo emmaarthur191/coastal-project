@@ -89,3 +89,34 @@ class IdempotencyKey(models.Model):
 
     def __str__(self):
         return f"IdempotencyKey {self.key} for User {self.user}"
+
+
+class GlobalSequence(models.Model):
+    """Reliability model for generating atomic sequential numbers.
+
+    Used to prevent race conditions during generation of sequential IDs
+    like Staff IDs, membership numbers, or internal reference codes.
+    """
+
+    name = models.CharField(max_length=64, unique=True, help_text="Unique identifier for the sequence (e.g., 'staff_id')")
+    last_value = models.PositiveBigIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "global_sequence"
+        verbose_name = "Global Sequence"
+        verbose_name_plural = "Global Sequences"
+
+    def __str__(self):
+        return f"Sequence {self.name}: {self.last_value}"
+
+    @classmethod
+    def get_next_value(cls, name: str, initial_value: int = 1) -> int:
+        """Atomically increment and return the next value for a named sequence."""
+        from django.db import transaction
+
+        with transaction.atomic():
+            seq, created = cls.objects.select_for_update().get_or_create(name=name, defaults={"last_value": initial_value - 1})
+            seq.last_value += 1
+            seq.save(update_fields=["last_value", "updated_at"])
+            return seq.last_value

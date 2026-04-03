@@ -139,8 +139,7 @@ __all__ = [
     "ChatRoomListView",
     "CheckDepositViewSet",
     "ClientAssignmentViewSet",
-    # Registration
-    # ClientRegistrationViewSet removed,
+    # Complaint
     "ComplaintViewSet",
     "DeviceViewSet",
     "ExpensesView",
@@ -156,7 +155,6 @@ __all__ = [
     "LoanViewSet",
     "ManagerOverviewView",
     "MarkMessagesReadView",
-    # MemberViewSet removed,
     "MessageThreadViewSet",
     "MessageViewSet",
     "MobileBankerMetricsView",

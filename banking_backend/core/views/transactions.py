@@ -45,9 +45,11 @@ class TransactionViewSet(
         Red Team Hardening: Enforce client assignment scoping for Mobile Bankers.
         """
         user = self.request.user
+        queryset = self.queryset.select_related("from_account__user", "to_account__user")
+
         if user.role == "customer":
             # Show transactions where user is involved
-            return self.queryset.filter(models.Q(from_account__user=user) | models.Q(to_account__user=user)).distinct()
+            return queryset.filter(models.Q(from_account__user=user) | models.Q(to_account__user=user)).distinct()
 
         if user.role == "mobile_banker":
             # Filter transactions to only those belonging to assigned clients
@@ -57,12 +59,12 @@ class TransactionViewSet(
                 "client_id", flat=True
             )
 
-            return self.queryset.filter(
+            return queryset.filter(
                 models.Q(from_account__user_id__in=assigned_client_ids)
                 | models.Q(to_account__user_id__in=assigned_client_ids)
             ).distinct()
 
-        return self.queryset
+        return queryset
 
     def get_permissions(self):
         """Map transaction-related actions to their required permission levels."""
@@ -173,11 +175,42 @@ class TransactionViewSet(
                 pass
 
         # Order by timestamp desc
-        queryset = queryset.order_by("-timestamp")[:100]  # Limit to 100 results
+        queryset = queryset.select_related("from_account__user", "to_account__user").order_by("-timestamp")
 
-        # Serialize results
+        # Paginate results
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            data = []
+            for tx in page:
+                data.append(
+                    {
+                        "id": str(tx.id),
+                        "transaction_type": tx.transaction_type,
+                        "amount": str(tx.amount),
+                        "status": tx.status,
+                        "timestamp": tx.timestamp.isoformat() if tx.timestamp else None,
+                        "description": tx.description,
+                        "from_account": {
+                            "id": str(tx.from_account.id) if tx.from_account else None,
+                            "account_number": tx.from_account.account_number if tx.from_account else None,
+                            "user_email": tx.from_account.user.email if tx.from_account else None,
+                        }
+                        if tx.from_account
+                        else None,
+                        "to_account": {
+                            "id": str(tx.to_account.id) if tx.to_account else None,
+                            "account_number": tx.to_account.account_number if tx.to_account else None,
+                            "user_email": tx.to_account.user.email if tx.to_account else None,
+                        }
+                        if tx.to_account
+                        else None,
+                    }
+                )
+            return self.get_paginated_response(data)
+
+        # Fallback if no pagination (not expected)
         data = []
-        for tx in queryset:
+        for tx in queryset[:100]:
             data.append(
                 {
                     "id": str(tx.id),
@@ -202,7 +235,6 @@ class TransactionViewSet(
                     else None,
                 }
             )
-
         return Response({"count": len(data), "results": data})
 
     @action(detail=False, methods=["post"])

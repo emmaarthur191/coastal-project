@@ -14,7 +14,7 @@ import ClientsTab from '../components/mobile/ClientsTab';
 import VisitsTab from '../components/mobile/VisitsTab';
 import MessagingTab from '../components/mobile/MessagingTab';
 import FieldToolbox from '../components/mobile/FieldToolbox';
-import ClientRegistrationTab from '../components/ClientRegistrationTab';
+import AccountOpeningTab from '../components/staff/AccountOpeningTab';
 import {
   DepositModal, WithdrawalModal, PaymentModal, LoanModal, ScheduleModal, MessageModal, KycModal
 } from '../components/mobile/MobileModals';
@@ -40,7 +40,7 @@ function MobileBankerDashboard() {
 
   // --- MENU ITEMS CONFIG (For Sidebar) ---
   const menuItems = React.useMemo(() => [
-    { id: 'client-registration', name: 'Registration', icon: '👤' },
+    { id: 'account-opening', name: 'Account Opening', icon: '👤' },
     { id: 'clients', name: 'My Clients', icon: '👥' },
     { id: 'visits', name: 'Visits', icon: '🛵' },
     { id: 'messaging', name: 'Messaging', icon: '💬' },
@@ -48,7 +48,7 @@ function MobileBankerDashboard() {
   ], []);
 
   // --- STATE ---
-  const [activeTab, setActiveTab] = useState('client-registration');
+  const [activeTab, setActiveTab] = useState('account-opening');
   const [showLoanModal, setShowLoanModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -442,7 +442,7 @@ function MobileBankerDashboard() {
         {/* LEFT COLUMN: Dynamic Tab Content (Spans 2 cols on Large) */}
         <div className="lg:col-span-2">
           <Card className="min-h-[500px]">
-            {activeTab === 'client-registration' && <ClientRegistrationTab />}
+            {activeTab === 'account-opening' && <AccountOpeningTab />}
             {activeTab === 'clients' && (
               <ClientsTab
                 assignedClients={assignedClients}

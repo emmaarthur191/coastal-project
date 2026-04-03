@@ -8,7 +8,7 @@ interface MobileSidebarProps {
 
 const MobileSidebar: React.FC<MobileSidebarProps> = ({ activeTab, setActiveTab, handleLogout }) => {
   const navItems = [
-    { id: 'client-registration', icon: '👤', label: 'Register' },
+    { id: 'account-opening', icon: '👤', label: 'Open Acct' },
     { id: 'clients', icon: '👥', label: 'Clients' },
     { id: 'visits', icon: '📍', label: 'Visits' },
     { id: 'messaging', icon: '💬', label: 'Chat' }

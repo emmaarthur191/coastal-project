@@ -254,7 +254,7 @@ const AccountOpeningTab: React.FC = () => {
       {/* Step Indicator */}
       <GlassCard className="p-4">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-6">
-          <span>👶</span> New Account Registration
+          <span>👶</span> Account Opening
         </h2>
 
         <div className="flex justify-center gap-4 mb-6">
@@ -269,7 +269,7 @@ const AccountOpeningTab: React.FC = () => {
           ))}
         </div>
         <div className="flex justify-center gap-10 text-sm text-gray-500">
-          <span className={currentStep === 1 ? 'font-bold text-coastal-primary' : ''}>Registration Form</span>
+          <span className={currentStep === 1 ? 'font-bold text-coastal-primary' : ''}>Opening Form</span>
           <span className={currentStep === 2 ? 'font-bold text-coastal-primary' : ''}>Submission Complete</span>
         </div>
       </GlassCard>
@@ -281,7 +281,7 @@ const AccountOpeningTab: React.FC = () => {
         </div>
       )}
 
-      {/* Step 1: Registration Form */}
+      {/* Step 1: Opening Form */}
       {currentStep === 1 && (
         <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -447,7 +447,7 @@ const AccountOpeningTab: React.FC = () => {
 
           {/* Submit Button */}
           <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 text-center">
-            <h3 className="text-gray-900 font-bold mb-2">Registration Complete?</h3>
+            <h3 className="text-gray-900 font-bold mb-2">Request Complete?</h3>
             <p className="text-gray-500 mb-4">
               Submitting will record the request. The customer must visit the Manager for document verification and approval.
             </p>
@@ -465,7 +465,7 @@ const AccountOpeningTab: React.FC = () => {
           <h2 className="text-3xl font-bold text-emerald-600 mb-2">Request Submitted Successfully!</h2>
           <div className="max-w-md mx-auto bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm mb-8">
             <p className="text-gray-600 mb-4">
-              The registration for <span className="font-bold text-gray-800">{formData.firstName} {formData.lastName}</span> has been saved in a <b>Pending</b> state.
+              The account opening request for <span className="font-bold text-gray-800">{formData.firstName} {formData.lastName}</span> has been saved in a <b>Pending</b> state.
             </p>
             <div className="bg-emerald-50 p-4 rounded-xl text-emerald-800 text-sm border border-emerald-200">
               <p className="font-bold mb-2">Next Steps for Customer:</p>

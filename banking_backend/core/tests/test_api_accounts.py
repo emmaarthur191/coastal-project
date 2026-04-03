@@ -24,10 +24,10 @@ class TestAccountAPI:
         api_client.force_authenticate(user=sender_account.user)
         try:
             url = reverse("core:account-list")
-        except:
+        except Exception:
             try:
                 url = reverse("account-list")
-            except:
+            except Exception:
                 pytest.fail("No 'core:account-list' or 'account-list' URL found.")
         response = api_client.get(url)
 
@@ -44,10 +44,10 @@ class TestAccountAPI:
         api_client.force_authenticate(user=staff_user)
         try:
             url = reverse("core:account-list")
-        except:
+        except Exception:
             try:
                 url = reverse("account-list")
-            except:
+            except Exception:
                 pytest.fail("No 'core:account-list' or 'account-list' URL found.")
         response = api_client.get(url)
 
@@ -61,10 +61,10 @@ class TestAccountAPI:
         api_client.force_authenticate(user=user)
         try:
             url = reverse("core:account-list")
-        except:
+        except Exception:
             try:
                 url = reverse("account-list")
-            except:
+            except Exception:
                 pytest.fail("No 'core:account-list' or 'account-list' URL found.")
         data = {"account_type": "daily_susu"}
 
@@ -82,10 +82,10 @@ class TestAccountAPI:
         api_client.force_authenticate(user=unauthorized_user)
         try:
             url = reverse("core:account-detail", kwargs={"pk": sender_account.pk})
-        except:
+        except Exception:
             try:
                 url = reverse("account-detail", kwargs={"pk": sender_account.pk})
-            except:
+            except Exception:
                 pytest.fail("No 'core:account-detail' or 'account-detail' URL found.")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND  # Queryset filtering hides it

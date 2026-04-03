@@ -112,38 +112,26 @@ def generate_staff_id(sender, instance, created, **kwargs):
     STAFF_ROLES = ["cashier", "mobile_banker", "manager", "operations_manager", "admin"]
 
     if (instance.staff_number is None or not instance.staff_id) and instance.role in STAFF_ROLES:
-        from django.db import transaction
-
-        from .models import User
+        from core.models.reliability import GlobalSequence
 
         prefix = "CA"
         logger.info(f"Generating staff ID for {instance.email}")
 
-        # SECURITY: Use select_for_update within an atomic transaction to handle race conditions
+        # SECURITY: Use GlobalSequence for atomic, row-locked increment
         try:
-            with transaction.atomic():
-                # Find the highest existing staff_number
-                # select_for_update() locks the selected rows.
-                # For more scale, consider a dedicated Sequence table.
-                latest_user = (
-                    User.objects.select_for_update()
-                    .filter(staff_number__isnull=False)
-                    .order_by("-staff_number")
-                    .first()
-                )
+            # We initialize at 1, but GlobalSequence tracks the 'last_value'
+            new_seq = GlobalSequence.get_next_value("staff_id", initial_value=1)
 
-                new_seq = (latest_user.staff_number + 1) if (latest_user and latest_user.staff_number) else 1
+            # Set the numeric sequence
+            instance.staff_number = new_seq
 
-                # Set the numeric sequence
-                instance.staff_number = new_seq
+            # Format and set the encrypted/hashed ID via property (CA prefix)
+            # Use CA00001 format (5 digits)
+            instance.staff_id = f"{prefix}{new_seq:05d}"
 
-                # Format and set the encrypted/hashed ID via property (CA prefix)
-                # Use CA00001 format (5 digits)
-                instance.staff_id = f"{prefix}{new_seq:05d}"
+            # Explicitly save the correct database fields to minimize lock duration
+            instance.save(update_fields=["staff_number", "staff_id_encrypted", "staff_id_hash"])
 
-                # Explicitly save the correct database fields to minimize lock duration
-                instance.save(update_fields=["staff_number", "staff_id_encrypted", "staff_id_hash"])
-
-                logger.info(f"Generated staff ID {instance.staff_id} (seq: {new_seq}) for {instance.email}")
+            logger.info(f"Generated staff ID {instance.staff_id} (seq: {new_seq}) for {instance.email}")
         except Exception as e:
             logger.error(f"Failed to generate staff ID for {instance.email}: {e!s}")

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { authService as apiService } from '../services/api';
 import { Input } from '../components/ui/Input';
 import { formatCurrencyGHS } from '../utils/formatters';
@@ -22,7 +22,12 @@ function Transactions() {
   });
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [balanceData, setBalanceData] = useState(null);
-  const [pagination, setPagination] = useState(null);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_count: 0
+  });
+  const [currentPage, setCurrentPage] = useState(1);
   const [loadingBalance, setLoadingBalance] = useState(false);
 
   const loadTransactions = useCallback(async () => {
@@ -31,7 +36,7 @@ function Transactions() {
       // Build query parameters for enhanced API
       const params = {
         page_size: 50,
-        page: 1
+        page: currentPage
       } as Record<string, string | number>;
 
       if (filters.type !== 'all') params.type = filters.type;
@@ -83,7 +88,7 @@ function Transactions() {
     } finally {
       setLoading(false);
     }
-  }, [filters.type, filters.status, filters.category, filters.search, filters.memberName, filters.tags, filters.sortBy, filters.sortOrder, filters.dateRange]);
+  }, [filters, currentPage]);
 
   const loadBalanceData = useCallback(async () => {
     try {
@@ -563,6 +568,29 @@ function Transactions() {
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {pagination.total_pages > 1 && (
+          <div className="pagination-controls">
+            <button
+              disabled={currentPage <= 1 || loading}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            <span className="pagination-info">
+              Page {currentPage} of {pagination.total_pages}
+            </span>
+            <button
+              disabled={currentPage >= pagination.total_pages || loading}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="pagination-btn"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Transaction Detail Modal */}

@@ -15,8 +15,15 @@ staticfiles/
 .coverage
 .hypothesis/
 .pytest_cache/
+.ruff_cache/
 htmlcov/
 *.pyc
+
+# Auto-generated files (do not commit)
+schema.yml
+
+# ML model binaries
+ml_models/
 
 # Developer Scratch Scripts & Verification Tools
 /verify_*.py

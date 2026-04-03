@@ -52,11 +52,12 @@ class LoanViewSet(
         return obj
 
     def get_queryset(self):
-        """Filter loans so customers only see their own applications."""
+        """Filter loans so customers only see their own applications. Optimized with select_related."""
         user = self.request.user
+        queryset = self.queryset.select_related("user")
         if user.role == "customer":
-            return self.queryset.filter(user=user)
-        return self.queryset
+            return queryset.filter(user=user)
+        return queryset
 
     def get_permissions(self):
         """Map loan-related actions to their required permission classes."""
@@ -152,6 +153,36 @@ class LoanViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    def reject(self, request, pk=None):
+        """Reject a loan application."""
+        loan = self.get_object()
+        notes = request.data.get("notes", "Rejected by Staff")
+
+        if loan.status != "pending":
+            return Response({"error": "Loan is not pending."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Maker-Checker Enforcement
+        if loan.user == request.user:
+            return Response(
+                {"error": "Maker-Checker Violation: You cannot reject your own loan application."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            with transaction.atomic():
+                LoanService.reject_loan(loan, notes=notes)
+
+            return Response(
+                {"status": "success", "message": "Loan application rejected.", "data": LoanSerializer(loan).data}
+            )
+        except Exception as e:
+            logger.error(f"Loan rejection failed for loan {loan.id}: {e}")
+            return Response(
+                {"status": "error", "message": "Failed to reject loan", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
     @action(detail=False, methods=["get"])
     def pending(self, request):
         """Get all pending loan applications filtered by role authority."""
@@ -235,7 +266,14 @@ class LoanViewSet(
             queryset = queryset.filter(status__iexact=status_filter)
 
         # Order by created_at desc
-        queryset = queryset.order_by("-created_at")[:100]
+        queryset = queryset.select_related("user").order_by("-created_at")
 
-        serializer = self.get_serializer(queryset, many=True)
+        # Paginate results
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        # Fallback if no pagination (not expected)
+        serializer = self.get_serializer(queryset[:100], many=True)
         return Response({"count": len(serializer.data), "results": serializer.data})

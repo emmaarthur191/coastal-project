@@ -35,8 +35,8 @@ class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
     permission_classes = [IsStaff]
 
     def get_queryset(self):
-        """Return the list of scheduled visits for the current mobile banker."""
-        return VisitSchedule.objects.filter(mobile_banker=self.request.user).order_by("-scheduled_time")
+        """Return the list of scheduled visits, optimized with select_related."""
+        return VisitSchedule.objects.filter(mobile_banker=self.request.user).select_related("mobile_banker").order_by("-scheduled_time")
 
     def get_serializer_class(self):
         """Define and return a serializer for visit schedules."""
@@ -337,12 +337,13 @@ class ClientAssignmentViewSet(
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """Filter assignments based on user role."""
+        """Filter assignments based on user role, optimized with select_related."""
         from core.models.operational import ClientAssignment
 
+        queryset = ClientAssignment.objects.all().select_related("mobile_banker", "client")
         if self.request.user.role in ["manager", "admin", "superuser"]:
-            return ClientAssignment.objects.all()
-        return ClientAssignment.objects.filter(mobile_banker=self.request.user)
+            return queryset
+        return queryset.filter(mobile_banker=self.request.user)
 
     def get_serializer_class(self):
         """Return the serializer class for client assignments."""

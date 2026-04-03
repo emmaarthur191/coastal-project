@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // TransactionForm kept for potential future use
 import { useAuth } from '../context/AuthContext';
 import { formatCurrencyGHS } from '../utils/formatters';
@@ -29,7 +29,7 @@ import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
 
 import ComplaintsTab from '../components/cashier/ComplaintsTab';
 import FraudAlertsTab from '../components/cashier/FraudAlertsTab';
-import AccountOpeningTab from '../components/cashier/AccountOpeningTab';
+import AccountOpeningTab from '../components/staff/AccountOpeningTab';
 import AccountClosureTab from '../components/cashier/AccountClosureTab';
 import ProductsPromotionsTab from '../components/cashier/ProductsPromotionsTab';
 import ServiceRequestsTab from '../components/cashier/ServiceRequestsTab';

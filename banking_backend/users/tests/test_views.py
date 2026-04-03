@@ -9,44 +9,36 @@ User = get_user_model()
 
 
 @pytest.mark.django_db
-class TestUserRegistrationEdgeCases:
+class TestStaffRegistrationEdgeCases:
+    """Verify administrative staff registration edge cases."""
+
     def test_registration_duplicate_email(self):
-        """Ensure registering with an already existing email fails."""
+        """Ensure registering a staff member with an already existing email fails."""
         client = APIClient()
-        User.objects.create_user(
-            email="existing@example.com",
-            username="existinguser",
-            password="testpassword123",
-            phone_number="+233200001234",
+        admin_user = User.objects.create_superuser(
+            email="admin@coastal.com", username="admin_test", password="password123"
         )
-        url = reverse("users:register")
+        User.objects.create_user(
+            email="existing@coastal.com",
+            username="existingstaff",
+            password="testpassword123",
+            phone_number="+233244000111",
+        )
+        client.force_authenticate(user=admin_user)
+        url = reverse("users:create-staff")
         data = {
-            "email": "existing@example.com",
-            "username": "newuser",
+            "email": "existing@coastal.com",
+            "username": "newstaff",
             "password": "StrongPassword123!",
             "password_confirm": "StrongPassword123!",
-            "phone_number": "+233200005678",
-            "role": "customer",
+            "phone": "+233244000222",
+            "role": "cashier",
+            "first_name": "Test",
+            "last_name": "Staff",
         }
         response = client.post(url, data, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "email" in str(response.data).lower()
-
-    def test_registration_malformed_phone(self):
-        """Ensure invalid phone number format is blocked."""
-        client = APIClient()
-        url = reverse("users:register")
-        data = {
-            "email": "newuser@example.com",
-            "username": "newuser",
-            "password": "StrongPassword123!",
-            "password_confirm": "StrongPassword123!",
-            "phone_number": "invalid_phone",
-            "role": "customer",
-        }
-        response = client.post(url, data, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "phone" in str(response.data).lower()
 
     def test_create_staff_unauthorized_role(self):
         """Verify adding an invalid staff role throws an error."""
@@ -139,7 +131,7 @@ class TestUserManagement:
         # Note: adjust the URL name if 'users:staff-list' is not the correct name
         try:
             url = reverse("users:staff-list")
-        except:
+        except Exception:
             url = "/api/v1/users/staff/"  # fallback common path
 
         # 1. Customer blocked
