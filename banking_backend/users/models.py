@@ -290,7 +290,7 @@ class User(AbstractUser):
     LOCKOUT_DURATION_MINUTES = 30
     
     class Meta:
-        db_table = "user"
+        db_table = "users_user"
 
     def __str__(self):
         """Return the user's email address."""
