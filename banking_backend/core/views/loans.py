@@ -147,9 +147,9 @@ class LoanViewSet(
             from django.core.exceptions import ValidationError as DjangoValidationError
 
             if isinstance(e, DjangoPermissionDenied):
-                return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+                return Response({"detail": "Operation not permitted."}, status=status.HTTP_403_FORBIDDEN)
             if isinstance(e, DjangoValidationError):
-                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST)
 
             logger.exception(f"Loan approval failed for loan {loan.id}")
             return Response(
@@ -241,7 +241,7 @@ class LoanViewSet(
             from core.exceptions import InsufficientFundsError
 
             if isinstance(e, (InsufficientFundsError, serializers.ValidationError)):
-                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "Insufficient funds or invalid data."}, status=status.HTTP_400_BAD_REQUEST)
 
             logger.exception(f"Repayment failed for loan {loan.id}")
             return Response(

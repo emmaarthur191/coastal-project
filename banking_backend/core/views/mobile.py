@@ -236,7 +236,6 @@ class MobileOperationsViewSet(ViewSet):
                     "status": "error",
                     "message": "Failed to process deposit",
                     "code": "DEPOSIT_FAILED",
-                    "error_detail": str(e) if settings.DEBUG else None,
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
@@ -312,7 +311,6 @@ class MobileOperationsViewSet(ViewSet):
                     "status": "error",
                     "message": "Failed to process withdrawal",
                     "code": "WITHDRAWAL_FAILED",
-                    "error_detail": str(e) if settings.DEBUG else None,
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

@@ -27,7 +27,8 @@ class SystemHealthView(APIView):
                 cursor.execute("SELECT 1")
             db_status = "healthy"
         except Exception as e:
-            db_status = f"unhealthy: {e!s}"
+            logger.exception("Database health check failed")
+            db_status = "unhealthy: database connection failed"
 
         # System health data
         health_data = {
