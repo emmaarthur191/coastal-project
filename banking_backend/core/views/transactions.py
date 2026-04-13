@@ -314,11 +314,11 @@ class TransactionViewSet(
             tx = TransactionService.approve_transaction(pk, request.user)
             return Response({"status": "success", "message": "Transaction approved.", "transaction_id": tx.id})
         except (InvalidTransactionError, BankingException) as e:
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status": "error", "message": "Invalid transaction request.", "code": "INVALID_TRANSACTION"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.exception(f"Approval failed: {e}")
+            logger.exception("Transaction approval failed")
             return Response(
-                {"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"status": "error", "message": "An unexpected error occurred during approval.", "code": "SERVER_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
@@ -329,9 +329,9 @@ class TransactionViewSet(
             tx = TransactionService.reject_transaction(pk, request.user, reason)
             return Response({"status": "success", "message": "Transaction rejected.", "transaction_id": tx.id})
         except Exception as e:
-            logger.exception(f"Rejection failed: {e}")
+            logger.exception("Transaction rejection failed")
             return Response(
-                {"status": "error", "message": "Unexpected error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"status": "error", "message": "An unexpected error occurred during rejection.", "code": "SERVER_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=["post"], permission_classes=[IsManagerOrAdmin])
@@ -342,5 +342,7 @@ class TransactionViewSet(
             tx = TransactionService.reverse_transaction(pk, request.user, reason)
             return Response({"status": "success", "message": "Transaction reversed.", "transaction_id": tx.id})
         except Exception as e:
-            logger.exception(f"Reversal failed: {e}")
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.exception("Transaction reversal failed")
+            return Response(
+                {"status": "error", "message": "An unexpected error occurred during reversal.", "code": "SERVER_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

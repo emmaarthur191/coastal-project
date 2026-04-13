@@ -399,8 +399,10 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
             )
 
         except Exception as e:
-            logger.error(f"Error generating report: {e}")
-            return Response({"error": "An error occurred while generating the report. Please try again."}, status=500)
+            logger.exception("Report generation failed")
+            return Response(
+                {"status": "error", "message": "An unexpected error occurred while generating the report.", "code": "REPORT_FAILED"}, status=500
+            )
 
 
 class ReportTemplateViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
@@ -606,9 +608,9 @@ class GeneratePayslipView(APIView):
                 payslip.pdf_file.save(filename, ContentFile(pdf_buffer.read()))
                 payslip.save()
         except Exception as e:
-            logger.error(f"Failed to generate payslip for staff {staff_id}: {e!s}")
+            logger.exception(f"Failed to generate payslip for staff {staff_id}")
             return Response(
-                {"status": "error", "message": f"Failed to generate payslip: {e!s}", "code": "GENERATION_ERROR"},
+                {"status": "error", "message": "An unexpected error occurred during payslip generation.", "code": "GENERATION_ERROR"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

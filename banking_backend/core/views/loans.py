@@ -6,7 +6,7 @@ This module contains views for managing loan applications and approvals.
 import logging
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import models, transaction
 from rest_framework import mixins, serializers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -151,13 +151,12 @@ class LoanViewSet(
             if isinstance(e, DjangoValidationError):
                 return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-            logger.error(f"Loan approval failed for loan {loan.id}: {e}")
+            logger.exception(f"Loan approval failed for loan {loan.id}")
             return Response(
                 {
                     "status": "error",
-                    "message": "Failed to approve loan",
+                    "message": "An unexpected error occurred during approval.",
                     "code": "LOAN_APPROVAL_FAILED",
-                    "detail": str(e),
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
@@ -186,9 +185,9 @@ class LoanViewSet(
                 {"status": "success", "message": "Loan application rejected.", "data": LoanSerializer(loan).data}
             )
         except Exception as e:
-            logger.error(f"Loan rejection failed for loan {loan.id}: {e}")
+            logger.exception(f"Loan rejection failed for loan {loan.id}")
             return Response(
-                {"status": "error", "message": "Failed to reject loan", "detail": str(e)},
+                {"status": "error", "message": "An unexpected error occurred during rejection.", "code": "LOAN_REJECTION_FAILED"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -244,9 +243,9 @@ class LoanViewSet(
             if isinstance(e, (InsufficientFundsError, serializers.ValidationError)):
                 return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-            logger.error(f"Repayment failed for loan {loan.id}: {e}")
+            logger.exception(f"Repayment failed for loan {loan.id}")
             return Response(
-                {"status": "error", "message": "Failed to process repayment", "detail": str(e)},
+                {"status": "error", "message": "An unexpected error occurred during repayment processing.", "code": "REPAYMENT_FAILED"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

@@ -87,7 +87,8 @@ class SendexaService:
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
         if settings.DEBUG and not api_token_b64:
-            logger.info(f"Sendexa [DEBUG MOCK]: To {normalized_phone}, Msg: {message[:20]}...")
+            safe_phone = f"{normalized_phone[:3]}***{normalized_phone[-2:]}" if normalized_phone else "Unknown"
+            logger.info(f"Sendexa [DEBUG MOCK]: To {safe_phone}, Msg: {message[:20]}...")
             outbox.status = "sent"
             outbox.sent_at = timezone.now()
             outbox.save()
@@ -145,7 +146,7 @@ class SendexaService:
                 outbox.save()
                 return False, outbox.error_message or "Unknown error"
 
-            except Exception:
+            except Exception as e:
                 logger.exception(f"Sendexa: Attempt {attempt+1} failed.")
                 if attempt == max_retries - 1:
                     outbox.status = "failed"

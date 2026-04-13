@@ -6,6 +6,7 @@ and account closure requests.
 
 import logging
 
+from django.conf import settings
 from django.db import transaction
 from django.http import FileResponse
 from django.utils import timezone
@@ -616,9 +617,10 @@ class AccountOpeningViewSet(
         request.session[f"{session_key}_time"] = timezone.now().isoformat()
         request.session.save()
 
-        # SECURITY FIX: Never log OTP codes in production
+        # SECURITY FIX: Never log OTP codes or full phone numbers in production
         if settings.DEBUG:
-            logger.info(f"OTP for {phone_number}: [REDACTED]")
+            safe_phone = f"{phone_number[:3]}***{phone_number[-2:]}" if phone_number else "Unknown"
+            logger.info(f"OTP for {safe_phone}: [REDACTED]")
 
         return Response({"status": "success", "message": "OTP sent successfully."})
 

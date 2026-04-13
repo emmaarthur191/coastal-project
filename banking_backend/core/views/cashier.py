@@ -8,9 +8,9 @@ import logging
 from decimal import Decimal
 
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
-from rest_framework import mixins
+from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
@@ -127,7 +127,7 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
             return Response({"status": "success", "message": "Cash advance approved"})
         except PermissionDenied as e:
             logger.warning(f"Permission denied in cash advance approval: {e}")
-            return Response({"error": str(e)}, status=403)
+            return Response({"error": "You are not authorized to perform this operation."}, status=403)
         except CashAdvance.DoesNotExist:
             return Response({"error": "Cash advance not found"}, status=404)
 
@@ -167,7 +167,8 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
 
             return Response({"status": "success", "message": "Cash advance rejected"})
         except PermissionDenied as e:
-            return Response({"error": str(e)}, status=403)
+            logger.warning(f"Permission denied in cash advance rejection: {e}")
+            return Response({"error": "You are not authorized to perform this operation."}, status=403)
         except CashAdvance.DoesNotExist:
             return Response({"error": "Cash advance not found"}, status=404)
 
@@ -254,8 +255,11 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
         except Loan.DoesNotExist:
             return Response({"error": "Loan not found"}, status=404)
         except Exception as e:
-            logger.error(f"Cashier loan repayment failed: {e}")
-            return Response({"error": "Repayment failed", "detail": str(e)}, status=500)
+            logger.exception("Cashier loan repayment failed")
+            return Response(
+                {"status": "error", "message": "An unexpected error occurred during repayment processing.", "code": "REPAYMENT_FAILED"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class CashDrawerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
@@ -417,9 +421,9 @@ class CheckDepositViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
                 }
             )
         except Exception as e:
-            logger.error(f"Error processing check deposit: {e}")
+            logger.exception("Check deposit processing failed")
             return Response(
-                {"error": "An error occurred while processing the check deposit. Please try again."}, status=500
+                {"status": "error", "message": "An unexpected error occurred while processing the check deposit.", "code": "PROCESS_FAILED"}, status=500
             )
 
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
