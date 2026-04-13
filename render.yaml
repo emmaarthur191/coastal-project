@@ -20,9 +20,6 @@ services:
         value: "false"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
-      - key: CORS_ALLOWED_ORIGINS
-        # REQUIRED: Set to your frontend URL, e.g., https://coastal-web.onrender.com
-        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: coastal-db
@@ -59,7 +56,7 @@ services:
       - key: PII_HASH_KEY
         generateValue: true
       - key: PYTHON_VERSION
-        value: "3.12.12"
+        value: "3.12.1"
     healthCheckPath: /api/health/simple/
     autoDeploy: true
 
@@ -102,4 +99,4 @@ databases:
     databaseName: coastal_banking
     user: coastal_user
     region: frankfurt
-    postgresMajorVersion: "18"
+    postgresMajorVersion: "16"

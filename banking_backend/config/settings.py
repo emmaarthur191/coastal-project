@@ -537,7 +537,7 @@ LOGGING = {
 # Production origins only - localhost added conditionally for development
 CORS_ALLOWED_ORIGINS = [
     # Production frontend on Render
-    "https://coastal-web.onrender.com",
+    "https://coastal-web-service.onrender.com",
     "https://coastal-project.onrender.com",
 ]
 
@@ -563,7 +563,7 @@ import os
 RENDER_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://coastal-web.onrender.com",
+    "https://coastal-web-service.onrender.com",
     "https://coastal-project.onrender.com",
     "https://*.onrender.com",  # Allow Render subdomains for PR previews
 ]
