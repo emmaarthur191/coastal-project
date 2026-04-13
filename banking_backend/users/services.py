@@ -5,7 +5,7 @@ import time
 from django.conf import settings
 from django.utils import timezone
 
-import requests
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +131,9 @@ class SendexaService:
 
         for attempt in range(max_retries):
             try:
-                response = requests.post(url, json=payload, headers=headers, timeout=25)
+                with httpx.Client(timeout=25) as client:
+                    response = client.post(url, json=payload, headers=headers)
+                
                 outbox.retry_count = attempt
 
                 if response.status_code in [200, 201]:
