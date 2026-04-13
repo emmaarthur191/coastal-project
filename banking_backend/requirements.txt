@@ -43,6 +43,9 @@ rich==14.2.0
 sentry-sdk==2.22.0
 
 # Utilities
+joblib==1.4.2
+numpy==2.2.3
+scikit-learn==1.6.1
 pydantic==2.12.5
 pydantic-core==2.41.5
 python-dateutil==2.9.0.post0

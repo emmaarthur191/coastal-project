@@ -103,7 +103,7 @@ def sync_missing_tables():
             "changes" JSONB NOT NULL DEFAULT '{}',
             "ip_address" INET NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "user_id" INTEGER REFERENCES "user" ("id") ON DELETE SET NULL
+            "user_id" INTEGER REFERENCES "users_user" ("id") ON DELETE SET NULL
         )""",
     )
 
