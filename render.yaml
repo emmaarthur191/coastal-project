@@ -11,7 +11,7 @@ services:
     region: frankfurt
     plan: free
     rootDir: banking_backend
-    buildCommand: bash build.sh
+    buildCommand: "export BUILD_MODE=true && bash build.sh"
     startCommand: gunicorn config.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     envVars:
       - key: SECRET_KEY
@@ -57,6 +57,8 @@ services:
         generateValue: true
       - key: PYTHON_VERSION
         value: "3.12.1"
+      - key: LOG_DIR
+        value: "./logs"
     healthCheckPath: /api/health/simple/
     autoDeploy: true
 
@@ -88,6 +90,8 @@ services:
         sync: false
       - key: VITE_SENTRY_ENABLED
         value: "false"
+      - key: NODE_VERSION
+        value: "24"
     autoDeploy: true
 
 # =============================================================================
@@ -99,4 +103,4 @@ databases:
     databaseName: coastal_banking
     user: coastal_user
     region: frankfurt
-    postgresMajorVersion: "16"
+    postgresMajorVersion: "18"

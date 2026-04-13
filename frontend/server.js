@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BACKEND_URL = process.env.BACKEND_URL || 'https://coastal-backend-annc.onrender.com';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://coastal-backend.onrender.com';
 
 // SECURITY: Global Rate Limiter (High-Severity SAST Fix)
 const limiter = rateLimit({
@@ -158,7 +158,7 @@ server.on('upgrade', (req, socket, head) => {
     }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Proxying /api to ${BACKEND_URL}`);
     console.log(`Proxying /ws (WebSocket) to ${BACKEND_URL}`);

@@ -120,9 +120,9 @@ else:
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # Render dynamic hostname support
+ALLOWED_HOSTS.append("*.onrender.com")
 if RENDER_EXTERNAL_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    ALLOWED_HOSTS.append("*.onrender.com")
 
 # CSRF Trusted Origins (Required for POST requests)
 CSRF_TRUSTED_ORIGINS = [
