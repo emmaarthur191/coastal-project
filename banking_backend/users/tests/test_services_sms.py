@@ -42,9 +42,10 @@ class TestSendexaServiceDelivery:
             success, result = SendexaService.send_sms("0244123456", "Hello Test")
 
         assert success is True
-        # Verify Basic Auth header (base64 of test_key)
-
-        expected_auth = "Basic test_key"
+        
+        # Verify Basic Auth header (base64 of test_key + ":")
+        import base64
+        expected_auth = f"Basic {base64.b64encode(b'test_key:').decode()}"
 
         args, kwargs = mock_post.call_args
         assert args[0] == "https://server.sendexa.co/v1/sms/send"

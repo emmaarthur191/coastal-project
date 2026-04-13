@@ -1,4 +1,4 @@
-﻿/* Production-Ready Login Page Styles - WCAG 2.1 AA Compliant */
+/* Production-Ready Login Page Styles - WCAG 2.1 AA Compliant */
 
 /* Google Fonts Import with accessibility optimization */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
@@ -11,10 +11,10 @@
 /* CSS Custom Properties for Design System */
 :root {
   /* Primary Brand Colors - Deep Ocean Blue */
-  --color-primary: #0066CC;
-  --color-primary-hover: #0284c7;
-  --color-primary-light: #f0f9ff;
-  --color-primary-dark: #0c4a6e;
+  --color-primary: #0052CC;
+  --color-primary-hover: #0747a6;
+  --color-primary-light: #deebff;
+  --color-primary-dark: #00214a;
 
   /* Background Colors - Slate/White */
   --color-white: #FFFFFF;
@@ -27,8 +27,8 @@
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(255, 255, 255, 0.6);
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-  --glass-text-primary: #1e293b;
-  --glass-text-secondary: #475569;
+  --glass-text-primary: #000000;
+  --glass-text-secondary: #0f172a;
 
   /* App Background */
   --app-bg: #f0f4f8;
@@ -36,11 +36,10 @@
   --app-bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 
   /* Secondary/Accent - Cyan/Slate */
-  --color-secondary: #64748b;
-  /* Slate 500 */
-  --color-secondary-hover: #475569;
-  --color-secondary-light: #e2e8f0;
-  --color-secondary-dark: #1e293b;
+  --color-secondary: #DE350B; /* Red Accent */
+  --color-secondary-hover: #bf2600;
+  --color-secondary-light: #ffebe6;
+  --color-secondary-dark: #661400;
 
   /* Error/Alert Colors */
   --color-error: #ef4444;
@@ -54,18 +53,18 @@
   --color-warning-medium: #fde68a;
 
   /* Success Colors */
-  --color-success: #10b981;
-  --color-success-light: #ecfdf5;
+  --color-success: #36B37E;
+  --color-success-light: #e3fcef;
 
-  /* Text Colors - WCAG AA Compliant */
-  --color-text-primary: #0f172a;
-  /* Slate 900 */
-  --color-text-secondary: #334155;
-  /* Slate 700 */
-  --color-text-tertiary: #64748b;
-  /* Slate 500 */
-  --color-text-placeholder: #94a3b8;
-  /* Slate 400 */
+  /* Text Colors - WCAG 2.1 AA Max Contrast */
+  --color-text-primary: #000000;
+  /* Deep Black for readability */
+  --color-text-secondary: #000000;
+  /* Darkened to match user request */
+  --color-text-tertiary: #1e293b;
+  /* Dark Slate for contrast */
+  --color-text-placeholder: #334155;
+  /* Darker placeholder */
 
   /* Border Colors */
   --color-border-light: #e2e8f0;
@@ -79,27 +78,31 @@
   --color-focus-ring-error: rgba(239, 68, 68, 0.15);
   --color-focus-ring-warning: rgba(245, 158, 11, 0.15);
 
-  /* Animation Timing */
-  --motion-fast: 150ms;
-  --motion-normal: 250ms;
-  --motion-slow: 400ms;
-  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  /* Animation Timing - Luxurious Refined Standard */
+  --motion-fast: 200ms;
+  --motion-normal: 500ms;
+  --motion-slow: 800ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+
+  /* Premium Extended Palette */
+  --color-navy-deep: #001D3A;
+  --color-sky-refraction: #B6D3F0;
 }
 
 /* Dark Mode Variables */
 .dark {
   /* Backgrounds */
-  --color-white: #0f172a;
-  /* Slate 900 base */
-  --color-white-light: #1e293b;
-  /* Slate 800 */
-  --color-white-dark: #334155;
-  /* Slate 700 */
+  --color-white: #050a14;
+  /* Dark Navy base */
+  --color-white-light: #091e42;
+  /* Deep Blue surface */
+  --color-white-dark: #172b4d;
+  /* Surface blue */
 
   /* App Background */
-  --app-bg: #0f172a;
-  --app-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --app-bg: #050a14;
+  --app-bg-gradient: linear-gradient(135deg, #050a14 0%, #091e42 100%);
 
   /* Glass Variables (Dark Mode) */
   --glass-bg: rgba(30, 41, 59, 0.70);
@@ -111,10 +114,10 @@
   --glass-text-secondary: #cbd5e1;
   /* Slate 300 */
 
-  /* Text Colors */
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
+  /* Text Colors (Dark Mode Max Contrast) */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #F8FAFC;
+  --color-text-tertiary: #E2E8F0;
 
   /* Borders */
   --color-border-light: #334155;
@@ -131,11 +134,6 @@
 html,
 :host {
   font-size: 16px;
-  -webkit-text-size-adjust: 100%;
-  /* Safari */
-  -moz-text-size-adjust: 100%;
-  /* Firefox Mobile */
-  text-size-adjust: 100%;
   scroll-behavior: smooth;
 
   @media (prefers-reduced-motion: reduce) {
@@ -143,12 +141,30 @@ html,
   }
 }
 
+.high-contrast-text {
+  color: #000000 !important;
+}
+
+.dark .high-contrast-text {
+  color: #FFFFFF !important;
+}
+
+@keyframes mesh-ocean {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 body {
   font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--app-bg);
-  background-image: var(--app-bg-gradient);
+  background-image: radial-gradient(at 0% 0%, var(--color-primary-dark) 0%, transparent 50%),
+                    radial-gradient(at 50% 0%, var(--color-primary) 0%, transparent 55%),
+                    radial-gradient(at 100% 0%, var(--color-navy-deep) 0%, transparent 50%),
+                    radial-gradient(at 50% 100%, var(--color-primary-hover) 0%, transparent 60%);
+  background-size: 200% 200%;
+  animation: mesh-ocean 20s ease-all infinite;
   background-attachment: fixed;
-  /* Parallax-like feel */
   color: var(--color-text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -157,17 +173,39 @@ body {
   min-height: 100vh;
 }
 
+.tracking-tightest {
+  letter-spacing: -0.06em;
+}
+
+/* Glassmorphism Utilities */
+.glass-card-global {
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Component Styles */
 @layer components {
 
-  /* Global Glass Card Utility */
+  /* Global Glass Card Utility - Refined for 2025 */
   .glass-card-global {
     background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
+    width: 100%;
     color: var(--glass-text-primary);
+    transition: all var(--motion-normal) var(--easing-standard);
   }
 
   /* Glass Panel */
@@ -227,7 +265,101 @@ body {
   }
 }
 
-/* Chart Legend Color Indicator - uses CSS custom property for dynamic colors */
-.legend-color-indicator {
-  background-color: var(--legend-color);
+
+/* High Contrast Mode Overrides - WCAG 2.1 AAA Target */
+.high-contrast-mode {
+  --app-bg: #000000 !important;
+  --app-bg-gradient: none !important;
+  --color-text-primary: #FFFFFF !important;
+  --color-text-secondary: #FFFF00 !important; /* Yellow for specific contrast */
+  --color-text-tertiary: #00FFFF !important; /* Cyan for tertiary */
+  --glass-bg: #000000 !important;
+  --glass-border: #FFFFFF !important;
+  --color-primary: #FFFF00 !important;
+  --color-primary-hover: #00FFFF !important;
+  --color-white: #000000 !important;
+  color: #FFFFFF !important; /* Global text fallback */
+}
+
+/* Force override on cards */
+.high-contrast-mode .glass-card, 
+.high-contrast-mode .glass-panel {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: 2px solid #FFFFFF !important;
+  background: #000000 !important;
+  box-shadow: none !important;
+}
+
+/* Inputs and interactive elements */
+.high-contrast-mode input, 
+.high-contrast-mode select, 
+.high-contrast-mode textarea,
+.high-contrast-mode .form-input {
+  border: 2px solid #FFFFFF !important;
+  background: #000000 !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+/* Accessibility for text types */
+.high-contrast-mode .text-slate-500,
+.high-contrast-mode .text-gray-400,
+.high-contrast-mode .text-gray-500 {
+  color: #FFFF00 !important; /* High contrast yellow for secondary text */
+}
+
+.high-contrast-mode .text-blue-400,
+.high-contrast-mode .text-cyan-400 {
+  color: #00FFFF !important; /* Cyan for blue-linked text */
+}
+
+/* Button forcing */
+.high-contrast-mode button {
+  border: 2px solid #FFFFFF !important;
+  color: #FFFFFF !important;
+  background: #000000 !important;
+}
+
+.high-contrast-mode button:hover {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+/* Global Selection Hardening - Force Absolute Black on White/Light backgrounds */
+select, 
+input:not([type="button"]):not([type="submit"]), 
+textarea {
+    color: #000000 !important;
+    font-weight: 900 !important;
+}
+
+/* Ensure native select options are consistently black */
+option {
+    color: #000000 !important;
+    background-color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+
+/* Fix for browsers that override internal selection color */
+select:focus, 
+input:focus, 
+textarea:focus {
+    color: #000000 !important;
+}
+
+::placeholder {
+    color: rgba(0, 0, 0, 0.6) !important;
+    font-weight: 700 !important;
+}
+
+/* High Contrast Visibility Reset for Dark-Mode Leakage */
+.dark select, 
+.dark input:not([type="button"]):not([type="submit"]), 
+.dark textarea {
+    color: #000000 !important;
+}
+
+.dark option {
+    color: #000000 !important;
+    background-color: #FFFFFF !important;
 }

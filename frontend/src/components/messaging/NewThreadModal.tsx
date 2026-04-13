@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import UserAvatar from './UserAvatar';
 
 const NewThreadModal = ({
@@ -9,7 +9,7 @@ const NewThreadModal = ({
   staffUsers,
   user,
   handleCreateThread,
-  theme
+  _theme
 }) => {
   if (!showNewThread) return null;
 

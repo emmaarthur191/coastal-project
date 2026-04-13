@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
 import { authService } from '../services/api';
+import { 
+  Users, 
+  User, 
+  Home, 
+  Fingerprint, 
+  FolderOpen, 
+  Building2, 
+  ListChecks, 
+  Loader2, 
+  Image as ImageIcon, 
+  FileText, 
+  UploadCloud, 
+  Trash2 
+} from 'lucide-react';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import GlassCard from './ui/modern/GlassCard';
 
-interface UserFormData {
+export interface UserFormData {
   // Existing fields
   first_name: string;
   last_name: string;
@@ -44,8 +58,8 @@ interface StaffMember {
 }
 
 interface UserManagementSectionProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: UserFormData;
+  setFormData: React.Dispatch<React.SetStateAction<UserFormData>>;
   handleCreateUser: (e: React.FormEvent) => void;
   staffMembers: StaffMember[];
   fetchStaffMembers: () => void;
@@ -154,17 +168,22 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center space-x-2">
-        <h3 className="text-2xl font-bold text-gray-800">👥 Enhanced User Management - Create New User</h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="p-1.5 bg-slate-900 rounded-lg">
+          <Users className="w-5 h-5 text-white" />
+        </div>
+        <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">User Management</h3>
       </div>
-
-      <GlassCard className="p-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
+b
+      <GlassCard className="p-5 shadow-lg border border-slate-200/50">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Information Section */}
           <div>
-            <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📋 Personal Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h4 className="text-[10px] font-black text-slate-900 mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2 uppercase tracking-widest">
+              <User className="w-4 h-4 text-blue-600" /> Personal Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="First Name *"
                 value={formData.first_name || ''}
@@ -214,8 +233,10 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
 
           {/* Address Information Section */}
           <div>
-            <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">🏠 Address Information</h4>
-            <div className="grid grid-cols-1 gap-6">
+            <h4 className="text-[10px] font-black text-slate-900 mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2 uppercase tracking-widest">
+              <Home className="w-4 h-4 text-blue-600" /> Address Details
+            </h4>
+            <div className="grid grid-cols-1 gap-4">
               <Input
                 as="textarea"
                 label="House Address *"
@@ -243,8 +264,10 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
 
           {/* Identification Information Section */}
           <div>
-            <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">🆔 Identification Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h4 className="text-[10px] font-black text-slate-900 mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2 uppercase tracking-widest">
+              <Fingerprint className="w-4 h-4 text-blue-600" /> Identification
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Government ID *"
                 value={formData.government_id || ''}
@@ -266,8 +289,10 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
 
           {/* File Uploads Section */}
           <div>
-            <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">📁 Document Uploads</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <h4 className="text-[10px] font-black text-slate-900 mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2 uppercase tracking-widest">
+              <FolderOpen className="w-4 h-4 text-blue-600" /> Documents
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FileUploadComponent
                 label="Passport Picture *"
                 accept="image/jpeg,image/jpg,image/png"
@@ -294,8 +319,10 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
 
           {/* Bank Account Details Section */}
           <div>
-            <h4 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">🏦 Bank Account Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h4 className="text-[10px] font-black text-slate-900 mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2 uppercase tracking-widest">
+              <Building2 className="w-4 h-4 text-blue-600" /> Financial Routing
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Bank Name *"
                 value={formData.bank_name || ''}
@@ -335,25 +362,25 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
             type="submit"
             disabled={isSubmitting}
             variant={!isSubmitting ? "primary" : "secondary"}
-            className="w-full text-lg py-4"
+            className="w-full text-base py-3"
           >
-            {isSubmitting ? 'Creating User...' : 'Create User'}
+            {isSubmitting ? 'Creating User...' : 'Establish Staff Identity'}
           </Button>
         </form>
       </GlassCard>
 
       {/* Staff Members List */}
       <div>
-        <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <span>📋</span> Current Staff Members
+        <h4 className="text-lg font-black text-slate-900 mb-3 flex items-center gap-2 tracking-tighter uppercase">
+          <ListChecks className="w-5 h-5 text-emerald-600" /> Staff Directory
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {staffMembers.length > 0 ? staffMembers.map((staff) => (
-            <div key={staff.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col hover:border-coastal-primary transition-colors">
-              <div className="font-bold text-lg text-gray-900 text-center">{staff.name}</div>
-              <div className="text-sm text-center text-gray-500 mt-2">
-                <span className="block">{staff.role}</span>
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold uppercase mt-1 ${staff.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+            <div key={staff.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:border-blue-600 transition-colors">
+              <div className="font-black text-sm text-slate-900 text-center tracking-tight truncate">{staff.name}</div>
+              <div className="text-[8px] text-center text-slate-500 font-bold uppercase tracking-widest mt-1">
+                <span className="block">{staff.role.replace('_', ' ')}</span>
+                <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase mt-1 ${staff.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'
                   }`}>
                   {staff.status}
                 </span>
@@ -361,7 +388,7 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
             </div>
           )) : (
             <div className="col-span-full text-center p-8 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-              No staff members yet. Create your first user above! 👆
+              No staff members yet. Create your first user above!
             </div>
           )}
         </div>
@@ -401,7 +428,7 @@ const FileUploadComponent = ({
 
   return (
     <div className="flex flex-col">
-      <label htmlFor={inputId} className="text-sm font-semibold text-gray-700 mb-1.5 ml-1">{label}</label>
+      <label htmlFor={inputId} className="text-[10px] font-black text-slate-900 mb-2 ml-1 uppercase tracking-tight">{label}</label>
       {/* Hidden file input moved outside interactive div to fix accessibility issue */}
       <input
         ref={fileInputRef}
@@ -413,9 +440,9 @@ const FileUploadComponent = ({
         title={label}
       />
       <div
-        className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer bg-gray-50
-            ${isDragOver ? 'border-coastal-primary bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
-            ${error ? 'border-red-300 bg-red-50' : ''}
+        className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer bg-white
+            ${isDragOver ? 'border-blue-600 bg-blue-50' : 'border-slate-300 hover:border-slate-500'}
+            ${error ? 'border-red-400 bg-red-50' : ''}
         `}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -427,24 +454,33 @@ const FileUploadComponent = ({
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
       >
         {isUploading ? (
-          <div className="text-gray-500"><span className="animate-spin inline-block mr-2">⏳</span> Processing...</div>
+          <div className="text-gray-500 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-coastal-primary" />
+            <span className="text-xs font-bold uppercase tracking-widest">Processing...</span>
+          </div>
         ) : currentFile ? (
           <div className="flex flex-col items-center">
-            <div className="text-2xl mb-2">{currentFile.type.startsWith('image/') ? '🖼️' : '📄'}</div>
-            <div className="text-sm font-bold text-gray-700 truncate max-w-[200px]">{currentFile.name}</div>
+            <div className="mb-2">
+              {currentFile.type.startsWith('image/') ? (
+                <ImageIcon className="w-6 h-6 text-coastal-primary" />
+              ) : (
+                <FileText className="w-6 h-6 text-coastal-primary" />
+              )}
+            </div>
+            <div className="text-sm font-black text-gray-700 uppercase tracking-widest">Upload</div>
             <div className="text-xs text-coastal-primary mt-1">Click to change</div>
           </div>
         ) : (
-          <div className="text-gray-500">
-            <div className="text-2xl mb-2">📁</div>
-            <div className="text-sm">Click or Drag & Drop</div>
+          <div className="text-gray-500 flex flex-col items-center">
+            <UploadCloud className="w-8 h-8 mb-2 opacity-50" />
+            <div className="text-sm font-bold">Click or Drag & Drop</div>
           </div>
         )}
       </div>
       {currentFile && (
         <div className="flex justify-end mt-1">
-          <button type="button" onClick={() => onFileChange(null)} className="text-red-500 text-xs font-bold hover:underline flex items-center gap-1">
-            <span>🗑️</span> Remove {label}
+          <button type="button" onClick={() => onFileChange(null)} className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
+            <Trash2 className="w-3 h-3" /> Remove {label.replace(' *', '')}
           </button>
         </div>
       )}

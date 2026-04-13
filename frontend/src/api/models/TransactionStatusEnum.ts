@@ -3,13 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `pending` - Pending
+ * * `pending_approval` - Pending Approval
  * * `completed` - Completed
  * * `failed` - Failed
  * * `cancelled` - Cancelled
  */
 export enum TransactionStatusEnum {
-    PENDING = 'pending',
+    PENDING_APPROVAL = 'pending_approval',
     COMPLETED = 'completed',
     FAILED = 'failed',
     CANCELLED = 'cancelled',

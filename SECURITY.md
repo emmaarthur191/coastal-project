@@ -1,21 +1,22 @@
 # Security Policy
-
+ 
 ## Supported Versions
-
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
+ 
+We strictly support the current production version and the immediate previous secondary release for security patches.
+ 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
-
+| 1.x.x   | :white_check_mark: |
+| < 1.0.0 | :x:                |
+ 
 ## Reporting a Vulnerability
-
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+ 
+**DO NOT OPEN A GITHUB ISSUE FOR SECURITY VULNERABILITIES.**
+ 
+Please report security concerns directly to our security team to ensure a coordinated disclosure process:
+ 
+1. **Email**: security@coastalbanking.com
+2. **PGP Key**: [Link to Public Key or Key Server ID]
+3. **Disclosure Policy**: We follow a 90-day disclosure policy. Please provide detailed reproduction steps and an impact assessment.
+ 
+We will acknowledge receipt of your report within 24 hours and provide weekly updates on the remediation progress.

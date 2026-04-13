@@ -1,6 +1,7 @@
 import React from 'react';
 import ModernStatCard from '../ui/modern/ModernStatCard';
 import { formatCurrencyGHS } from '../../utils/formatters';
+import { Users, CheckCircle2, Banknote, FileEdit } from 'lucide-react';
 
 interface MobileMetricsProps {
   metrics: {
@@ -17,28 +18,28 @@ const MobileMetrics: React.FC<MobileMetricsProps> = ({ metrics, loadingMetrics }
     {
       label: 'Visits',
       value: loadingMetrics ? '...' : (metrics?.scheduled_visits || 0).toString(),
-      icon: '🛵',
+      icon: <Users className="w-5 h-5" />,
       colorClass: 'text-indigo-600 bg-indigo-50',
       trend: 'neutral'
     },
     {
       label: 'Done',
       value: loadingMetrics ? '...' : (metrics?.completed_today || 0).toString(),
-      icon: '✅',
+      icon: <CheckCircle2 className="w-5 h-5" />,
       colorClass: 'text-emerald-600 bg-emerald-50',
       trend: 'up'
     },
     {
       label: 'Collect',
       value: loadingMetrics ? '...' : formatCurrencyGHS(metrics?.collections_due || 0),
-      icon: '💰',
+      icon: <Banknote className="w-5 h-5" />,
       colorClass: 'text-amber-600 bg-amber-50',
       trend: 'neutral'
     },
     {
       label: 'New Apps',
       value: loadingMetrics ? '...' : (metrics?.new_applications || 0).toString(),
-      icon: '📝',
+      icon: <FileEdit className="w-5 h-5" />,
       colorClass: 'text-sky-600 bg-sky-50',
       trend: 'up'
     }
@@ -51,9 +52,9 @@ const MobileMetrics: React.FC<MobileMetricsProps> = ({ metrics, loadingMetrics }
           key={i}
           label={m.label}
           value={m.value}
-          icon={<span className="text-2xl">{m.icon}</span>}
+          icon={m.icon}
           colorClass={m.colorClass}
-          trend={m.trend as any}
+          trend={m.trend as 'up' | 'down' | 'neutral'}
         />
       ))}
     </div>

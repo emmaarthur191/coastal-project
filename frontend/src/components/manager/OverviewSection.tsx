@@ -1,24 +1,19 @@
 import React from 'react';
 import GlassCard from '../ui/modern/GlassCard';
 import ModernStatCard from '../ui/modern/ModernStatCard';
-import { authService } from '../../services/api';
-
-interface Metric {
-  label: string;
-  value: string;
-  change: string;
-  trend: 'up' | 'down' | 'neutral';
-  icon: string;
-}
-
-interface DashboardData {
-  branch_metrics?: Metric[];
-  staff_performance?: any[];
-  pending_approvals?: any[];
-}
+import { apiService } from '../../services/api';
+import { ManagerDashboardData } from '../../types';
+import { 
+  Trophy, 
+  ClipboardList, 
+  Wallet, 
+  Banknote, 
+  User, 
+  CheckCircle2
+} from 'lucide-react';
 
 interface OverviewSectionProps {
-  dashboardData: DashboardData | null;
+  dashboardData: ManagerDashboardData | null;
   onReviewAccountOpening?: () => void;
   onRefreshDashboard?: () => void;
 }
@@ -35,7 +30,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
             value={metric.value}
             change={metric.change}
             trend={metric.trend}
-            icon={<span className="text-2xl">{metric.icon}</span>}
+            icon={metric.icon}
             colorClass={idx % 2 === 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-purple-600 dark:text-purple-400'}
           />
         ))}
@@ -48,7 +43,8 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              🏆 <span>Top Staff Performance</span>
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <span>Top Staff Performance</span>
             </h3>
             <button className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline">View All</button>
           </div>
@@ -57,37 +53,41 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
             <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-700">
               <thead>
                 <tr className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  <th className="pb-3 pl-2">Name</th>
-                  <th className="pb-3 text-center">TXs</th>
+                  <th className="pb-3 pl-2">Staff ID</th>
+                  <th className="pb-3">Name</th>
+                  <th className="pb-3 text-center">Status</th>
                   <th className="pb-3 text-right pr-2">Efficiency</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
                 {dashboardData?.staff_performance?.map((staff, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 pl-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 flex items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300 border border-white dark:border-slate-600 shadow-sm">
-                          {staff.name.charAt(0)}
+                    <td className="py-3 pl-2 font-mono font-black text-coastal-primary text-xs">
+                      {staff.staff_id || 'PENDING'}
+                    </td>
+                    <td className="py-3 pr-2">
+                       <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 flex items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300 border border-white dark:border-slate-600 shadow-sm grow-0 shrink-0">
+                          {staff.staff_name ? staff.staff_name.charAt(0) : '?'}
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{staff.name}</p>
-                          <p className="text-xs text-slate-400">{staff.role}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{staff.staff_name}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">STAFF</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-3 text-center">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        {staff.transactions}
+                       <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400`}>
+                        Active
                       </span>
                     </td>
                     <td className="py-3 text-right pr-2">
-                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{staff.efficiency}</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-white">{staff.efficiency_score ?? 'N/A'}</span>
                     </td>
                   </tr>
                 ))}
                 {(!dashboardData?.staff_performance || dashboardData.staff_performance.length === 0) && (
-                  <tr><td colSpan={3} className="py-8 text-center text-slate-400 text-sm">No activity recorded today.</td></tr>
+                  <tr><td colSpan={4} className="py-8 text-center text-slate-400 text-sm">No activity recorded today.</td></tr>
                 )}
               </tbody>
             </table>
@@ -98,7 +98,8 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              📝 <span>Pending Approvals</span>
+              <ClipboardList className="w-5 h-5 text-blue-500" />
+              <span>Pending Approvals</span>
             </h3>
             {dashboardData?.pending_approvals && dashboardData.pending_approvals.length > 0 && (
               <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs px-2 py-1 rounded-full font-bold shadow-sm">
@@ -111,15 +112,13 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
             {dashboardData?.pending_approvals?.map((item, idx) => (
               <div key={idx} className="group flex items-start p-3 bg-white/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-amber-100 dark:hover:border-amber-900/30 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer">
 
-                <div className={`p-2.5 rounded-lg mr-4 ${item.type === 'Loan Application' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : (item.type === 'High-Value Transaction' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400')}`}>
-                  <span className="text-lg">
-                    {item.type === 'Loan Application' ? '💰' : (item.type === 'High-Value Transaction' ? '💸' : '👤')}
-                  </span>
+                <div className={`p-2.5 rounded-lg mr-4 ${item.type === 'loan' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : (item.type === 'transaction' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400')}`}>
+                    {item.type === 'loan' ? <Wallet className="w-5 h-5" /> : (item.type === 'transaction' ? <Banknote className="w-5 h-5" /> : <User className="w-5 h-5" />)}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{item.type}</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate capitalize">{item.type.replace('_', ' ')}</p>
                     <span className="text-xs text-slate-400 whitespace-nowrap ml-2">
                       {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
@@ -128,13 +127,13 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
                 </div>
 
                 <div className="ml-2 flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity gap-2">
-                  {item.type === 'High-Value Transaction' ? (
+                  {item.type === 'transaction' ? (
                     <>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (window.confirm(`Approve this transaction of ${item.description}?`)) {
-                            const res = await authService.approveTransaction(item.id);
+                            const res = await apiService.approveTransaction(item.id);
                             if (res.success) {
                               alert('Transaction approved successfully!');
                               onRefreshDashboard?.();
@@ -152,7 +151,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
                           e.stopPropagation();
                           const reason = window.prompt('Enter rejection reason:', 'Insufficient verification');
                           if (reason !== null) {
-                            const res = await authService.rejectTransaction(item.id, reason);
+                            const res = await apiService.rejectTransaction(item.id, reason);
                             if (res.success) {
                               alert('Transaction rejected.');
                               onRefreshDashboard?.();
@@ -179,7 +178,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ dashboardData, onRevi
             ))}
             {(!dashboardData?.pending_approvals || dashboardData.pending_approvals.length === 0) && (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <span className="text-4xl mb-2">🎉</span>
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-2 opacity-20" />
                 <p className="text-slate-500 dark:text-slate-400 font-medium">All clear!</p>
                 <p className="text-slate-400 dark:text-slate-500 text-xs">No pending items to review.</p>
               </div>

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Smart Migration Script v7 - Exhaustive Production Schema Sync.
+"""Smart Migration Script v8 - Exhaustive Production Schema Sync & Cleanup.
 
 This script ensures the production database has all required tables and columns,
-even if the migration history is corrupted or out of sync.
+aligns naming with actual db_table definitions, and cleans up redundant duplicates.
 """
 
 import os
@@ -91,9 +91,10 @@ def sync_missing_tables():
     # ==========================================================================
     # AUDIT LOGS
     # ==========================================================================
+    # Audit Log
     create_table_if_not_exists(
-        "users_auditlog",
-        """CREATE TABLE "users_auditlog" (
+        "audit_log",
+        """CREATE TABLE "audit_log" (
             "id" BIGSERIAL PRIMARY KEY,
             "action" VARCHAR(20) NOT NULL,
             "model_name" VARCHAR(100) NOT NULL,
@@ -102,7 +103,7 @@ def sync_missing_tables():
             "changes" JSONB NOT NULL DEFAULT '{}',
             "ip_address" INET NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "user_id" INTEGER REFERENCES "users_user" ("id") ON DELETE SET NULL
+            "user_id" INTEGER REFERENCES "user" ("id") ON DELETE SET NULL
         )""",
     )
 
@@ -122,7 +123,7 @@ def sync_missing_tables():
             "thread_id" VARCHAR(100) NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "parent_message_id" BIGINT NULL REFERENCES "core_bankingmessage" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -138,7 +139,7 @@ def sync_missing_tables():
             "last_message_at" TIMESTAMP WITH TIME ZONE NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "created_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
+            "created_by_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL
         )""",
     )
 
@@ -148,7 +149,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_messagethread_participants" (
             "id" BIGSERIAL PRIMARY KEY,
             "messagethread_id" BIGINT NOT NULL REFERENCES "core_messagethread" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
             UNIQUE ("messagethread_id", "user_id")
         )""",
     )
@@ -169,7 +170,7 @@ def sync_missing_tables():
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "edited_at" TIMESTAMP WITH TIME ZONE NULL,
             "reactions" JSONB NOT NULL DEFAULT '{}',
-            "sender_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "sender_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL,
             "thread_id" BIGINT NOT NULL REFERENCES "core_messagethread" ("id") ON DELETE CASCADE
         )""",
     )
@@ -180,7 +181,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_message_read_by" (
             "id" BIGSERIAL PRIMARY KEY,
             "message_id" BIGINT NOT NULL REFERENCES "core_message" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
             UNIQUE ("message_id", "user_id")
         )""",
     )
@@ -192,8 +193,8 @@ def sync_missing_tables():
             "id" BIGSERIAL PRIMARY KEY,
             "reason" TEXT NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "blocked_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
-            "blocker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "blocked_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "blocker_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
             UNIQUE ("blocker_id", "blocked_id")
         )""",
     )
@@ -219,15 +220,15 @@ def sync_missing_tables():
 
     # UserActivity
     create_table_if_not_exists(
-        "users_useractivity",
-        """CREATE TABLE "users_useractivity" (
+        "user_activity",
+        """CREATE TABLE "user_activity" (
             "id" BIGSERIAL PRIMARY KEY,
             "activity_type" VARCHAR(100) NOT NULL,
             "description" TEXT NOT NULL,
             "ip_address" INET NULL,
             "user_agent" TEXT NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -248,8 +249,8 @@ def sync_missing_tables():
 
     # AdminNotification
     create_table_if_not_exists(
-        "users_adminnotification",
-        """CREATE TABLE "users_adminnotification" (
+        "admin_notification",
+        """CREATE TABLE "admin_notification" (
             "id" BIGSERIAL PRIMARY KEY,
             "title" VARCHAR(255) NOT NULL,
             "message" TEXT NOT NULL,
@@ -263,11 +264,11 @@ def sync_missing_tables():
 
     # Junction: AdminNotification <-> User
     create_table_if_not_exists(
-        "users_adminnotification_target_users",
-        """CREATE TABLE "users_adminnotification_target_users" (
+        "admin_notification_target_users",
+        """CREATE TABLE "admin_notification_target_users" (
             "id" BIGSERIAL PRIMARY KEY,
-            "adminnotification_id" BIGINT NOT NULL REFERENCES "users_adminnotification" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "adminnotification_id" BIGINT NOT NULL REFERENCES "admin_notification" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
             UNIQUE ("adminnotification_id", "user_id")
         )""",
     )
@@ -309,7 +310,7 @@ def sync_missing_tables():
             "font_size" VARCHAR(10) NOT NULL DEFAULT 'medium',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "user_id" BIGINT NOT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "user_id" BIGINT NOT NULL UNIQUE REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -397,7 +398,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_chatroom_members" (
             "id" BIGSERIAL PRIMARY KEY,
             "chatroom_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
             UNIQUE ("chatroom_id", "user_id")
         )""",
     )
@@ -411,7 +412,7 @@ def sync_missing_tables():
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "room_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
-            "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "sender_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -427,7 +428,7 @@ def sync_missing_tables():
             "notes" TEXT NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "mobile_banker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "mobile_banker_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -441,8 +442,8 @@ def sync_missing_tables():
             "priority" VARCHAR(10) NOT NULL DEFAULT 'medium',
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "recipient_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
-            "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "recipient_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "sender_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -462,8 +463,8 @@ def sync_missing_tables():
             "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "client_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
-            "mobile_banker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "client_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "mobile_banker_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
             UNIQUE ("mobile_banker_id", "client_id")
         )""",
     )
@@ -494,15 +495,15 @@ def sync_missing_tables():
             "notes" TEXT NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "created_user_id" BIGINT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE SET NULL,
-            "submitted_by_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+            "created_user_id" BIGINT NULL UNIQUE REFERENCES "user" ("id") ON DELETE SET NULL,
+            "submitted_by_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
         )""",
     )
 
     # IdempotencyKey
     create_table_if_not_exists(
-        "core_idempotencykey",
-        """CREATE TABLE "core_idempotencykey" (
+        "idempotency_key",
+        """CREATE TABLE "idempotency_key" (
             "id" BIGSERIAL PRIMARY KEY,
             "guid" UUID NOT NULL UNIQUE,
             "method" VARCHAR(10) NOT NULL,
@@ -512,7 +513,7 @@ def sync_missing_tables():
             "response_body" TEXT NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "locked_at" TIMESTAMP WITH TIME ZONE NULL,
-            "user_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
+            "user_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL
         )""",
     )
 
@@ -524,60 +525,69 @@ def sync_missing_columns():
     print("--> Syncing missing columns...")
 
     # Users
-    add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
-    add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
-    add_column_if_not_exists("users_user", "staff_number", "INTEGER DEFAULT 0 NOT NULL")
+    add_column_if_not_exists("user", "id_type", "VARCHAR(50) NULL")
+    add_column_if_not_exists("user", "id_number", "VARCHAR(50) NULL")
+    add_column_if_not_exists("user", "staff_number", "INTEGER DEFAULT 0 NOT NULL")
     # PII Encryption (GDPR/Compliance)
-    add_column_if_not_exists("users_user", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "ssnit_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "staff_id_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "ssnit_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "staff_id_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
     # PII Search Hashes (Zero-Plaintext)
-    add_column_if_not_exists("users_user", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "ssnit_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "staff_id_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "first_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("users_user", "last_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "ssnit_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "staff_id_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "first_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "last_name_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    # New Profile Fields (Encrypted)
+    add_column_if_not_exists("user", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "digital_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("user", "key_version", "INTEGER DEFAULT 1 NOT NULL")
     # Security/Lockout
-    add_column_if_not_exists("users_user", "failed_login_attempts", "INTEGER DEFAULT 0 NOT NULL")
-    add_column_if_not_exists("users_user", "locked_until", "TIMESTAMP WITH TIME ZONE NULL")
-    add_column_if_not_exists("users_user", "last_failed_login", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("user", "failed_login_attempts", "INTEGER DEFAULT 0 NOT NULL")
+    add_column_if_not_exists("user", "locked_until", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("user", "last_failed_login", "TIMESTAMP WITH TIME ZONE NULL")
     # Transaction Limits
-    add_column_if_not_exists("users_user", "daily_transaction_limit", "NUMERIC(12,2) DEFAULT 10000.00 NOT NULL")
-    add_column_if_not_exists("users_user", "daily_transaction_total", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("users_user", "daily_limit_reset_date", "DATE NULL")
-    add_column_if_not_exists("users_user", "is_approved", "BOOLEAN DEFAULT FALSE NOT NULL")
+    add_column_if_not_exists("user", "daily_transaction_limit", "NUMERIC(12,2) DEFAULT 10000.00 NOT NULL")
+    add_column_if_not_exists("user", "daily_transaction_total", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("user", "daily_limit_reset_date", "DATE NULL")
+    add_column_if_not_exists("user", "is_approved", "BOOLEAN DEFAULT FALSE NOT NULL")
 
     # Accounts & Registration
-    add_column_if_not_exists("core_account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "initial_deposit", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "digital_address", "VARCHAR(100) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "occupation", "VARCHAR(255) NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_data", "JSONB DEFAULT '{}' NOT NULL")
+    add_column_if_not_exists("account", "initial_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("account", "key_version", "INTEGER DEFAULT 1 NOT NULL")
+    add_column_if_not_exists("account_opening_request", "initial_deposit", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("account_opening_request", "digital_address", "VARCHAR(100) NULL")
+    add_column_if_not_exists("account_opening_request", "occupation", "VARCHAR(255) NULL")
+    add_column_if_not_exists("account_opening_request", "next_of_kin_data", "JSONB DEFAULT '{}' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "key_version", "INTEGER DEFAULT 1 NOT NULL")
     # AccountOpeningRequest Encrypted PII
-    add_column_if_not_exists("core_accountopeningrequest", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "digital_address_encrypted_val", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "photo_encrypted", "TEXT DEFAULT ''")
+    add_column_if_not_exists("account_opening_request", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "digital_address_encrypted_val", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "photo_encrypted", "TEXT DEFAULT ''")
     # AccountOpeningRequest PII Hashes
-    add_column_if_not_exists("core_accountopeningrequest", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
 
     # Loans
-    add_column_if_not_exists("core_loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "monthly_income", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "monthly_income", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
 
     # Banking & Operations Messages
     add_column_if_not_exists("core_bankingmessage", "body_encrypted", "TEXT DEFAULT '' NOT NULL")
@@ -639,76 +649,76 @@ def sync_missing_columns():
     add_column_if_not_exists("sms_outbox", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
 
     # Loans Intensive PII
-    add_column_if_not_exists("core_loan", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "digital_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_1_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_1_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_1_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "next_of_kin_2_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_1_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "guarantor_2_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_loan", "approved_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("loan", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "digital_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "next_of_kin_1_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "next_of_kin_1_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "next_of_kin_1_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "next_of_kin_2_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "next_of_kin_2_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "next_of_kin_2_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_1_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_1_id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_1_id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_1_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_1_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_2_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_2_id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_2_id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_2_phone_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "guarantor_2_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("loan", "approved_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     # Maker-Checker & Processing (Transactions, Checks, Refunds)
-    add_column_if_not_exists("core_transaction", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("transaction", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
     add_column_if_not_exists(
-        "core_transaction", "approved_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+        "transaction", "approved_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
     )
-    add_column_if_not_exists("core_transaction", "approval_date", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("transaction", "approval_date", "TIMESTAMP WITH TIME ZONE NULL")
 
     add_column_if_not_exists(
-        "core_checkdeposit", "submitted_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+        "check_deposit", "submitted_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
     )
     add_column_if_not_exists(
-        "core_checkdeposit", "processed_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+        "check_deposit", "processed_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
     )
-    add_column_if_not_exists("core_checkdeposit", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
-    add_column_if_not_exists("core_checkdeposit", "cleared_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("check_deposit", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("check_deposit", "cleared_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     add_column_if_not_exists(
-        "core_refund", "processed_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
+        "refund", "processed_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
     )
-    add_column_if_not_exists("core_refund", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("refund", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     add_column_if_not_exists(
-        "core_accountstatement", "requested_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE'
+        "account_statement", "requested_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE CASCADE'
     )
-    add_column_if_not_exists("core_accountstatement", "transaction_count", "INTEGER DEFAULT 0 NOT NULL")
-    add_column_if_not_exists("core_accountstatement", "opening_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_accountstatement", "closing_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
-    add_column_if_not_exists("core_accountstatement", "generated_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("account_statement", "transaction_count", "INTEGER DEFAULT 0 NOT NULL")
+    add_column_if_not_exists("account_statement", "opening_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("account_statement", "closing_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
+    add_column_if_not_exists("account_statement", "generated_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     # Account Requests PII
-    add_column_if_not_exists("core_accountopeningrequest", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "digital_address_encrypted_val", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "photo_encrypted", "TEXT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("core_accountopeningrequest", "credentials_sent_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("account_opening_request", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "digital_address_encrypted_val", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "photo_encrypted", "TEXT NULL")
+    add_column_if_not_exists("account_opening_request", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_opening_request", "credentials_sent_at", "TIMESTAMP WITH TIME ZONE NULL")
 
-    add_column_if_not_exists("core_accountclosurerequest", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("account_closure_request", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
 
     # Fraud & Audit
     add_column_if_not_exists("core_fraudalert", "resolved_at", "TIMESTAMP WITH TIME ZONE NULL")
@@ -718,10 +728,53 @@ def sync_missing_columns():
     add_column_if_not_exists("core_fraudalert", "status", "VARCHAR(20) DEFAULT 'pending' NOT NULL")
 
     # AuditLog alignment (actor -> user)
-    add_column_if_not_exists("users_auditlog", "user_id", "INTEGER REFERENCES users_user(id) ON DELETE SET NULL")
-    drop_column_if_exists("users_auditlog", "actor_id")
+    add_column_if_not_exists("audit_log", "user_id", "INTEGER REFERENCES user(id) ON DELETE SET NULL")
+    drop_column_if_exists("audit_log", "actor_id")
 
     print("  Column sync complete!\n")
+
+
+def drop_redundant_duplicates():
+    """Identify and drop tables following app_model naming if custom naming is used.
+
+    Example: Drop 'users_user' if 'user' is the authoritative table.
+    """
+    print("--> Checking for redundant duplicate tables...")
+    redundant_map = {
+        "users_user": "user",
+        "users_useractivity": "user_activity",
+        "users_auditlog": "audit_log",
+        "users_adminnotification": "admin_notification",
+        "users_adminnotification_target_users": "admin_notification_target_users",
+        "core_account": "account",
+        "core_transaction": "transaction",
+        "core_loan": "loan",
+        "core_checkdeposit": "check_deposit",
+        "core_refund": "refund",
+        "core_accountstatement": "account_statement",
+        "core_accountopeningrequest": "account_opening_request",
+        "core_accountclosurerequest": "account_closure_request",
+        "core_idempotencykey": "idempotency_key",
+        "core_servicecharge": "service_charge",
+        "core_visit_schedule": "visit_schedule",
+        "core_clientassignment": "client_assignment",
+        "core_useractivity": "user_activity",
+        "core_usermessagepreference": "user_message_preference",
+        "core_operationsmessage": "operations_message",
+        "core_otpverification": "otp_verification",
+    }
+
+    with connection.cursor() as cursor:
+        for redundant, authoritative in redundant_map.items():
+            if table_exists(redundant) and table_exists(authoritative):
+                # Safe check: if the redundant table is empty, drop it.
+                cursor.execute(f'SELECT count(*) FROM "{redundant}"')
+                count = cursor.fetchone()[0]
+                if count == 0:
+                    print(f"    - Dropping empty redundant table: {redundant}")
+                    cursor.execute(f'DROP TABLE "{redundant}" CASCADE')
+                else:
+                    print(f"    ! CAUTION: {redundant} is not empty but duplicate of {authoritative}. Manual review required.")
 
 
 def backfill_existing_user_approvals():
@@ -741,66 +794,63 @@ def backfill_existing_user_approvals():
 
 
 def main():
-    """Run the smart migration sync."""
+    """Run the smart migration sync v8."""
     print("=" * 60)
-    print("  Smart Migration Script v7 (Exhaustive Sync)")
+    print("  Smart Migration Script v8 (Exhaustive Sync & Cleanup)")
     print("=" * 60)
 
-    core_tables = ["core_account", "core_transaction", "users_user", "core_loan"]
+    core_tables = ["account", "transaction", "user", "loan"]
 
     # RETRY LOGIC: Handle connection exhaustion during deployment overlaps
     max_retries = 5
-    retry_delay = 5  # Start with 5 seconds
+    retry_delay = 5
     existing_tables = []
 
     for attempt in range(max_retries):
         try:
             existing_tables = [t for t in core_tables if table_exists(t)]
-            break  # Success!
-        except OperationalError as e:
-            error_msg = str(e).lower()
-            # Detect connection exhaustion or timeouts
-            if any(
-                s in error_msg
-                for s in ["remaining connection slots", "too many connections", "exhausted", "timeout", "pool"]
-            ):
-                print(
-                    f"  ! Connection Exhaustion Detected (Attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s..."
-                )
-                time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
-            else:
-                # If it's a different database error, raise it
-                print(f"  ! Fatal Database Error: {e}")
-                raise e
+            break
         except Exception as e:
-            print(f"  ! Unexpected Connection Error: {e}")
-            raise e
+            print(f"  ! Connection attempt {attempt + 1} failed: {e}")
+            time.sleep(retry_delay)
+            retry_delay *= 2
     else:
-        print("  !! Failed to connect after multiple retries. Aborting.")
+        print("  !! Failed to connect. Aborting.")
         sys.exit(1)
 
+    # Phase 0: Try Standard Migration First (Proper way)
+    print("\nStep 0: Attempting standard migrations...")
+    try:
+        call_command("migrate", "--noinput", verbosity=1)
+        print("[OK] Standard migrations succeeded.")
+    except Exception as e:
+        print(f"[WARN] Standard migrations failed, falling back to smart sync: {e}")
+
+    # Phase 1: Smart Sync
     if len(existing_tables) >= 3:
         print(f"\n[OK] Detected existing database schema ({len(existing_tables)}/{len(core_tables)} core tables)")
-        print("\n--> Strategy: FAKE migrations, then sync exhaustive schema\n")
+        print("\n--> Strategy: FAKE migrations (if needed) & Sync Exhaustive Schema\n")
 
-        print("Step 1: Faking migrations...")
+        print("Step 1: Faking migrations to align state...")
         try:
             call_command("migrate", "--fake", "--noinput", verbosity=1)
         except Exception as e:
             print(f"  ! Warning during fake: {e}")
 
-        print("\nStep 2: Creating missing tables & junctions...")
+        print("\nStep 2: Syncing missing tables & junctions...")
         sync_missing_tables()
 
         print("Step 3: Syncing missing columns...")
         sync_missing_columns()
 
-        print("\nStep 4: Restoring access for existing users (Backfill)...")
+        print("Step 4: Cleaning up redundant duplicate tables...")
+        drop_redundant_duplicates()
+
+        print("\nStep 5: Restoring access for existing users (Backfill)...")
         backfill_existing_user_approvals()
+
     else:
-        print("\n--> Fresh database detected. Running migrations normally...")
-        call_command("migrate", "--noinput", verbosity=1)
+        print("\n--> Fresh database detected. Standard migrate was already attempted.")
 
     print("=" * 60)
     print("  Migration sync complete!")

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { CheckCheck, MessageCircle, Smile, Reply, MoreVertical, Trash2 } from 'lucide-react';
+import { CheckCheck, Smile, Reply, Trash2 } from 'lucide-react';
 import UserAvatar from './UserAvatar';
+import { logger } from '../../utils/logger';
 
 const MessageItem = ({
   message,
@@ -9,13 +10,12 @@ const MessageItem = ({
   messageReactions,
   setMessageReactions,
   authService,
-  theme
+  _theme
 }) => {
   const isFromCurrentUser = message.is_from_current_user || message.sender_id === user.id;
   const decryptedContent = decryptedMessages.get(message.id) || 'Decrypting...';
   const reactions = messageReactions.get(message.id) || [];
   const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [showActions, setShowActions] = useState(false);
 
   const handleAddReaction = async (emoji) => {
     try {
@@ -47,7 +47,7 @@ const MessageItem = ({
         setMessageReactions(prev => new Map(prev.set(message.id, currentReactions)));
       }
     } catch (error) {
-      console.error('Failed to add reaction:', error);
+      logger.error('Failed to add reaction:', error);
     }
     setShowReactionPicker(false);
   };
@@ -72,20 +72,19 @@ const MessageItem = ({
         }
       }
     } catch (error) {
-      console.error('Failed to remove reaction:', error);
+      logger.error('Failed to remove reaction:', error);
     }
   };
 
   const handleReply = () => {
     // Reply functionality should be handled by parent component
-    console.log('Reply to:', message.sender_name);
+    logger.log('Reply to:', message.sender_name);
   };
 
   return (
     <div
       id={`message-${message.id}`}
       className={`flex ${isFromCurrentUser ? 'justify-end' : 'justify-start'} mb-6 group relative`}
-      onMouseLeave={() => setShowActions(false)}
     >
       {/* Avatar for received messages */}
       {!isFromCurrentUser && (

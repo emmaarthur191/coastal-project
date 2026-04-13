@@ -1,8 +1,10 @@
+import { logger } from '../logger';
+
 // Enhanced Encryption with proper ECDH key exchange
 class SecureMessagingEncryption {
   static async generateECDHKeypair() {
     try {
-      console.log('[ENCRYPTION] Generating ECDH keypair...');
+      logger.log('[ENCRYPTION] Generating ECDH keypair...');
       const keyPair = await window.crypto.subtle.generateKey(
         {
           name: 'ECDH',
@@ -21,17 +23,17 @@ class SecureMessagingEncryption {
         keyPair
       };
 
-      console.log('[ENCRYPTION] ECDH keypair generated successfully');
+      logger.log('[ENCRYPTION] ECDH keypair generated successfully');
       return keypairData;
     } catch (error) {
-      console.error('[ENCRYPTION] Error generating ECDH keypair:', error);
+      logger.error('[ENCRYPTION] Error generating ECDH keypair:', error);
       throw new Error('Failed to generate encryption keys');
     }
   }
 
   static async deriveSharedSecret(privateKeyPem, peerPublicKeyPem) {
     try {
-      console.log('[ENCRYPTION] Deriving shared secret...');
+      logger.log('[ENCRYPTION] Deriving shared secret...');
 
       // Import private key
       const privateKeyData = Uint8Array.from(atob(privateKeyPem), c => c.charCodeAt(0));
@@ -94,17 +96,17 @@ class SecureMessagingEncryption {
         ['encrypt', 'decrypt']
       );
 
-      console.log('[ENCRYPTION] Shared secret derived successfully');
+      logger.log('[ENCRYPTION] Shared secret derived successfully');
       return aesKey;
     } catch (error) {
-      console.error('[ENCRYPTION] Error deriving shared secret:', error);
+      logger.error('[ENCRYPTION] Error deriving shared secret:', error);
       throw new Error('Failed to derive encryption key');
     }
   }
 
   static async encryptMessage(plaintext, sharedSecret) {
     try {
-      console.log('[ENCRYPTION] Encrypting message...');
+      logger.log('[ENCRYPTION] Encrypting message...');
       const iv = window.crypto.getRandomValues(new Uint8Array(12));
       const encodedPlaintext = new TextEncoder().encode(plaintext);
 
@@ -127,14 +129,14 @@ class SecureMessagingEncryption {
         auth_tag: btoa(String.fromCharCode(...authTag)),
       };
     } catch (error) {
-      console.error('[ENCRYPTION] Error encrypting message:', error);
+      logger.error('[ENCRYPTION] Error encrypting message:', error);
       throw new Error('Failed to encrypt message');
     }
   }
 
   static async decryptMessage(encryptedData, sharedSecret) {
     try {
-      console.log('[DECRYPTION] Decrypting message...');
+      logger.log('[DECRYPTION] Decrypting message...');
       const ciphertext = Uint8Array.from(atob(encryptedData.ciphertext), c => c.charCodeAt(0));
       const iv = Uint8Array.from(atob(encryptedData.iv), c => c.charCodeAt(0));
       const authTag = Uint8Array.from(atob(encryptedData.auth_tag), c => c.charCodeAt(0));
@@ -154,10 +156,10 @@ class SecureMessagingEncryption {
       );
 
       const result = new TextDecoder().decode(decrypted);
-      console.log('[DECRYPTION] Message decrypted successfully');
+      logger.log('[DECRYPTION] Message decrypted successfully');
       return result;
     } catch (error) {
-      console.error('[DECRYPTION] Error decrypting message:', error);
+      logger.error('[DECRYPTION] Error decrypting message:', error);
       throw new Error('Failed to decrypt message');
     }
   }

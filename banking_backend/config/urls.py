@@ -8,8 +8,8 @@ from core.health import health_check, health_check_simple
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include(("core.urls", "core"), namespace="core")),
     path("api/users/", include(("users.urls", "users"), namespace="users")),
+    path("api/", include(("core.urls", "core"), namespace="core")),
     # Health checks
     path("api/health/", health_check, name="health-check"),
     path("api/health/simple/", health_check_simple, name="health-check-simple"),

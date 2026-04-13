@@ -1,81 +1,97 @@
-name: CI/CD
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-
+name: CI Pipeline
+ 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-
+ 
 jobs:
-  test:
+  # =============================================================================
+  # BACKEND CI: Python/Django Testing & Security
+  # =============================================================================
+  test-backend:
+    name: Backend CI
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+        ports: [5432:5432]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
-        image: redis:6
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+        image: redis:7
+        ports: [6379:6379]
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+ 
     steps:
     - uses: actions/checkout@v4
-
+ 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-
+        cache: 'pip'
+ 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install --no-cache-dir -r banking_backend/requirements.txt
-
-    - name: Run migrations
+        pip install -r banking_backend/requirements.txt
+        pip install pytest-django pytest-cov bandit
+ 
+    - name: Security Scan (Bandit)
+      run: bandit -r banking_backend/ -ll -ii -x banking_backend/tests/
+ 
+    - name: Run Tests
       run: |
         cd banking_backend
-        python manage.py migrate
+        python -m pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=60
       env:
         DEBUG: 'true'
-        SECRET_KEY: test-secret-key-for-ci
+        SECRET_KEY: ci-test-key-2026-standards
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        REDIS_URL: redis://localhost:6379/0
         FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
-
-    - name: Run tests with coverage
-      run: |
-        cd banking_backend
-        python -m pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=50
-      env:
-        DEBUG: 'true'
-        SECRET_KEY: test-secret-key-for-ci
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-        REDIS_URL: redis://localhost:6379/1
-        FIELD_ENCRYPTION_KEY: YB3LYgcKXzEo3uF66yteVshsZ7JZPR07LKwlkuNAv9Q=
-        PII_HASH_KEY: dev-only-insecure-hash-key-64chars-long-enough-to-be-secure-v1
-
-    - name: Upload coverage to Codecov
-      if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        PII_HASH_KEY: ci-placeholder-pii-hash-key-64chars-long-standard-v1
+ 
+    - name: Upload coverage
       uses: codecov/codecov-action@v5
       with:
         files: ./banking_backend/coverage.xml
-        fail_ci_if_error: false
-        verbose: true
+ 
+  # =============================================================================
+  # FRONTEND CI: Node.js/React Testing & Linting
+  # =============================================================================
+  test-frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+ 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+ 
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci --legacy-peer-deps
+ 
+    - name: Linting check
+      run: |
+        cd frontend
+        npm run lint
+ 
+    - name: Run Tests
+      run: |
+        cd frontend
+        npm run test -- --run
+ 
+    - name: Build Verification
+      run: |
+        cd frontend
+        npm run build

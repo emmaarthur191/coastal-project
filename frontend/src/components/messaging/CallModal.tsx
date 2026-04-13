@@ -1,4 +1,5 @@
 import React from 'react';
+import { Video, Mic } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 
 const CallModal = ({
@@ -18,7 +19,7 @@ const CallModal = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4 max-h-96 overflow-y-auto">
         <div className="text-center mb-4">
           <div className="text-6xl mb-4">
-            {callType === 'video' ? '📹' : '🎤'}
+            {callType === 'video' ? <Video className="w-16 h-16" /> : <Mic className="w-16 h-16" />}
           </div>
           <h3 className="text-lg font-bold mb-2">Secure {callType === 'video' ? 'Video' : 'Voice'} Call</h3>
           <p className="text-gray-600 mb-4">

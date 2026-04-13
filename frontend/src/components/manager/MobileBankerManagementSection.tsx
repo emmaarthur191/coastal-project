@@ -3,6 +3,12 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { authService } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
+import { 
+  MobileBanker, 
+  MobileBankerMetrics, 
+  ClientAssignment, 
+  Member 
+} from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface MobileBankerManagementSectionProps {
@@ -10,41 +16,6 @@ interface MobileBankerManagementSectionProps {
     // No props required for this component
 }
 
-interface MobileBanker {
-    id: number;
-    name: string;
-    staff_id: string;
-    role?: string;
-}
-
-interface MobileBankerMetrics {
-    cash_collected: number;
-    visits_completed: number;
-    accounts_opened: number;
-}
-
-interface ClientAssignment {
-    id: number;
-    client_name: string;
-    location: string;
-    status: string;
-    priority: string;
-    amount_due?: string;
-    mobile_banker?: string | number;
-}
-
-interface Member {
-    id: number | string;
-    name: string;
-    email: string;
-    current_assignment?: {
-        id: number;
-        banker: {
-            id: number;
-            name: string;
-        } | null;
-    } | null;
-}
 
 const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps> = () => {
     const [mobileBankers, setMobileBankers] = useState<MobileBanker[]>([]);
@@ -70,9 +41,8 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
             setLoading(true);
             // Fetch staff with role 'mobile_banker'
             const response = await authService.getStaffIds({ role: 'mobile_banker' });
-            if (response.success) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const bankers = ((response.data as any).results || response.data || []) as MobileBanker[];
+            if (response.success && response.data) {
+                const bankers = response.data as unknown as MobileBanker[];
                 // Strictly filter to ensure only mobile_banker role appears (safety check)
                 // Note: The backend should already do this, but this guarantees "only mobile bankers"
                 const filteredBankers = bankers.filter(b => !b.role || b.role === 'mobile_banker');
@@ -108,8 +78,8 @@ const MobileBankerManagementSection: React.FC<MobileBankerManagementSectionProps
                 authService.getAssignments({ mobile_banker: _bankerId })
             ]);
 
-            if (metricsRes.success) setMetrics(metricsRes.data as unknown as MobileBankerMetrics);
-            if (assignmentsRes.success) setAssignments(assignmentsRes.data as unknown as ClientAssignment[]);
+            if (metricsRes.success && metricsRes.data) setMetrics(metricsRes.data as unknown as MobileBankerMetrics);
+            if (assignmentsRes.success && assignmentsRes.data) setAssignments(assignmentsRes.data as ClientAssignment[]);
         } catch (error) {
             console.error('Error fetching banker data:', error);
         } finally {

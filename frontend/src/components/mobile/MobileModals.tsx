@@ -1,17 +1,50 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { 
+  MobileLoanFormData, 
+  MobilePaymentFormData, 
+  MobileScheduleFormData, 
+  MobileMessageFormData 
+} from '../../types';
+import { 
+    X, 
+    Download, 
+    Banknote, 
+    Upload, 
+    TrendingDown, 
+    TrendingUp, 
+    Check, 
+    Building2, 
+    FileText, 
+    User, 
+    Users, 
+    ShieldCheck, 
+    Calendar, 
+    MapPin, 
+    MessageSquare, 
+    Send, 
+    Camera, 
+    Construction 
+} from 'lucide-react';
+
+export interface MobileTransactionFormData {
+    member_id: string;
+    amount: string | number;
+    deposit_type?: string; 
+}
 
 // --- GENERIC MOBILE MODAL ---
 interface MobileModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
+    headerIcon?: React.ReactNode;
     children: React.ReactNode;
     footer?: React.ReactNode;
 }
 
-const MobileModal: React.FC<MobileModalProps> = ({ isOpen, onClose, title, children, footer }) => {
+const MobileModal: React.FC<MobileModalProps> = ({ isOpen, onClose, title, headerIcon, children, footer }) => {
     if (!isOpen) return null;
 
     return (
@@ -19,12 +52,17 @@ const MobileModal: React.FC<MobileModalProps> = ({ isOpen, onClose, title, child
             <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-100 animate-scale-in">
                 {/* Header */}
                 <div className="px-5 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="m-0 text-lg font-black text-gray-800">{title}</h3>
+                    <div className="flex items-center gap-3">
+                        {headerIcon}
+                        <h3 className="m-0 text-lg font-black text-gray-800">{title}</h3>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="bg-transparent border-none text-2xl cursor-pointer text-gray-400 hover:text-gray-600 transition-colors"
+                        className="bg-transparent border-none cursor-pointer text-gray-400 hover:text-gray-600 transition-colors"
+                        aria-label="Close modal"
+                        title="Close modal"
                     >
-                        ×
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -91,16 +129,21 @@ interface BaseFormModalProps<T> {
     loading?: boolean;
 }
 
-export const DepositModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+export const DepositModal: React.FC<BaseFormModalProps<MobileTransactionFormData>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="📥 New Deposit"
+        title="New Deposit"
+        headerIcon={<Download className="w-5 h-5 text-emerald-600" />}
         footer={
             <>
                 <Button onClick={onClose} variant="ghost" className="text-gray-600" disabled={loading}>Cancel</Button>
-                <Button onClick={onSubmit} variant="success" disabled={loading}>
-                    {loading ? 'Processing...' : 'Process Deposit 💰'}
+                <Button onClick={onSubmit} variant="success" disabled={loading} className="flex items-center gap-2">
+                    {loading ? 'Processing...' : (
+                        <>
+                            Process Deposit <Banknote className="w-4 h-4" />
+                        </>
+                    )}
                 </Button>
             </>
         }
@@ -113,7 +156,7 @@ export const DepositModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClos
         <InputGroup
             label="Amount (GHS)"
             type="number"
-            value={formData.amount}
+            value={String(formData.amount)}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
         />
         <InputGroup
@@ -129,16 +172,54 @@ export const DepositModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClos
     </MobileModal>
 );
 
-export const WithdrawalModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+export const WithdrawalModal: React.FC<BaseFormModalProps<MobileTransactionFormData>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="📤 New Withdrawal"
+        title="New Withdrawal"
+        headerIcon={<Upload className="w-5 h-5 text-red-600" />}
         footer={
             <>
                 <Button onClick={onClose} variant="ghost" className="text-gray-600" disabled={loading}>Cancel</Button>
-                <Button onClick={onSubmit} variant="danger" disabled={loading}>
-                    {loading ? 'Processing...' : 'Process Withdrawal 💸'}
+                <Button onClick={onSubmit} variant="danger" disabled={loading} className="flex items-center gap-2">
+                    {loading ? 'Processing...' : (
+                        <>
+                            Process Withdrawal <TrendingDown className="w-4 h-4" />
+                        </>
+                    )}
+                </Button>
+            </>
+        }
+    >
+        <InputGroup
+            label="Member ID"
+            value={formData.member_id}
+            onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
+        />
+        <InputGroup
+            label="Amount (GHS)"
+            type="number"
+            value={String(formData.amount)}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+        />
+    </MobileModal>
+);
+
+export const PaymentModal: React.FC<BaseFormModalProps<MobilePaymentFormData>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+    <MobileModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Loan Payment"
+        headerIcon={<TrendingUp className="w-5 h-5 text-blue-600" />}
+        footer={
+            <>
+                <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
+                <Button onClick={onSubmit} variant="primary" disabled={loading} className="flex items-center gap-2">
+                    {loading ? 'Processing...' : (
+                        <>
+                            Make Payment <Check className="w-4 h-4" />
+                        </>
+                    )}
                 </Button>
             </>
         }
@@ -157,51 +238,30 @@ export const WithdrawalModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onC
     </MobileModal>
 );
 
-export const PaymentModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+export const LoanModal: React.FC<BaseFormModalProps<MobileLoanFormData>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="💸 Loan Payment"
+        title="Loan Application"
+        headerIcon={<Building2 className="w-5 h-5 text-primary-600" />}
         footer={
             <>
                 <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
-                <Button onClick={onSubmit} variant="primary" disabled={loading}>
-                    {loading ? 'Processing...' : 'Make Payment ✅'}
-                </Button>
-            </>
-        }
-    >
-        <InputGroup
-            label="Member ID"
-            value={formData.member_id}
-            onChange={(e) => setFormData({ ...formData, member_id: e.target.value })}
-        />
-        <InputGroup
-            label="Amount (GHS)"
-            type="number"
-            value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-        />
-    </MobileModal>
-);
-
-export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
-    <MobileModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title="🏦 Loan Application"
-        footer={
-            <>
-                <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
-                <Button onClick={onSubmit} variant="primary" disabled={loading}>
-                    {loading ? 'Submitting...' : 'Submit Application 📄'}
+                <Button onClick={onSubmit} variant="primary" disabled={loading} className="flex items-center gap-2">
+                    {loading ? 'Submitting...' : (
+                        <>
+                            Submit Application <FileText className="w-4 h-4" />
+                        </>
+                    )}
                 </Button>
             </>
         }
     >
         {/* PERSONAL INFO */}
         <div className="mb-6">
-            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">👤 Personal Information</p>
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1 flex items-center gap-2">
+                <User className="w-4 h-4" /> Personal Information
+            </p>
             <InputGroup
                 label="Member ID"
                 value={formData.member_id}
@@ -251,7 +311,9 @@ export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, 
 
         {/* NEXT OF KIN 1 */}
         <div className="mb-6">
-            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">👪 Next of Kin (1)</p>
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1 flex items-center gap-2">
+                <Users className="w-4 h-4" /> Next of Kin (1)
+            </p>
             <InputGroup
                 label="Full Name"
                 value={formData.next_of_kin_1_name}
@@ -278,7 +340,9 @@ export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, 
 
         {/* NEXT OF KIN 2 */}
         <div className="mb-6">
-            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">👪 Next of Kin (2)</p>
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1 flex items-center gap-2">
+                <Users className="w-4 h-4" /> Next of Kin (2)
+            </p>
             <InputGroup
                 label="Full Name"
                 value={formData.next_of_kin_2_name}
@@ -305,7 +369,9 @@ export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, 
 
         {/* GUARANTOR 1 */}
         <div className="mb-6">
-            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">🛡️ Guarantor (1)</p>
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> Guarantor (1)
+            </p>
             <InputGroup
                 label="Full Name"
                 value={formData.guarantor_1_name}
@@ -342,7 +408,9 @@ export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, 
 
         {/* GUARANTOR 2 */}
         <div className="mb-6">
-            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">🛡️ Guarantor (2)</p>
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> Guarantor (2)
+            </p>
             <InputGroup
                 label="Full Name"
                 value={formData.guarantor_2_name}
@@ -379,7 +447,9 @@ export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, 
 
         {/* LOAN DETAILS */}
         <div className="mb-2">
-            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1">💰 Loan & Financial Details</p>
+            <p className="text-secondary-600 font-bold mb-2 border-b border-secondary-100 pb-1 flex items-center gap-2">
+                <Banknote className="w-4 h-4" /> Loan & Financial Details
+            </p>
             <InputGroup
                 label="Loan Amount (GHS)"
                 type="number"
@@ -415,16 +485,21 @@ export const LoanModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, 
     </MobileModal>
 );
 
-export const ScheduleModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+export const ScheduleModal: React.FC<BaseFormModalProps<MobileScheduleFormData>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="📅 Schedule Visit"
+        title="Schedule Visit"
+        headerIcon={<Calendar className="w-5 h-5 text-indigo-600" />}
         footer={
             <>
                 <Button onClick={onClose} variant="ghost" disabled={loading}>Cancel</Button>
-                <Button onClick={onSubmit} variant="success" disabled={loading}>
-                    {loading ? 'Scheduling...' : 'Schedule Stop 📍'}
+                <Button onClick={onSubmit} variant="success" disabled={loading} className="flex items-center gap-2">
+                    {loading ? 'Scheduling...' : (
+                        <>
+                            Schedule Stop <MapPin className="w-4 h-4" />
+                        </>
+                    )}
                 </Button>
             </>
         }
@@ -456,16 +531,21 @@ export const ScheduleModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClo
     </MobileModal>
 );
 
-export const MessageModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
+export const MessageModal: React.FC<BaseFormModalProps<MobileMessageFormData>> = ({ isOpen, onClose, formData, setFormData, onSubmit, loading }) => (
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="💬 New Message"
+        title="New Message"
+        headerIcon={<MessageSquare className="w-5 h-5 text-blue-600" />}
         footer={
             <>
                 <Button onClick={onClose} variant="ghost" className="text-gray-600" disabled={loading}>Cancel</Button>
-                <Button onClick={onSubmit} variant="primary" disabled={loading}>
-                    {loading ? 'Sending...' : 'Send Message 📨'}
+                <Button onClick={onSubmit} variant="primary" disabled={loading} className="flex items-center gap-2">
+                    {loading ? 'Sending...' : (
+                        <>
+                            Send Message <Send className="w-4 h-4" />
+                        </>
+                    )}
                 </Button>
             </>
         }
@@ -489,7 +569,7 @@ export const MessageModal: React.FC<BaseFormModalProps<any>> = ({ isOpen, onClos
         <div className="mb-4">
             <label className="block text-sm font-bold text-gray-500 mb-1">Message</label>
             <textarea
-                value={formData.content || formData.message || ''}
+                value={formData.content || ''}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Type your message..."
                 rows={4}
@@ -503,11 +583,15 @@ export const KycModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ i
     <MobileModal
         isOpen={isOpen}
         onClose={onClose}
-        title="📸 KYC Document"
+        title="KYC Document"
+        headerIcon={<Camera className="w-5 h-5 text-orange-600" />}
         footer={
             <Button onClick={onClose} variant="ghost" className="text-gray-600">Close</Button>
         }
     >
-        <p className="text-center text-gray-500 py-8 italic">KYC Upload feature coming soon! 🚧</p>
+        <p className="text-center text-gray-500 py-8 italic flex flex-col items-center gap-3">
+            <Construction className="w-12 h-12 text-gray-300" />
+            KYC Upload feature coming soon!
+        </p>
     </MobileModal>
 );

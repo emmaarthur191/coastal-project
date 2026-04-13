@@ -19,6 +19,8 @@ export type Report = {
     readonly status_display: string;
     readonly file_url: string;
     readonly report_url: string;
+    readonly type: string;
+    readonly generated_at: string;
     readonly file_path: string;
     readonly file_size: number | null;
     readonly generated_by: number | null;
@@ -28,3 +30,4 @@ export type Report = {
     readonly created_at: string;
     readonly completed_at: string | null;
 };
+

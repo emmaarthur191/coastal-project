@@ -4,8 +4,9 @@
 /* eslint-disable */
 import type { CheckDeposit } from './CheckDeposit';
 export type PaginatedCheckDepositList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<CheckDeposit>;
+    results?: Array<CheckDeposit>;
 };
+

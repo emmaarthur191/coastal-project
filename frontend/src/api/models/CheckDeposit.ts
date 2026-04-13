@@ -24,3 +24,4 @@ export type CheckDeposit = {
     readonly processed_at: string | null;
     readonly cleared_at: string | null;
 };
+

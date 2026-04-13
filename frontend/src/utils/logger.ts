@@ -2,10 +2,17 @@
  * Production-safe logger utility
  * Only logs in development mode, silent in production
  */
+/* eslint-disable no-console */
+
+declare global {
+    interface Window {
+        __LOGGER_DEV_OVERRIDE__?: boolean;
+    }
+}
 
 const getEnv = () => ({
-    isDevelopment: (typeof window !== 'undefined' && (window as any).__LOGGER_DEV_OVERRIDE__ !== undefined)
-        ? (window as any).__LOGGER_DEV_OVERRIDE__
+    isDevelopment: (typeof window !== 'undefined' && window.__LOGGER_DEV_OVERRIDE__ !== undefined)
+        ? window.__LOGGER_DEV_OVERRIDE__
         : (import.meta.env.DEV || import.meta.env.MODE === 'development')
 });
 
@@ -23,7 +30,7 @@ const PII_KEYS = new Set([
  * Neutralizes homoglyph bypasses via NFKC normalization.
  * Recursively redacts objects and strings.
  */
-const secureRedact = (data: any): any => {
+const secureRedact = (data: unknown): unknown => {
     // 1. Handle Strings (Pattern Match + Unicode Normalization)
     if (typeof data === 'string') {
         // Red Team Neutralization: Normalize Unicode (NFKC) to catch characters like Cyrillic 'а'
@@ -44,12 +51,12 @@ const secureRedact = (data: any): any => {
 
     // 2. Handle Objects/Arrays (Precise Key Match)
     if (data && typeof data === 'object') {
-        const redacted: any = Array.isArray(data) ? [] : {};
+        const redacted: Record<string, unknown> | unknown[] = Array.isArray(data) ? [] : {};
         for (const [key, value] of Object.entries(data)) {
             if (PII_KEYS.has(key.toLowerCase())) {
-                redacted[key] = '[REDACTED]';
+                (redacted as Record<string, unknown>)[key] = '[REDACTED]';
             } else {
-                redacted[key] = secureRedact(value);
+                (redacted as Record<string, unknown>)[key] = secureRedact(value);
             }
         }
         return redacted;

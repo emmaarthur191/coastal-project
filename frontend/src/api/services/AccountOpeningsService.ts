@@ -23,7 +23,7 @@ export class AccountOpeningsService {
      * @returns PaginatedAccountOpeningRequestList
      * @throws ApiError
      */
-    public static apiBankingAccountOpeningsList(
+    public static bankingAccountOpeningsList(
         accountType?: 'daily_susu' | 'monthly_contribution' | 'shares',
         ordering?: string,
         page?: number,
@@ -47,7 +47,7 @@ export class AccountOpeningsService {
      * @returns AccountOpeningRequest
      * @throws ApiError
      */
-    public static apiBankingAccountOpeningsCreate(
+    public static bankingAccountOpeningsCreate(
         requestBody: AccountOpeningRequest,
     ): CancelablePromise<AccountOpeningRequest> {
         return __request(OpenAPI, {
@@ -64,7 +64,7 @@ export class AccountOpeningsService {
      * @returns AccountOpeningRequest
      * @throws ApiError
      */
-    public static apiBankingAccountOpeningsRetrieve(
+    public static bankingAccountOpeningsRetrieve(
         id: number,
     ): CancelablePromise<AccountOpeningRequest> {
         return __request(OpenAPI, {
@@ -83,34 +83,13 @@ export class AccountOpeningsService {
      * @returns AccountOpeningRequest
      * @throws ApiError
      */
-    public static apiBankingAccountOpeningsApproveCreate(
+    public static bankingAccountOpeningsApproveCreate(
         id: number,
         requestBody: AccountOpeningRequest,
     ): CancelablePromise<AccountOpeningRequest> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/banking/account-openings/{id}/approve/',
-            path: {
-                'id': id,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
-     * Stage 2: Approve and dispatch login credentials to the client.
-     * @param id A unique integer value identifying this Account Opening Request.
-     * @param requestBody
-     * @returns AccountOpeningRequest
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsDispatchCredentialsCreate(
-        id: number,
-        requestBody: AccountOpeningRequest,
-    ): CancelablePromise<AccountOpeningRequest> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/account-openings/{id}/dispatch-credentials/',
             path: {
                 'id': id,
             },
@@ -126,7 +105,7 @@ export class AccountOpeningsService {
      * @returns AccountOpeningRequest
      * @throws ApiError
      */
-    public static apiBankingAccountOpeningsRejectCreate(
+    public static bankingAccountOpeningsRejectCreate(
         id: number,
         requestBody: AccountOpeningRequest,
     ): CancelablePromise<AccountOpeningRequest> {
@@ -138,26 +117,6 @@ export class AccountOpeningsService {
             },
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-
-    /**
-     * Approve and print an account opening request
-     * Approve an account opening request, create the account/user, and return a PDF letter.
-     * @param id A unique integer value identifying this Account Opening Request.
-     * @returns any
-     * @throws ApiError
-     */
-    public static apiBankingAccountOpeningsApproveAndPrintCreate(
-        id: number,
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/account-openings/{id}/approve-and-print/',
-            path: {
-                'id': id,
-            },
-            responseType: 'blob',
         });
     }
 }

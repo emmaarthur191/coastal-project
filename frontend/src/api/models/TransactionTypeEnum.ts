@@ -7,6 +7,7 @@
  * * `withdrawal` - Withdrawal
  * * `transfer` - Transfer
  * * `payment` - Payment
+ * * `repayment` - Loan Repayment
  * * `fee` - Fee
  */
 export enum TransactionTypeEnum {
@@ -14,5 +15,6 @@ export enum TransactionTypeEnum {
     WITHDRAWAL = 'withdrawal',
     TRANSFER = 'transfer',
     PAYMENT = 'payment',
+    REPAYMENT = 'repayment',
     FEE = 'fee',
 }

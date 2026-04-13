@@ -6,36 +6,39 @@ The Coastal Banking System is a modern, full-stack web application designed for 
 ## 2. Technology Stack
 
 ### Backend
--   **Framework**: Django 5.1 & Django REST Framework (DRF)
+-   **Framework**: Django 6.0 & Django REST Framework (DRF)
 -   **Language**: Python 3.12+
 -   **Real-time**: Django Channels & Daphne (ASGI) for WebSockets (Chat/Notifications)
--   **Database**: SQLite (Development) / PostgreSQL (Production ready)
--   **Caching & Broker**: Redis (for Channels layer and caching)
--   **Authentication**: JWT (JSON Web Tokens) via `djangorestframework-simplejwt` stored in secure HttpOnly cookies.
--   **Documentation**: DRF Spectacular (OpenAPI/Swagger)
+-   **Database**: PostgreSQL 16 (on Render) / SQLite (Dev)
+-   **Caching**: Redis Stack (Session, Channels, Idempotency)
+-   **Authentication**: JWT via `simplejwt` stored in **HttpOnly, Secure, SameSite=Strict** cookies.
+-   **Encryption**: Fernet AES-128-CBC + HMAC-SHA256 (PII Protection)
+-   **Documentation**: DRF Spectacular (OpenAPI 3.0)
 
 ### Frontend
 -   **Framework**: React 18 (Vite)
--   **Language**: TypeScript / JavaScript
--   **Styling**: Tailwind CSS with custom "Glassmorphism" theme (bg-blur, semi-transparent panels).
--   **State Management**: React Context (`AuthContext`, `ThemeContext`).
--   **Routing**: React Router DOM.
--   **Icons**: Material Icons / Emojis (lightweight approach).
+-   **Language**: TypeScript 5.x
+-   **Styling**: Vanilla CSS + Tailwind CSS (Glassmorphism Core)
+-   **State Management**: React Context (`AuthContext`, `ThemeContext`, `SocketContext`).
+-   **Routing**: React Router DOM v6.
+-   **Icons**: Material Icons / FontAwesome.
 
 ## 3. Architecture & Logic
 
 ### 3.1. Authentication & Security
--   **JWT Flow**: The system uses a secure cookie-based JWT flow.
-    -   `access` token (short-lived) and `refresh` token (long-lived) are stored in `HttpOnly` cookies to prevent XSS attacks.
-    -   **Middleware**: Custom middleware validates tokens and handles checking/refreshing logic transparently.
-    -   **MFA/OTP**: High-privilege actions or new device logins can trigger SMS OTP verification via the `Sendexa` integration.
-    -   **RBAC**: The `User` model has a `role` field. API permissions (`IsAuthenticated`, custom role permissions) enforce access at the viewsets level.
+-   **JWT Flow**: Secure cookie-based session management.
+    -   `access` and `refresh` tokens are stored in `HttpOnly` cookies.
+    -   **4-Eyes Principle (Maker-Checker)**: Enforced via `clean()` validation at the model level for all high-value mutations (Transactions > GHS 5k, Account Openings, Closures).
+    -   **Zero-Plaintext PII**: AES encryption for Names/IDs + Blind Indexing (HMAC-SHA256) for secure searching.
+    -   **mTLS Enforcement**: Mandatory Client Certificates for administrative endpoints.
+    -   **RBAC**: Role-Based Access Control enforced via DRF permissions.
 
 ### 3.2. Core Banking Logic
--   **Accounts**: The `Account` model tracks balances. Balances are calculated dynamically (`calculated_balance` property) by aggregating `completed` incoming vs. outgoing transactions to ensure data integrity and avoid race conditions.
--   **Transactions**: All money movements are recorded as `Transaction` records. Statuses (`pending`, `completed`, `failed`) control the lifecycle. Atomic transactions (database transactions) are used during processing to ensure ledger consistency.
--   **Loans**: Loan applications go through a workflow: Application -> Pending Review -> Approval (Manager) -> Disbursal -> Repayment.
--   **Cash Management**: Cashiers have `CashDrawer` sessions. They must "Open" a drawer, record denominations, process transactions, and "Close/Reconcile" the drawer at end of shift. Variances are tracked.
+-   **Accounts**: Balances are dynamically calculated using **ACID-compliant ledger aggregation**. The `balance` field acts as a high-speed cache, verified against `calculated_balance` before closures.
+-   **Transactions**: Atomic processing of `deposit`, `withdrawal`, `transfer`, and `reversed` statuses. Fixed-point decimal math (Decimal128) prevents floating-point inaccuracies.
+-   **Loans**: Multi-stage workflow with automated interest calculation and Maker-Checker disbursal.
+-   **Cash Management**: `CashDrawer` sessions with denomination-level tracking and discrepancy alerting.
+-   **Idempotency**: `X-Idempotency-Key` requirement on all financial mutation endpoints to prevent double-spending.
 
 ### 3.3. Real-time Communication
 -   **WebSockets**: Implemented using `Django Channels`.

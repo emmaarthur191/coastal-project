@@ -11,6 +11,7 @@ import { request as __request } from '../core/request';
 export class AccountsService {
     /**
      * List all bank accounts
+     * API viewset designed to list, create, retrieve, and update core bank accounts.
      * @param accountType * `daily_susu` - Daily Savings
      * * `member_savings` - Member Savings
      * * `youth_savings` - Youth Savings
@@ -21,7 +22,7 @@ export class AccountsService {
      * @returns PaginatedAccountList
      * @throws ApiError
      */
-    public static apiAccountsList(
+    public static accountsList(
         accountType?: 'daily_susu' | 'member_savings' | 'shares' | 'youth_savings',
         isActive?: boolean,
         ordering?: string,
@@ -40,12 +41,13 @@ export class AccountsService {
     }
     /**
      * Create a new bank account
+     * API viewset designed to list, create, retrieve, and update core bank accounts.
      * @param requestBody
      * @returns Account
      * @throws ApiError
      */
-    public static apiAccountsCreate(
-        requestBody: Account,
+    public static accountsCreate(
+        requestBody?: Account,
     ): CancelablePromise<Account> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -56,11 +58,12 @@ export class AccountsService {
     }
     /**
      * Retrieve account details
+     * API viewset designed to list, create, retrieve, and update core bank accounts.
      * @param id A unique integer value identifying this account.
      * @returns Account
      * @throws ApiError
      */
-    public static apiAccountsRetrieve(
+    public static accountsRetrieve(
         id: number,
     ): CancelablePromise<Account> {
         return __request(OpenAPI, {
@@ -73,14 +76,15 @@ export class AccountsService {
     }
     /**
      * Update account information
+     * API viewset designed to list, create, retrieve, and update core bank accounts.
      * @param id A unique integer value identifying this account.
      * @param requestBody
      * @returns Account
      * @throws ApiError
      */
-    public static apiAccountsUpdate(
+    public static accountsUpdate(
         id: number,
-        requestBody: Account,
+        requestBody?: Account,
     ): CancelablePromise<Account> {
         return __request(OpenAPI, {
             method: 'PUT',
@@ -94,12 +98,13 @@ export class AccountsService {
     }
     /**
      * Partially update account information
+     * API viewset designed to list, create, retrieve, and update core bank accounts.
      * @param id A unique integer value identifying this account.
      * @param requestBody
      * @returns Account
      * @throws ApiError
      */
-    public static apiAccountsPartialUpdate(
+    public static accountsPartialUpdate(
         id: number,
         requestBody?: PatchedAccount,
     ): CancelablePromise<Account> {
@@ -113,64 +118,83 @@ export class AccountsService {
             mediaType: 'application/json',
         });
     }
-
     /**
-     * List account closure requests
-     * @param status * `pending` - Pending
-     * * `approved` - Approved
-     * * `rejected` - Rejected
-     * @returns any
-     * @throws ApiError
-     */
-    public static apiBankingAccountClosuresList(
-        status?: 'approved' | 'pending' | 'rejected',
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/banking/account-closures/',
-            query: {
-                'status': status,
-            },
-        });
-    }
-
-    /**
-     * Approve an account closure
-     * @param id The ID of the closure request.
-     * @returns any
-     * @throws ApiError
-     */
-    public static apiBankingAccountClosuresApproveCreate(
-        id: number,
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/banking/account-closures/{id}/approve/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-
-    /**
-     * Reject an account closure
-     * @param id The ID of the closure request.
+     * Freeze an account to prevent further transactions.
+     * @param id A unique integer value identifying this account.
      * @param requestBody
-     * @returns any
+     * @returns Account
      * @throws ApiError
      */
-    public static apiBankingAccountClosuresRejectCreate(
+    public static accountsFreezeCreate(
         id: number,
-        requestBody: { reason: string },
-    ): CancelablePromise<any> {
+        requestBody?: Account,
+    ): CancelablePromise<Account> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/banking/account-closures/{id}/reject/',
+            url: '/api/accounts/{id}/freeze/',
             path: {
                 'id': id,
             },
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Unfreeze an account to restore access.
+     * @param id A unique integer value identifying this account.
+     * @param requestBody
+     * @returns Account
+     * @throws ApiError
+     */
+    public static accountsUnfreezeCreate(
+        id: number,
+        requestBody?: Account,
+    ): CancelablePromise<Account> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/accounts/{id}/unfreeze/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Retrieve the account balance summary for the logged-in user.
+     *
+     * Returns a detailed breakdown by account type and a combined total balance.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static accountsBalanceRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/accounts/balance/',
+        });
+    }
+    /**
+     * GET /api/accounts/manager/overview/
+     *
+     * Returns manager dashboard overview metrics.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static accountsManagerOverviewRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/accounts/manager/overview/',
+        });
+    }
+    /**
+     * Get summary statistics for all accounts.
+     * @returns Account
+     * @throws ApiError
+     */
+    public static accountsSummaryRetrieve(): CancelablePromise<Account> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/accounts/summary/',
         });
     }
 }

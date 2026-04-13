@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { MonthEnum } from './MonthEnum';
 /**
  * Serializer for staff payslips.
  */
@@ -10,7 +11,7 @@ export type Payslip = {
     staff: number;
     readonly staff_name: string;
     readonly staff_id_display: string;
-    month: number;
+    month: MonthEnum;
     year: number;
     readonly month_name: string;
     pay_period_start: string;
@@ -35,3 +36,4 @@ export type Payslip = {
     readonly created_at: string;
     readonly updated_at: string;
 };
+

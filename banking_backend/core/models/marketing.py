@@ -27,6 +27,21 @@ class Product(models.Model):
     features = models.JSONField(default=list, blank=True)
     terms_and_conditions = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    is_approved = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_products"
+    )
+    approved_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_products"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -50,6 +65,21 @@ class Promotion(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     is_active = models.BooleanField(default=True)
+    is_approved = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_promotions"
+    )
+    approved_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_promotions"
+    )
     eligible_products = models.ManyToManyField(Product, blank=True, related_name="promotions")
     terms_and_conditions = models.TextField(blank=True)
     max_enrollments = models.PositiveIntegerField(null=True, blank=True)

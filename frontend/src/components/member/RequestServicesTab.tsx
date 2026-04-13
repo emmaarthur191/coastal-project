@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api, ServiceRequest, Account } from '../../services/api';
 import { AxiosError } from 'axios';
+import { Building2, FileText, ClipboardList, History, PlusCircle, Download } from 'lucide-react';
 import './RequestServicesTab.css';
 
 interface RequestServicesTabProps {
@@ -126,8 +127,8 @@ const RequestServicesTab: React.FC<RequestServicesTabProps> = ({
 
     return (
         <div>
-            <h2 className="request-services-header">
-                🏦 Request Services
+            <h2 className="request-services-header flex items-center gap-3">
+                <Building2 className="w-6 h-6 text-primary-600" /> Request Services
             </h2>
 
             {message.text && (
@@ -140,16 +141,17 @@ const RequestServicesTab: React.FC<RequestServicesTabProps> = ({
             <div className="tabs-container">
                 {(
                     [
-                        { id: 'statement', label: '📜 Account Statement' },
-                        { id: 'checkbook', label: '📝 Request Checkbook' },
-                        { id: 'history', label: '📋 My Requests' }
+                        { id: 'statement', label: 'Account Statement', icon: <FileText className="w-4 h-4" /> },
+                        { id: 'checkbook', label: 'Request Checkbook', icon: <PlusCircle className="w-4 h-4" /> },
+                        { id: 'history', label: 'My Requests', icon: <History className="w-4 h-4" /> }
                     ] as const
                 ).map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                        className={`tab-button flex items-center gap-2 ${activeTab === tab.id ? 'active' : ''}`}
                     >
+                        {tab.icon}
                         {tab.label}
                     </button>
                 ))}
@@ -208,8 +210,13 @@ const RequestServicesTab: React.FC<RequestServicesTabProps> = ({
                             </div>
                         </div>
 
-                        <button type="submit" disabled={loading} className="request-service-button">
-                            {loading ? 'Generating...' : '📥 Generate Statement'}
+                        <button type="submit" disabled={loading} className="request-service-button flex items-center justify-center gap-2">
+                            {loading ? 'Generating...' : (
+                                <>
+                                    <Download className="w-4 h-4" />
+                                    Generate Statement
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>
@@ -264,8 +271,13 @@ const RequestServicesTab: React.FC<RequestServicesTabProps> = ({
                             className="request-service-input request-service-textarea"
                         />
 
-                        <button type="submit" disabled={loading} className="request-service-button">
-                            {loading ? 'Submitting...' : '📝 Submit Request'}
+                        <button type="submit" disabled={loading} className="request-service-button flex items-center justify-center gap-2">
+                            {loading ? 'Submitting...' : (
+                                <>
+                                    <PlusCircle className="w-4 h-4" />
+                                    Submit Request
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>
@@ -293,9 +305,12 @@ const RequestServicesTab: React.FC<RequestServicesTabProps> = ({
                             ) : (
                                 serviceRequests.map((req) => (
                                     <tr key={req.id}>
-                                        <td className="type-cell">
-                                            {req.request_type === 'checkbook' ? '📝 Checkbook' :
-                                                req.request_type === 'statement' ? '📜 Statement' : req.request_type}
+                                        <td className="type-cell flex items-center gap-2">
+                                            {req.request_type === 'checkbook' ? (
+                                                <><PlusCircle className="w-3.5 h-3.5 text-primary-500" /> Checkbook</>
+                                            ) : req.request_type === 'statement' ? (
+                                                <><FileText className="w-3.5 h-3.5 text-primary-500" /> Statement</>
+                                            ) : req.request_type}
                                         </td>
                                         <td>{getStatusBadge(req.status)}</td>
                                         <td className="meta-cell">

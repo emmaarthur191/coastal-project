@@ -1,6 +1,15 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { formatCurrencyGHS } from '../utils/formatters';
+import { 
+  BarChart3, 
+  CalendarRange, 
+  TrendingUp, 
+  CalendarClock,
+  Search,
+  Plus,
+  FileText
+} from 'lucide-react';
 import './Accounts.css';
 
 function Accounts() {
@@ -39,10 +48,10 @@ function Accounts() {
   });
 
   const accountTypes = [
-    { id: 'all', name: 'All Accounts', icon: '📊', count: accounts.length },
-    { id: 'daily_susu', name: 'Daily Susu', icon: '📅', count: accounts.filter(a => a.type === 'daily_susu').length },
-    { id: 'shares', name: 'Shares', icon: '📈', count: accounts.filter(a => a.type === 'shares').length },
-    { id: 'monthly_contribution', name: 'Monthly Contribution', icon: '📆', count: accounts.filter(a => a.type === 'monthly_contribution').length }
+    { id: 'all', name: 'All Accounts', icon: <BarChart3 className="w-5 h-5" />, count: accounts.length },
+    { id: 'daily_susu', name: 'Daily Susu', icon: <CalendarRange className="w-5 h-5" />, count: accounts.filter(a => a.type === 'daily_susu').length },
+    { id: 'shares', name: 'Shares', icon: <TrendingUp className="w-5 h-5" />, count: accounts.filter(a => a.type === 'shares').length },
+    { id: 'monthly_contribution', name: 'Monthly Contribution', icon: <CalendarClock className="w-5 h-5" />, count: accounts.filter(a => a.type === 'monthly_contribution').length }
   ];
 
   if (loading) {
@@ -70,27 +79,25 @@ function Accounts() {
             </p>
           </div>
           <div className="action-buttons">
-            <button className="btn-view-statements">
-              View Statements
+            <button className="btn-view-statements flex items-center gap-2">
+              <FileText className="w-4 h-4" /> View Statements
             </button>
-            <button className="btn-add-account">
-              Add Account
+            <button className="btn-add-account flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Add Account
             </button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="search-container">
+        <div className="search-container relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Search by account name or number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
+            className="search-input pl-12"
           />
-          <span className="search-icon">
-            {/* Icon placeholder if needed, or keeping empty span as in original code */}
-          </span>
         </div>
       </div>
 

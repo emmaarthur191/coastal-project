@@ -15,3 +15,4 @@ export type BlockedUser = {
     reason?: string;
     readonly created_at: string;
 };
+

@@ -10,8 +10,8 @@ export type PatchedUser = {
      */
     username?: string;
     email?: string;
-    first_name?: string;
-    last_name?: string;
+    readonly first_name?: string;
+    readonly last_name?: string;
     readonly name?: string;
     readonly role?: RoleEnum;
     /**
@@ -26,4 +26,6 @@ export type PatchedUser = {
      * Designates that this user has all permissions without explicitly assigning them.
      */
     readonly is_superuser?: boolean;
+    readonly staff_id?: string;
 };
+

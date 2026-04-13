@@ -5,6 +5,8 @@ from rest_framework.routers import SimpleRouter
 
 from core.views.messaging import BankingMessageViewSet
 
+app_name = "core"
+
 from .ml.views import MLBatchAnalysisView, MLFraudAnalysisView, MLModelStatusView, MLModelTrainView
 from .report_download import ReportDownloadView
 from .views import (
@@ -168,6 +170,7 @@ urlpatterns = [
     path("operations/branch-activity/", BranchActivityView.as_view(), name="branch-activity"),
     path("operations/system-alerts/", SystemAlertsView.as_view(), name="system-alerts"),
     path("operations/generate-report/", GenerateReportView.as_view(), name="generate-report"),
+    path("operations/reports/generate/", GenerateReportView.as_view(), name="generate-report-alias"),
     path("reports/download/<str:report_id>/", ReportDownloadView.as_view(), name="report-download"),
     # Mobile Banker endpoints
     path("mobile/repayment/", mobile_views.ProcessRepaymentView.as_view(), name="mobile-process-repayment"),
@@ -189,3 +192,6 @@ urlpatterns = [
     # Router URLs (must be last to allow specific paths to be matched first)
     path("", include(router.urls)),
 ]
+
+from users.views import SecurityDiagnosticsView
+urlpatterns += [path("health/diagnostics/", SecurityDiagnosticsView.as_view(), name="security-diagnostics")]

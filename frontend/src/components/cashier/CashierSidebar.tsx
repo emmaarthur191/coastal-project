@@ -1,11 +1,12 @@
 import React from 'react';
+import { Building2, Circle, LogOut } from 'lucide-react';
 import { Button } from '../ui/Button';
-import GlassCard from '../ui/modern/GlassCard';
+import { User } from '../../types';
 
 interface Tab {
   id: string;
   name: string;
-  icon: string;
+  icon: React.ReactNode;
   color?: string;
 }
 
@@ -13,7 +14,7 @@ interface CashierSidebarProps {
   activeTab: string;
   handleTabChange: (tabId: string) => void;
   handleLogout: () => void;
-  user: any;
+  user: User | null;
   tabs: Tab[];
 }
 
@@ -28,7 +29,7 @@ const CashierSidebar: React.FC<CashierSidebarProps> = ({
     <div className="w-[260px] bg-white border-r border-gray-200 h-screen overflow-y-auto flex flex-col p-4 fixed left-0 top-0 z-20 shadow-xl shadow-gray-200/50">
       <div className="mb-8 text-center pt-4">
         <div className="w-16 h-16 bg-coastal-primary rounded-full mx-auto mb-3 flex items-center justify-center text-3xl shadow-lg shadow-coastal-primary/30">
-          🏦
+          <Building2 className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-xl font-black text-coastal-primary mb-1 tracking-tight">PiggyBank OS</h1>
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Coastal Banking</p>
@@ -54,8 +55,8 @@ const CashierSidebar: React.FC<CashierSidebarProps> = ({
               }
             `}
           >
-            <span className={`text-xl transition-transform group-hover:scale-110 ${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`}>
-              {tab.icon || '⏺️'}
+            <span className={`w-6 h-6 transition-transform group-hover:scale-110 flex items-center justify-center ${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`}>
+              {tab.icon || <Circle className="w-3 h-3" />}
             </span>
             <span className="text-sm tracking-wide">{tab.name}</span>
             {activeTab === tab.id && (
@@ -69,9 +70,9 @@ const CashierSidebar: React.FC<CashierSidebarProps> = ({
         <Button
           variant="danger"
           onClick={handleLogout}
-          className="w-full justify-center shadow-lg shadow-red-50 hover:shadow-red-100"
+          className="w-full justify-center shadow-lg shadow-red-50 hover:shadow-red-100 flex items-center gap-2"
         >
-          Logout 👋
+          Logout <LogOut className="w-4 h-4" />
         </Button>
         <p className="text-[10px] text-center text-gray-300 mt-4 font-mono">v2.5.0 • Secure</p>
       </div>

@@ -25,3 +25,4 @@ export type AccountStatement = {
     readonly created_at: string;
     readonly generated_at: string | null;
 };
+

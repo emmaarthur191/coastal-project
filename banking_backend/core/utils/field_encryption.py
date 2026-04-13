@@ -14,9 +14,10 @@ Usage:
 """
 
 import logging
-import os
 
 from django.conf import settings
+
+from core.utils.secret_service import SecretManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,32 +26,17 @@ logger = logging.getLogger(__name__)
 # Store in environment variable for security
 
 
-def get_fernet_key():
-    """Get or generate the Fernet encryption key."""
-    key = getattr(settings, "FIELD_ENCRYPTION_KEY", None)
-    if not key:
-        key = os.environ.get("FIELD_ENCRYPTION_KEY")
-
-    if not key:
-        # For development only - generate a key and warn
-        logger.warning(
-            "FIELD_ENCRYPTION_KEY not set. Using a temporary key. "
-            "Set FIELD_ENCRYPTION_KEY in environment for production!"
-        )
-        from cryptography.fernet import Fernet
-
-        key = Fernet.generate_key().decode()
-        # Cache it in settings for this session
-        settings.FIELD_ENCRYPTION_KEY = key
-
-    return key.encode() if isinstance(key, str) else key
+def get_fernet_key(version: int = None):
+    """Get the Fernet encryption key via SecretManager, with optional version support."""
+    return SecretManager.get_encryption_key(version=version)
 
 
-def encrypt_field(value: str) -> str:
-    """Encrypt a string value for database storage.
+def encrypt_field(value: str, version: int = None) -> str:
+    """Encrypt a string value for database storage using the specified key version.
 
     Args:
         value: The plaintext string to encrypt.
+        version: Optional integer version of the key to use. If None, uses the current default.
 
     Returns:
         Base64-encoded encrypted string, or empty string if value is None/empty.
@@ -62,7 +48,7 @@ def encrypt_field(value: str) -> str:
     try:
         from cryptography.fernet import Fernet
 
-        f = Fernet(get_fernet_key())
+        f = Fernet(get_fernet_key(version=version))
         encrypted = f.encrypt(value.encode())
         return encrypted.decode()
     except Exception as e:
@@ -70,11 +56,12 @@ def encrypt_field(value: str) -> str:
         raise ValueError("Failed to encrypt sensitive data") from e
 
 
-def decrypt_field(encrypted_value: str) -> str:
-    """Decrypt a previously encrypted string value.
+def decrypt_field(encrypted_value: str, version: int = None) -> str:
+    """Decrypt a previously encrypted string value using the specified key version.
 
     Args:
         encrypted_value: The base64-encoded encrypted string.
+        version: Optional integer version of the key to use.
 
     Returns:
         Decrypted plaintext string, or empty string if value is None/empty.
@@ -86,11 +73,11 @@ def decrypt_field(encrypted_value: str) -> str:
     try:
         from cryptography.fernet import Fernet
 
-        f = Fernet(get_fernet_key())
+        f = Fernet(get_fernet_key(version=version))
         decrypted = f.decrypt(encrypted_value.encode())
         return decrypted.decode()
     except Exception as e:
-        logger.error(f"Decryption failed: {e}")
+        logger.error(f"Decryption failed for version {version}: {e}")
         raise ValueError("Failed to decrypt sensitive data") from e
 
 
@@ -123,11 +110,7 @@ def hash_field(value: str) -> str:
     import hashlib
     import hmac
 
-    key = getattr(settings, "PII_HASH_KEY", None)
-    if not key:
-        # Fallback to a stable default for dev if missing, but log warning
-        logger.warning("PII_HASH_KEY not set in settings. Search might be inconsistent.")
-        key = "default-dev-pii-hash-key-replace-in-prod"
+    key = SecretManager.get_hash_key()
 
     # Use HMAC-SHA256 for collision resistance and to prevent pre-computation attacks
     h = hmac.new(key.encode(), value.strip().encode(), hashlib.sha256)

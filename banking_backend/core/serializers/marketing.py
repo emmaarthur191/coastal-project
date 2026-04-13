@@ -24,10 +24,13 @@ class ProductSerializer(serializers.ModelSerializer):
             "features",
             "terms_and_conditions",
             "is_active",
+            "is_approved",
+            "created_by",
+            "approved_by",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "is_approved", "created_by", "approved_by", "created_at", "updated_at"]
 
 
 class PromotionSerializer(serializers.ModelSerializer):
@@ -47,6 +50,9 @@ class PromotionSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "is_active",
+            "is_approved",
+            "created_by",
+            "approved_by",
             "is_currently_active",
             "eligible_products",
             "eligible_product_names",
@@ -56,7 +62,7 @@ class PromotionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "current_enrollments", "created_at", "updated_at"]
+        read_only_fields = ["id", "is_approved", "created_by", "approved_by", "current_enrollments", "created_at", "updated_at"]
 
     def get_eligible_product_names(self, obj):
         return [p.name for p in obj.eligible_products.all()]

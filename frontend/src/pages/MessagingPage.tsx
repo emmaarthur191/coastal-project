@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import {
     Send, Plus, Search, Users, MessageSquare, ArrowLeft,
@@ -16,6 +17,7 @@ import { authService } from '../services/api';
  */
 export default function MessagingPage() {
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     // State
     const [rooms, setRooms] = useState([]);
@@ -205,30 +207,57 @@ export default function MessagingPage() {
     };
 
     // Filter users
-    const filteredUsers = staffUsers.filter(u =>
+    const filteredUsers = (Array.isArray(staffUsers) ? staffUsers : []).filter(u =>
         u.id !== user?.id &&
         (u.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             u.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             u.email?.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
+    const handleBack = () => {
+        switch (user?.role) {
+            case 'manager':
+                navigate('/manager-dashboard');
+                break;
+            case 'operations_manager':
+                navigate('/operations-dashboard');
+                break;
+            case 'cashier':
+                navigate('/cashier-dashboard');
+                break;
+            case 'mobile_banker':
+                navigate('/mobile-banker-dashboard');
+                break;
+            default:
+                navigate('/member-dashboard');
+        }
+    };
+
     return (
-        <div className="messaging-page messaging-container">
-            {/* 1. Left Sidebar */}
-            <div className="messaging-sidebar">
-                {/* Header */}
-                <div className="messaging-sidebar-header">
-                    <div className="messaging-user-avatar">
-                        {/* Placeholder Avatar */}
-                        <Users size={24} color="#cfd8dc" />
+        <div className="messaging-page-wrapper">
+            <div className="messaging-glass-overlay" />
+            
+            <div className="messaging-page messaging-container">
+                {/* 1. Left Sidebar */}
+                <div className="messaging-sidebar">
+                    {/* Header */}
+                    <div className="messaging-sidebar-header">
+                        <div className="flex items-center gap-3">
+                            <div className="messaging-icon-btn" onClick={handleBack} title="Back to Dashboard">
+                                <ArrowLeft size={22} className="text-secondary-400 hover:text-white" />
+                            </div>
+                            <div className="messaging-user-avatar">
+                                {/* Placeholder Avatar */}
+                                <Users size={24} color="#cfd8dc" />
+                            </div>
+                        </div>
+                        <div className="messaging-header-icons">
+                            <div className="messaging-icon-btn" title="Communities"><Users size={24} strokeWidth={1.5} /></div>
+                            <div className="messaging-icon-btn" title="Status"><div className="messaging-status-icon"><div className="messaging-status-icon-inner"></div></div></div>
+                            <div className="messaging-icon-btn" title="New Chat" onClick={() => setShowNewChat(true)}><MessageSquare size={22} strokeWidth={1.5} /></div>
+                            <div className="messaging-icon-btn" title="Menu"><MoreVertical size={22} strokeWidth={1.5} /></div>
+                        </div>
                     </div>
-                    <div className="messaging-header-icons">
-                        <div className="messaging-icon-btn" title="Communities"><Users size={24} strokeWidth={1.5} /></div>
-                        <div className="messaging-icon-btn" title="Status"><div className="messaging-status-icon"><div className="messaging-status-icon-inner"></div></div></div>
-                        <div className="messaging-icon-btn" title="New Chat" onClick={() => setShowNewChat(true)}><MessageSquare size={22} strokeWidth={1.5} /></div>
-                        <div className="messaging-icon-btn" title="Menu"><MoreVertical size={22} strokeWidth={1.5} /></div>
-                    </div>
-                </div>
 
                 {/* Search */}
                 <div className="messaging-search-bar">
@@ -424,5 +453,6 @@ export default function MessagingPage() {
                 </div>
             )}
         </div>
-    );
+    </div>
+);
 }

@@ -3,14 +3,14 @@
 /* === Page Container === */
 .transactions-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: var(--bg-main);
     padding: 20px;
 }
 
 /* === Loading State === */
 .transactions-loading {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: var(--bg-main);
     padding: 40px 20px;
     display: flex;
     align-items: center;
@@ -29,8 +29,8 @@
 .transactions-loading__spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #f3f4f6;
-    border-top: 3px solid #3b82f6;
+    border: 3px solid var(--bg-surface);
+    border-top: 3px solid var(--coastal-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
@@ -68,7 +68,7 @@
 
 .balance-section__refresh-btn {
     padding: 8px 16px;
-    background: #3b82f6;
+    background: var(--coastal-primary);
     border: none;
     border-radius: 8px;
     color: white;
@@ -91,7 +91,7 @@
 }
 
 .balance-total-card {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--coastal-primary) 0%, var(--coastal-dark) 100%);
     color: white;
     padding: 20px;
     border-radius: 12px;
@@ -208,8 +208,8 @@
 
 .export-option-btn {
     padding: 10px 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     color: #374151;
     font-weight: 600;
@@ -222,13 +222,13 @@
 }
 
 .export-option-btn:hover {
-    background: #3b82f6;
+    background: var(--coastal-primary);
     color: white;
 }
 
 .print-statement-btn {
     padding: 12px 20px;
-    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    background: linear-gradient(135deg, var(--coastal-primary) 0%, var(--coastal-light) 100%);
     border: none;
     border-radius: 10px;
     color: white;
@@ -242,7 +242,7 @@
 
 .print-statement-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(5, 150, 105, 0.3);
+    box-shadow: 0 8px 15px rgba(0, 102, 204, 0.3);
 }
 
 /* === Filters === */
@@ -279,7 +279,7 @@
 .clear-filters-btn {
     background: none;
     border: none;
-    color: #3b82f6;
+    color: var(--coastal-primary);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -288,7 +288,7 @@
 
 .export-csv-btn {
     padding: 8px 16px;
-    background: #10b981;
+    background: var(--success-green);
     border: none;
     border-radius: 8px;
     color: white;
@@ -406,11 +406,11 @@
 }
 
 .transaction-row__amount--positive {
-    color: #059669;
+    color: var(--success-green);
 }
 
 .transaction-row__amount--negative {
-    color: #dc2626;
+    color: var(--brand-accent);
 }
 
 /* === Empty State === */
@@ -577,12 +577,12 @@
 }
 
 .modal-action-btn--primary:hover {
-    background: #3b82f6;
+    background: var(--coastal-primary);
     color: white;
 }
 
 .modal-action-btn--danger:hover {
-    background: #ef4444;
+    background: var(--brand-accent);
     color: white;
 }
 
@@ -596,7 +596,7 @@
 
 .theme-danger {
     background-color: #fee2e2 !important;
-    color: #dc2626 !important;
+    color: var(--brand-accent) !important;
 }
 
 .theme-info {
@@ -663,8 +663,8 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-    border-color: #3b82f6;
-    color: #3b82f6;
+    border-color: var(--coastal-primary);
+    color: var(--coastal-primary);
 }
 
 .pagination-btn:disabled {

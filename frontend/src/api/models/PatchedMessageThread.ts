@@ -10,9 +10,10 @@ export type PatchedMessageThread = {
     readonly id?: number;
     subject?: string;
     thread_type?: ThreadTypeEnum;
-    participants?: Array<number>;
+    readonly participants?: Array<number>;
     readonly participant_list?: string;
     participant_ids?: Array<number>;
+    initial_message?: string;
     readonly created_by?: number | null;
     readonly created_by_name?: string;
     is_archived?: boolean;
@@ -24,3 +25,4 @@ export type PatchedMessageThread = {
     readonly unread_count?: string;
     readonly last_message_preview?: string;
 };
+

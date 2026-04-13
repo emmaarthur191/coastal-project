@@ -58,9 +58,9 @@ const PerformanceMonitoringSection: React.FC = () => {
   const fetchPerformanceData = async () => {
     try {
       setLoading(true);
-      const response = await api.get<any>('performance/dashboard-data/');
+      const response = await api.get<PerformanceData>('performance/dashboard-data/');
       // Ensure we have valid data structure with defaults
-      const data = response.data || {};
+      const data = response.data;
       setPerformanceData({
         performance_summary: data.performance_summary || {
           total_metrics: 0,

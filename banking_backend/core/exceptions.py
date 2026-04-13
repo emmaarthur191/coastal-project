@@ -33,6 +33,8 @@ def custom_exception_handler(exc, context):
     # Enhance standard DRF errors with consistent branding if needed
     if isinstance(response.data, dict):
         response.data.setdefault("status", "error")
+        if response.status_code == status.HTTP_403_FORBIDDEN:
+            response.data.setdefault("code", "PERMISSION_DENIED")
 
     return response
 

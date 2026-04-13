@@ -1,8 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
-import { logger } from '../utils/logger';
+import { Button } from '../components/ui/Button';
+import { 
+  AlertCircle, 
+  User, 
+  Eye, 
+  EyeOff, 
+  ArrowRight
+} from 'lucide-react';
 import './Login.css';
 
 // Type definitions
@@ -19,140 +27,44 @@ interface LoginResult {
 }
 
 /**
- * Production-ready, accessible login component with modern best practices
- * Features WCAG 2.1 AA compliance, comprehensive validation, and responsive design
+ * Premium, high-fidelity login component with frost-glass aesthetics and motion backgrounds.
  */
 function LoginPage() {
-  // State management
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [_validationWarnings, _setValidationWarnings] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [_lastInput, setLastInput] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-
-  // Accessibility and refs
-  const emailInputRef = useRef(null);
-  const passwordInputRef = useRef(null);
-  const passwordStrengthRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef(null);
-  const errorSummaryRef = useRef(null);
-  const { login, checkAuth: _checkAuth, getDashboardRoute: _getDashboardRoute, user: _user } = useAuth();
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Password validation disabled - we only check if password exists now
-  // Complex password rules are handled by the backend during registration
-
-  // Email validation
-  const validateEmail = useCallback((email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) return 'Email is required';
-    if (!emailRegex.test(email)) return 'Please enter a valid email address';
-    if (email.length > 254) return 'Email address is too long';
-    return null;
-  }, []);
-
-  // Password validation - simplified (just require password exists)
-  const validatePassword = useCallback((password) => {
-    if (!password) return [{ message: 'Password is required' }];
-    return []; // No complex rules - just need a password
-  }, []);
-
-  const validateField = useCallback((name: string, value: string) => {
-    switch (name) {
-      case 'email': {
-        const emailError = validateEmail(value);
-        return { email: emailError };
-      }
-      case 'password': {
-        const passwordErrors = validatePassword(value);
-        return {
-          password: passwordErrors.length > 0 ?
-            `Password must contain: ${passwordErrors.map(rule => rule.message).join(', ')}` :
-            null
-        };
-      }
-      default:
-        return {};
-    }
-  }, [validateEmail, validatePassword]);
-
-  // Update form data and validate
-  const handleInputChange = useCallback((e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: newValue
-    }));
-
-    // Real-time validation for focused field
-    if (name === 'email' || name === 'password') {
-      const errors = validateField(name, newValue);
-      setFormErrors(prev => ({ ...prev, ...errors }));
+    setFormData(prev => ({ ...prev, [name]: newValue }));
+    if (formErrors[name as keyof FormErrors]) {
+      setFormErrors(prev => ({ ...prev, [name]: undefined }));
     }
+  };
 
-    setLastInput(name);
-  }, [validateField]);
-
-  // Form validation on submit
-  const validateForm = useCallback(() => {
-    const errors: FormErrors = {};
-
-    // Email validation
-    const emailError = validateEmail(formData.email);
-    if (emailError) errors.email = emailError;
-
-    // Password validation
-    const passwordErrors = validatePassword(formData.password);
-    if (passwordErrors.length > 0) {
-      errors.password = `Password must contain: ${passwordErrors.map(rule => rule.message).join(', ')}`;
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [formData.email, formData.password, validateEmail, validatePassword]);
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      // Focus first error field
-      if (errorSummaryRef.current) {
-        errorSummaryRef.current.focus();
-      } else if (emailInputRef.current && formErrors.email) {
-        emailInputRef.current.focus();
-      } else if (passwordInputRef.current && formErrors.password) {
-        passwordInputRef.current.focus();
-      }
+    if (!formData.email || !formData.password) {
+      setFormErrors({ submit: 'Authentication credentials required.' });
       return;
     }
-
     setIsLoading(true);
     setFormErrors({});
-    setSuccessMessage('');
-
     try {
       const result = await login(formData.email, formData.password) as LoginResult;
-
       if (result.success) {
-        setSuccessMessage('Login successful! Redirecting...');
-
-        // Remember me preference disabled to prevent PII leaks in localStorage
-        // In a future phase, we will implement secure encrypted storage
-
-        // Calculate route directly from login response user data (not async state)
         const userRole = result.user?.role;
-        logger.debug('[Login] User role from login response:', userRole);
-
-        const roleRoutes = {
+        const roleRoutes: Record<string, string> = {
           customer: '/member-dashboard',
           cashier: '/cashier-dashboard',
           mobile_banker: '/mobile-banker-dashboard',
@@ -161,291 +73,205 @@ function LoginPage() {
           administrator: '/dashboard',
           superuser: '/dashboard',
         };
-
-        const targetRoute = roleRoutes[userRole] || '/dashboard';
-        logger.debug('[Login] Calculated target route:', targetRoute);
-
-        // Navigate using React Router to preserve state (User object from login response)
-        // This avoids a full page reload which would lose the state and force a checkAuth (which might fail if cookies aren't ready)
-        navigate(targetRoute);
+        const targetRoute = roleRoutes[userRole || ''] || '/dashboard';
+        setTimeout(() => navigate(targetRoute), 800);
       } else {
-        setFormErrors({ submit: result.error || 'Login failed. Please try again.' });
+        setFormErrors({ submit: result.error || 'Access Denied: Invalid Login ID or Password' });
         passwordInputRef.current?.focus();
       }
-    } catch {
-      setFormErrors({
-        submit: 'Network error. Please check your connection and try again.'
-      });
+    } catch (_err) {
+      setFormErrors({ submit: 'Connection Latency: Gateway unreachable.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Clear specific field error
-  const clearFieldError = (fieldName) => {
-    setFormErrors(prev => ({ ...prev, [fieldName]: undefined }));
-  };
-
-  // Remembered email load removed to prevent PII leaks
-  useEffect(() => {
-    // This hook is now a no-op until secure storage is implemented
-  }, []);
-
-  // Pre-fill email from URL params if available
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const prefillEmail = urlParams.get('email');
-    if (prefillEmail) {
-      setFormData(prev => ({ ...prev, email: prefillEmail }));
-    }
-  }, []);
-
-  // Simplified password strength calculation (for login, not registration)
-  const getPasswordStrength = useCallback((password) => {
-    if (!password) return 0;
-
-    let strength = 0;
-
-    // Basic checks for visual feedback
-    // Updated to align with 2026 12-character security threshold
-    if (password.length >= 10) strength += 20;
-    if (password.length >= 12) strength += 20;
-    if (/[A-Z]/.test(password)) strength += 20;
-    if (/[a-z]/.test(password)) strength += 15;
-    if (/[0-9]/.test(password)) strength += 15;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 10;
-
-    return Math.min(100, strength);
-  }, []);
-
-  const passwordStrength = getPasswordStrength(formData.password);
-
-  // Update password strength bar width
-  useEffect(() => {
-    if (passwordStrengthRef.current) {
-      passwordStrengthRef.current.style.setProperty('--strength-width', `${passwordStrength}%`);
-    }
-  }, [passwordStrength]);
-
-  // Keyboard navigation support
-  const _handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      action();
-    }
-  };
-
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Skip to main content link */}
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50">
-        Skip to main content
-      </a>
-
-      {/* Left Column - Hero/Branding (Hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-900 to-secondary-900 p-12 flex-col justify-between relative overflow-hidden">
-        {/* Background Decorative Circles */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary-700/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-accent-600/20 rounded-full blur-3xl"></div>
+    <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden bg-white">
+      {/* Left Column - Branding (Vibrant Blue Gradient) */}
+      <motion.div 
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] as const }}
+        className="hidden lg:flex lg:w-1/2 p-24 flex-col justify-between relative bg-gradient-to-br from-[#001D3A] via-[#0052CC] to-[#011627]"
+      >
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-dot-pattern"></div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Coastal Banking Logo" className="h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-md border border-white/20" />
-            <span className="text-white text-xl font-bold tracking-tight">Coastal Banking</span>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="flex items-center gap-4"
+          >
+            <div className="bg-white p-2 rounded-xl shadow-lg border border-white/20">
+              <img src={logo} alt="Coastal Logo" className="w-10 h-10 object-contain" />
+            </div>
+            <span className="text-white text-3xl font-black tracking-tighter">Coastal</span>
+          </motion.div>
         </div>
 
         <div className="relative z-10">
-          <h1 className="text-5xl font-extrabold text-white mb-6 leading-tight">
-            Banking built for <span className="text-accent-400">your future.</span>
-          </h1>
-          <p className="text-primary-100 text-xl max-w-lg mb-8 leading-relaxed">
-            Experience secure, seamless, and smart banking solutions designed to help you grow.
-          </p>
-
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-white/90 text-sm">
-              <span className="w-2 h-2 bg-success-400 rounded-full animate-pulse"></span>
-              System Operational
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-white/90 text-sm">
-              <span>🛡️</span> 256-bit Secure
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
+            className="mb-12"
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-400/10 border border-blue-400/20 text-blue-300 text-[10px] font-black uppercase tracking-[0.3em] mb-6">Established 2026</span>
+            <h1 className="text-8xl font-black text-white leading-[0.85] mb-8 tracking-tighter">
+              Finance <br/>
+              <span className="text-blue-300">Perfected.</span>
+            </h1>
+            <p className="text-white/70 text-xl max-w-md leading-relaxed font-medium">
+              Join the elite ecosystem of modern practitioners and high-growth professionals.
+            </p>
+          </motion.div>
         </div>
 
-        <div className="relative z-10 text-primary-200 text-sm">
-          © 2025 Coastal Auto Tech Cooperative Credit Union
+        <div className="relative z-10 text-white/20 text-[10px] font-black uppercase tracking-[0.6em]">
+          Coastal Auto Tech Cooperative Credit Union
         </div>
-      </div>
+      </motion.div>
 
-      {/* Right Column - Login Form */}
-      <main id="main-content" className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative">
+      {/* Right Column - Frost Glass White Login Interface */}
+      <main className="flex-1 flex flex-col justify-center items-center py-16 px-8 relative bg-slate-50/50 overflow-hidden">
+        {/* Animated Background Elements for Frost Glass Depth */}
+        <div className="absolute inset-0 z-0">
+          <motion.div 
+            animate={{ 
+              x: [0, 50, 0], 
+              y: [0, -30, 0],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-20 -right-20 w-96 h-96 bg-blue-100 rounded-full blur-[100px] opacity-40"
+          />
+          <motion.div 
+            animate={{ 
+              x: [0, -40, 0], 
+              y: [0, 60, 0],
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute -bottom-20 -left-20 w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[120px] opacity-60"
+          />
+        </div>
 
-        <div className="mx-auto w-full max-w-sm lg:w-96">
-          <div className="lg:hidden mb-10 text-center">
-            <img src={logo} alt="Coastal Banking Logo" className="h-24 mx-auto mb-6 object-contain" />
-            <h2 className="text-3xl font-bold text-secondary-900">Sign In</h2>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="hidden lg:block text-3xl font-bold text-secondary-900 mb-2">Welcome Back</h2>
-            <p className="text-secondary-500">Please enter your credentials to access your account.</p>
-          </div>
-
-          {/* Error Summary */}
-          {(formErrors.submit || Object.keys(formErrors).length > 1) && (
-            <div ref={errorSummaryRef} className="mb-6 p-4 bg-error-50 border border-error-100 rounded-xl flex items-start ring-1 ring-error-200" role="alert" tabIndex={-1}>
-              <span className="text-error-500 mt-0.5 mr-3">⚠️</span>
-              <div>
-                <h3 className="text-sm font-semibold text-error-800">Authentication Failed</h3>
-                <ul className="mt-1 text-sm text-error-700 list-disc list-inside">
-                  {formErrors.submit && <li>{formErrors.submit}</li>}
-                  {formErrors.email && <li>{formErrors.email}</li>}
-                  {formErrors.password && <li>{formErrors.password}</li>}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Success Message */}
-          {successMessage && (
-            <div className="mb-6 p-4 bg-success-50 border border-success-100 rounded-xl flex items-center ring-1 ring-success-200" role="alert">
-              <span className="text-success-500 mr-3">✓</span>
-              <p className="text-sm font-medium text-success-800">{successMessage}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} ref={formRef} noValidate className="space-y-6">
-
-
-
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-secondary-700 mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary-400">
-                  📧
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
+          className="w-full max-w-md relative z-10"
+        >
+          {/* Frost Glass Card Container */}
+          <div className="p-8 lg:p-10 rounded-[2rem] glass-premium backdrop-blur-3xl">
+            <div className="mb-8 text-center bg-slate-50 p-6 rounded-2xl border border-slate-200">
+              <div className="flex justify-center mb-4">
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 ring-4 ring-slate-100/50">
+                  <img src={logo} alt="Coastal Logo" className="w-12 h-12 object-contain" />
                 </div>
-                <input
-                  ref={emailInputRef}
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('email')}
-                  className={`block w-full pl-10 pr-3 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 text-sm transition-colors ${formErrors.email
-                    ? 'border-error-300 focus:border-error-500 focus:ring-error-200 bg-error-50 text-error-900'
-                    : 'bg-white border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900'
-                    }`}
-                  placeholder="name@example.com"
-                />
               </div>
-              {formErrors.email && <p className="mt-1 text-sm text-error-600">{formErrors.email}</p>}
+              <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tighter leading-tight uppercase">Coastal AutoTech <br/> Credit Union</h2>
+              <p className="text-slate-900 font-black text-[10px] uppercase tracking-widest opacity-60">Secure membership authentication</p>
             </div>
 
-            {/* Password */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-secondary-700">Password</label>
-                <Link to="/forgot-password" className="text-sm font-medium text-primary-600 hover:text-primary-700">Forgot password?</Link>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary-400">
-                  🔒
-                </div>
-                <input
-                  ref={passwordInputRef}
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  onFocus={() => clearFieldError('password')}
-                  className={`block w-full pl-10 pr-10 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 text-sm transition-colors ${formErrors.password
-                    ? 'border-error-300 focus:border-error-500 focus:ring-error-200 bg-error-50 text-error-900'
-                    : 'bg-white border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900'
-                    }`}
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-secondary-400 hover:text-secondary-600 cursor-pointer focus:outline-none"
+            <AnimatePresence mode="wait">
+              {formErrors.submit && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="mb-6 p-4 bg-red-50/50 backdrop-blur-sm border border-red-100 text-red-700 text-xs rounded-xl flex items-center gap-3 font-bold shadow-sm"
                 >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
-                </button>
-              </div>
+                  <AlertCircle className="w-5 h-5" /> {formErrors.submit}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              {/* Password Strength Bar */}
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs text-secondary-500 mb-1">
-                    <span>Password Strength</span>
-                    <span className={`${passwordStrength < 40 ? 'text-error-600' : 'text-success-600'}`}>
-                      {passwordStrength < 40 ? 'Weak' : passwordStrength < 80 ? 'Good' : 'Strong'}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-5">
+                <div className="group relative">
+                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] mb-2 ml-1">Login ID</label>
+                  <div className="relative">
+                    <input
+                      ref={emailInputRef}
+                      type="email"
+                      name="email"
+                      required
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full bg-white/30 border-white focus:bg-white text-slate-950 px-6 py-4 rounded-2xl transition-all outline-none border focus:ring-8 focus:ring-blue-600/5 focus:border-blue-600 font-bold text-base shadow-sm placeholder:text-slate-300"
+                      placeholder="Enter Login ID"
+                    />
+                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors">
+                      <User className="w-5 h-5" />
                     </span>
                   </div>
-                  <div className="password-strength-container">
-                    <div
-                      ref={passwordStrengthRef}
-                      className={`password-strength-fill ${passwordStrength < 40 ? 'is-weak' :
-                        passwordStrength < 80 ? 'is-good' : 'is-strong'
-                        }`}
+                </div>
+
+                <div className="group">
+                  <div className="flex justify-between items-center mb-2 px-1">
+                    <label className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Password</label>
+                    <Link to="/forgot-password" title="Forgot password link" className="text-slate-900 hover:text-blue-600 transition-colors text-[9px] font-black uppercase tracking-widest underline decoration-slate-900/20 underline-offset-4">Reset Password</Link>
+                  </div>
+                  <div className="relative">
+                    <input
+                      ref={passwordInputRef}
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      required
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="w-full bg-white/30 border-white focus:bg-white text-slate-950 px-6 py-4 rounded-2xl transition-all outline-none border focus:ring-8 focus:ring-blue-600/5 focus:border-blue-600 font-bold text-base shadow-sm placeholder:text-slate-300"
+                      placeholder="••••••••••••"
                     />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1.5"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest opacity-60">{showPassword ? 'Hide' : 'Show'}</span>
+                      {showPassword ? <EyeOff className="w-4 h-4 text-slate-900" /> : <Eye className="w-4 h-4 text-slate-900" />}
+                    </button>
                   </div>
                 </div>
-              )}
-              {formErrors.password && <p className="mt-1 text-sm text-error-600">{formErrors.password}</p>}
+              </div>
+
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  variant="primary"
+                  className="w-full py-5 rounded-2xl text-lg shadow-xl shadow-blue-200 font-black uppercase tracking-[0.4em] transition-all hover:translate-y-[-2px] active:translate-y-[1px] bg-[#0052CC] hover:bg-[#0041a3] text-white border-none group"
+                >
+                  {isLoading ? 'Processing...' : (
+                    <span className="flex items-center justify-center gap-2">
+                      Secure Access
+                      <ArrowRight className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </form>
+
+            <div className="mt-10 flex items-center justify-between text-slate-900 text-[9px] font-black uppercase tracking-[0.3em] px-2 opacity-60">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                Active Link
+              </div>
+              <div className="flex gap-4">
+                <span className="hover:text-blue-600 cursor-pointer transition-colors border-b border-transparent hover:border-slate-900">Security Audit</span>
+                <span className="hover:text-blue-600 cursor-pointer transition-colors border-b border-transparent hover:border-slate-900">Help Center</span>
+              </div>
             </div>
-
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="rememberMe"
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded cursor-pointer"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-secondary-700 cursor-pointer">
-                Remember me for 30 days
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-wait transition-all"
-            >
-              {isLoading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin mr-2"></span>
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-8 text-center text-xs text-secondary-400">
-            Secure multi-factor authentication enforced.
           </div>
-        </div>
+        </motion.div>
       </main>
-
-      {/* Live Region */}
-      <div className="sr-only" aria-live="polite">
-        {successMessage || Object.values(formErrors).join(', ')}
-      </div>
     </div>
   );
 }

@@ -39,8 +39,13 @@ ml_models/
 # Project Logs
 logs/
 *.log
+*.html
 
-# Scratch scripts
+# Scratch scripts & folders
 reproduce_*.py
 test_*.py
 list_urls.py
+scratch/
+temp_*.py
+*.txt
+!requirements.txt

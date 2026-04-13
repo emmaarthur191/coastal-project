@@ -4,8 +4,7 @@
 /* eslint-disable */
 import type { AccountOpeningRequestAccountTypeEnum } from './AccountOpeningRequestAccountTypeEnum';
 import type { CardTypeEnum } from './CardTypeEnum';
-import type { IdTypeEnum } from './IdTypeEnum';
-import type { StatusE5aEnum } from './StatusE5aEnum';
+import type { Status669Enum } from './Status669Enum';
 /**
  * Serializer for account opening requests.
  */
@@ -13,27 +12,23 @@ export type AccountOpeningRequest = {
     readonly id: number;
     account_type?: AccountOpeningRequestAccountTypeEnum;
     card_type?: CardTypeEnum;
-    id_type?: IdTypeEnum;
-    id_number?: string;
-    readonly full_name: string;
+    id_type: string;
+    id_number: string;
     first_name: string;
     last_name: string;
-    date_of_birth: string;
-    nationality?: string;
-    address?: string;
+    readonly date_of_birth: string;
+    readonly address: string;
     phone_number: string;
-    email?: string | null;
-    occupation?: string;
-    work_address?: string;
-    position?: string;
-    digital_address?: string;
-    location?: string;
-    next_of_kin_data?: Record<string, any> | null;
-    /**
-     * Base64 encoded photo or file path
-     */
-    photo?: string | null;
-    readonly status: StatusE5aEnum;
+    email: string;
+    readonly occupation: string;
+    readonly work_address: string;
+    readonly position: string;
+    readonly digital_address: string;
+    readonly location: string;
+    readonly next_of_kin_data: string;
+    readonly photo: string;
+    readonly status: Status669Enum;
+    readonly full_name: string;
     readonly processed_by: number | null;
     readonly submitted_by: number | null;
     readonly created_account: number | null;
@@ -48,3 +43,4 @@ export type AccountOpeningRequest = {
     readonly updated_at: string;
     readonly approved_at: string | null;
 };
+

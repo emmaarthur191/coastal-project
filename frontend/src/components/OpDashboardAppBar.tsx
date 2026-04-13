@@ -1,6 +1,7 @@
 import React from 'react';
 import './OpDashboardAppBar.css';
 import { Button } from './ui/Button';
+import { BarChart3, MapPin, FileText, BellRing, Banknote, MessageSquare, LogOut } from 'lucide-react';
 
 interface OpDashboardAppBarProps {
   user: { name?: string; id?: number | string; role?: string } | null;
@@ -10,12 +11,12 @@ interface OpDashboardAppBarProps {
 }
 
 const navItems = [
-  { id: 'overview', name: 'Overview', icon: '📊' },
-  { id: 'branches', name: 'Branch Activity', icon: '📍' },
-  { id: 'reports', name: 'Reports', icon: '🧾' },
-  { id: 'alerts', name: 'System Alerts', icon: '🚨' },
-  { id: 'charges', name: 'Service Charges', icon: '💸' },
-  { id: 'messaging', name: 'Messaging', icon: '💬' }
+  { id: 'overview', name: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+  { id: 'branches', name: 'Branch Activity', icon: <MapPin className="w-4 h-4" /> },
+  { id: 'reports', name: 'Reports', icon: <FileText className="w-4 h-4" /> },
+  { id: 'alerts', name: 'System Alerts', icon: <BellRing className="w-4 h-4" /> },
+  { id: 'charges', name: 'Service Charges', icon: <Banknote className="w-4 h-4" /> },
+  { id: 'messaging', name: 'Messaging', icon: <MessageSquare className="w-4 h-4" /> }
 ];
 
 const OpDashboardAppBar: React.FC<OpDashboardAppBarProps> = ({ user, activeView, setActiveView, handleLogout }) => {
@@ -39,9 +40,9 @@ const OpDashboardAppBar: React.FC<OpDashboardAppBarProps> = ({ user, activeView,
           </div>
           <Button
             onClick={handleLogout}
-            className="op-dashboard-logout-btn bg-red-500/80 hover:bg-red-600 transition-all duration-300 shadow-xl shadow-red-900/20"
+            className="op-dashboard-logout-btn bg-red-500/80 hover:bg-red-600 transition-all duration-300 shadow-xl shadow-red-900/20 flex items-center gap-2"
           >
-            Sign Out 👋
+            <LogOut className="w-4 h-4" /> Sign Out
           </Button>
         </div>
       </div>

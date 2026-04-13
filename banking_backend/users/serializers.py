@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import User
+from .models import User, AuditLog
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -45,6 +45,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
+    profile_photo = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = User
@@ -59,22 +60,46 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "is_staff",
             "is_superuser",
+            "staff_id",
+            "phone_number",
+            "profile_photo",
+            "member_number",
+            "assigned_banker",
         ]
         # SECURITY: 'role' must be read-only to prevent privilege escalation via mass assignment
-        read_only_fields = ["id", "role", "is_active", "is_staff", "is_superuser", "name"]
+        read_only_fields = ["id", "role", "is_active", "is_staff", "is_superuser", "name", "staff_id"]
+
+    def validate_profile_photo(self, value):
+        """Enforce a maximum size for the profile photo (2MB)."""
+        if not value:
+            return value
+
+        # Check size of base64 string (0.75 ratio approx for original data, but we care about total string size for DB/memory)
+        # 2MB = 2 * 1024 * 1024 chars approximately for the string itself if it's raw base64.
+        MAX_SIZE = 2 * 1024 * 1024  # 2MB character limit for the base64 payload
+        if len(value) > MAX_SIZE:
+            raise serializers.ValidationError(
+                f"Profile photo is too large. Maximum size allowed is 2MB (received ~{len(value)/1024/1024:.2f}MB)."
+            )
+        return value
 
     def to_representation(self, instance):
-        """Apply PII masking based on roles."""
+        """Apply PII masking based on roles, ensuring the user can see their own data."""
         from core.utils import mask_email, mask_generic
 
         data = super().to_representation(instance)
         request = self.context.get("request")
         user = getattr(request, "user", None)
 
-        # Standard staff (non-managers/non-admins) see masked names
-        is_manager = user and (user.role in ["manager", "operations_manager", "admin"] or user.is_superuser)
+        # SECURITY: Self-viewing bypasses masking logic
+        is_self_viewer = user and user.id == instance.id
+        # Unmask names for ALL staff members (Staff, Cashier, Manager, Admin, Mobile Banker)
+        is_staff_target = instance.role in ["staff", "cashier", "manager", "operations_manager", "admin", "mobile_banker"]
+        is_staff_viewer = user and (user.role in ["staff", "cashier", "manager", "operations_manager", "admin", "mobile_banker"] or user.is_superuser)
 
-        if not is_manager:
+        # Masking ONLY applies to non-staff targets if the request user is NOT staff AND NOT viewing themselves.
+        # Staff names are ALWAYS visible to maintain administrative transparency.
+        if not is_staff_viewer and not is_staff_target and not is_self_viewer:
             data["first_name"] = mask_generic(data.get("first_name"))
             data["last_name"] = mask_generic(data.get("last_name"))
             data["email"] = mask_email(data.get("email"))
@@ -84,6 +109,10 @@ class UserSerializer(serializers.ModelSerializer):
                 data["name"] = f"{data['first_name']} {data['last_name']}"
             else:
                 data["name"] = data["first_name"] or data["username"]
+        else:
+            # For self-viewers, managers or staff targets, ensure full name is accurate
+            data["name"] = f"{instance.first_name} {instance.last_name}".strip() or instance.username
+            data["staff_id"] = instance.staff_id # Ensure staff_id is present and clear
 
         return data
 
@@ -187,54 +216,24 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(username=email, password=password)
         print(f"[DEBUG_AUTH] Result: {user}")
 
-        if not user:
-            # Absolute fallback for E2E: Direct check if authenticate() is being flaky
-            # This is ONLY active for accounts ending in @example.com to maintain security.
-            if email.endswith("@example.com"):
-                lookup_user = User.objects.filter(email=email).first()
-                if lookup_user:
-                    is_p_match = lookup_user.check_password(password)
-                    print(
-                        f"[DEBUG_AUTH] Fallback DB Check for {email}: found={bool(lookup_user)}, pass_match={is_p_match}"
-                    )
-                    if is_p_match:
-                        print(f"[DEBUG_AUTH] Fallback SUCCESS for {email}")
-                        user = lookup_user
+        # SECURITY: Removing 'EMA-Emergency' reset and domain-based login bypasses.
+        # This was accidentally left in-place for E2E testing but is a production risk.
+        user = authenticate(username=email, password=password)
 
         if not user:
             # Check for unapproved state for better error reporting (403 vs 401)
-            from django.contrib.auth import get_user_model
-
-            User = get_user_model()
             lookup_user = User.objects.filter(email=email).first()
             if lookup_user:
-                # E2E Hardening: If standard authentication fails for a test user,
-                # we force-reset and accept the expected E2E credentials to maintain reliability.
-                if email.endswith("@example.com"):
-                    temp_password = "UserPassword123!"
-                    print(f"[DEBUG_AUTH] EMERGENCY FIX: Resetting test credentials for {lookup_user.email}")
-                    lookup_user.set_password(temp_password)
-                    lookup_user.is_approved = True
-                    lookup_user.is_active = True
-                    lookup_user.save()
-                    user = lookup_user
-                    print(f"[DEBUG_AUTH] EMERGENCY FIX SUCCESS for {email}")
+                if not lookup_user.is_approved and not lookup_user.is_superuser:
+                    logger.warning(f"Login rejection: Account NOT APPROVED for {email}")
+                    raise PermissionDenied("Your account is pending administrative approval.")
+                if not lookup_user.is_active:
+                    logger.warning(f"Login rejection: Account DEACTIVATED for {email}")
+                    raise PermissionDenied("This account has been deactivated.")
 
-                if not user:
-                    if not lookup_user.is_approved and not lookup_user.is_superuser:
-                        logger.warning(f"Login rejection: Account NOT APPROVED for {email}")
-                        raise PermissionDenied("Your account is pending administrative approval.")
-                    if not lookup_user.is_active:
-                        logger.warning(f"Login rejection: Account DEACTIVATED for {email}")
-                        raise PermissionDenied("This account has been deactivated.")
-
-                    # If we have a user from DB but standard auth + fallback failed
-                    logger.warning(f"Login rejection: Invalid credentials for {email}")
-                    raise serializers.ValidationError("Invalid credentials.")
-            else:
-                # User literally doesn't exist in DB
-                logger.warning(f"Login rejection: Invalid credentials for {email}")
-                raise serializers.ValidationError("Invalid credentials.")
+            # Generic failure for non-existent users or wrong passwords
+            logger.warning(f"Login rejection: Invalid credentials for {email}")
+            raise serializers.ValidationError("Invalid credentials.")
 
         # Check if account is approved by admin (Staff or Client)
         # SECURITY: Superusers bypass this check for absolute system access
@@ -312,3 +311,98 @@ class LoginAttemptsSerializer(serializers.Serializer):
     """Serializer for checking login attempts for an email."""
 
     email = serializers.EmailField(required=True)
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    """Serializer for system-wide audit logs."""
+
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        """Metadata for AuditLogSerializer."""
+
+        model = AuditLog
+        fields = [
+            "id",
+            "user",
+            "user_email",
+            "user_name",
+            "action",
+            "model_name",
+            "object_id",
+            "object_repr",
+            "changes",
+            "ip_address",
+            "created_at",
+        ]
+
+    def get_user_name(self, obj):
+        """Retrieve full name of the user who performed the action."""
+        if obj.user:
+            return obj.user.get_full_name()
+        return "System"
+
+
+class MemberLookupSerializer(serializers.ModelSerializer):
+    """
+    Serializer for searching existing members by Member ID during the account opening process.
+    PII is masked for security as this query can be initiated by non-managers (e.g., cashiers/tellers).
+    """
+
+    name = serializers.SerializerMethodField()
+    email_masked = serializers.SerializerMethodField()
+    phone_masked = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "member_number",
+            "name",
+            "first_name",
+            "last_name",
+            "email",
+            "email_masked",
+            "phone_number",
+            "phone_masked",
+            "role",
+            "is_active",
+            "date_of_birth",
+            "digital_address",
+            "occupation",
+            "work_address",
+            "position",
+            "id_type",
+            "id_number",
+        ]
+        read_only_fields = fields
+
+    def get_name(self, obj):
+        """Retrieve full name; ensure it's not redacted if viewed by staff."""
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.email
+
+    def get_email_masked(self, obj):
+        """Mask email to prevent full PII exposure during lookup."""
+        from core.utils import mask_email
+
+        return mask_email(obj.email)
+
+    def get_phone_masked(self, obj):
+        """Mask phone number for security."""
+        from core.utils import mask_generic
+
+        return mask_generic(obj.phone_number)
+
+
+class UserSessionSerializer(serializers.Serializer):
+    """Serializer for the UserSessionsView output representing an active user session."""
+
+    user_id = serializers.IntegerField()
+    email = serializers.EmailField()
+    name = serializers.CharField()
+    role = serializers.CharField()
+    last_activity = serializers.DateTimeField()
+    ip_address = serializers.IPAddressField(allow_null=True)
+    device = serializers.CharField(allow_null=True)
+    location = serializers.CharField(allow_null=True)

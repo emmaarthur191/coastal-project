@@ -7,7 +7,20 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import RequestServicesTab from '../components/member/RequestServicesTab';
-import { MemberDashboardData, Transaction, Account, ServiceRequest } from '../services/api';
+import { 
+  CircleDollarSign, 
+  Building2, 
+  Banknote, 
+  ClipboardList, 
+  Lock, 
+  ShieldCheck, 
+  AlertTriangle,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  FileText,
+  CheckCircle2
+} from 'lucide-react';
+import { MemberDashboardData, Transaction, Account, ServiceRequest, LoanExtended } from '../types';
 
 interface BackendStatus {
   balance: boolean;
@@ -32,7 +45,7 @@ function MemberDashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
-  const [loans, setLoans] = useState<any[]>([]);
+  const [loans, setLoans] = useState<LoanExtended[]>([]);
   const [twoFactorStatus, setTwoFactorStatus] = useState({ enabled: false });
 
   // Form states
@@ -90,7 +103,7 @@ function MemberDashboard() {
     try {
       const result = await authService.getServiceRequests();
       if (result.success && result.data) {
-        setServiceRequests(result.data.results || []);
+        setServiceRequests(result.data || []);
         return true;
       }
       return false;
@@ -104,7 +117,7 @@ function MemberDashboard() {
     try {
       const result = await authService.getLoans();
       if (result.success && result.data) {
-        setLoans(result.data.results || []);
+        setLoans(result.data || []);
         return true;
       }
       return false;
@@ -115,12 +128,12 @@ function MemberDashboard() {
   }, []);
 
   const menuItems = [
-    { id: 'balance', name: 'Account Balance', icon: '💰', available: backendStatus.balance },
-    { id: 'accounts', name: 'Account Types', icon: '🏦', available: backendStatus.accounts },
-    { id: 'loans', name: 'My Loans', icon: '💸', available: backendStatus.loans },
-    { id: 'services', name: 'Request Services', icon: '📋', available: backendStatus.services },
-    { id: 'password', name: 'Change Password', icon: '🔒', available: true },
-    { id: 'twofa', name: 'Activate 2FA', icon: '🔐', available: true }
+    { id: 'balance', name: 'Account Balance', icon: <CircleDollarSign className="w-full h-full" />, available: backendStatus.balance },
+    { id: 'accounts', name: 'Account Types', icon: <Building2 className="w-full h-full" />, available: backendStatus.accounts },
+    { id: 'loans', name: 'My Loans', icon: <Banknote className="w-full h-full" />, available: backendStatus.loans },
+    { id: 'services', name: 'Request Services', icon: <ClipboardList className="w-full h-full" />, available: backendStatus.services },
+    { id: 'password', name: 'Change Password', icon: <Lock className="w-full h-full" />, available: true },
+    { id: 'twofa', name: 'Activate 2FA', icon: <ShieldCheck className="w-full h-full" />, available: true }
   ];
 
   // --- EFFECTS ---
@@ -207,7 +220,11 @@ function MemberDashboard() {
       return;
     }
     try {
-      const result = await authService.changePassword(passwordForm);
+      const result = await authService.changePassword({
+        old_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+        confirm_password: passwordForm.confirm_password
+      });
       if (result.success) {
         alert('Password changed successfully!');
         setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
@@ -279,8 +296,8 @@ function MemberDashboard() {
       onLogout={handleLogout}
     >
       {error && (
-        <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-lg mb-6 flex items-center">
-          <span className="mr-2">⚠️</span> {error}
+        <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5" /> {error}
         </div>
       )}
 
@@ -290,7 +307,9 @@ function MemberDashboard() {
           {!backendStatus.balance ? (
             <Card className="bg-error-50 border-error-200">
               <div className="text-center py-8">
-                <div className="text-4xl mb-4">⚠️</div>
+                <div className="flex justify-center mb-4">
+                  <AlertTriangle className="w-12 h-12 text-error-500" />
+                </div>
                 <h3 className="text-lg font-bold text-error-800">Service Unavailable</h3>
                 <p className="text-error-600">Account balance service is currently down.</p>
               </div>
@@ -330,7 +349,7 @@ function MemberDashboard() {
                       <div key={index} className="flex justify-between items-center p-4 bg-secondary-50 rounded-lg border border-secondary-100 hover:border-primary-200 transition-colors">
                         <div className="flex items-center">
                           <div className={`p-2 rounded-full mr-4 ${isPositive ? 'bg-success-100 text-success-600' : 'bg-error-100 text-error-600'}`}>
-                            {isPositive ? '↓' : '↑'}
+                            {isPositive ? <ArrowDownCircle className="w-5 h-5" /> : <ArrowUpCircle className="w-5 h-5" />}
                           </div>
                           <div>
                             <p className="font-semibold text-secondary-900">{transaction.description}</p>
@@ -359,7 +378,9 @@ function MemberDashboard() {
           {accounts.map((account, index) => (
             <Card key={index} className="hover:border-primary-300 transition-all">
               <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-primary-50 rounded-lg text-primary-600 text-xl">🏦</div>
+                <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
+                  <Building2 className="w-6 h-6" />
+                </div>
                 <span className="text-xs font-mono bg-secondary-100 text-secondary-600 px-2 py-1 rounded">
                   ****{account.account_number?.slice(-4) || '****'}
                 </span>
@@ -397,11 +418,11 @@ function MemberDashboard() {
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
                       <p className="text-xs text-secondary-400">Principal</p>
-                      <p className="font-bold text-secondary-900">{formatCurrencyGHS(loan.amount)}</p>
+                      <p className="font-bold text-secondary-900">{formatCurrencyGHS(Number(loan.amount) || 0)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-secondary-400">Current Balance</p>
-                      <p className="font-bold text-primary-600">{formatCurrencyGHS(loan.balance || loan.amount)}</p>
+                      <p className="font-bold text-primary-600">{formatCurrencyGHS(Number(loan.balance || loan.amount) || 0)}</p>
                     </div>
                   </div>
                   {loan.status === 'approved' && (
@@ -417,7 +438,9 @@ function MemberDashboard() {
               ))}
               {loans.length === 0 && (
                 <div className="text-center py-12">
-                  <div className="text-4xl mb-4">📄</div>
+                <div className="flex justify-center mb-4">
+                  <FileText className="w-12 h-12 text-slate-300" />
+                </div>
                   <p className="text-secondary-500">You don't have any active loans.</p>
                 </div>
               )}
@@ -487,8 +510,8 @@ function MemberDashboard() {
             <p className="text-sm text-secondary-600 mb-6">Secure your account by enabling SMS-based 2FA. We'll send a code to your registered phone.</p>
 
             {twoFactorStatus.enabled && (
-              <div className="mb-4 p-3 bg-success-50 border border-success-200 rounded-lg flex items-center">
-                <span className="text-success-600 mr-2">✓</span>
+              <div className="mb-4 p-3 bg-success-50 border border-success-200 rounded-xl flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-success-600" />
                 <span className="text-sm font-medium text-success-700">2FA is currently enabled on your account</span>
               </div>
             )}

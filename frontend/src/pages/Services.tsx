@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, apiService, ServiceRequest } from '../services/api';
+import { api, apiService, ServiceRequestExtended } from '../services/api';
 
 interface ServiceStats {
   total_requests?: number;
@@ -10,7 +10,7 @@ interface ServiceStats {
 }
 
 function Services() {
-  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequestExtended[]>([]);
   const [stats, setStats] = useState<ServiceStats>({});
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -25,7 +25,7 @@ function Services() {
       setLoading(true);
       const result = await apiService.getServiceRequests();
       if (result.success && result.data) {
-        setServiceRequests(result.data.results || []);
+        setServiceRequests(result.data || []);
       }
     } catch (error) {
       console.error('Error loading service requests:', error);
@@ -63,8 +63,8 @@ function Services() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-mauve-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading services...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+          <p className="mt-4 text-slate-900 font-black uppercase tracking-[0.2em]">Synchronizing Service Matrix...</p>
         </div>
       </div>
     );
@@ -74,8 +74,8 @@ function Services() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-mauve-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Service Requests</h1>
-          <p className="text-gray-600">Manage and track service requests</p>
+          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-4">Service Request Hub</h1>
+          <p className="text-[10px] text-slate-900 font-black uppercase tracking-widest opacity-60">Institutional workflow monitoring and service audit trails</p>
         </div>
 
         {/* Stats Cards */}
@@ -90,8 +90,8 @@ function Services() {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total_requests || 0}</p>
+                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest opacity-60">Capture Volume</p>
+                <p className="text-2xl font-black text-slate-900">{stats.total_requests || 0}</p>
               </div>
             </div>
           </div>
@@ -128,18 +128,18 @@ function Services() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-slate-300">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Rejected</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.rejected_requests || 0}</p>
+                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest opacity-60">Rejected</p>
+                <p className="text-2xl font-black text-slate-900">{stats.rejected_requests || 0}</p>
               </div>
             </div>
           </div>
@@ -182,23 +182,23 @@ function Services() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Request Type
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
+                    Operational Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Member
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
+                    Member Identity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
+                    Audit Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
                     Priority
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
+                    Timestamp
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                  <th className="px-6 py-4 text-right text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
+                    Management
                   </th>
                 </tr>
               </thead>
@@ -242,14 +242,14 @@ function Services() {
           </div>
 
           {filteredRequests.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="px-6 py-20 text-center border-2 border-dashed border-slate-300 rounded-b-xl">
+              <div className="text-slate-300 mb-6 opacity-40">
+                <svg className="mx-auto h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No service requests found</h3>
-              <p className="text-gray-500">Try selecting a different status filter.</p>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-2">No active service logs detected</h3>
+              <p className="text-[10px] text-slate-900 font-black uppercase tracking-widest opacity-60">The vault is currently synchronized with all member requests</p>
             </div>
           )}
         </div>

@@ -22,19 +22,22 @@ class JWTCookieAuthentication(JWTAuthentication):
 
         # 1. Try Header Authentication first (Native SimpleJWT)
         if header is not None:
-            raw_token = self.get_raw_token(header)
-            validated_token = self.get_validated_token(raw_token)
-            return self.get_user(validated_token), validated_token
+            try:
+                raw_token = self.get_raw_token(header)
+                if raw_token:
+                    validated_token = self.get_validated_token(raw_token)
+                    return self.get_user(validated_token), validated_token
+            except exceptions.AuthenticationFailed:
+                # If header auth fails, allow fallback to cookie instead of hard failure
+                pass
 
         # 2. Try Cookie Authentication
         access_token_cookie = settings.SIMPLE_JWT.get("AUTH_COOKIE", "access_token")
         raw_token = request.COOKIES.get(access_token_cookie)
 
-        if raw_token is None:
-            # DEBUG: Log that cookie is missing (helpful for diagnosing cross-site issues)
-            # import logging
-            # logger = logging.getLogger(__name__)
-            # logger.info(f"JWTCookieAuthentication: No cookie found. Cookies keys: {list(request.COOKIES.keys())}")
+        if not raw_token:
+            # Return None to signify NO authentication was attempted via cookie.
+            # This allows other authentication classes to try, or leads to a standard 401.
             return None
 
         # CSRF enforcement is handled by Django's CsrfViewMiddleware in MIDDLEWARE.

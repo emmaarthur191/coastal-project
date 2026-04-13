@@ -40,7 +40,7 @@ export const Input = forwardRef<HTMLInputElement | HTMLSelectElement | HTMLTextA
             {label && (
                 <label
                     htmlFor={inputId}
-                    className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1"
+                    className="block text-sm font-black text-slate-900 dark:text-white mb-2 ml-1 uppercase tracking-tight"
                 >
                     {label}
                 </label>
@@ -53,9 +53,9 @@ export const Input = forwardRef<HTMLInputElement | HTMLSelectElement | HTMLTextA
                     w-full px-4 py-3 rounded-xl border transition-all duration-200 outline-none
                     ${error
                         ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30'
-                        : 'border-slate-200 dark:border-slate-600 bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+                        : `border-slate-400 bg-white text-slate-900 font-black placeholder-slate-600 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10`
                     }
-                    backdrop-blur-sm
+                    backdrop-blur-none
                     ${props.disabled ? 'opacity-60 cursor-not-allowed' : ''}
                 `}
                 {...props}

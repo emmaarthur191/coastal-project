@@ -1,7 +1,7 @@
-// Sentry configuration for error tracking and monitoring
 import * as Sentry from "@sentry/react";
 import { browserTracingIntegration } from "@sentry/react";
 import { replayIntegration } from "@sentry/replay";
+import { logger } from "./logger";
 
 const validateSentryDsn = (dsn) => {
   if (!dsn) return false;
@@ -22,12 +22,12 @@ const initializeSentry = () => {
   const environment = import.meta.env.PROD ? 'production' : 'development';
 
   if (!sentryEnabled || !sentryDsn) {
-    // console.log('[Sentry] Disabled or no DSN configured');
+    // logger.log('[Sentry] Disabled or no DSN configured');
     return false;
   }
 
   if (!validateSentryDsn(sentryDsn)) {
-    console.warn('[Sentry] Invalid DSN format or contains placeholder values');
+    logger.warn('[Sentry] Invalid DSN format or contains placeholder values');
     return false;
   }
 
@@ -62,7 +62,7 @@ const initializeSentry = () => {
       beforeSend(event, hint) {
         // Don't send events in development unless explicitly enabled
         if (!import.meta.env.PROD && import.meta.env.VITE_SENTRY_DEBUG !== 'true') {
-          console.log('[Sentry] Suppressed event in development:', event);
+          logger.log('[Sentry] Suppressed event in development:', event);
           return null;
         }
 
@@ -85,10 +85,10 @@ const initializeSentry = () => {
       debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
     });
 
-    console.log('[Sentry] Initialized successfully');
+    logger.log('[Sentry] Initialized successfully');
     return true;
   } catch (error) {
-    console.error('[Sentry] Initialization failed:', error);
+    logger.error('[Sentry] Initialization failed:', error);
     return false;
   }
 };
@@ -99,7 +99,7 @@ const checkSentryHealth = () => {
     Sentry.captureMessage("Sentry health check", "info");
     return true;
   } catch (error) {
-    console.error('[Sentry] Health check failed:', error);
+    logger.error('[Sentry] Health check failed:', error);
     return false;
   }
 };

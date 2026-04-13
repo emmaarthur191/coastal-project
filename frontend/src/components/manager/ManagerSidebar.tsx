@@ -1,10 +1,11 @@
 import React from 'react';
+import { ShieldCheck, LogOut as LogOutIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface MenuItem {
   id: string;
   name: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
 }
 
@@ -31,7 +32,7 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
     <nav className="w-72 glass-card border-r border-white/20 p-6 flex flex-col h-full transition-all duration-300">
       <div className="text-center mb-10">
         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-premium-gradient flex items-center justify-center text-4xl shadow-2xl border-4 border-white/30 backdrop-blur-md transition-transform duration-700 hover:rotate-[360deg]">
-          🦁
+          <ShieldCheck className="w-10 h-10 text-white" />
         </div>
         <h1 className="font-black text-white text-xl tracking-tight drop-shadow-md">Manager Portal</h1>
         <p className="text-sm font-medium text-white/70 mt-1">Hello, {user?.name || 'Manager'}</p>
@@ -50,7 +51,7 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
             `}
           >
             <span className={`
-                text-xl transition-all duration-500 group-hover:rotate-12
+                w-6 h-6 transition-all duration-500 group-hover:rotate-12 flex items-center justify-center
                 ${activeView === item.id ? 'scale-125' : ''}
             `}>
               {item.icon}
@@ -70,9 +71,9 @@ const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
         <Button
           variant="danger"
           onClick={handleLogout}
-          className="w-full shadow-2xl hover:brightness-110 active:scale-95 transition-all duration-300 bg-red-500/80 backdrop-blur-md border border-white/20"
+          className="w-full shadow-2xl hover:brightness-110 active:scale-95 transition-all duration-300 bg-red-500/80 backdrop-blur-md border border-white/20 flex items-center justify-center gap-2"
         >
-          Log Out 👋
+          Log Out <LogOutIcon className="w-4 h-4" />
         </Button>
       </div>
     </nav>

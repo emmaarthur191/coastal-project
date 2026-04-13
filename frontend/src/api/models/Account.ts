@@ -3,15 +3,20 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { AccountAccountTypeEnum } from './AccountAccountTypeEnum';
+/**
+ * Serializer for existing banking accounts.
+ */
 export type Account = {
     readonly id: number;
     readonly user: number;
-    account_number: string;
+    readonly account_number: string;
     account_type?: AccountAccountTypeEnum;
     readonly account_type_display: string;
-    balance?: string;
+    readonly balance: string;
     readonly calculated_balance: string;
     is_active?: boolean;
+    readonly customer_name: string;
     readonly created_at: string;
     readonly updated_at: string;
 };
+

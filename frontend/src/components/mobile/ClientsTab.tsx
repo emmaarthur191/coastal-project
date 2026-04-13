@@ -1,6 +1,7 @@
 import React from 'react';
 import GlassCard from '../ui/modern/GlassCard';
 import { Button } from '../ui/Button';
+import { ClipboardList, MapPin, CheckCircle2 } from 'lucide-react';
 
 interface Client {
   id: number;
@@ -23,7 +24,9 @@ interface ClientsTabProps {
 const ClientsTab: React.FC<ClientsTabProps> = ({ assignedClients, onVisit, onComplete }) => {
   return (
     <>
-      <h2 className="text-xl font-black text-gray-800 mb-4">📋 My Clients</h2>
+      <h2 className="text-xl font-black text-gray-800 mb-4 flex items-center gap-2">
+        <ClipboardList className="w-5 h-5 text-coastal-primary" /> My Clients
+      </h2>
       <div className="flex flex-col gap-4">
         {assignedClients.map((client) => (
           <GlassCard
@@ -31,11 +34,13 @@ const ClientsTab: React.FC<ClientsTabProps> = ({ assignedClients, onVisit, onCom
             className={`flex items-center gap-4 p-4 !border-l-4 ${client.priority === 'high' ? '!border-l-red-500' : '!border-l-black'} ${client.status === 'completed' ? 'opacity-60' : 'opacity-100'}`}
           >
             <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 ${client.status === 'completed' ? 'bg-success-100 border-success-500 text-success-700' : 'bg-gray-100 border-black text-gray-700'}`}>
-              {client.status === 'completed' ? '✅' : client.name.charAt(0)}
+              {client.status === 'completed' ? <CheckCircle2 className="w-6 h-6" /> : client.name.charAt(0)}
             </div>
             <div className="flex-1">
               <div className="font-bold text-lg text-gray-800">{client.name}</div>
-              <div className="text-sm text-gray-500">📍 {client.location || 'N/A'}</div>
+              <div className="text-sm text-gray-500 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" /> {client.location || 'N/A'}
+              </div>
               <div className="flex gap-2 items-center mt-1">
                 {client.priority === 'high' && (
                   <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold inline-block">

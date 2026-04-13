@@ -69,7 +69,7 @@ class LoanService:
         if not target_account:
             # IAO SECURITY CHECK: Prevent disbursement if no active account is available.
             raise ValidationError(
-                "User {loan.user.email} has no active accounts for loan disbursement. Activate an account first."
+                f"User {loan.user.email} has no active accounts for loan disbursement. Activate an account first."
             )
 
         loan.status = "approved"

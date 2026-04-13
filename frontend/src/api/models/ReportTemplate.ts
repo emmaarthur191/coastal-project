@@ -10,6 +10,7 @@ export type ReportTemplate = {
     readonly id: number;
     name: string;
     report_type: ReportTypeEnum;
+    readonly type: string;
     readonly report_type_display: string;
     description?: string;
     default_parameters?: any;
@@ -17,3 +18,4 @@ export type ReportTemplate = {
     readonly created_at: string;
     readonly updated_at: string;
 };
+

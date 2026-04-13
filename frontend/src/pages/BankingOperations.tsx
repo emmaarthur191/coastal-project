@@ -1,16 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { api, apiService as authService, LoanExtended as Loan, MessageThreadExtended, ReportAnalytics } from '../services/api';
+import { api, apiService as authService, MessageThreadExtended, ReportAnalytics } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import GlassCard from '../components/ui/modern/GlassCard';
+import type { MonthlyReportData, CategoryReportData, LoginAttemptRecord, AuditLogRecord } from '../types';
+
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Complaint } from '../api/models/Complaint';
-import { CashAdvance } from '../api/models/CashAdvance';
-import { Refund } from '../api/models/Refund';
-import { Account } from '../api/models/Account';
+
 import { FraudAlert } from '../api/models/FraudAlert';
 import SupportHub from '../components/operational/SupportHub';
+import { 
+  CircleDollarSign, 
+  Scale, 
+  Banknote, 
+  RefreshCcw, 
+  Building2, 
+  ShieldAlert, 
+  MessageSquare, 
+  BarChart3,
+  LogOut,
+  CheckCircle2,
+  AlertOctagon,
+  X,
+  Loader2
+} from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 // Modular Components
@@ -18,7 +30,6 @@ import FinancialRequestsHub from '../components/operational/FinancialRequestsHub
 import SecurityOversight from '../components/operational/SecurityOversight';
 import OperationalOverview from '../components/operational/OperationalOverview';
 import OperationalMessenger from '../components/operational/OperationalMessenger';
-import OperationalReports, { ReportParams } from '../components/operational/OperationalReports';
 import AdministrativeHub from '../components/operational/AdministrativeHub';
 
 interface ExtendedFraudAlert extends FraudAlert {
@@ -34,8 +45,8 @@ interface ExtendedMessage {
 }
 
 interface ReportsData {
-  monthlyData: any[];
-  categoryData: any[];
+  monthlyData: unknown[];
+  categoryData: unknown[];
 }
 
 function BankingOperations() {
@@ -47,6 +58,8 @@ function BankingOperations() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const [fraudAlerts, setFraudAlerts] = useState<ExtendedFraudAlert[]>([]);
+  const [loginAttempts, setLoginAttempts] = useState<LoginAttemptRecord[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
   const [isProcessing, setIsProcessing] = useState<string | number | null>(null);
 
   const [messages, setMessages] = useState<ExtendedMessage[]>([]);
@@ -54,14 +67,7 @@ function BankingOperations() {
   const [selectedThread, setSelectedThread] = useState<MessageThreadExtended | null>(null);
   const [newMessage, setNewMessage] = useState('');
 
-  // Reports & Analytics state
   const [reportsData, setReportsData] = useState<Partial<ReportsData>>({});
-  const [reportParams, setReportParams] = useState<ReportParams>({
-    type: 'transactions',
-    format: 'pdf',
-    date_from: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
-    date_to: new Date().toISOString().split('T')[0]
-  });
 
   const showNotification = useCallback((type: 'success' | 'error' | 'info', text: string) => {
     setNotification({ type, text });
@@ -79,10 +85,12 @@ function BankingOperations() {
     try {
       const safeFetch = async <T,>(p: Promise<T>) => p.catch(e => ({ success: false, error: String(e), data: undefined } as unknown as T));
 
-      const [threadsRes, fraudRes, reportsRes] = await Promise.all([
+      const [threadsRes, fraudRes, reportsRes, loginRes, auditRes] = await Promise.all([
         safeFetch(authService.getMessageThreads()),
         safeFetch(authService.getFraudAlerts()),
-        safeFetch(api.get<ReportAnalytics>('reports/analytics/'))
+        safeFetch(api.get<ReportAnalytics>('reports/analytics/')),
+        safeFetch(authService.getLoginAttempts()),
+        safeFetch(authService.getAuditLogs())
       ]);
 
       if (threadsRes.success) {
@@ -94,11 +102,17 @@ function BankingOperations() {
         setFraudAlerts((Array.isArray(data) ? data : (data as { results?: ExtendedFraudAlert[] })?.results || []) as ExtendedFraudAlert[]);
       }
       if (reportsRes) {
-        const data = (reportsRes as any).data || reportsRes;
+        const res = reportsRes as { data?: { monthly_data?: unknown[], category_data?: unknown[] } };
         setReportsData({
-            monthlyData: data.monthly_data || [],
-            categoryData: data.category_data || []
+          monthlyData: res.data?.monthly_data || [],
+          categoryData: res.data?.category_data || []
         });
+      }
+      if (loginRes.success) {
+        setLoginAttempts(loginRes.data || []);
+      }
+      if (auditRes.success) {
+        setAuditLogs(auditRes.data || []);
       }
     } catch (error) {
       console.error('Error fetching operations data:', error);
@@ -128,35 +142,18 @@ function BankingOperations() {
       });
       setNewMessage('');
       const res = await authService.getThreadMessages(String(selectedThread.id));
-      if (res.success) {
-        const data = res.data;
-        setMessages((Array.isArray(data) ? data : (data as { results?: ExtendedMessage[] })?.results || []) as ExtendedMessage[]);
+      if ('error' in res && typeof (res as { error?: string }).error === 'string') {
+        throw new Error((res as { error?: string }).error);
       }
-    } catch (err) {
+      const data = res.data;
+      setMessages((Array.isArray(data) ? data : (data as { results?: ExtendedMessage[] })?.results || []) as ExtendedMessage[]);
+    } catch (_err) {
       showNotification('error', 'Message failed to send.');
     } finally {
       setIsProcessing(null);
     }
   };
 
-  const handleGenerateReport = async () => {
-    setIsProcessing('generating-report');
-    try {
-      const res = await authService.generateOperationalReport(reportParams as any);
-      if (res.success && res.data) {
-        const blob = new Blob([res.data]);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `Staff-Report-${reportParams.type}.${reportParams.format}`);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode?.removeChild(link);
-      } else {
-        alert(`Report failed: ${res.error || 'Unknown error'}`);
-      }
-    } finally { setIsProcessing(null); }
-  };
 
   const handleLogout = () => {
     logout();
@@ -167,8 +164,8 @@ function BankingOperations() {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center h-96">
-          <div className="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-400 font-bold animate-pulse uppercase tracking-[0.2em] text-xs">Syncing Core Banking...</p>
+          <Loader2 className="w-16 h-16 text-emerald-600 animate-spin mb-4" />
+          <p className="text-slate-400 font-bold animate-pulse uppercase tracking-[0.2em] text-[10px]">Syncing Core Banking...</p>
         </div>
       );
     }
@@ -184,16 +181,16 @@ function BankingOperations() {
         return <FinancialRequestsHub mode="manager" initialView="refunds" />;
       case 'complaints':
         return <SupportHub mode="manager" initialTab="complaints" />;
-      case 'accounts': 
+      case 'accounts':
         return <ErrorBoundary><AdministrativeHub initialTab="accounts" /></ErrorBoundary>;
       case 'messaging':
         return (
           <OperationalMessenger
-            threads={messageThreads as any}
-            selectedThread={selectedThread as any}
-            messages={messages as any}
+            threads={messageThreads}
+            selectedThread={selectedThread as MessageThreadExtended}
+            messages={messages}
             newMessage={newMessage}
-            onSelectThread={handleSelectThread as any}
+            onSelectThread={handleSelectThread as unknown as React.ComponentProps<typeof OperationalMessenger>['onSelectThread']}
             onSendMessage={handleSendMessage}
             onNewMessageChange={setNewMessage}
             isProcessing={isProcessing}
@@ -202,15 +199,9 @@ function BankingOperations() {
       case 'reports':
         return (
           <div className="space-y-8">
-            <OperationalReports
-              reportParams={reportParams}
-              onParamsChange={setReportParams}
-              onGenerateReport={handleGenerateReport}
-              isGenerating={isProcessing === 'generating-report'}
-            />
             <OperationalOverview
-              monthlyData={reportsData.monthlyData}
-              categoryData={reportsData.categoryData}
+              monthlyData={reportsData.monthlyData as MonthlyReportData[]}
+              categoryData={reportsData.categoryData as CategoryReportData[]}
               loading={loading}
             />
           </div>
@@ -218,11 +209,13 @@ function BankingOperations() {
       case 'fraud-detection':
         return (
           <SecurityOversight
-            view="alerts"
+            initialTab="alerts"
             alerts={fraudAlerts}
+            loginAttempts={loginAttempts}
+            auditLogs={auditLogs}
             onInvestigate={(id) => showNotification('info', `Security check initiated for ${id}`)}
-            onConfirmFraud={(id) => showNotification('error', `Fraud confirmed for transaction ${id}`)}
-            onDismissAlert={(id) => showNotification('success', `Alert ${id} dismissed`)}
+            onConfirmFraud={(id) => authService.reviewFraudAlert(String(id), 'confirmed').then(() => fetchData())}
+            onDismissAlert={(id) => authService.reviewFraudAlert(String(id), 'dismissed').then(() => fetchData())}
           />
         );
       default:
@@ -246,14 +239,14 @@ function BankingOperations() {
 
         <nav className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
           {[
-            { id: 'loans', label: 'Loan Apps', icon: '💰' },
-            { id: 'pending-loans', label: 'Approvals', icon: '⚖️' },
-            { id: 'cash-advances', label: 'Advances', icon: '💵' },
-            { id: 'refunds', label: 'Refunds', icon: '🔄' },
-            { id: 'accounts', label: 'Accounts', icon: '🏦' },
-            { id: 'fraud-detection', label: 'Security', icon: '🛡️' },
-            { id: 'messaging', label: 'Messaging', icon: '💬' },
-            { id: 'reports', label: 'Analytics', icon: '📊' }
+            { id: 'loans', label: 'Loan Apps', icon: <CircleDollarSign className="w-5 h-5" /> },
+            { id: 'pending-loans', label: 'Approvals', icon: <Scale className="w-5 h-5" /> },
+            { id: 'cash-advances', label: 'Advances', icon: <Banknote className="w-5 h-5" /> },
+            { id: 'refunds', label: 'Refunds', icon: <RefreshCcw className="w-5 h-5" /> },
+            { id: 'accounts', label: 'Accounts', icon: <Building2 className="w-5 h-5" /> },
+            { id: 'fraud-detection', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
+            { id: 'messaging', label: 'Messaging', icon: <MessageSquare className="w-5 h-5" /> },
+            { id: 'reports', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> }
           ].map((item) => (
             <button
               key={item.id}
@@ -265,15 +258,15 @@ function BankingOperations() {
                   : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 border border-transparent'}
               `}
             >
-              <span className="text-xl">{item.icon}</span>
+              <span className={`transition-colors ${activeView === item.id ? 'text-emerald-600' : 'text-slate-400'}`}>{item.icon}</span>
               {item.label}
             </button>
           ))}
         </nav>
 
         <div className="p-6 border-t border-slate-50 bg-slate-50/50">
-          <Button variant="danger" className="w-full h-12 rounded-2xl text-xs font-black uppercase tracking-widest" onClick={handleLogout}>
-            Terminal Exit 🚪
+          <Button variant="danger" className="w-full h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2" onClick={handleLogout}>
+            Terminal Exit <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </aside>
@@ -303,10 +296,12 @@ function BankingOperations() {
             notification.type === 'error' ? 'bg-rose-600 text-white' : 'bg-blue-600 text-white'
           }`}>
              <div className="flex items-center gap-3">
-                <span className="text-xl">{notification.type === 'success' ? '✅' : '🚨'}</span>
+                {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertOctagon className="w-5 h-5" />}
                 <p className="font-bold text-sm tracking-tight">{notification.text}</p>
              </div>
-             <button onClick={() => setNotification(null)} className="opacity-50 hover:opacity-100 font-black px-2">×</button>
+             <button onClick={() => setNotification(null)} className="opacity-50 hover:opacity-100 font-black p-1" aria-label="Close notification" title="Close notification">
+               <X className="w-4 h-4" />
+             </button>
           </div>
         )}
 

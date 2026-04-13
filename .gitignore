@@ -93,3 +93,27 @@ desktop/
 
 # Locust load test (optional: remove if you want to track this)
 # locustfile.py
+
+# Modern Coastal Project Exclusions (2026)
+prepare_smoke_tests*.py
+check_*.py
+manage_*_output.txt
+coverage_output.txt
+tsc_errors*.txt
+*.log
+*.html
+!frontend/index.html
+
+# Test & Debug Results
+*_results.txt
+*_details.txt
+*_report.txt
+*_report.html
+verification_*.txt
+phase3_*.txt
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!composer.json
+!composer.lock

@@ -10,43 +10,23 @@ const DashboardDropdown: React.FC<DashboardDropdownProps> = ({
   setShowDropdown
 }) => {
   return (
-    <div style={{
-      position: 'relative',
-      display: 'inline-block'
-    }}>
+    <div className="relative inline-block">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        style={{
-          background: '#fff',
-          border: '2px solid #000',
-          padding: '8px 12px',
-          borderRadius: '8px',
-          cursor: 'pointer'
-        }}
+        className="flex items-center gap-2 bg-white border border-slate-300 text-slate-900 py-2.5 px-6 rounded-xl cursor-pointer hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95"
       >
-        ⚙️ Options
+        <span className="opacity-70">⚙️</span> Options
       </button>
 
       {showDropdown && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          right: 0,
-          background: '#fff',
-          border: '2px solid #000',
-          borderRadius: '8px',
-          padding: '8px 0',
-          minWidth: '150px',
-          zIndex: 1000,
-          boxShadow: '4px 4px 0px rgba(0,0,0,0.2)'
-        }}>
-          <div style={{ padding: '8px 16px', cursor: 'pointer' }}>
+        <div className="absolute top-full right-0 mt-3 bg-white border border-slate-200 rounded-2xl py-3 min-w-[180px] z-[1000] shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="px-6 py-3 cursor-pointer hover:bg-slate-50 text-[11px] font-black uppercase tracking-widest text-slate-900 transition-colors border-b border-slate-100 last:border-0">
             Settings
           </div>
-          <div style={{ padding: '8px 16px', cursor: 'pointer' }}>
+          <div className="px-6 py-3 cursor-pointer hover:bg-slate-50 text-[11px] font-black uppercase tracking-widest text-slate-900 transition-colors border-b border-slate-100 last:border-0">
             Reports
           </div>
-          <div style={{ padding: '8px 16px', cursor: 'pointer' }}>
+          <div className="px-6 py-3 cursor-pointer hover:bg-slate-50 text-[11px] font-black uppercase tracking-widest text-slate-900 transition-colors">
             Export Data
           </div>
         </div>

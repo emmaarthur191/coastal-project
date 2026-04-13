@@ -17,6 +17,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             "description",
             "status",
             "timestamp",
+            "processed_by",
             "processed_at",
         ]
         read_only_fields = ["id", "timestamp", "processed_at"]
@@ -93,11 +94,16 @@ class RefundSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "user",
+            "requested_by",
+            "initiator_name",
             "transaction",
             "amount",
             "reason",
             "description",
             "status",
+            "id_type",
+            "id_number",
+            "verification_notes",
             "admin_notes",
             "processed_by",
             "processed_at",
@@ -107,6 +113,8 @@ class RefundSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "user",
+            "requested_by",
+            "initiator_name",
             "status",
             "admin_notes",
             "processed_by",
@@ -114,6 +122,11 @@ class RefundSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    initiator_name = serializers.SerializerMethodField()
+
+    def get_initiator_name(self, obj):
+        return obj.requested_by.get_full_name() if obj.requested_by else "Customer"
 
 
 class AccountStatementSerializer(serializers.ModelSerializer):
@@ -165,3 +178,44 @@ class AccountStatementSerializer(serializers.ModelSerializer):
         if obj.pdf_file:
             return obj.pdf_file.url
         return None
+
+class TransactionListSerializer(serializers.ModelSerializer):
+    """Serializer for transaction listing with nested account info and PII masking."""
+
+    from_account_details = serializers.SerializerMethodField()
+    to_account_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Transaction
+        fields = [
+            "id",
+            "transaction_type",
+            "amount",
+            "status",
+            "timestamp",
+            "description",
+            "from_account_details",
+            "to_account_details",
+        ]
+
+    def get_from_account_details(self, obj):
+        if not obj.from_account:
+            return None
+        from core.utils import mask_email
+        return {
+            "id": str(obj.from_account.id),
+            "account_number": obj.from_account.account_number,
+            "user_email": mask_email(obj.from_account.user.email),
+            "account_type": obj.from_account.account_type,
+        }
+
+    def get_to_account_details(self, obj):
+        if not obj.to_account:
+            return None
+        from core.utils import mask_email
+        return {
+            "id": str(obj.to_account.id),
+            "account_number": obj.to_account.account_number,
+            "user_email": mask_email(obj.to_account.user.email),
+            "account_type": obj.to_account.account_type,
+        }

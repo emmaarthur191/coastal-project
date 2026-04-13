@@ -69,42 +69,51 @@ class LoanViewSet(
             from core.permissions import IsStaffOrCustomer
 
             return [IsStaffOrCustomer()]
-        return [IsCustomer()]
+        # Default to both staff and customers for list/retrieve
+        from core.permissions import IsStaffOrCustomer
+
+        return [IsStaffOrCustomer()]
 
     def perform_create(self, serializer):
-        """Set the applicant (user) when creating a new loan.
+        """Set the applicant (user) and initiator (requested_by) when creating a new loan.
         Staff can specify a user, customers apply for themselves.
         """
         user_id = self.request.data.get("user")
-        if user_id and (self.request.user.role in STAFF_ROLES or self.request.user.is_staff):
+        is_staff_initiator = self.request.user.role in STAFF_ROLES or self.request.user.is_staff
+        
+        if user_id and is_staff_initiator:
             from django.contrib.auth import get_user_model
-
             User = get_user_model()
             try:
                 applicant = User.objects.get(id=user_id)
 
-                # SECURITY FIX (CVE-COASTAL-04): Verify staff has authority over this customer
-                # Mobile bankers can only create loans for their assigned clients
-                # Regular staff (cashier, etc.) cannot create loans directly without manager oversight
+                # SECURITY: Enforcement of authority limits for staff initiators
                 if self.request.user.role not in ["manager", "operations_manager", "admin"]:
+                    from core.models.operational import ClientAssignment
                     if self.request.user.role == "mobile_banker":
-                        from core.models.operational import ClientAssignment
-
                         is_assigned = ClientAssignment.objects.filter(
                             mobile_banker=self.request.user, client=applicant, is_active=True
                         ).exists()
                         if not is_assigned:
-                            raise serializers.ValidationError({"user": "You are not assigned to this customer."})
+                            raise PermissionDenied("not authorized to initiate requests for this client")
+                    elif self.request.user.role == "cashier":
+                        # Cashiers can initiate, but strictly requires Maker-Checker (which is enforced in approve)
+                        pass
                     else:
                         raise PermissionDenied(
-                            "Only Managers or Mobile Bankers can initiate loan applications for customers."
+                            "Your role does not have permission to initiate loan applications for customers."
                         )
 
-                serializer.save(user=applicant)
+                serializer.save(
+                    user=applicant, 
+                    requested_by=self.request.user,
+                    verification_notes=self.request.data.get("verification_notes", "")
+                )
             except User.DoesNotExist:
                 raise serializers.ValidationError({"user": "Specified user does not exist."})
         else:
-            serializer.save(user=self.request.user)
+            # Customer applying for themselves
+            serializer.save(user=self.request.user, requested_by=None)
 
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def approve(self, request, pk=None):

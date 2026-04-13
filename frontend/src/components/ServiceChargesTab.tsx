@@ -1,18 +1,47 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { formatCurrencyGHS } from '../utils/formatters';
 import GlassCard from './ui/modern/GlassCard';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { Banknote, PlusCircle, Check, Calculator, ListChecks } from 'lucide-react';
+
+export interface ServiceCharge {
+  name: string;
+  description: string;
+  charge_type: string;
+  rate: string | number;
+  applicable_to: string[];
+}
+
+export interface ChargeBreakdown {
+  name: string;
+  type: string;
+  rate: string | number;
+  amount: number;
+}
+
+export interface ServiceChargeCalculation {
+  transaction_type: string;
+  amount: number;
+  transaction_amount?: number;
+  total_service_charge?: number;
+  net_amount?: number;
+  charge_breakdown?: ChargeBreakdown[];
+}
 
 interface ServiceChargesTabProps {
-  serviceCharges: any[];
-  newCharge: any;
-  setNewCharge: React.Dispatch<React.SetStateAction<any>>;
-  serviceChargeCalculation: any;
-  setServiceChargeCalculation: React.Dispatch<React.SetStateAction<any>>;
-  authService: any;
+  serviceCharges: ServiceCharge[];
+  newCharge: ServiceCharge;
+  setNewCharge: React.Dispatch<React.SetStateAction<ServiceCharge>>;
+  serviceChargeCalculation: ServiceChargeCalculation;
+  setServiceChargeCalculation: React.Dispatch<React.SetStateAction<ServiceChargeCalculation>>;
+  authService: {
+    createServiceCharge: (charge: ServiceCharge) => Promise<{success: boolean, error?: string}>;
+    calculateServiceCharge: (payload: {transaction_type: string, amount: number}) => Promise<{success: boolean, data?: ServiceChargeCalculation, error?: string}>;
+  };
   refetchCharges: () => void;
 }
+
 
 const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
   serviceCharges, newCharge, setNewCharge, serviceChargeCalculation,
@@ -59,14 +88,16 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-        <span>💸</span> Service Charge Management
+        <Banknote className="w-6 h-6 text-coastal-primary" /> Service Charge Management
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Create Service Charge */}
         <GlassCard className="p-6 border-t-[6px] border-t-purple-500">
           <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-sm">➕</span>
+            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+              <PlusCircle className="w-4 h-4" />
+            </div>
             Create New Service Charge
           </h4>
           <div className="space-y-4">
@@ -92,10 +123,12 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                <label htmlFor="charge-type-select" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
                   Type
                 </label>
                 <select
+                  id="charge-type-select"
+                  title="Charge Type"
                   value={newCharge.charge_type}
                   onChange={(e) => setNewCharge({ ...newCharge, charge_type: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
@@ -127,14 +160,13 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
                       setNewCharge({ ...newCharge, applicable_to: updated });
                     }}
                     type="button"
-                    className={`
-                            px-3 py-2 rounded-lg text-xs font-bold transition-all border
-                            ${newCharge.applicable_to.includes(type)
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-md'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:bg-purple-50'}
-                        `}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                      newCharge.applicable_to.includes(type)
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                    }`}
                   >
-                    {newCharge.applicable_to.includes(type) && <span className="mr-1">✓</span>}
+                    {newCharge.applicable_to.includes(type) && <Check className="w-3.5 h-3.5 mr-1" />}
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
                 ))}
@@ -150,16 +182,20 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
         {/* Service Charge Calculator */}
         <GlassCard className="p-6 border-t-[6px] border-t-amber-500 flex flex-col h-full">
           <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-sm">🧮</span>
+            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+              <Calculator className="w-4 h-4" />
+            </div>
             Service Charge Calculator
           </h4>
 
           <div className="space-y-4 flex-1">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+              <label htmlFor="transaction-type-select" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
                 Transaction Type
               </label>
               <select
+                id="transaction-type-select"
+                title="Transaction Type"
                 onChange={(e) => setServiceChargeCalculation(c => ({ ...c, transaction_type: e.target.value }))}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coastal-primary focus:ring-4 focus:ring-coastal-primary/10 transition-all outline-none bg-gray-50"
               >
@@ -198,7 +234,7 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
                   <div className="mt-4">
                     <h6 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Breakdown:</h6>
                     <div className="space-y-1">
-                      {serviceChargeCalculation.charge_breakdown.map((charge: any, index: number) => (
+                      {serviceChargeCalculation.charge_breakdown.map((charge: ChargeBreakdown, index: number) => (
                         <div key={index} className="flex justify-between items-center text-xs p-2 bg-gray-50 rounded">
                           <span>{charge.name}</span>
                           <div className="flex items-center gap-2">
@@ -219,7 +255,9 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
       {/* Active Service Charges List */}
       <GlassCard className="p-6">
         <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-sm">📋</span>
+          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <ListChecks className="w-4 h-4" />
+          </div>
           Active Service Charges
         </h4>
 
@@ -227,7 +265,7 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
           <div className="text-center py-8 text-gray-400">No active service charges found.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {serviceCharges.map((charge: any, index: number) => (
+            {serviceCharges.map((charge: ServiceCharge, index: number) => (
               <div key={index} className="p-5 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                 {/* Decorative background circle */}
                 <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-gray-50 group-hover:bg-blue-50 transition-colors z-0"></div>
@@ -235,10 +273,11 @@ const ServiceChargesTab: React.FC<ServiceChargesTabProps> = ({
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-2">
                     <h5 className="font-bold text-gray-800 pr-8">{charge.name}</h5>
-                    <span className={`
-                                text-[10px] font-bold px-2 py-0.5 rounded-full uppercase
-                                ${charge.charge_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}
-                            `}>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm border ${
+                      charge.charge_type === 'percentage' 
+                        ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                        : 'bg-amber-50 text-amber-700 border-amber-100'
+                    }`}>
                       {charge.charge_type}
                     </span>
                   </div>

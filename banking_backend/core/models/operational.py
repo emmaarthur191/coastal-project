@@ -25,7 +25,7 @@ class ServiceCharge(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "core_servicecharge"
+        db_table = "service_charge"
 
     def __str__(self):
         return f"{self.name} ({self.charge_type}: {self.rate})"
@@ -72,7 +72,7 @@ class ServiceRequest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "core_servicerequest"
+        db_table = "service_request"
         ordering = ["-created_at"]
         verbose_name = "Service Request"
         verbose_name_plural = "Service Requests"
@@ -126,7 +126,7 @@ class Complaint(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "core_complaint"
+        db_table = "complaint"
         ordering = ["-created_at"]
         verbose_name = "Complaint"
         verbose_name_plural = "Complaints"
@@ -153,7 +153,7 @@ class Device(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "core_device"
+        db_table = "device"
         ordering = ["-last_used_at"]
         verbose_name = "Device"
         verbose_name_plural = "Devices"
@@ -196,11 +196,29 @@ class CashAdvance(models.Model):
     repayment_date = models.DateField(null=True, blank=True)
     repaid_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
+
+    # IDENTITY VERIFICATION (Maker Metadata)
+    id_type = models.CharField(max_length=50, default="ghana_card")
+    id_number_encrypted = models.TextField(blank=True, default="")
+    id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    verification_notes = models.TextField(blank=True, help_text="Notes from physical ID verification")
+
+    @property
+    def id_number(self):
+        from core.utils.field_encryption import decrypt_field
+        return decrypt_field(self.id_number_encrypted)
+
+    @id_number.setter
+    def id_number(self, value):
+        from core.utils.field_encryption import encrypt_field, hash_field
+        self.id_number_encrypted = encrypt_field(value) if value else ""
+        self.id_number_hash = hash_field(value) if value else ""
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "core_cashadvance"
+        db_table = "cash_advance"
         ordering = ["-created_at"]
         verbose_name = "Cash Advance"
         verbose_name_plural = "Cash Advances"
@@ -231,7 +249,7 @@ class CashDrawer(models.Model):
     notes = models.TextField(blank=True)
 
     class Meta:
-        db_table = "core_cashdrawer"
+        db_table = "cash_drawer"
         ordering = ["-opened_at"]
         verbose_name = "Cash Drawer"
         verbose_name_plural = "Cash Drawers"
@@ -249,7 +267,7 @@ class CashDrawerDenomination(models.Model):
     is_opening = models.BooleanField(default=True)
 
     class Meta:
-        db_table = "core_cashdrawerdenomination"
+        db_table = "cash_drawer_denomination"
         ordering = ["-denomination"]
         verbose_name = "Denomination"
         verbose_name_plural = "Denominations"
@@ -385,6 +403,20 @@ class ClientAssignment(models.Model):
         verbose_name = "Client Assignment"
         verbose_name_plural = "Client Assignments"
         unique_together = ["mobile_banker", "client"]
+
+    def save(self, *args, **kwargs):
+        """Automatically set priority based on status and debt levels."""
+        if self.status == "overdue_payment":
+            self.priority = "urgent"
+        elif self.status in ["due_payment", "loan_application"]:
+            # Upgrade to high if not already urgent
+            if self.priority != "urgent":
+                self.priority = "high"
+        elif self.amount_due and self.amount_due > 1000:
+            if self.priority not in ["urgent", "high"]:
+                self.priority = "high"
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.client_name or self.client.email} assigned to {self.mobile_banker.email}"

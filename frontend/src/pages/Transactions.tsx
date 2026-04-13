@@ -1,12 +1,71 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { authService as apiService } from '../services/api';
-import { Input } from '../components/ui/Input';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { 
+  BarChart2, 
+  ArrowDownLeft, 
+  ArrowUpRight, 
+  Repeat, 
+  CreditCard, 
+  Calendar, 
+  TrendingUp, 
+  CalendarDays,
+  DollarSign,
+  Download,
+  Printer,
+  Search,
+  RefreshCw,
+  X,
+  FileText,
+  AlertCircle,
+  ArrowRightLeft,
+  Settings,
+  LayoutDashboard,
+  Wallet
+} from 'lucide-react';
+import { apiService } from '../services/api';
+import { logger } from '../utils/logger';
 import { formatCurrencyGHS } from '../utils/formatters';
 import { sanitizeUserInput } from '../utils/sanitizer';
-import { logger } from '../utils/logger';
+import { Input } from '../components/ui/Input';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { UserExtended } from '../types';
 import './Transactions.css';
 
 function Transactions() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  const [activeView, setActiveView] = useState('transactions');
+  
+  const menuItems = React.useMemo(() => [
+    { id: 'dashboard', name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 text-coastal-primary" /> },
+    { id: 'accounts', name: 'Accounts', icon: <Wallet className="w-5 h-5" /> },
+    { id: 'transactions', name: 'Transactions', icon: <ArrowRightLeft className="w-5 h-5" />, available: true },
+    { id: 'transfer', name: 'Transfer', icon: <Repeat className="w-5 h-5" /> },
+    { id: 'settings', name: 'Settings', icon: <Settings className="w-5 h-5" /> }
+  ], []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const handleNavigate = (id: string) => {
+    switch (id) {
+      case 'dashboard': navigate('/manager-dashboard'); break;
+      case 'accounts': navigate('/accounts'); break;
+      case 'transactions': navigate('/transactions'); break;
+      case 'transfer': navigate('/transfer'); break;
+      case 'settings': navigate('/settings'); break;
+      default: setActiveView(id);
+    }
+  };
+
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -184,17 +243,17 @@ function Transactions() {
   });
 
   const transactionTypes = [
-    { id: 'all', name: 'All Types', icon: '📊' },
-    { id: 'deposit', name: 'Deposits', icon: '💵' },
-    { id: 'deposit_daily_susu', name: 'Daily Susu Deposit', icon: '📅' },
-    { id: 'deposit_shares', name: 'Shares Deposit', icon: '📈' },
-    { id: 'deposit_monthly_contribution', name: 'Monthly Contribution Deposit', icon: '📆' },
-    { id: 'withdrawal', name: 'Withdrawals', icon: '🏧' },
-    { id: 'withdrawal_daily_susu', name: 'Daily Susu Withdrawal', icon: '📅' },
-    { id: 'withdrawal_shares', name: 'Shares Withdrawal', icon: '📈' },
-    { id: 'withdrawal_monthly_contribution', name: 'Monthly Contribution Withdrawal', icon: '📆' },
-    { id: 'transfer', name: 'Transfers', icon: '↔️' },
-    { id: 'payment', name: 'Payments', icon: '💳' }
+    { id: 'all', name: 'All Types', icon: <BarChart2 className="w-4 h-4" /> },
+    { id: 'deposit', name: 'Deposits', icon: <ArrowDownLeft className="w-4 h-4" /> },
+    { id: 'deposit_daily_susu', name: 'Daily Susu Deposit', icon: <Calendar className="w-4 h-4" /> },
+    { id: 'deposit_shares', name: 'Shares Deposit', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'deposit_monthly_contribution', name: 'Monthly Contribution Deposit', icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'withdrawal', name: 'Withdrawals', icon: <ArrowUpRight className="w-4 h-4" /> },
+    { id: 'withdrawal_daily_susu', name: 'Daily Susu Withdrawal', icon: <Calendar className="w-4 h-4" /> },
+    { id: 'withdrawal_shares', name: 'Shares Withdrawal', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'withdrawal_monthly_contribution', name: 'Monthly Contribution Withdrawal', icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'transfer', name: 'Transfers', icon: <Repeat className="w-4 h-4" /> },
+    { id: 'payment', name: 'Payments', icon: <CreditCard className="w-4 h-4" /> }
   ];
 
   const statusTypes = [
@@ -230,9 +289,9 @@ function Transactions() {
   ];
 
   const exportOptions = [
-    { format: 'PDF', icon: '' },
-    { format: 'CSV', icon: '' },
-    { format: 'Excel', icon: '' }
+    { format: 'PDF', icon: <FileText className="w-4 h-4" /> },
+    { format: 'CSV', icon: <Download className="w-4 h-4" /> },
+    { format: 'Excel', icon: <Download className="w-4 h-4" /> }
   ];
 
   if (loading) {
@@ -247,7 +306,15 @@ function Transactions() {
   }
 
   return (
-    <div className="transactions-page">
+    <DashboardLayout
+      title="Transaction History"
+      user={user as UserExtended | null}
+      menuItems={menuItems}
+      activeView={activeView}
+      onNavigate={handleNavigate}
+      onLogout={handleLogout}
+    >
+      <div className="transactions-page">
       {/* Balance Inquiry Section */}
       {balanceData && (
         <div className="balance-section">
@@ -258,8 +325,9 @@ function Transactions() {
             <button
               onClick={loadBalanceData}
               disabled={loadingBalance}
-              className="balance-section__refresh-btn"
+              className="balance-section__refresh-btn flex items-center gap-2"
             >
+              <RefreshCw className={`w-4 h-4 ${loadingBalance ? 'animate-spin' : ''}`} />
               {loadingBalance ? 'Refreshing...' : 'Refresh Balance'}
             </button>
           </div>
@@ -323,7 +391,8 @@ function Transactions() {
                 </button>
               ))}
             </div>
-            <button className="print-statement-btn">
+            <button className="print-statement-btn gap-2">
+              <Printer className="w-4 h-4" />
               Print Statement
             </button>
           </div>
@@ -467,14 +536,16 @@ function Transactions() {
                 memberName: '',
                 tags: ''
               })}
-              className="clear-filters-btn"
+              className="clear-filters-btn flex items-center gap-1"
             >
+              <X className="w-4 h-4" />
               Clear Filters
             </button>
             <button
               onClick={handleExport}
-              className="export-csv-btn"
+              className="export-csv-btn flex items-center gap-2"
             >
+              <Download className="w-4 h-4" />
               Export CSV
             </button>
           </div>
@@ -558,7 +629,9 @@ function Transactions() {
             ))
           ) : (
             <div className="transactions-empty">
-              <div className="transactions-empty__icon"></div>
+              <div className="transactions-empty__icon flex justify-center text-gray-200">
+                <Search className="w-16 h-16" />
+              </div>
               <h3 className="transactions-empty__title">
                 No transactions found
               </h3>
@@ -607,7 +680,7 @@ function Transactions() {
                 title="Close"
                 className="modal-close-btn"
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
             </div>
 
@@ -667,12 +740,10 @@ function Transactions() {
               {/* Actions */}
               <div className="modal-actions">
                 <button
-                  className="modal-action-btn modal-action-btn--primary"
+                  className="modal-action-btn modal-action-btn--primary flex items-center justify-center gap-2"
                   onClick={async () => {
                     try {
                       const receiptData = await apiService.generateReceipt(selectedTransaction.id);
-                      // For now, just show the receipt data in dev console
-                      // In a real implementation, this would generate a PDF or printable format
                       logger.debug('[Receipt] Generated:', receiptData);
                       alert('Receipt generated successfully!');
                     } catch (error) {
@@ -680,9 +751,11 @@ function Transactions() {
                       alert('Failed to generate receipt. Please try again.');
                     }
                   }}>
+                  <Download className="w-4 h-4" />
                   Download Receipt
                 </button>
-                <button className="modal-action-btn modal-action-btn--danger">
+                <button className="modal-action-btn modal-action-btn--danger flex items-center justify-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
                   Report Issue
                 </button>
               </div>
@@ -692,24 +765,25 @@ function Transactions() {
       )}
 
 
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
 // Helper functions
 function getTransactionIcon(type, subtype) {
   const icons = {
-    deposit: '💵',
-    withdrawal: '🏧',
-    transfer: '↔️',
-    payment: '💳',
-    daily_susu: '📅',
-    shares: '📈',
-    monthly_contribution: '📆',
-    withdrawal_daily_susu: '📅',
-    withdrawal_shares: '📈',
-    withdrawal_monthly_contribution: '📆',
-    default: '💰'
+    deposit: <ArrowDownLeft className="w-5 h-5 text-emerald-600" />,
+    withdrawal: <ArrowUpRight className="w-5 h-5 text-red-600" />,
+    transfer: <Repeat className="w-5 h-5 text-blue-600" />,
+    payment: <CreditCard className="w-5 h-5 text-amber-600" />,
+    daily_susu: <Calendar className="w-5 h-5" />,
+    shares: <TrendingUp className="w-5 h-5" />,
+    monthly_contribution: <CalendarDays className="w-5 h-5" />,
+    withdrawal_daily_susu: <Calendar className="w-5 h-5" />,
+    withdrawal_shares: <TrendingUp className="w-5 h-5" />,
+    withdrawal_monthly_contribution: <CalendarDays className="w-5 h-5" />,
+    default: <DollarSign className="w-5 h-5" />
   };
   return icons[subtype] || icons[type] || icons.default;
 }

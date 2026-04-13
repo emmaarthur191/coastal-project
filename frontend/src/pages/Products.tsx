@@ -56,8 +56,8 @@ function Products() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-mauve-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading products...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+          <p className="mt-4 text-slate-900 font-black uppercase tracking-[0.2em]">Synchronizing Product Matrix...</p>
         </div>
       </div>
     );
@@ -67,8 +67,8 @@ function Products() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-mauve-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Products & Services</h1>
-          <p className="text-gray-600">Explore our range of banking products and services</p>
+          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-4">Banking Products & Services</h1>
+          <p className="text-[10px] text-slate-900 font-black uppercase tracking-widest opacity-60">Corporate-grade financial instruments and operational services</p>
         </div>
 
         {/* Category Filter */}
@@ -111,34 +111,34 @@ function Products() {
                 )}
               </div>
 
-              <p className="text-gray-600 mb-4">{product.description}</p>
+              <p className="text-[10px] font-bold text-slate-900 uppercase tracking-tight mb-4 opacity-80 leading-relaxed">{product.description}</p>
 
               <div className="space-y-2 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Type:</span>
-                  <span className="text-sm font-medium text-gray-900 capitalize">
+                <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Type:</span>
+                  <span className="text-[10px] font-black text-blue-700 uppercase">
                     {product.product_type.replace('_', ' ')}
                   </span>
                 </div>
                 {product.base_price > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Base Price:</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      ${product.base_price}
+                  <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Base Price:</span>
+                    <span className="text-sm font-black text-slate-900">
+                      GHS {product.base_price.toLocaleString()}
                     </span>
                   </div>
                 )}
                 {product.interest_rate && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Interest Rate:</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {product.interest_rate}%
+                  <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Yield / Rate:</span>
+                    <span className="text-sm font-black text-emerald-700">
+                      {product.interest_rate}% APR
                     </span>
                   </div>
                 )}
               </div>
 
-              <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+              <button className="w-full bg-slate-900 text-white py-3 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg shadow-black/10">
                 Learn More
               </button>
             </div>
@@ -146,14 +146,14 @@ function Products() {
         </div>
 
         {filteredProducts.length === 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-white rounded-xl shadow-lg p-12 text-center border-2 border-dashed border-slate-300">
+            <div className="text-slate-300 mb-4 opacity-50">
+              <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-5.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-500">Try selecting a different category or check back later.</p>
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-2">No instruments classified</h3>
+            <p className="text-[10px] text-slate-900 font-bold uppercase tracking-widest opacity-60">Adjust filter parameters or synchronize with the banking core</p>
           </div>
         )}
       </div>

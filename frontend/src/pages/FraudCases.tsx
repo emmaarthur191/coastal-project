@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { 
+  AlertTriangle, 
+  Clock, 
+  CheckCircle2, 
+  FileText, 
+  User, 
+  Banknote, 
+  Calendar,
+  AlertCircle,
+  ShieldCheck,
+  Search
+} from 'lucide-react';
 import './FraudCases.css';
 
 interface CaseStats {
@@ -163,7 +175,7 @@ const FraudCases = () => {
         <div className="fraud-cases-stat-card">
           <div className="fraud-cases-stat-content">
             <div className="fraud-cases-stat-icon fraud-cases-stat-icon--open">
-              ⚠️
+              <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-cases-stat-value">{stats.open_cases || 0}</p>
@@ -175,7 +187,7 @@ const FraudCases = () => {
         <div className="fraud-cases-stat-card">
           <div className="fraud-cases-stat-content">
             <div className="fraud-cases-stat-icon fraud-cases-stat-icon--investigating">
-              🕐
+              <Clock className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-cases-stat-value">{stats.investigating || 0}</p>
@@ -187,7 +199,7 @@ const FraudCases = () => {
         <div className="fraud-cases-stat-card">
           <div className="fraud-cases-stat-content">
             <div className="fraud-cases-stat-icon fraud-cases-stat-icon--closed">
-              ✅
+              <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-cases-stat-value">{stats.closed_cases || 0}</p>
@@ -199,7 +211,7 @@ const FraudCases = () => {
         <div className="fraud-cases-stat-card">
           <div className="fraud-cases-stat-content">
             <div className="fraud-cases-stat-icon fraud-cases-stat-icon--total">
-              📄
+              <FileText className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-cases-stat-value">{stats.total_cases || 0}</p>
@@ -249,13 +261,13 @@ const FraudCases = () => {
                 <p className="fraud-cases-case-description">{caseItem.description}</p>
                 <div className="fraud-cases-case-meta">
                   <span className="fraud-cases-case-meta-item">
-                    👤 {caseItem.primary_account_details?.owner_name || 'Unknown'}
+                    <User className="w-3.5 h-3.5" /> {caseItem.primary_account_details?.owner_name || 'Unknown'}
                   </span>
                   <span className="fraud-cases-case-meta-item">
-                    💰 ${caseItem.estimated_loss || 0}
+                    <Banknote className="w-3.5 h-3.5" /> ${caseItem.estimated_loss || 0}
                   </span>
                   <span className="fraud-cases-case-meta-item">
-                    📅 {new Date(caseItem.created_at).toLocaleDateString()}
+                    <Calendar className="w-3.5 h-3.5" /> {new Date(caseItem.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -353,7 +365,9 @@ const FraudCases = () => {
 
         {filteredCases.length === 0 && (
           <div className="fraud-cases-empty-state">
-            <div className="fraud-cases-empty-icon">📄</div>
+            <div className="fraud-cases-empty-icon">
+              <FileText className="w-12 h-12 text-slate-300" />
+            </div>
             <h3 className="fraud-cases-empty-title">No cases found</h3>
             <p className="fraud-cases-empty-text">
               {filterStatus === 'all'

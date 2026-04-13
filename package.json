@@ -9,10 +9,12 @@
     "frontend:fast": "cd frontend && npx vite",
     "sync": "cd frontend && npm run api:sync",
     "build": "cd frontend && npm install && npm run build",
-    "start": "cd frontend && npm start"
+    "start": "cd frontend && npm start",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "husky": "^9.1.7"
   },
   "dependencies": {
     "amplitude-js": "^8.21.9"

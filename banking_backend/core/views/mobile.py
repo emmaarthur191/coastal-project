@@ -36,11 +36,10 @@ class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
     def get_queryset(self):
         """Return the list of scheduled visits, optimized with select_related."""
-        return (
-            VisitSchedule.objects.filter(mobile_banker=self.request.user)
-            .select_related("mobile_banker")
-            .order_by("-scheduled_time")
-        )
+        queryset = VisitSchedule.objects.all().select_related("mobile_banker").order_by("-scheduled_time")
+        if self.request.user.role in ["manager", "operations_manager", "admin", "superuser"]:
+            return queryset
+        return queryset.filter(mobile_banker=self.request.user)
 
     def get_serializer_class(self):
         """Define and return a serializer for visit schedules."""
@@ -172,10 +171,18 @@ class MobileOperationsViewSet(ViewSet):
     @action(detail=False, methods=["post"], url_path="process-deposit")
     def process_deposit(self, request):
         """Process a deposit from mobile banker (permission check handled by viewset)."""
-        # SECURITY: Mobile banker operations should be restricted
-        # Add IsMobileBanker permission check if user is not mobile_banker role
-        if request.user.role != "mobile_banker" and not request.user.is_staff:
-            return Response({"error": "This operation is restricted to mobile bankers"}, status=403)
+        if request.user.role != "mobile_banker" and request.user.role not in ["manager", "operations_manager", "admin", "superuser"]:
+            return Response({"error": "This operation is restricted to mobile bankers or authorized managers"}, status=403)
+
+        # SECURITY: Enforce assignment for mobile bankers
+        member_id = request.data.get("member_id")
+        if request.user.role == "mobile_banker":
+            from core.models.operational import ClientAssignment
+            is_assigned = ClientAssignment.objects.filter(
+                mobile_banker=request.user, client_id=member_id, is_active=True
+            ).exists()
+            if not is_assigned:
+                return Response({"error": "Unauthorized: You are not assigned to this client."}, status=403)
 
         from core.models.accounts import Account
         from core.services.transactions import TransactionService
@@ -236,9 +243,18 @@ class MobileOperationsViewSet(ViewSet):
     @action(detail=False, methods=["post"], url_path="process-withdrawal")
     def process_withdrawal(self, request):
         """Process a withdrawal from mobile banker (permission check handled by viewset)."""
-        # SECURITY: Mobile banker operations should be restricted
-        if request.user.role != "mobile_banker" and not request.user.is_staff:
-            return Response({"error": "This operation is restricted to mobile bankers"}, status=403)
+        if request.user.role != "mobile_banker" and request.user.role not in ["manager", "operations_manager", "admin", "superuser"]:
+            return Response({"error": "This operation is restricted to mobile bankers or authorized managers"}, status=403)
+
+        # SECURITY: Enforce assignment for mobile bankers
+        member_id = request.data.get("member_id")
+        if request.user.role == "mobile_banker":
+            from core.models.operational import ClientAssignment
+            is_assigned = ClientAssignment.objects.filter(
+                mobile_banker=request.user, client_id=member_id, is_active=True
+            ).exists()
+            if not is_assigned:
+                return Response({"error": "Unauthorized: You are not assigned to this client."}, status=403)
 
         from core.models.accounts import Account
         from core.services.transactions import TransactionService
@@ -324,6 +340,38 @@ class MobileOperationsViewSet(ViewSet):
 
         return Response({"status": "success", "visit_id": visit.id, "message": "Visit scheduled successfully"})
 
+    @action(detail=False, methods=["get"], url_path="member-lookup")
+    def member_lookup(self, request):
+        """Lookup member name and specific account balance for mobile banker verification."""
+        from core.models.accounts import Account
+
+        member_id = request.query_params.get("member_id")
+        account_type = request.query_params.get("account_type", "daily_susu")
+
+        if not member_id:
+            return Response({"error": "member_id is required"}, status=400)
+
+        # SECURITY: Enforce assignment for mobile bankers
+        if request.user.role == "mobile_banker":
+            from core.models.operational import ClientAssignment
+            is_assigned = ClientAssignment.objects.filter(
+                mobile_banker=request.user, client_id=member_id, is_active=True
+            ).exists()
+            if not is_assigned:
+                return Response({"error": "Unauthorized: Access restricted to assigned clients only."}, status=403)
+
+        # Optimization: select_related('user') helps get the name too
+        account = Account.objects.filter(user_id=member_id, account_type=account_type).select_related("user").first()
+        if not account:
+            return Response({"error": "Account not found for this member ID"}, status=404)
+
+        return Response({
+            "name": account.user.get_full_name() or account.user.username,
+            "balance": str(account.balance),
+            "account_type": account.get_account_type_display(),
+            "last_activity": account.last_activity.isoformat() if account.last_activity else None
+        })
+
 
 class ClientAssignmentViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet
@@ -345,7 +393,7 @@ class ClientAssignmentViewSet(
         from core.models.operational import ClientAssignment
 
         queryset = ClientAssignment.objects.all().select_related("mobile_banker", "client")
-        if self.request.user.role in ["manager", "admin", "superuser"]:
+        if self.request.user.role in ["manager", "operations_manager", "admin", "superuser"]:
             return queryset
         return queryset.filter(mobile_banker=self.request.user)
 
@@ -364,27 +412,16 @@ class ClientAssignmentViewSet(
 
     @action(detail=False, methods=["get"], url_path="my-clients")
     def my_clients(self, request):
-        """Get all clients assigned to the current mobile banker."""
+        """Get all clients assigned to the current mobile banker, using the standard serializer."""
         from core.models.operational import ClientAssignment
+        from core.serializers.operational import ClientAssignmentSerializer
 
         assignments = ClientAssignment.objects.filter(mobile_banker=request.user, is_active=True).select_related(
-            "client"
+            "client", "mobile_banker"
         )
-
-        clients = []
-        for assignment in assignments:
-            clients.append(
-                {
-                    "id": str(assignment.id),
-                    "client_id": str(assignment.client.id) if assignment.client else None,
-                    "client_name": assignment.client.get_full_name() if assignment.client else "Unknown",
-                    "status": assignment.status,
-                    "next_visit": self._format_next_visit(assignment.next_visit),
-                    "notes": assignment.notes,
-                }
-            )
-
-        return Response(clients)
+        
+        serializer = ClientAssignmentSerializer(assignments, many=True, context={'request': request})
+        return Response(serializer.data)
 
     def _format_next_visit(self, dt):
         """Helper to format next visit datetime to ISO string or string representation."""

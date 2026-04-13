@@ -96,8 +96,11 @@ class SecurityService:
 
         Returns True if rate limited, False otherwise.
         """
-        # TEMPORARY E2E TEST BYPASS
-        return False
+        # TEMPORARY E2E TEST BYPASS REMOVED
+        ip = SecurityService.get_client_ip(request)
+        cache_key = SecurityService.LOGIN_RATE_LIMIT_KEY.format(ip)
+        attempts = cache.get(cache_key, 0)
+        return attempts >= SecurityService.get_max_attempts()
 
     @staticmethod
     def record_login_attempt(request):

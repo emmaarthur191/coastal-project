@@ -1,4 +1,4 @@
-﻿/** @type {import('tailwindcss').Config} */
+/** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class', // Enable class-based dark mode
   content: [
@@ -10,26 +10,27 @@ export default {
       colors: {
         // Coastal Premium Theme
         coastal: {
-          dark: '#0f172a',    // Deep Navy
-          light: '#f8fafc',   // Crisp White/Grey
-          primary: '#6366f1', // Indigo Purple
-          success: '#14b8a6', // Teal
+          dark: '#050a14',    // Darker Navy for Contrast
+          light: '#ffffff',   // Pure White
+          primary: '#0052CC', // Coastal Blue
+          accent: '#DE350B',  // Brand Red
+          success: '#36B37E', // Success Green
           surface: '#ffffff', // Pure White
-          blue: '#0ea5e9',    // Sky Blue
+          blue: '#0052CC',    // Sky Blue
         },
         // Deep Ocean Primary - #0284c7 (Light Blue) to #0c4a6e (Deep Ocean)
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0066CC', // Brand Blue (Kept for consistency)
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e', // Deep Ocean
-          950: '#082f49',
+          50: '#deebff',
+          100: '#b3d4ff',
+          200: '#4c9aff',
+          300: '#2684ff',
+          400: '#0065e0',
+          500: '#0052CC', // Coastal Blue
+          600: '#0747a6',
+          700: '#003884',
+          800: '#00214a',
+          900: '#001024',
+          950: '#000812',
         },
         // Secondary - Slate Gray (Professional & Clean)
         secondary: {
@@ -47,17 +48,17 @@ export default {
         },
         // Accent - Cyan (Growth/Digital)
         accent: {
-          50: '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
-          950: '#083344',
+          50: '#ffebe6',
+          100: '#ffbdad',
+          200: '#ff8b70',
+          300: '#ff5630',
+          400: '#ff3010',
+          500: '#DE350B', // Brand Red
+          600: '#bf2600',
+          700: '#891b00',
+          800: '#661400',
+          900: '#330a00',
+          950: '#1a0500',
         },
         // Error Red - Refined
         error: {
@@ -89,17 +90,17 @@ export default {
         },
         // Success Emerald
         success: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
-          950: '#022c22',
+          50: '#e3fcef',
+          100: '#abf2d1',
+          200: '#79f2c0',
+          300: '#57d9a3',
+          400: '#36b37e', // Success Green
+          500: '#00875a',
+          600: '#006644',
+          700: '#004d33',
+          800: '#003322',
+          900: '#001a11',
+          950: '#000d08',
         },
         // Base Colors
         white: '#FFFFFF',

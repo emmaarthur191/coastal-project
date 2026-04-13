@@ -101,15 +101,33 @@ class SendexaService:
             outbox.save()
             return False, msg
 
-        # 4. Use pre-encoded Base64 token from settings
+        # 4. Authentication (Standard Basic Auth)
+        # Standard format: Base64(server_key + ":")
+        import base64
+        
+        # If the token is already base64, we use it directly. 
+        # Otherwise, we encode it correctly for Basic Auth.
+        is_token_b64 = False
+        try:
+            if api_token_b64 and len(api_token_b64) % 4 == 0:
+                base64.b64decode(api_token_b64)
+                is_token_b64 = True
+        except Exception:
+            pass
+
+        auth_header = api_token_b64
+        if not is_token_b64:
+            # Encode raw key for Basic Auth (username is empty/null in most Sendexa configs)
+            raw_auth = f"{api_token_b64}:"
+            auth_header = base64.b64encode(raw_auth.encode()).decode()
+
         payload: dict[str, str] = {"recipient": normalized_phone, "senderId": sender_id, "message": message}
 
         headers = {
-            "Authorization": f"Basic {api_token_b64}",
+            "Authorization": f"Basic {auth_header}",
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "User-Agent": "CoastalBanking-FinOps/1.0",
             "Accept": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
         }
 
         for attempt in range(max_retries):

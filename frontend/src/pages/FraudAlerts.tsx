@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api, PaginatedResponse } from '../services/api';
 import { FraudAlert } from '../api/models/FraudAlert';
+import { AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search } from 'lucide-react';
 import './FraudAlerts.css';
 
 interface FraudStats {
@@ -117,7 +118,7 @@ const FraudAlerts = () => {
         <div className="fraud-stat-card">
           <div className="fraud-stat-content">
             <div className="fraud-stat-icon fraud-stat-icon--danger">
-              ⚠️
+              <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-stat-value">{stats.total || 0}</p>
@@ -129,7 +130,7 @@ const FraudAlerts = () => {
         <div className="fraud-stat-card">
           <div className="fraud-stat-content">
             <div className="fraud-stat-icon fraud-stat-icon--warning">
-              🕐
+              <Clock className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-stat-value">{stats.unresolved || 0}</p>
@@ -141,7 +142,7 @@ const FraudAlerts = () => {
         <div className="fraud-stat-card">
           <div className="fraud-stat-content">
             <div className="fraud-stat-icon fraud-stat-icon--success">
-              ✅
+              <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-stat-value">{(stats.total || 0) - (stats.unresolved || 0)}</p>
@@ -153,7 +154,7 @@ const FraudAlerts = () => {
         <div className="fraud-stat-card">
           <div className="fraud-stat-content">
             <div className="fraud-stat-icon fraud-stat-icon--info">
-              👁️
+              <ShieldAlert className="w-6 h-6" />
             </div>
             <div>
               <p className="fraud-stat-value">{stats.critical_alerts || 0}</p>
@@ -240,7 +241,9 @@ const FraudAlerts = () => {
 
         {filteredAlerts.length === 0 && (
           <div className="fraud-empty-state">
-            <div className="fraud-empty-icon">⚠️</div>
+            <div className="fraud-empty-icon">
+              <ShieldAlert className="w-12 h-12 text-slate-300" />
+            </div>
             <h3 className="fraud-empty-title">No alerts found</h3>
             <p className="fraud-empty-message">
               {filterStatus === 'all'

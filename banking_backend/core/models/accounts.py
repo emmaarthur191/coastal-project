@@ -29,7 +29,7 @@ class Account(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "core_account"
+        db_table = "account"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "-created_at"], name="account_user_created_idx"),
@@ -69,6 +69,7 @@ class AccountOpeningRequest(models.Model):
         ("daily_susu", "Daily Susu"),
         ("shares", "Shares"),
         ("monthly_contribution", "Monthly Contribution"),
+        ("youth_savings", "Youth Savings"),
     ]
 
     CARD_TYPES = [
@@ -97,6 +98,16 @@ class AccountOpeningRequest(models.Model):
     # Account Details
     account_type = models.CharField(max_length=25, choices=ACCOUNT_TYPES, default="daily_susu")
     card_type = models.CharField(max_length=20, choices=CARD_TYPES, default="standard")
+    
+    # Member if already existing (for streamlined onboarding)
+    existing_member = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="additional_account_opening_requests",
+    )
+    
     initial_deposit = models.DecimalField(
         max_digits=15,
         decimal_places=2,
@@ -117,27 +128,27 @@ class AccountOpeningRequest(models.Model):
     def first_name(self):
         from core.utils.field_encryption import decrypt_field
 
-        val = decrypt_field(self.first_name_encrypted)
+        val = decrypt_field(self.first_name_encrypted, version=self.key_version)
         return val if val else ""
 
     @first_name.setter
     def first_name(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.first_name_encrypted = encrypt_field(value) if value else ""
+        self.first_name_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     @property
     def last_name(self):
         from core.utils.field_encryption import decrypt_field
 
-        val = decrypt_field(self.last_name_encrypted)
+        val = decrypt_field(self.last_name_encrypted, version=self.key_version)
         return val if val else ""
 
     @last_name.setter
     def last_name(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.last_name_encrypted = encrypt_field(value) if value else ""
+        self.last_name_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     @property
     def date_of_birth(self):
@@ -145,7 +156,7 @@ class AccountOpeningRequest(models.Model):
 
         from core.utils.field_encryption import decrypt_field
 
-        val = decrypt_field(self.date_of_birth_encrypted)
+        val = decrypt_field(self.date_of_birth_encrypted, version=self.key_version)
         if val:
             try:
                 return datetime.strptime(val, "%Y-%m-%d").date()
@@ -159,7 +170,7 @@ class AccountOpeningRequest(models.Model):
 
         if value:
             str_val = value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else str(value)
-            self.date_of_birth_encrypted = encrypt_field(str_val)
+            self.date_of_birth_encrypted = encrypt_field(str_val, version=self.key_version)
         else:
             self.date_of_birth_encrypted = ""
 
@@ -167,14 +178,14 @@ class AccountOpeningRequest(models.Model):
     def address(self):
         from core.utils.field_encryption import decrypt_field
 
-        val = decrypt_field(self.address_encrypted)
+        val = decrypt_field(self.address_encrypted, version=self.key_version)
         return val if val else ""
 
     @address.setter
     def address(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.address_encrypted = encrypt_field(value) if value else ""
+        self.address_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     email = models.EmailField(default="", help_text="Customer email for login credentials")
 
@@ -187,37 +198,37 @@ class AccountOpeningRequest(models.Model):
     def occupation(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.occupation_encrypted)
+        return decrypt_field(self.occupation_encrypted, version=self.key_version)
 
     @occupation.setter
     def occupation(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.occupation_encrypted = encrypt_field(value) if value else ""
+        self.occupation_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     @property
     def work_address(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.work_address_encrypted)
+        return decrypt_field(self.work_address_encrypted, version=self.key_version)
 
     @work_address.setter
     def work_address(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.work_address_encrypted = encrypt_field(value) if value else ""
+        self.work_address_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     @property
     def position(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.position_encrypted)
+        return decrypt_field(self.position_encrypted, version=self.key_version)
 
     @position.setter
     def position(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.position_encrypted = encrypt_field(value) if value else ""
+        self.position_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     # Location Information (Encrypted)
     digital_address_encrypted_val = models.TextField(
@@ -229,25 +240,25 @@ class AccountOpeningRequest(models.Model):
     def digital_address(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.digital_address_encrypted_val)
+        return decrypt_field(self.digital_address_encrypted_val, version=self.key_version)
 
     @digital_address.setter
     def digital_address(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.digital_address_encrypted_val = encrypt_field(value) if value else ""
+        self.digital_address_encrypted_val = encrypt_field(value, version=self.key_version) if value else ""
 
     @property
     def location(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.location_encrypted)
+        return decrypt_field(self.location_encrypted, version=self.key_version)
 
     @location.setter
     def location(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.location_encrypted = encrypt_field(value) if value else ""
+        self.location_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     # Next of Kin Details (Encrypted)
     next_of_kin_encrypted = models.TextField(blank=True, default="")
@@ -258,7 +269,7 @@ class AccountOpeningRequest(models.Model):
 
         from core.utils.field_encryption import decrypt_field
 
-        val = decrypt_field(self.next_of_kin_encrypted)
+        val = decrypt_field(self.next_of_kin_encrypted, version=self.key_version)
         if val:
             try:
                 return json.loads(val)
@@ -273,7 +284,7 @@ class AccountOpeningRequest(models.Model):
         from core.utils.field_encryption import encrypt_field
 
         if value:
-            self.next_of_kin_encrypted = encrypt_field(json.dumps(value))
+            self.next_of_kin_encrypted = encrypt_field(json.dumps(value), version=self.key_version)
         else:
             self.next_of_kin_encrypted = ""
 
@@ -284,13 +295,13 @@ class AccountOpeningRequest(models.Model):
     def photo(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.photo_encrypted)
+        return decrypt_field(self.photo_encrypted, version=self.key_version)
 
     @photo.setter
     def photo(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.photo_encrypted = encrypt_field(value) if value else ""
+        self.photo_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     # SECURITY: Encrypted storage for PII (Ghana DPA compliance)
     id_number_encrypted = models.TextField(blank=True, default="")
@@ -305,14 +316,14 @@ class AccountOpeningRequest(models.Model):
         """Decrypt and return the ID number."""
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.id_number_encrypted)
+        return decrypt_field(self.id_number_encrypted, version=self.key_version)
 
     @id_number.setter
     def id_number(self, value):
         """Encrypt and set the ID number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
 
-        self.id_number_encrypted = encrypt_field(value) if value else ""
+        self.id_number_encrypted = encrypt_field(value, version=self.key_version) if value else ""
         self.id_number_hash = hash_field(value) if value else ""
 
     @property
@@ -320,14 +331,14 @@ class AccountOpeningRequest(models.Model):
         """Decrypt and return the phone number."""
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.phone_number_encrypted)
+        return decrypt_field(self.phone_number_encrypted, version=self.key_version)
 
     @phone_number.setter
     def phone_number(self, value):
         """Encrypt and set the phone number + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
 
-        self.phone_number_encrypted = encrypt_field(value) if value else ""
+        self.phone_number_encrypted = encrypt_field(value, version=self.key_version) if value else ""
         self.phone_number_hash = hash_field(value) if value else ""
 
     # Status and Tracking
@@ -371,16 +382,40 @@ class AccountOpeningRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     approved_at = models.DateTimeField(null=True, blank=True)
+    key_version = models.IntegerField(default=1, help_text="The version of the encryption key used for PII.")
+
+    is_flagged_for_review = models.BooleanField(
+        default=False, help_text="Flagged for manager intervention."
+    )
+    is_stale = models.BooleanField(
+        default=False, help_text="Request has exceeded the 24-hour window."
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_account_openings",
+    )
 
     class Meta:
-        db_table = "core_accountopeningrequest"
+        db_table = "account_opening_request"
         ordering = ["-created_at"]
         verbose_name = "Account Opening Request"
         verbose_name_plural = "Account Opening Requests"
         indexes = [
             models.Index(fields=["status", "-created_at"], name="acc_open_status_idx"),
             models.Index(fields=["submitted_by", "-created_at"], name="acc_open_sub_idx"),
+            models.Index(fields=["is_stale"], name="acc_open_stale_idx"),
         ]
+
+    def clean(self):
+        """Enforce Maker-Checker."""
+        from django.core.exceptions import ValidationError
+
+        if self.approved_by and self.submitted_by:
+            if self.approved_by == self.submitted_by:
+                raise ValidationError("4-Eyes Principle Violation: Maker and Checker must be distinct.")
 
     def __str__(self):
         return f"Account Opening #{self.id} - {self.first_name} {self.last_name} ({self.status})"
@@ -411,6 +446,15 @@ class AccountClosureRequest(models.Model):
     # Account being closed
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="closure_requests")
 
+    # Member if already existing (for streamlined onboarding)
+    existing_member = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="additional_account_requests",
+    )
+
     # Closure Details
     closure_reason = models.CharField(max_length=30, choices=CLOSURE_REASONS)
     other_reason = models.TextField(blank=True)
@@ -422,13 +466,13 @@ class AccountClosureRequest(models.Model):
     def phone_number(self):
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.phone_number_encrypted)
+        return decrypt_field(self.phone_number_encrypted, version=self.key_version)
 
     @phone_number.setter
     def phone_number(self, value):
         from core.utils.field_encryption import encrypt_field
 
-        self.phone_number_encrypted = encrypt_field(value) if value else ""
+        self.phone_number_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     otp_verified = models.BooleanField(default=False)
 
@@ -460,12 +504,57 @@ class AccountClosureRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    key_version = models.IntegerField(default=1, help_text="The version of the encryption key used for PII.")
+
+    is_flagged_for_review = models.BooleanField(
+        default=False, help_text="Flagged for manager intervention."
+    )
+    is_stale = models.BooleanField(
+        default=False, help_text="Closure request has exceeded the 24-hour window."
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_account_closures",
+    )
 
     class Meta:
-        db_table = "core_accountclosurerequest"
+        db_table = "account_closure_request"
         ordering = ["-created_at"]
         verbose_name = "Account Closure Request"
         verbose_name_plural = "Account Closure Requests"
+        indexes = [
+             models.Index(fields=["is_stale"], name="acc_close_stale_idx"),
+        ]
+
+    def clean(self):
+        """Enforce Maker-Checker and Closure Pre-requisites."""
+        from django.core.exceptions import ValidationError
+        from django.db.models import Q
+        from core.models.transactions import Transaction
+
+        # 1. Maker-Checker
+        if self.approved_by and self.submitted_by:
+            if self.approved_by == self.submitted_by:
+                raise ValidationError("4-Eyes Principle Violation: Maker and Checker must be distinct.")
+
+        # 2. Pending Transactions Check
+        pending_txns = Transaction.objects.filter(
+            Q(from_account=self.account) | Q(to_account=self.account),
+            status__in=["pending", "pending_approval"]
+        ).exists()
+        if pending_txns:
+            raise ValidationError("Account cannot be closed with pending transactions.")
+
+        # 3. Balance Integrity (stored vs calculated)
+        if self.account.balance != self.account.calculated_balance:
+            raise ValidationError("Account balance drift detected. Please reconcile before closure.")
+
+        # 4. Interest Handling (Prerequisite check)
+        if self.account.balance != 0:
+             raise ValidationError("Account balance must be zero. Please materialize interest and withdraw funds first.")
 
     def __str__(self):
         return f"Account Closure #{self.id} - Account {self.account.account_number} ({self.status})"

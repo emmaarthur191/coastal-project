@@ -155,7 +155,7 @@ export const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptio
     const formHeaders = typeof formData?.getHeaders === 'function' && formData?.getHeaders() || {}
 
     const headers = Object.entries({
-        Accept: 'application/json',
+        Accept: options.responseType === 'blob' ? '*/*' : 'application/json',
         ...additionalHeaders,
         ...options.headers,
         ...formHeaders,

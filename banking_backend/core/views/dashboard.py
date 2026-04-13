@@ -9,7 +9,8 @@ import logging
 from decimal import Decimal
 
 from django.conf import settings
-from django.db.models import Avg, F, Sum
+from django.db.models import Avg, Count, Exists, F, OuterRef, Q, Sum
+from django.db.models.functions import TruncHour
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -18,7 +19,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models.accounts import Account, AccountOpeningRequest
+from core.models.accounts import Account, AccountClosureRequest, AccountOpeningRequest
 from core.models.fraud import FraudAlert
 from core.models.hr import Expense
 from core.models.loans import Loan
@@ -56,7 +57,7 @@ class CashFlowView(APIView):
                 or 0
             )
 
-            # Outflow: Withdrawals + Loan Disbursements
+            # Outflow: Withdrawals + Loan Disbursements + Expenses
             withdrawals = (
                 Transaction.objects.filter(
                     transaction_type="withdrawal", status="completed", timestamp__gte=start_of_month
@@ -71,8 +72,15 @@ class CashFlowView(APIView):
                 or 0
             )
 
+            operational_expenses = (
+                Expense.objects.filter(date__gte=start_of_month.date(), status__in=["paid", "pending"]).aggregate(
+                    total=Sum("amount")
+                )["total"]
+                or 0
+            )
+
             total_inflow = deposits + loan_repayments
-            total_outflow = withdrawals + loan_disbursements
+            total_outflow = withdrawals + loan_disbursements + operational_expenses
             net_cash_flow = total_inflow - total_outflow
 
             return Response(
@@ -82,6 +90,7 @@ class CashFlowView(APIView):
                         "total": total_outflow,
                         "withdrawals": withdrawals,
                         "loan_disbursements": loan_disbursements,
+                        "operational_expenses": operational_expenses,
                     },
                     "net_cash_flow": net_cash_flow,
                     "period": "This Month",
@@ -96,7 +105,7 @@ class CashFlowView(APIView):
 
 
 class ExpensesView(APIView):
-    """View for retrieving operational expense metrics."""
+    """View for retrieving and creating operational expense metrics."""
 
     permission_classes = [IsStaff]
 
@@ -118,6 +127,16 @@ class ExpensesView(APIView):
             )
 
         return Response(data)
+
+    def post(self, request):
+        """Create a new operational expense entry."""
+        from core.serializers.hr import ExpenseSerializer
+
+        serializer = ExpenseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class WorkflowStatusView(APIView):
@@ -333,6 +352,18 @@ class OperationsMetricsView(APIView):
                     }
                 )
 
+            # Financial Products Breakdown
+            from core.models.marketing import Product
+
+            product_counts = {
+                "daily_susu": Account.objects.filter(account_type="daily_susu", is_active=True).count(),
+                "shares": Account.objects.filter(account_type="shares", is_active=True).count(),
+                "member_savings": Account.objects.filter(account_type="member_savings", is_active=True).count(),
+                "youth_savings": Account.objects.filter(account_type="youth_savings", is_active=True).count(),
+            }
+
+            financial_products_count = sum(product_counts.values())
+
             # Pending Account Openings
             accounts = AccountOpeningRequest.objects.filter(status="pending").order_by("-created_at")[:10]
             for acc in accounts:
@@ -342,6 +373,24 @@ class OperationsMetricsView(APIView):
                         "type": "Account Opening",
                         "description": f"{acc.first_name} {acc.last_name} ({acc.account_type})".strip(),
                         "date": acc.created_at.isoformat(),
+                        "status": "pending",
+                    }
+                )
+
+            # Pending Account Closures
+            closures = (
+                AccountClosureRequest.objects.filter(status="pending")
+                .select_related("account", "account__user")
+                .order_by("-created_at")[:10]
+            )
+            for closure in closures:
+                user_name = closure.account.user.get_full_name() if closure.account.user else "Unknown"
+                pending_items.append(
+                    {
+                        "id": str(closure.id),
+                        "type": "Account Closure",
+                        "description": f"Terminate {closure.account.account_number} - {user_name}",
+                        "date": closure.created_at.isoformat(),
                         "status": "pending",
                     }
                 )
@@ -372,32 +421,56 @@ class OperationsMetricsView(APIView):
                 )
 
             # Staff Performance
+            # Staff Performance
             from users.models import UserActivity
 
             # Staff Performance: Optimized with annotation to avoid N+1 queries in loop
             staff_perf_list = []
-            from django.db.models import Count, Exists, OuterRef
 
+            # Unmasking: Include ALL staff roles and don't filter strictly by is_active if manager needs to see them
             active_staff_list = User.objects.filter(
-                role__in=["cashier", "manager", "mobile_banker"], is_active=True
+                role__in=["cashier", "manager", "mobile_banker", "operations_manager"]
             ).annotate(
-                activity_count=Count("useractivity", filter=Q(useractivity__created_at__date=_today)),
+                activity_count=Count("activities", filter=Q(activities__created_at__date=_today)),
                 logged_in_today=Exists(
                     UserActivity.objects.filter(user=OuterRef("pk"), action="login", created_at__date=_today)
                 ),
-            )[:5]
+            )[:10]
 
             for s in active_staff_list:
+                # Calculate staff-specific transaction counts for today (Deposits vs Withdrawals)
+                staff_txs = Transaction.objects.filter(
+                    processed_by=s, timestamp__date=_today, status="completed"
+                ).aggregate(
+                    deposits=Count("id", filter=Q(transaction_type="deposit")),
+                    withdrawals=Count("id", filter=Q(transaction_type="withdrawal")),
+                )
+
                 efficiency = "100%" if s.logged_in_today else "0%"
+                # Use decrypted names directly to ensure they are NOT redacted
+                full_name = f"{s.first_name} {s.last_name}".strip() or s.username
 
                 staff_perf_list.append(
                     {
-                        "name": s.get_full_name() or s.username,
+                        "id": s.id,
+                        "name": full_name,
+                        "staff_id": s.staff_id or f"STF-{s.id:04d}", # Fallback for missing IDs
                         "role": s.get_role_display(),
                         "transactions": s.activity_count,
+                        "deposits": staff_txs["deposits"] or 0,
+                        "withdrawals": staff_txs["withdrawals"] or 0,
                         "efficiency": efficiency,
+                        "is_active": s.is_active,
                     }
                 )
+
+            # Build top-level branch metrics for the frontend row
+            branch_metrics = [
+                {"label": "Daily Transactions", "value": str(total_transactions_today), "change": f"{transaction_change}%", "trend": "up" if transaction_change >= 0 else "down", "icon": "📊"},
+                {"label": "Active Accounts", "value": str(active_accounts), "change": "+2%", "trend": "up", "icon": "🏦"},
+                {"label": "Pending Approvals", "value": str(len(pending_items)), "change": str(pending_service_requests), "trend": "neutral", "icon": "📝"},
+                {"label": "Financial Products", "value": str(financial_products_count), "change": "Active", "trend": "neutral", "icon": "💎"},
+            ]
 
             return Response(
                 {
@@ -409,6 +482,7 @@ class OperationsMetricsView(APIView):
                     "failed_change": failed_change,
                     "pending_approvals": sorted(pending_items, key=lambda x: x["date"], reverse=True),
                     "staff_performance": staff_perf_list,
+                    "branch_metrics": branch_metrics,
                     "transactions": {
                         "today": total_transactions_today,
                         "volume_today": str(total_volume_today),
@@ -420,6 +494,8 @@ class OperationsMetricsView(APIView):
                     "refunds": {"pending": pending_refunds},
                     "complaints": {"open": open_complaints},
                     "staff": {"active": active_staff},
+                    "financial_products": financial_products_count,
+                    "product_breakdown": product_counts,
                     "daily_trend": daily_transactions,
                 }
             )
@@ -463,8 +539,6 @@ class PerformanceDashboardView(APIView):
 
     def get(self, request):
         """Return system-level performance health and resource utilization metrics in a consolidated format."""
-        import datetime
-
         from django.db.models import Avg, Count, Sum
         from django.db.models.functions import TruncHour
         from django.utils import timezone
@@ -663,7 +737,6 @@ class PerformanceVolumeView(APIView):
     def get(self, request):
         """Return transaction volume aggregated by period."""
         from django.db.models import Count, Sum
-        from django.db.models.functions import TruncHour
 
         now = timezone.now()
         yesterday = now - datetime.timedelta(hours=24)

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { formatCurrencyGHS } from '../../utils/formatters';
-import { Plus, Edit2, Trash2, Tag, Loader, X, Save, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader, X, AlertCircle } from 'lucide-react';
 import { AxiosError } from 'axios';
 
 // Interfaces matching backend models
@@ -156,11 +156,11 @@ const ProductsServicesManagement = () => {
         <>
             <div className="grid grid-cols-2 gap-4">
                 <div className="mb-4">
-                    <label htmlFor="product-name" className="block text-sm font-medium text-gray-700">Name</label>
+                    <label htmlFor="product-name" className="block text-[10px] font-black text-slate-900 uppercase tracking-widest mb-1 ml-1">Name</label>
                     <input
                         id="product-name"
                         type="text"
-                        className="mt-1 block w-full rounded-md border border-gray-300 p-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full rounded-lg border-2 border-slate-400 p-2.5 bg-white text-slate-900 font-bold focus:border-blue-700 focus:ring-0 transition-all"
                         value={formData.name || ''}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                         required
@@ -227,11 +227,11 @@ const ProductsServicesManagement = () => {
     const renderPromotionForm = () => (
         <>
             <div className="mb-4">
-                <label htmlFor="promo-name" className="block text-sm font-medium text-gray-700">Promotion Name</label>
+                <label htmlFor="promo-name" className="block text-xs font-black text-slate-900 uppercase tracking-tight mb-1">Promotion Name</label>
                 <input
                     id="promo-name"
                     type="text"
-                    className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                    className="mt-1 block w-full rounded-xl border border-slate-300 p-3 text-slate-900 font-black outline-none focus:ring-4 focus:ring-blue-500/10 transition-all bg-white"
                     value={formData.name || ''}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     required
@@ -239,10 +239,10 @@ const ProductsServicesManagement = () => {
             </div>
 
             <div className="mb-4">
-                <label htmlFor="promo-description" className="block text-sm font-medium text-gray-700">Description</label>
+                <label htmlFor="promo-description" className="block text-xs font-black text-slate-900 uppercase tracking-tight mb-1">Description</label>
                 <textarea
                     id="promo-description"
-                    className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                    className="mt-1 block w-full rounded-xl border border-slate-300 p-3 text-slate-900 font-black outline-none focus:ring-4 focus:ring-blue-500/10 transition-all bg-white"
                     rows={3}
                     value={formData.description || ''}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -251,16 +251,16 @@ const ProductsServicesManagement = () => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label htmlFor="promo-discount" className="block text-sm font-medium text-gray-700">Discount Percentage (%)</label>
-                    <input id="promo-discount" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                    <label htmlFor="promo-discount" className="block text-xs font-black text-slate-900 uppercase tracking-tight mb-1">Discount Percentage (%)</label>
+                    <input id="promo-discount" type="number" step="0.01" className="mt-1 block w-full p-3 border border-slate-300 rounded-xl text-slate-900 font-black bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
                         value={formData.discount_percentage ?? ''}
                         onChange={e => setFormData({ ...formData, discount_percentage: e.target.value as unknown as number })}
                         placeholder="e.g. 5.0"
                     />
                 </div>
                 <div>
-                    <label htmlFor="promo-bonus" className="block text-sm font-medium text-gray-700">Bonus Amount (GHS)</label>
-                    <input id="promo-bonus" type="number" step="0.01" className="mt-1 block w-full p-2 border rounded"
+                    <label htmlFor="promo-bonus" className="block text-xs font-black text-slate-900 uppercase tracking-tight mb-1">Bonus Amount (GHS)</label>
+                    <input id="promo-bonus" type="number" step="0.01" className="mt-1 block w-full p-3 border border-slate-300 rounded-xl text-slate-900 font-black bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
                         value={formData.bonus_amount ?? ''}
                         onChange={e => setFormData({ ...formData, bonus_amount: e.target.value as unknown as number })}
                         placeholder="e.g. 50.00"
@@ -270,8 +270,8 @@ const ProductsServicesManagement = () => {
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label htmlFor="promo-start-date" className="block text-sm font-medium text-gray-700">Start Date</label>
-                    <input id="promo-start-date" type="date" className="mt-1 block w-full p-2 border rounded"
+                    <label htmlFor="promo-start-date" className="block text-xs font-black text-slate-900 uppercase tracking-tight mb-1">Start Date</label>
+                    <input id="promo-start-date" type="date" className="mt-1 block w-full p-3 border border-slate-300 rounded-xl text-slate-900 font-black bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
                         value={formData.start_date || ''}
                         onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                         required
@@ -300,33 +300,33 @@ const ProductsServicesManagement = () => {
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
             <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Products & Services Management</h1>
-                    <p className="text-gray-500">Create and manage financial products and promotional offers.</p>
-                </div>
+            <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Products & Services Management</h1>
+                <p className="text-[10px] text-slate-900 font-black uppercase tracking-widest opacity-70">Create and manage financial products and promotional offers.</p>
             </div>
+        </div>
 
             {/* Tabs */}
-            <div className="flex space-x-4 border-b border-gray-200 mb-6">
-                <button
-                    onClick={() => setActiveTab('products')}
-                    className={`pb-2 px-4 transition-colors ${activeTab === 'products' ? 'border-b-2 border-blue-600 text-blue-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                    🏦 Financial Products
-                </button>
-                <button
-                    onClick={() => setActiveTab('promotions')}
-                    className={`pb-2 px-4 transition-colors ${activeTab === 'promotions' ? 'border-b-2 border-purple-600 text-purple-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                    🎟️ Promotions
-                </button>
-            </div>
+            <div className="flex space-x-4 border-b-2 border-black/10 mb-6">
+            <button
+                onClick={() => setActiveTab('products')}
+                className={`pb-2 px-4 transition-all text-[11px] font-black uppercase tracking-widest ${activeTab === 'products' ? 'border-b-4 border-blue-700 text-blue-800' : 'text-slate-900 opacity-60 hover:opacity-100'}`}
+            >
+                🏦 Financial Products
+            </button>
+            <button
+                onClick={() => setActiveTab('promotions')}
+                className={`pb-2 px-4 transition-all text-[11px] font-black uppercase tracking-widest ${activeTab === 'promotions' ? 'border-b-4 border-purple-700 text-purple-800' : 'text-slate-900 opacity-60 hover:opacity-100'}`}
+            >
+                🎟️ Promotions
+            </button>
+        </div>
 
             {/* Action Bar */}
             <div className="flex justify-between mb-4">
-                <div className="text-gray-600">
-                    {activeTab === 'products' ? `${products.length} Products Found` : `${promotions.length} Promotions Found`}
-                </div>
+            <div className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] bg-slate-900/5 px-3 py-1 rounded-full border border-slate-900/10">
+                {activeTab === 'products' ? `${products.length} Products Processed` : `${promotions.length} Promotions Active`}
+            </div>
                 <button onClick={handleCreateClick} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
                     <Plus size={18} />
                     <span>Add {activeTab === 'products' ? 'Product' : 'Promotion'}</span>
@@ -337,28 +337,28 @@ const ProductsServicesManagement = () => {
             {loading ? (
                 <div className="flex justify-center p-12"><Loader className="animate-spin text-blue-500" size={40} /></div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border-2 border-slate-900/20">
                     {activeTab === 'products' ? (
                         <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-100">
+                            <thead className="bg-slate-900 text-white">
                                 <tr>
-                                    <th className="p-4 font-semibold text-gray-600">Name</th>
-                                    <th className="p-4 font-semibold text-gray-600">Type</th>
-                                    <th className="p-4 font-semibold text-gray-600">Interest</th>
-                                    <th className="p-4 font-semibold text-gray-600">Min Balance</th>
-                                    <th className="p-4 font-semibold text-gray-600">Status</th>
-                                    <th className="p-4 font-semibold text-gray-600 text-right">Actions</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest">Name</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest">Type</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest">Interest</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest">Min Balance</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest">Status</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {products.map(product => (
-                                    <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                        <td className="p-4 font-medium text-gray-800">{product.name}</td>
-                                        <td className="p-4"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">{product.product_type_display}</span></td>
-                                        <td className="p-4 text-green-600 font-bold">{product.interest_rate ? `${product.interest_rate}%` : '-'}</td>
-                                        <td className="p-4 text-gray-600">{formatCurrencyGHS(Number(product.minimum_balance))}</td>
+                                    <tr key={product.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 font-black text-slate-900 uppercase text-xs tracking-tight">{product.name}</td>
+                                        <td className="p-4"><span className="px-2 py-1 bg-blue-100 text-blue-900 rounded text-[10px] font-black uppercase tracking-widest">{product.product_type_display}</span></td>
+                                        <td className="p-4 text-emerald-800 font-black">{product.interest_rate ? `${product.interest_rate}%` : '-'}</td>
+                                        <td className="p-4 text-slate-900 font-bold">{formatCurrencyGHS(Number(product.minimum_balance))}</td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs ${product.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${product.is_active ? 'bg-emerald-100 text-emerald-900 border border-emerald-500/20' : 'bg-red-100 text-red-900 border border-red-500/20'}`}>
                                                 {product.is_active ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>

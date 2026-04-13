@@ -2,11 +2,12 @@ import React from 'react';
 import GlassCard from '../ui/modern/GlassCard';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { MessageSquare, Send } from 'lucide-react';
 
 export interface MessageThread {
   id: string | number;
   subject: string;
-  participants?: any[];
+  participants?: unknown[];
   created_at: string;
 }
 
@@ -81,10 +82,10 @@ const OperationalMessenger: React.FC<OperationalMessengerProps> = ({
         {onCreateThread && (
           <Button
             onClick={() => onCreateThread('staff-user-id')}
-            className="mt-4 w-full h-11 text-xs font-bold shadow-blue-200 shadow-lg"
+            className="mt-4 w-full h-11 text-xs font-bold shadow-blue-200 shadow-lg flex items-center justify-center gap-2"
             variant="primary"
           >
-            New Conversation 💬
+            New Conversation <MessageSquare className="w-3.5 h-3.5" />
           </Button>
         )}
       </GlassCard>
@@ -150,14 +151,14 @@ const OperationalMessenger: React.FC<OperationalMessengerProps> = ({
                 className="w-12 h-12 p-0 flex items-center justify-center rounded-2xl shadow-blue-200 shadow-lg"
                 disabled={!newMessage.trim() || isProcessing === 'sending'}
               >
-                {isProcessing === 'sending' ? '...' : '🚀'}
+                {isProcessing === 'sending' ? '...' : <Send className="w-4 h-4" />}
               </Button>
             </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50/30">
             <div className="w-24 h-24 rounded-full bg-white border-4 border-indigo-50 shadow-inner flex items-center justify-center mb-6">
-              <div className="text-4xl animate-bounce">💬</div>
+              <MessageSquare className="w-10 h-10 text-indigo-300 animate-bounce" />
             </div>
             <h4 className="text-lg font-bold text-gray-800 mb-1">Select a Thread</h4>
             <p className="text-sm font-medium opacity-60">Pick a conversation from the left to start collaborating.</p>

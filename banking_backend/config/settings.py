@@ -56,60 +56,87 @@ if SENTRY_DSN and not env.bool("DEBUG", default=False):
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+# =============================================================================
+# Core Environment & Security Config
+# =============================================================================
+
 # SECURITY WARNING: don't run with debug turned on in production!
-# Defaults to False for fail-safe production deployments
-DEBUG = env.bool("DEBUG", default=False)
+# Checks DJANGO_DEBUG (preferred) or legacy DEBUG variable. Defaults to False.
+DEBUG = env.bool("DJANGO_DEBUG", default=env.bool("DEBUG", default=False))
+
+# SECURITY: Enforce SECRET_KEY in production - no default allowed
+if DEBUG:
+    SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-key-not-for-production")
+else:
+    # This will raise ImproperlyConfigured if SECRET_KEY is missing in prod
+    SECRET_KEY = env("SECRET_KEY")
+
+# SECURITY: Field-level encryption for PII
+if DEBUG:
+    FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="dev-only-insecure-key-32bytes!")
+    PII_HASH_KEY = env("PII_HASH_KEY", default="dev-only-insecure-hash-key-64chars-long-v1")
+else:
+    # Support BUILD_MODE for Render build step
+    if env.bool("BUILD_MODE", default=False):
+        FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="build-time-placeholder-key-32bytes!")
+        PII_HASH_KEY = env("PII_HASH_KEY", default="build-time-placeholder-hash-key-64chars-v1")
+    else:
+        FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
+        PII_HASH_KEY = env("PII_HASH_KEY")
 
 # =============================================================================
-# Production Security Hardening
+# Production Hardening (SSL/HSTS/Cookies)
 # =============================================================================
 if not DEBUG:
     # SSL/HTTPS Enforcement
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-    # HSTS (HTTP Strict Transport Security) - 1 Year
-    SECURE_HSTS_SECONDS = 31536000
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
     # Secure Cookies
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SAMESITE = "None"
 
-    # Referrer Policy
-    SECURE_REFERRER_POLICY = "same-origin"
-
-# SECURITY FIX: Enforce SECRET_KEY in production - no default allowed
-# In development (DEBUG=True), allow insecure default for convenience
-if DEBUG:
-    SECRET_KEY = env("SECRET_KEY", default="django-insecure-test-key-for-dev-and-ci-use-only")
+    # XSS & Content Protection
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 else:
-    # In production, this will raise ImproperlyConfigured if SECRET_KEY is not set
-    SECRET_KEY = env("SECRET_KEY")
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
-# SECURITY: Field-level encryption key for PII (GDPR/PCI-DSS compliance)
-# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-if DEBUG:
-    FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="dev-only-insecure-key-32bytes!")
-    PII_HASH_KEY = env("PII_HASH_KEY", default="dev-only-insecure-hash-key-64chars-long-enough-to-be-secure-v1")
-else:
-    # In production, allow a placeholder ONLY during the build phase (collectstatic)
-    # This ensures the Render build succeeds. The app will fail at runtime if real keys are missing.
-    if env.bool("BUILD_MODE", default=False):
-        FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="build-time-only-insecure-key-32bytes!")
-        PII_HASH_KEY = env("PII_HASH_KEY", default="build-time-only-insecure-hash-key-64chars-v1")
-    else:
-        # In production runtime, these MUST be set
-        FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
-        PII_HASH_KEY = env("PII_HASH_KEY")
+# =============================================================================
+# Network Security (Hosts & Origins)
+# =============================================================================
 
+# Always include localhost in ALLOWED_HOSTS for internal health checks
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
-# Automatically add Render host in production
-if RENDER_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
-    ALLOWED_HOSTS.append(RENDER_HOSTNAME)
+# Render dynamic hostname support
+if RENDER_EXTERNAL_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     ALLOWED_HOSTS.append("*.onrender.com")
+
+# CSRF Trusted Origins (Required for POST requests)
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.onrender.com",
+]
+
+# Handle comma-separated list from string env var for flexibility
+if raw_csrf_origins := os.getenv("CSRF_TRUSTED_ORIGINS"):
+    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in raw_csrf_origins.split(",") if o.strip()])
+
+# Synchronize CORS with Trusted Origins
+CORS_ALLOWED_ORIGINS = [o for o in CSRF_TRUSTED_ORIGINS if o.startswith("http")]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 # Administrative email for system alerts
 ADMIN_EMAIL = env("ADMIN_EMAIL", default="admin@coastal.com")
@@ -140,7 +167,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "core.middleware.LogCorrelationMiddleware",
+    "core.middleware.base.LogCorrelationMiddleware",
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",  # Moved after SecurityMiddleware as requested
@@ -150,6 +177,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "core.middleware.anomaly_detection.BulkAccessDetectionMiddleware",
     "csp.middleware.CSPMiddleware",  # Replace XFrameOptionsMiddleware with CSP
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
@@ -277,6 +305,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Custom user model
 AUTH_USER_MODEL = "users.User"
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "users.authentication_backends.EmailBackend",
+]
+
 # Django REST Framework
 # Django REST Framework
 REST_FRAMEWORK = {
@@ -325,7 +358,7 @@ from datetime import timedelta
 SIMPLE_JWT = {
     # SECURITY HARDENING (2026 Standards: NIST 800-63B, OAuth 2.1)
     # Short-lived access tokens minimize the window for stolen token abuse
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     # Rotation ensures a new refresh token is issued on each refresh,
     # invalidating the old one. This detects token theft immediately.
@@ -559,129 +592,13 @@ if DEBUG:
         "http://localhost:8000",
     ]
 
-# Production Security Headers
-# Always set SECURE_PROXY_SSL_HEADER on Render to prevent CSRF "Origin checking failed"
-# (Scheme mismatch: Django sees http, Origin is https)
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-CSRF_COOKIE_SAMESITE = "Lax" if DEBUG else "None"
-SESSION_COOKIE_SAMESITE = "Lax" if DEBUG else "None"
-
-if not DEBUG:
-    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
-    SECURE_REDIRECT_EXEMPT = [r"^$", r"^api/health/simple/$", r"^api/performance/system-health/$"]
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = False
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-
-    # HSTS Settings
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-
-# Security Headers - Content Security Policy (django-csp 4.0+ format)
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        "default-src": ("'self'",),
-        "script-src": ("'self'",),
-        "style-src": ("'self'", "fonts.googleapis.com"),
-        "font-src": ("'self'", "fonts.gstatic.com"),
-        "img-src": ("'self'", "data:", "https:"),
-        "connect-src": ("'self'", "wss:", "https:"),  # Allow WebSocket and API calls
-        "frame-ancestors": ["'self'"],
-        "worker-src": ["'self'", "blob:"],  # For service workers
-    }
-}
-
-# Allow credentials (cookies, authorization headers)
-CORS_ALLOW_CREDENTIALS = True
-
-# Allowed HTTP methods
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
-
-# Allowed headers
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-idempotency-key",  # For idempotent POST/PUT/PATCH requests
-    "x-requested-with",
-]
-
-# Note: CSRF_TRUSTED_ORIGINS is configured above (lines 472-499)
-# CORS_ALLOWED_ORIGINS should sync with CSRF origins for API compatibility
-# This is handled via environment variables in production
-
 # =============================================================================
-# Security Headers (OWASP/PCI-DSS Compliance)
+# Behavioral & Operational Security (Phase 3)
 # =============================================================================
+# Bulk Access Detection (Dead Man's Switch)
+# Max records allow to be fetched in a single request/burst before alerting.
+MAX_RECORDS_PER_MIN = env.int("MAX_RECORDS_PER_MIN", default=100)
 
-# HSTS - Force HTTPS for 1 year (only in production)
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
-# SSL/HTTPS settings (production only)
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-# Secure cookies
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-
-# Prevent content type sniffing
-SECURE_CONTENT_TYPE_NOSNIFF = True
-
-# XSS Protection (legacy browsers)
-SECURE_BROWSER_XSS_FILTER = True
-
-# =============================================================================
-# Content Security Policy (CSP) - XSS Protection
-# =============================================================================
-# Using django-csp 4.0+ middleware (new format)
-
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        # Allow resources only from same origin by default
-        "default-src": ("'self'",),
-        # Scripts: self + any CDNs you use
-        "script-src": ("'self'",),
-        # Styles: self + inline for DRF browsable API
-        "style-src": ("'self'", "'unsafe-inline'"),
-        # Images: self + data URIs for inline images
-        "img-src": ("'self'", "data:", "https:"),
-        # Fonts: self + Google Fonts if used
-        "font-src": ("'self'", "https://fonts.gstatic.com"),
-        # Connect: self + your API domains
-        "connect-src": ("'self'",),
-        # Frame ancestors: prevent clickjacking
-        "frame-ancestors": ("'none'",),
-        # Form actions: only submit to self
-        "form-action": ("'self'",),
-    }
-}
-# SECURITY: Broaden coverage for 2026 standards
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
-# =============================================================================
-# Structural Security Hardening (Phase 2)
-# =============================================================================
-# Maker-Checker (4-Eyes Principle) threshold for high-value transactions
+# 4-Eyes Principle Enforcement (Maker-Checker)
+# Transactions over this amount MUST be approved by a different user.
 TRANSACTION_APPROVAL_THRESHOLD = Decimal(env("TRANSACTION_APPROVAL_THRESHOLD", default="5000.00"))
-
-# IP Spoofing Mitigation: Whitelist of trusted proxy IP addresses.
-# Industry Standard (GCP GFE): 130.211.0.0/22 and 35.191.0.0/16
-TRUSTED_PROXIES = env.list("TRUSTED_PROXIES", default=["127.0.0.1", "130.211.0.0/22", "35.191.0.0/16"])

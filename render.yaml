@@ -83,7 +83,8 @@ services:
     startCommand: npm start
     envVars:
       - key: BACKEND_URL
-        value: https://coastal-backend-annc.onrender.com
+        # Replace with your actual deployed backend URL (e.g., https://coastal-backend.onrender.com)
+        value: https://coastal-backend.onrender.com
       - key: NODE_ENV
         value: production
       - key: VITE_SENTRY_DSN

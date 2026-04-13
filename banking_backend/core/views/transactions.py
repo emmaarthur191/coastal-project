@@ -22,7 +22,7 @@ from core.mixins import IdempotencyMixin
 from core.models.accounts import Account
 from core.models.transactions import Transaction
 from core.permissions import IsCustomer, IsManagerOrAdmin, IsStaff
-from core.serializers.transactions import TransactionSerializer
+from core.serializers.transactions import TransactionListSerializer, TransactionSerializer
 from core.services.accounts import AccountService
 from core.services.transactions import TransactionService
 
@@ -180,62 +180,12 @@ class TransactionViewSet(
         # Paginate results
         page = self.paginate_queryset(queryset)
         if page is not None:
-            data = []
-            for tx in page:
-                data.append(
-                    {
-                        "id": str(tx.id),
-                        "transaction_type": tx.transaction_type,
-                        "amount": str(tx.amount),
-                        "status": tx.status,
-                        "timestamp": tx.timestamp.isoformat() if tx.timestamp else None,
-                        "description": tx.description,
-                        "from_account": {
-                            "id": str(tx.from_account.id) if tx.from_account else None,
-                            "account_number": tx.from_account.account_number if tx.from_account else None,
-                            "user_email": tx.from_account.user.email if tx.from_account else None,
-                        }
-                        if tx.from_account
-                        else None,
-                        "to_account": {
-                            "id": str(tx.to_account.id) if tx.to_account else None,
-                            "account_number": tx.to_account.account_number if tx.to_account else None,
-                            "user_email": tx.to_account.user.email if tx.to_account else None,
-                        }
-                        if tx.to_account
-                        else None,
-                    }
-                )
-            return self.get_paginated_response(data)
+            serializer = TransactionListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         # Fallback if no pagination (not expected)
-        data = []
-        for tx in queryset[:100]:
-            data.append(
-                {
-                    "id": str(tx.id),
-                    "transaction_type": tx.transaction_type,
-                    "amount": str(tx.amount),
-                    "status": tx.status,
-                    "timestamp": tx.timestamp.isoformat() if tx.timestamp else None,
-                    "description": tx.description,
-                    "from_account": {
-                        "id": str(tx.from_account.id) if tx.from_account else None,
-                        "account_number": tx.from_account.account_number if tx.from_account else None,
-                        "user_email": tx.from_account.user.email if tx.from_account else None,
-                    }
-                    if tx.from_account
-                    else None,
-                    "to_account": {
-                        "id": str(tx.to_account.id) if tx.to_account else None,
-                        "account_number": tx.to_account.account_number if tx.to_account else None,
-                        "user_email": tx.to_account.user.email if tx.to_account else None,
-                    }
-                    if tx.to_account
-                    else None,
-                }
-            )
-        return Response({"count": len(data), "results": data})
+        serializer = TransactionListSerializer(queryset[:100], many=True)
+        return Response({"count": len(serializer.data), "results": serializer.data})
 
     @action(detail=False, methods=["post"])
     def process(self, request):
@@ -265,11 +215,32 @@ class TransactionViewSet(
         except (ValueError, TypeError, Exception):
             return Response({"error": "Invalid amount"}, status=400)
 
-        # Get member
+        # Get member using flexible lookup (ID -> Email -> Member Number)
+        from django.db.models import Q
+        member = None
+        
         try:
-            member = User.objects.get(id=member_id)
-        except User.DoesNotExist:
-            return Response({"error": "Member not found"}, status=404)
+            if str(member_id).isdigit():
+                member = User.objects.filter(id=member_id).first()
+            
+            if not member:
+                # Fallback to Email or Member Number
+                member = User.objects.filter(
+                    Q(email__iexact=member_id) | 
+                    Q(member_number=member_id)
+                ).first()
+
+            if not member:
+                return Response(
+                    {"status": "error", "message": f"Member not found with identifier: {member_id}", "code": "MEMBER_NOT_FOUND"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
+            logger.error(f"Error during member lookup for transaction: {e}")
+            return Response(
+                {"status": "error", "message": "Invalid member identifier format", "code": "INVALID_IDENTIFIER"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             with transaction.atomic():

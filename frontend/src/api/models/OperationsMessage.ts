@@ -9,8 +9,9 @@ export type OperationsMessage = {
     readonly sender_name: string;
     recipient?: number | null;
     title: string;
-    message: string;
+    readonly message: string;
     priority?: OperationsMessagePriorityEnum;
     is_read?: boolean;
     readonly created_at: string;
 };
+

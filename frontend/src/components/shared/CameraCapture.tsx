@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
-import { RefreshCw, Camera, Upload, Check, X, Trash2, RotateCcw } from 'lucide-react';
+import { RefreshCw, Camera, Upload, Check, X, Trash2, RotateCcw, User } from 'lucide-react';
 import { logger } from '../../utils/logger';
+import { getImageSrc } from '../../utils/image';
 import './CameraCapture.css';
 
 interface CameraCaptureProps {
@@ -22,7 +23,7 @@ interface CameraCaptureProps {
 const CameraCapture: React.FC<CameraCaptureProps> = ({
     onPhotoCapture,
     photo = null,
-    label = '📷 Customer Photo',
+    label = 'Customer Photo',
     description = 'Capture or upload a passport-style photo of the customer for identification.',
     showPreview = true,
     previewWidth = 150,
@@ -31,7 +32,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
     const [showCamera, setShowCamera] = useState(false);
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
-    const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+    const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,25 +45,30 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
         let isMounted = true;
         const detectCameras = async () => {
             try {
-                if (!navigator.mediaDevices?.enumerateDevices) {
-                    logger.warn('[CAMERA] enumerateDevices not supported');
+                if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                    // Silent fail to avoid terminal/console noise in non-secure environments
                     return;
                 }
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 if (isMounted) setHasMultipleCameras(videoDevices.length > 1);
             } catch (error) {
-                logger.error('[CAMERA] Error enumerating devices:', error);
+                // Only log real errors
+                logger.error('[CAMERA] Device detection error:', error);
             }
         };
 
         detectCameras();
 
         const handleDeviceChange = () => detectCameras();
-        navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange);
+        if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+            navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+        }
         return () => {
             isMounted = false;
-            navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange);
+            if (navigator.mediaDevices && navigator.mediaDevices.removeEventListener) {
+                navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+            }
         };
     }, []);
 
@@ -115,12 +121,15 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                     });
                 };
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('[CAMERA] Error accessing camera:', error);
             setShowCamera(false);
-            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            
+            const errorName = error instanceof Error ? error.name : '';
+            
+            if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
                 setCameraError('Camera access denied. Please enable permissions in your browser settings.');
-            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
                 setCameraError('No camera found on this device.');
             } else {
                 setCameraError('Unable to access camera. Please check connections or upload a photo instead.');
@@ -133,7 +142,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
         if (showCamera) {
             startCamera();
         }
-    }, [facingMode]); // Only depend on facingMode for re-triggering while active
+    }, [facingMode, showCamera, startCamera]); // Depend on facingMode, showCamera, startCamera
 
     // Cleanup on unmount
     useEffect(() => {
@@ -225,8 +234,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
 
     return (
         <div className="camera-capture-container">
-            <h3 className="camera-capture-title">
-                {label}
+            <h3 className="camera-capture-title flex items-center gap-2">
+                <Camera className="w-5 h-5 text-coastal-primary" /> {label}
             </h3>
 
             {cameraError && (
@@ -243,7 +252,11 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                         className="camera-capture-preview-box"
                     >
                         {photo ? (
-                            <img src={photo} alt="Customer" className="camera-capture-media" />
+                            <img 
+                                src={getImageSrc(photo)} 
+                                alt="Customer" 
+                                className="camera-capture-media" 
+                            />
                         ) : showCamera ? (
                             <div className="relative w-full h-full">
                                 <video
@@ -258,7 +271,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                                         type="button"
                                         onClick={toggleFacingMode}
                                         className="camera-capture-switch-btn"
-                                        title="Switch Camera"
+                                        title="Switch Camera (Front/Back)"
                                         aria-label="Switch Camera"
                                     >
                                         <RefreshCw size={20} />
@@ -267,8 +280,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                             </div>
                         ) : (
                             <div className="camera-capture-placeholder">
-                                <div className="camera-capture-placeholder-icon">👤</div>
-                                <div className="camera-capture-placeholder-text">No Photo</div>
+                                <div className="camera-capture-placeholder-icon">
+                                    <User className="w-12 h-12 text-gray-300" />
+                                </div>
+                                <div className="camera-capture-placeholder-text">Waiting for Capture</div>
                             </div>
                         )}
                     </div>
@@ -321,8 +336,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                         accept="image/*"
                         onChange={handleFileUpload}
                         className="camera-capture-file-input"
-                        title="Choose photo"
-                        aria-label="Choose photo"
+                        title="Upload photo"
+                        aria-label="Upload photo"
                     />
                 </div>
             </div>

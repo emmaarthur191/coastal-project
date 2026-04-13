@@ -10,8 +10,17 @@ export type FraudRule = {
     description?: string;
     rule_type?: RuleTypeEnum;
     severity?: SeverityEnum;
+    /**
+     * Transaction field to evaluate
+     */
     field: string;
+    /**
+     * Comparison operator (e.g., >, <, ==)
+     */
     operator: string;
+    /**
+     * Threshold value for the rule
+     */
     value: string;
     additional_conditions?: any;
     is_active?: boolean;
@@ -24,3 +33,4 @@ export type FraudRule = {
     readonly created_at: string;
     readonly updated_at: string;
 };
+

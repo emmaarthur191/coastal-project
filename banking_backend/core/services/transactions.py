@@ -275,9 +275,9 @@ class TransactionService:
                 )
         elif transaction_type == "repayment":
             return True
-        elif transaction_type == "deposit":
+        elif transaction_type in ["deposit", "disbursement"]:
             if not to_account:
-                raise InvalidTransactionError(message="Deposit requires a destination account.")
+                raise InvalidTransactionError(message=f"{transaction_type.capitalize()} requires a destination account.")
 
         return True
 
@@ -302,6 +302,8 @@ class TransactionService:
 
             if transaction_type == "deposit":
                 message = f"Coastal Bank: GHS {amount:.2f} deposited to your {account_name} account ({masked_acc}). Ref: {tx_id}. Check portal for balance."
+            elif transaction_type == "disbursement":
+                message = f"Coastal Bank: GHS {amount:.2f} loan DISBURSEMENT credited to your {account_name} account ({masked_acc}). Ref: {tx_id}. Congratulations!"
             elif transaction_type == "withdrawal":
                 message = f"Coastal Bank: GHS {amount:.2f} withdrawn from your {account_name} account ({masked_acc}). Ref: {tx_id}. Check portal for balance."
             elif transaction_type == "transfer":

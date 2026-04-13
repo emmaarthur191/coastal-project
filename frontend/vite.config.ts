@@ -1,69 +1,48 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',
-  publicDir: 'public',
-  build: {
-    target: 'es2020',  // Modern browser target
-    cssTarget: 'chrome80',
-    rollupOptions: {
-      output: {
-        // Use hashed file names to prevent caching issues
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
-        manualChunks: {
-          // Core React libraries
-          'vendor-react': ['react', 'react-dom'],
-          // Routing
-          'vendor-router': ['react-router-dom'],
-          // State management and data fetching
-          'vendor-query': ['@tanstack/react-query'],
-          // Charts and visualizations
-          'vendor-charts': ['recharts'],
-          // UI components
-          'vendor-ui': ['@headlessui/react', 'lucide-react'],
-          // HTTP client
-          'vendor-http': ['axios'],
-          // Security and utilities
-          'vendor-security': ['dompurify'],
-          // Monitoring and analytics
-          'vendor-monitoring': ['@sentry/browser', '@sentry/react', '@sentry/replay', 'amplitude-js'],
-        },
-      },
-    },
-    chunkSizeWarningLimit: 500,
-    sourcemap: false,  // Disable sourcemaps in production for smaller bundles
-  },
+
+  // Development Proxy (Backend on port 8000)
   server: {
-    host: '0.0.0.0', // Bind to all interfaces for Docker
-    // Only bind to localhost (not 0.0.0.0)
     port: 3000,
-    strictPort: true,   // Fail if port 3000 is already in use
-    watch: {
-      usePolling: true,
-    },
-    hmr: {
-      clientPort: 3000,
-    },
+    open: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
-
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
-        secure: false,  // HTTP only, no HTTPS
+        secure: false,
       },
-      '/media': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
-
+      '/ws': {
+        target: 'http://127.0.0.1:8000',
+        ws: true,
         changeOrigin: true,
         secure: false,
       },
     },
   },
-  define: {
-    'process.env': {}
-  }
-})
+
+  // Production Build Configuration
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React
+          'vendor-react': ['react', 'react-dom'],
+
+          // Routing
+          'vendor-router': ['react-router-dom'],
+
+          // State Management & Data Fetching
+          'vendor-query': ['@tanstack/react-query'],
+
+          // UI Library & Charts (Grouped for stability)
+          'vendor-ui': ['lucide-react', 'recharts'],
+        },
+      },
+    },
+    // Increase chunk size warning limit to reduce noise
+    chunkSizeWarningLimit: 800,
+  },
+});

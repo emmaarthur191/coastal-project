@@ -6,7 +6,8 @@ export type ChatMessage = {
     readonly id: number;
     readonly sender: number;
     readonly sender_name: string;
-    content: string;
+    readonly content: string;
     is_read?: boolean;
     readonly created_at: string;
 };
+

@@ -12,8 +12,8 @@ export type PatchedClientAssignment = {
     mobile_banker?: number;
     readonly mobile_banker_name?: string;
     client?: number;
-    client_name?: string;
-    location?: string;
+    readonly client_name?: string;
+    readonly location?: string;
     status?: ClientAssignmentStatusEnum;
     readonly status_display?: string;
     amount_due?: string | null;
@@ -27,3 +27,4 @@ export type PatchedClientAssignment = {
     readonly created_at?: string;
     readonly updated_at?: string;
 };
+

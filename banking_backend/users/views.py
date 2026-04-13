@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -31,6 +31,9 @@ from .serializers import (
     PasswordResetRequestSerializer,
     StaffCreationSerializer,
     UserSerializer,
+    AuditLogSerializer,
+    MemberLookupSerializer,
+    UserSessionSerializer,
 )
 from .services import SendexaService
 
@@ -106,6 +109,7 @@ class LoginView(APIView):
 
         # Get email to check account lockout before full validation
         email = request.data.get("email", "")
+        lookup_user = None
         try:
             lookup_user = User.objects.get(email=email)
 
@@ -524,7 +528,7 @@ class StaffSerializer(serializers.ModelSerializer):
         """Metadata for StaffSerializer."""
 
         model = User
-        fields = ["id", "email", "name", "role"]
+        fields = ["id", "email", "name", "role", "is_active", "staff_id"]
 
     def get_name(self, obj):
         """Retrieve full name by decrypting first and last names."""
@@ -537,10 +541,22 @@ class StaffListView(APIView):
     permission_classes = [IsAuthenticated, IsStaff]
 
     def get(self, request):
-        """Retrieve a list of staff users for selection in internal messaging."""
-        staff = User.objects.filter(is_staff=True)[:100]
+        """Retrieve a list of staff members with optional filtering by role and status."""
+        role = request.query_params.get("role")
+        status_param = request.query_params.get("status")
+
+        queryset = User.objects.filter(is_staff=True)
+
+        if role:
+            queryset = queryset.filter(role=role)
+        if status_param == "active":
+            queryset = queryset.filter(is_active=True)
+        elif status_param == "inactive":
+            queryset = queryset.filter(is_active=False)
+
+        staff = queryset[:100]
         serializer = StaffSerializer(staff, many=True)
-        return Response(serializer.data)
+        return Response({"results": serializer.data, "count": queryset.count()})
 
 
 class StaffIdsView(APIView):
@@ -564,16 +580,27 @@ class StaffIdsView(APIView):
         # Filter by role if provided
         role = request.query_params.get("role")
         status_param = request.query_params.get("status")
+        approved_param = request.query_params.get("is_approved")
 
         # Filter to exclude customers, allowing all other roles (staff, banker, manager, etc.)
         queryset = User.objects.exclude(role="customer")
 
         if role:
             queryset = queryset.filter(role=role)
+        
         if status_param == "active":
             queryset = queryset.filter(is_active=True)
         elif status_param == "inactive":
             queryset = queryset.filter(is_active=False)
+
+        if approved_param == "true":
+            queryset = queryset.filter(is_approved=True)
+        elif approved_param == "false":
+            queryset = queryset.filter(is_approved=False)
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"StaffIdsView: Filtering by role={role}, status={status_param}, approved={approved_param}. Count: {queryset.count()}")
 
         # Pull objects to allow property-based PII decryption
         staff = queryset.only(
@@ -581,6 +608,7 @@ class StaffIdsView(APIView):
             "email",
             "role",
             "is_active",
+            "is_approved",
             "date_joined",
             "first_name_encrypted",
             "last_name_encrypted",
@@ -607,18 +635,149 @@ class StaffIdsView(APIView):
                     "name": full_name,
                     "first_name": first_name,
                     "last_name": last_name,
-                    "email": s.email,
-                    "phone_number": s.phone_number,  # Decrypted via property
                     "role": s.role,
-                    "status": "active" if s.is_active else "inactive",
                     "is_active": s.is_active,
+                    "is_approved": s.is_approved,
+                    "email": s.email,
                     "date_joined": s.date_joined.isoformat() if s.date_joined else None,
-                    "joined_date": s.date_joined.isoformat() if s.date_joined else None,
-                    "employment_date": s.date_joined.isoformat() if s.date_joined else None,
                 }
             )
 
-        return Response({"results": results, "count": len(results)})
+        return Response({"status": "success", "data": results})
+
+
+
+class MemberLookupView(APIView):
+    """
+    Search for an existing member by their Member ID.
+    Used during account opening to pre-fill information for existing customers.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("member_number", OpenApiTypes.STR, OpenApiParameter.QUERY, description="The unique CB-XXXX member ID")
+        ],
+        responses={200: MemberLookupSerializer}
+    )
+    def get(self, request):
+        member_number = request.query_params.get("member_number")
+        if not member_number:
+            return Response({"error": "Member number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Allow various formats (CB-XXXX or just XXXX if we want to be flexible)
+        member_number = member_number.strip().upper()
+        if not member_number.startswith("CB-"):
+            # If they just typed the random part
+            lookup_val = f"CB-{member_number}"
+        else:
+            lookup_val = member_number
+
+        user = User.objects.filter(member_number=lookup_val).first()
+        if not user:
+            return Response({"error": "Member not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = MemberLookupSerializer(user)
+        return Response({"success": True, "data": serializer.data})
+
+
+class ClientBankerAssignmentView(APIView):
+    """
+    Assign a mobile banker to a customer for field operations.
+    Restricted to Manager and Operations Manager roles.
+    """
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+
+    def post(self, request):
+        from django.db import transaction
+        from core.models.operational import ClientAssignment
+
+        client_id = request.data.get("client_id")
+        banker_id = request.data.get("banker_id")
+
+        if not client_id:
+            return Response({"error": "client_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            client = User.objects.get(id=client_id, role="customer")
+        except User.DoesNotExist:
+            return Response({"error": "Client not found or not a customer."}, status=status.HTTP_404_NOT_FOUND)
+
+        with transaction.atomic():
+            if not banker_id:
+                # Allow unassigning
+                client.assigned_banker = None
+                client.save(update_fields=["assigned_banker"])
+
+                # Deactivate all active assignments for this client
+                ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
+
+                return Response({"success": True, "message": "Banker unassigned successfully."})
+
+            try:
+                banker = User.objects.get(id=banker_id, role="mobile_banker")
+            except User.DoesNotExist:
+                return Response({"error": "Mobile Banker not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            # Update User relationship
+            client.assigned_banker = banker
+            client.save(update_fields=["assigned_banker"])
+
+            # Synchronize ClientAssignment record
+            # 1. Deactivate other active bankers for this client
+            ClientAssignment.objects.filter(client=client, is_active=True).exclude(mobile_banker=banker).update(is_active=False)
+
+            # 2. Update or create current assignment
+            ClientAssignment.objects.update_or_create(
+                client=client, 
+                mobile_banker=banker,
+                defaults={"is_active": True}
+            )
+
+            return Response({
+                "success": True, 
+                "message": f"Banker {banker.get_full_name()} assigned to client {client.get_full_name()}."
+            })
+
+
+class ClientsForMappingView(APIView):
+    """
+    List customers and their current banker assignments.
+    Used by Managers to map clients to mobile bankers.
+    """
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+
+    def get(self, request):
+        # We only care about customers
+        customers = User.objects.filter(role="customer").select_related("assigned_banker")
+        
+        # Optional filtering by assignment status
+        assignment_status = request.query_params.get("status")
+        if assignment_status == "unassigned":
+            customers = customers.filter(assigned_banker__isnull=True)
+        elif assignment_status == "assigned":
+            customers = customers.filter(assigned_banker__isnull=False)
+
+        results = []
+        for c in customers:
+            banker_data = None
+            if c.assigned_banker:
+                banker_data = {
+                    "id": c.assigned_banker.id,
+                    "name": c.assigned_banker.get_full_name(),
+                    "staff_id": getattr(c.assigned_banker, 'staff_id', 'N/A')
+                }
+            
+            results.append({
+                "id": c.id,
+                "name": c.get_full_name(),
+                "email": c.email,
+                "phone": getattr(c, 'phone_number', 'N/A'),
+                "member_number": getattr(c, 'member_number', 'N/A'),
+                "assigned_banker": banker_data
+            })
+
+        return Response({"success": True, "data": results})
 
 
 class LoginAttemptsView(APIView):
@@ -675,11 +834,26 @@ class LoginAttemptsView(APIView):
         return Response(results)
 
 
+class AuditLogListView(generics.ListAPIView):
+    """View to list system-wide audit logs for managers."""
+
+    serializer_class = AuditLogSerializer
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+
+    def get_queryset(self):
+        """Retrieve the most recent 100 audit logs."""
+        from .models import AuditLog
+
+        return AuditLog.objects.select_related("user").order_by("-created_at")[:100]
+
+
 class UserSessionsView(APIView):
     """List active user sessions (simulated via recent activity)."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = UserSessionSerializer
 
+    @extend_schema(responses={200: UserSessionSerializer(many=True)})
     def get(self, request):
         """Identify and return active user sessions based on recent login activity within the last 24 hours."""
         if not (request.user.role in ["admin", "manager", "operations_manager"] or request.user.is_superuser):
@@ -815,6 +989,9 @@ class PasswordResetRequestView(APIView):
             "expires_in": 900,  # 15 minutes
         }
 
+        import time
+        start_time = time.time()
+
         try:
             user = User.objects.get(email=email)
 
@@ -843,10 +1020,19 @@ class PasswordResetRequestView(APIView):
             )
 
         except User.DoesNotExist:
-            # Log attempt but don't reveal to user
+            # Mitigation: Perform "dummy" work to mask timing differences
+            # We don't want attackers guessing if an email exists by seeing if 
+            # the server responds 100ms faster when it doesn't.
             logger.warning(f"Password reset attempted for non-existent email: {email}")
+            # Simulate the token generation + SMS overhead
+            time.sleep(0.05) 
 
-        return Response(success_response)
+        # Enforce constant minimum window (e.g. 500ms) to mask network jitter
+        elapsed = time.time() - start_time
+        if elapsed < 0.2:
+            time.sleep(0.2 - elapsed)
+
+        return Response(success_response, status=status.HTTP_200_OK)
 
 
 class PasswordResetConfirmView(APIView):
@@ -936,8 +1122,16 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_permissions(self):
-        """Restrict to Manager/Admin/Ops Manager."""
-        return [IsManagerOrAdmin()]
+        """Restrict most actions to Manager/Admin, but allow invitation verification for all."""
+        # SECURITY FIX: Ensure only authenticated managers can create new staff
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsAuthenticated(), IsManagerOrAdmin()]
+        
+        # Invitation verification must be public but is token-gated
+        if self.action == "verify_invitation":
+            return [AllowAny()]
+            
+        return [IsAuthenticated(), IsManagerOrAdmin()]
 
     @extend_schema(request=StaffCreationSerializer, responses={201: UserSerializer})
     def create(self, request, *args, **kwargs):
@@ -1075,8 +1269,9 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except UserInvitation.DoesNotExist:
-            return Response({"error": "Invalid invitation token."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Invalid invitation token."}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=["post"], url_path="approve-and-print")
     def approve_and_print(self, request, pk=None):
         """Approve a staff member, generate staff ID, and return a welcome letter."""
         user = self.get_object()
@@ -1109,7 +1304,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 user.set_password(temp_password)
                 user.is_approved = True
                 user.is_active = True
-                user.save(update_fields=["password", "is_approved", "is_active", "updated_at"])
+                user.save(update_fields=["password", "is_approved", "is_active"])
 
                 # 3. Generate Welcome Letter (using the now-guaranteed staff_id)
                 from core.pdf_services import generate_staff_welcome_letter_pdf
@@ -1138,3 +1333,33 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 {"status": "error", "message": f"Approval failed: {e!s}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+class SecurityDiagnosticsView(APIView):
+    """Staff-only diagnostic endpoint for verifying cluster configuration and secret mounting."""
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+
+    def get(self, request, *args, **kwargs):
+        from core.utils.secret_service import SecretService
+        from django.utils.timezone import now
+        import os
+
+        # Verify secure file injection
+        SECRET_MOUNT_PATH = "/etc/secrets/"
+        mounted_secrets = []
+        if os.path.exists(SECRET_MOUNT_PATH):
+            mounted_secrets = os.listdir(SECRET_MOUNT_PATH)
+
+        # Check critical secrets status (without revealing values)
+        secret_service = SecretService()
+        status = {
+            "environment": os.environ.get("DJANGO_ENV", "development"),
+            "secret_storage": "file_injection" if mounted_secrets else "environment_variables",
+            "mounted_secrets_count": len(mounted_secrets),
+            "critical_checks": {
+                "field_encryption_key": secret_service.get_secret("FIELD_ENCRYPTION_KEY") is not None,
+                "sendexa_api_key": secret_service.get_secret("SENDEXA_API_KEY") is not None,
+            },
+            "timestamp": now().isoformat(),
+        }
+
+        return Response(status)

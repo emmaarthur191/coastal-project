@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 
 interface WebSocketMessage {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface UseWebSocketOptions {

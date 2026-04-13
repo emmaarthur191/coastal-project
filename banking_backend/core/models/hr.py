@@ -111,7 +111,7 @@ class Expense(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="Operational")
     description = models.TextField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=timezone.localdate)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     transaction = models.OneToOneField(
         "core.Transaction", on_delete=models.SET_NULL, null=True, blank=True, related_name="expense"

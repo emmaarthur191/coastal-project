@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // Enhanced WebSocket Manager with typing indicators and presence
 class EnhancedWebSocketManager {
   constructor(threadId, userId, onMessage, onError, onConnectionChange, onTyping, onPresence, onReaction, onSignal) {
@@ -7,7 +8,6 @@ class EnhancedWebSocketManager {
     this.onError = onError;
     this.onConnectionChange = onConnectionChange;
     this.onTyping = onTyping;
-    this.onPresence = onPresence;
     this.onPresence = onPresence;
     this.onReaction = onReaction;
     this.onSignal = onSignal;
@@ -27,20 +27,12 @@ class EnhancedWebSocketManager {
 
     this.isConnecting = true;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // SECURITY: Do NOT pass tokens in URL query params - they get logged and exposed
-    // WebSocket auth should use HTTP-only cookies instead
 
-    // Get WebSocket base URL
-    // In PRODUCTION: Use window.location.host to route through our Express BFF Proxy
-    // This ensures WebSocket connections are First-Party, allowing cookies to be sent.
     const getWebSocketBaseUrl = () => {
       if (import.meta.env.PROD) {
-        // Use the current domain (BFF Proxy) for First-Party WebSocket
-        // The Express server proxies /ws/* to the backend
         return window.location.host;
       }
 
-      // DEVELOPMENT: Use env vars or default to localhost
       if (import.meta.env.VITE_WS_BASE_URL) return import.meta.env.VITE_WS_BASE_URL;
       if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
       if (import.meta.env.VITE_DEV_WS_URL) return import.meta.env.VITE_DEV_WS_URL;
@@ -49,7 +41,6 @@ class EnhancedWebSocketManager {
     };
 
     const wsBaseUrl = getWebSocketBaseUrl();
-    // SECURITY: Auth via HTTP-only cookies, not URL params
     const wsUrl = `${protocol}//${wsBaseUrl}/ws/messaging/${this.threadId}/`;
 
     try {
@@ -92,7 +83,6 @@ class EnhancedWebSocketManager {
               this.onSignal?.(data);
               break;
             case 'pong':
-              // Heartbeat response
               break;
             default:
               this.onMessage?.(data);
@@ -132,7 +122,7 @@ class EnhancedWebSocketManager {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 30000); // 30 seconds
+    }, 30000);
   }
 
   stopHeartbeat() {
@@ -168,12 +158,11 @@ class EnhancedWebSocketManager {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
         type: isTyping ? 'typing_start' : 'typing_stop',
-        user_id: null // Will be set by backend
+        user_id: null
       }));
     }
   }
 
-  // Signaling methods for WebRTC
   sendOffer(offer, targetUserId) {
     return this.sendMessage({
       type: 'call_offer',

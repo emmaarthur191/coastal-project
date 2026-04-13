@@ -38,7 +38,7 @@ class AccessibilityTester {
   async testColorContrast() {
     console.warn(' Testing color contrast ratios...');
 
-    const elements = document.querySelectorAll('*');
+    const _elements = document.querySelectorAll('*');
     const colorTests = [
       { selector: '.text-primary', expected: '#0066CC', contrast: 4.5 },
       { selector: '.text-error', expected: '#CC0000', contrast: 4.5 },
@@ -120,7 +120,7 @@ class AccessibilityTester {
   async testScreenReaderCompatibility() {
     console.warn(' Testing screen reader compatibility...');
 
-    const elements = document.querySelectorAll('img, svg, [aria-label], [aria-labelledby]');
+    const _elements = document.querySelectorAll('img, svg, [aria-label], [aria-labelledby]');
     const imageAltTests = [];
     const ariaTests = [];
 
@@ -331,7 +331,7 @@ class AccessibilityTester {
   async testMotionPreferences() {
     console.warn(' Testing motion preferences...');
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const animationElements = document.querySelectorAll('[class*="animate"], [style*="animation"]');
 
     // Check if CSS respects prefers-reduced-motion
@@ -463,7 +463,7 @@ class AccessibilityTester {
 
   testKeyboardShortcuts(shortcuts) {
     const supported = [];
-    const unsupported = [];
+    const _unsupported = [];
 
     shortcuts.forEach(shortcut => {
       // This is a simplified test - real implementation would test actual shortcuts
@@ -567,7 +567,7 @@ class AccessibilityTester {
     const styles = Array.from(document.styleSheets).map(sheet => {
       try {
         return Array.from(sheet.cssRules).map(rule => rule.cssText).join(' ');
-      } catch (e) {
+      } catch (_e) {
         return '';
       }
     }).join(' ');
@@ -581,7 +581,7 @@ class AccessibilityTester {
     const styles = Array.from(document.styleSheets).map(sheet => {
       try {
         return Array.from(sheet.cssRules).map(rule => rule.cssText).join(' ');
-      } catch (e) {
+      } catch (_e) {
         return '';
       }
     }).join(' ');
@@ -625,7 +625,7 @@ class AccessibilityTester {
 
     // Detailed results
     console.warn('\n DETAILED RESULTS:');
-    this.results.forEach((result, index) => {
+    this.results.forEach((result, _index) => {
       const status = result.passed ? '' : '';
       console.warn(`${status} ${result.test}: ${result.details}`);
     });

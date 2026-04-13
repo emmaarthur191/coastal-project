@@ -60,6 +60,14 @@ class User(AbstractUser):
     staff_id_encrypted = models.TextField(blank=True, default="")
     first_name_encrypted = models.TextField(blank=True, default="")
     last_name_encrypted = models.TextField(blank=True, default="")
+    profile_photo_encrypted = models.TextField(blank=True, null=True, help_text="Encrypted Base64 encoded profile photo")
+
+    # Additional Profile Fields (Encrypted)
+    date_of_birth_encrypted = models.TextField(blank=True, default="")
+    digital_address_encrypted = models.TextField(blank=True, default="")
+    occupation_encrypted = models.TextField(blank=True, default="")
+    work_address_encrypted = models.TextField(blank=True, default="")
+    position_encrypted = models.TextField(blank=True, default="")
 
     # SECURITY: Searchable hashes for PII (Zero-Plaintext compliance)
     # HMAC-SHA256 hex digests are 64 characters
@@ -70,10 +78,24 @@ class User(AbstractUser):
     first_name_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
     last_name_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
 
+    # SECURITY: Unpredictable Member Number (Legacy 'id' is too guessable)
+    member_number = models.CharField(max_length=20, unique=True, null=True, blank=True, db_index=True)
+
     # SECURITY: Numeric sequence for staff IDs (not PII, but used for generation)
     staff_number = models.PositiveIntegerField(null=True, blank=True, unique=True)
 
     id_type = models.CharField(max_length=50, null=True, blank=True)
+    
+    # Banking Operations: Client Assignment
+    assigned_banker = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="direct_assigned_clients",
+        limit_choices_to={"role": "mobile_banker"},
+        help_text="The mobile banker assigned to this customer"
+    )
 
     @property
     def id_number(self):
@@ -132,7 +154,7 @@ class User(AbstractUser):
         """Encrypt and set the Staff ID + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
 
-        self.staff_id_encrypted = encrypt_field(value) if value else ""
+        self.staff_id_encrypted = encrypt_field(value, version=self.key_version) if value else ""
         self.staff_id_hash = hash_field(value) if value else ""
 
     @property
@@ -140,14 +162,14 @@ class User(AbstractUser):
         """Decrypt and return the first name."""
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.first_name_encrypted)
+        return decrypt_field(self.first_name_encrypted, version=self.key_version)
 
     @first_name.setter
     def first_name(self, value):
         """Encrypt and set the first name + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
 
-        self.first_name_encrypted = encrypt_field(value) if value else ""
+        self.first_name_encrypted = encrypt_field(value, version=self.key_version) if value else ""
         self.first_name_hash = hash_field(value) if value else ""
 
     @property
@@ -155,15 +177,99 @@ class User(AbstractUser):
         """Decrypt and return the last name."""
         from core.utils.field_encryption import decrypt_field
 
-        return decrypt_field(self.last_name_encrypted)
+        return decrypt_field(self.last_name_encrypted, version=self.key_version)
 
     @last_name.setter
     def last_name(self, value):
         """Encrypt and set the last name + hash for searching."""
         from core.utils.field_encryption import encrypt_field, hash_field
 
-        self.last_name_encrypted = encrypt_field(value) if value else ""
+        self.last_name_encrypted = encrypt_field(value, version=self.key_version) if value else ""
         self.last_name_hash = hash_field(value) if value else ""
+
+    @property
+    def profile_photo(self):
+        """Decrypt and return the profile photo base64 string."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.profile_photo_encrypted, version=self.key_version)
+
+    @profile_photo.setter
+    def profile_photo(self, value):
+        """Encrypt and set the profile photo base64 string."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.profile_photo_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def date_of_birth(self):
+        """Decrypt and return the date of birth."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.date_of_birth_encrypted, version=self.key_version)
+
+    @date_of_birth.setter
+    def date_of_birth(self, value):
+        """Encrypt and set the date of birth."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.date_of_birth_encrypted = encrypt_field(str(value), version=self.key_version) if value else ""
+
+    @property
+    def digital_address(self):
+        """Decrypt and return the digital address."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.digital_address_encrypted, version=self.key_version)
+
+    @digital_address.setter
+    def digital_address(self, value):
+        """Encrypt and set the digital address."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.digital_address_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def occupation(self):
+        """Decrypt and return the occupation."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.occupation_encrypted, version=self.key_version)
+
+    @occupation.setter
+    def occupation(self, value):
+        """Encrypt and set the occupation."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.occupation_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def work_address(self):
+        """Decrypt and return the work address."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.work_address_encrypted, version=self.key_version)
+
+    @work_address.setter
+    def work_address(self, value):
+        """Encrypt and set the work address."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.work_address_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def position(self):
+        """Decrypt and return the position."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.position_encrypted, version=self.key_version)
+
+    @position.setter
+    def position(self, value):
+        """Encrypt and set the position."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.position_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     # Security: Account lockout fields
     failed_login_attempts = models.PositiveIntegerField(default=0)
@@ -174,6 +280,7 @@ class User(AbstractUser):
     daily_transaction_limit = models.DecimalField(max_digits=12, decimal_places=2, default=10000.00)
     daily_transaction_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     daily_limit_reset_date = models.DateField(null=True, blank=True)
+    key_version = models.IntegerField(default=1, help_text="The version of the encryption key used for PII.")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -181,6 +288,9 @@ class User(AbstractUser):
     # Security constants
     MAX_FAILED_ATTEMPTS = 5
     LOCKOUT_DURATION_MINUTES = 30
+    
+    class Meta:
+        db_table = "user"
 
     def __str__(self):
         """Return the user's email address."""
@@ -195,8 +305,26 @@ class User(AbstractUser):
         return False
 
     def save(self, *args, **kwargs):
-        """Override save to ensure PII is handled correctly."""
+        """Override save to ensure PII and Member IDs are handled correctly."""
+        if not self.member_number and self.role == "customer":
+            self.member_number = self.generate_member_number()
         super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_member_number():
+        """
+        Generate an unpredictable 10-digit member number.
+        Increased entropy for Zero-Plaintext compliance (32^10 > 1 quadrillion combinations).
+        """
+        import secrets
+        import string
+
+        # Format: CB-XXXXXXXXXX
+        # Safe character set: Alphanumeric minus ambiguous (0, O, 1, I, L, S, 5, B, 8)
+        chars = "ACDEFGHJKMNPQRTUVWXYZ234679"
+        
+        random_part = "".join(secrets.choice(chars) for _ in range(10))
+        return f"CB-{random_part}"
 
     def reset_failed_attempts(self):
         """Reset failed login attempts after successful login."""
@@ -244,6 +372,7 @@ class UserActivity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "user_activity"
         ordering = ["-created_at"]
         verbose_name = "User Activity"
         verbose_name_plural = "User Activities"
@@ -274,6 +403,7 @@ class AuditLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "audit_log"
         ordering = ["-created_at"]
         verbose_name = "Audit Log"
         verbose_name_plural = "Audit Logs"
@@ -350,6 +480,7 @@ class AdminNotification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "admin_notification"
         ordering = ["-created_at"]
         verbose_name = "Admin Notification"
         verbose_name_plural = "Admin Notifications"
@@ -382,6 +513,7 @@ class PasswordResetToken(models.Model):
     ip_address = models.GenericIPAddressField(null=True, blank=True)
 
     class Meta:
+        db_table = "password_reset_token"
         ordering = ["-created_at"]
         verbose_name = "Password Reset Token"
         verbose_name_plural = "Password Reset Tokens"

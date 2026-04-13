@@ -47,8 +47,42 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
         return CashAdvanceSerializer
 
     def perform_create(self, serializer):
-        """Set the user and submitted_by when creating a cash advance."""
-        serializer.save(user=self.request.user, submitted_by=self.request.user if self.request.user.is_staff else None)
+        """Set the customer (user) and initiator (submitted_by) when creating a cash advance.
+        Staff can specify a user, customers apply for themselves.
+        """
+        user_id = self.request.data.get("user")
+        from core.permissions import STAFF_ROLES
+        is_staff_initiator = self.request.user.role in STAFF_ROLES or self.request.user.is_staff
+
+        if user_id and is_staff_initiator:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                customer = User.objects.get(id=user_id)
+                
+                # SECURITY: Enforcement of authority limits for Mobile Bankers
+                if self.request.user.role == "mobile_banker":
+                    from core.models.operational import ClientAssignment
+                    is_assigned = ClientAssignment.objects.filter(
+                        mobile_banker=self.request.user, client=customer, is_active=True
+                    ).exists()
+                    if not is_assigned:
+                        raise PermissionDenied("not authorized to initiate requests for this client")
+
+                # Staff-initiated cash advance with verification metadata
+                serializer.save(
+                    user=customer, 
+                    submitted_by=self.request.user,
+                    id_type=self.request.data.get("id_type", "ghana_card"),
+                    id_number=self.request.data.get("id_number", ""),
+                    verification_notes=self.request.data.get("verification_notes", "")
+                )
+            except User.DoesNotExist:
+                from rest_framework import serializers as drf_serializers
+                raise drf_serializers.ValidationError({"user": "Specified customer does not exist."})
+        else:
+            # Customer applying for themselves
+            serializer.save(user=self.request.user, submitted_by=self.request.user if is_staff_initiator else None)
 
     @action(detail=True, methods=["post"], permission_classes=[IsStaff])
     def approve(self, request, pk=None):
@@ -86,7 +120,8 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
                 action="approve_cash_advance",
                 model_name="CashAdvance",
                 object_id=str(advance.id),
-                description=f"Approved cash advance of {advance.amount} for {advance.user.email}",
+                object_repr=f"Cash Advance of {advance.amount}",
+                changes={"description": f"Approved cash advance of {advance.amount} for {advance.user.email}"},
             )
 
             return Response({"status": "success", "message": "Cash advance approved"})
@@ -126,7 +161,8 @@ class CashAdvanceViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixin
                 action="reject_cash_advance",
                 model_name="CashAdvance",
                 object_id=str(advance.id),
-                description=f"Rejected cash advance of {advance.amount} for {advance.user.email}. Notes: {request.data.get('notes', 'None')}",
+                object_repr=f"Cash Advance of {advance.amount}",
+                changes={"description": f"Rejected cash advance of {advance.amount} for {advance.user.email}. Notes: {request.data.get('notes', 'None')}"},
             )
 
             return Response({"status": "success", "message": "Cash advance rejected"})

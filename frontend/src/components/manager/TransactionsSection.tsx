@@ -1,5 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { authService } from '../../services/api';
+import { 
+  ArrowDownCircle, 
+  ArrowUpCircle, 
+  RefreshCw, 
+  CreditCard, 
+  FileText, 
+  DollarSign, 
+  Clock, 
+  Banknote, 
+  RotateCw, 
+  BarChart3, 
+  CheckCircle2, 
+  Coins, 
+  Inbox,
+  Loader2
+} from 'lucide-react';
+import { TransactionsService } from '../../api/services/TransactionsService';
 import { Transaction } from '../../api/models/Transaction';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -23,11 +39,9 @@ const TransactionsSection: React.FC = () => {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const response = await authService.getAllTransactions();
-      if (response.success && response.data) {
-        setTransactions(response.data.transactions);
-      }
-    } catch (error) {
+      const response = await TransactionsService.transactionsList();
+      setTransactions(response.results || []);
+    } catch (error: unknown) {
       console.error('Failed to fetch transactions:', error);
     } finally {
       setLoading(false);
@@ -69,12 +83,12 @@ const TransactionsSection: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'deposit': return '💰';
-      case 'withdrawal': return '💸';
-      case 'transfer': return '🔄';
-      case 'payment': return '💳';
-      case 'fee': return '📋';
-      default: return '💵';
+      case 'deposit': return <ArrowDownCircle className="w-5 h-5 text-emerald-500" />;
+      case 'withdrawal': return <ArrowUpCircle className="w-5 h-5 text-red-500" />;
+      case 'transfer': return <RefreshCw className="w-5 h-5 text-blue-500" />;
+      case 'payment': return <CreditCard className="w-5 h-5 text-purple-500" />;
+      case 'fee': return <FileText className="w-5 h-5 text-slate-500" />;
+      default: return <DollarSign className="w-5 h-5 text-gray-400" />;
     }
   };
 
@@ -94,7 +108,7 @@ const TransactionsSection: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-20 text-gray-400">
-        <div className="animate-spin text-4xl mb-4">⏳</div>
+        <Loader2 className="animate-spin w-12 h-12 mb-4" />
         <p>Loading transactions...</p>
       </div>
     );
@@ -103,10 +117,10 @@ const TransactionsSection: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <span>💸</span> All Transactions
+        <h3 className="text-2xl font-black text-gray-800 flex items-center gap-2 uppercase tracking-tight">
+          <Banknote className="w-7 h-7 text-coastal-primary" /> All Transactions
         </h3>
-        <Button onClick={fetchTransactions} variant="secondary" icon={() => <span>🔄</span>}>
+        <Button onClick={fetchTransactions} variant="secondary" icon={() => <RotateCw className="w-4 h-4" />}>
           Refresh
         </Button>
       </div>
@@ -116,28 +130,28 @@ const TransactionsSection: React.FC = () => {
         <ModernStatCard
           label="Total Transactions"
           value={String(filteredTransactions.length)}
-          icon={<span>📊</span>}
+          icon={<BarChart3 className="w-6 h-6" />}
           colorClass="text-blue-600 bg-blue-50"
           trend="neutral"
         />
         <ModernStatCard
           label="Completed"
           value={String(filteredTransactions.filter(t => t.status === 'completed').length)}
-          icon={<span>✅</span>}
+          icon={<CheckCircle2 className="w-6 h-6" />}
           colorClass="text-emerald-600 bg-emerald-50"
           trend="up"
         />
         <ModernStatCard
           label="Pending"
-          value={String(filteredTransactions.filter(t => t.status === 'pending').length)}
-          icon={<span>⏳</span>}
+          value={String(filteredTransactions.filter(t => t.status === 'pending_approval').length)}
+          icon={<Clock className="w-6 h-6" />}
           colorClass="text-amber-600 bg-amber-50"
           trend="neutral"
         />
         <ModernStatCard
           label="Total Volume"
           value={formatCurrency(totalVolume)}
-          icon={<span>💰</span>}
+          icon={<Coins className="w-6 h-6" />}
           colorClass="text-purple-600 bg-purple-50"
           trend="up"
         />
@@ -181,7 +195,7 @@ const TransactionsSection: React.FC = () => {
             >
               <option value="all">All Status</option>
               <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
+              <option value="pending_approval">Pending Approval</option>
               <option value="failed">Failed</option>
               <option value="cancelled">Cancelled</option>
             </select>
@@ -207,8 +221,10 @@ const TransactionsSection: React.FC = () => {
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-10 text-center text-gray-400">
-                    <div className="text-4xl mb-2">📭</div>
-                    <p>No transactions found</p>
+                    <div className="flex justify-center mb-4">
+                      <Inbox className="w-12 h-12 text-slate-200" />
+                    </div>
+                    <p className="font-medium">No transactions found</p>
                   </td>
                 </tr>
               ) : (
@@ -219,8 +235,10 @@ const TransactionsSection: React.FC = () => {
                   >
                     <td className="p-4 font-mono text-sm text-gray-500">#{tx.id}</td>
                     <td className="p-4 font-medium text-gray-800">
-                      <span className="text-xl mr-2">{getTypeIcon(tx.transaction_type)}</span>
-                      {tx.transaction_type}
+                      <div className="flex items-center gap-3">
+                        {getTypeIcon(tx.transaction_type)}
+                        <span className="capitalize">{tx.transaction_type}</span>
+                      </div>
                     </td>
                     <td className="p-4 font-bold text-gray-900">
                       {formatCurrency(tx.amount)}

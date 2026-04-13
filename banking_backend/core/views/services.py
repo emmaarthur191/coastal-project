@@ -7,6 +7,7 @@ refunds, and complaints.
 import logging
 from decimal import Decimal
 
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -267,8 +268,14 @@ class ServiceStatsView(APIView):
 
     def get(self, request):
         """Retrieve aggregated statistics for service requests using database-level aggregation."""
-        from django.db.models import Avg, Count, F, Q
+        from datetime import timedelta
 
+        from django.db.models import Avg, Count, F, Q, Sum
+        from django.db.models.functions import TruncMonth
+
+        from core.models.transactions import Transaction
+
+        # 1. Base Request Stats
         stats = ServiceRequest.objects.aggregate(
             total=Count("id"),
             pending=Count("id", filter=Q(status="pending")),
@@ -285,6 +292,68 @@ class ServiceStatsView(APIView):
             hours = int(avg_time.total_seconds() // 3600)
             avg_time_str = f"{hours} hours"
 
+        # 2. Volume Trends (Dynamic Lookback/Granularity)
+        timeframe = request.query_params.get("timeframe", "monthly")
+        
+        if timeframe == "weekly":
+            # Last 12 weeks
+            lookback_days = 84 
+            trunc_func = "week"
+            from django.db.models.functions import TruncWeek as TruncFunc
+        elif timeframe == "daily":
+            # Last 14 days
+            lookback_days = 14
+            trunc_func = "day"
+            from django.db.models.functions import TruncDay as TruncFunc
+        else:
+            # Default: Last 6 Months
+            lookback_days = 150
+            trunc_func = "month"
+            from django.db.models.functions import TruncMonth as TruncFunc
+
+        start_date = timezone.now() - timedelta(days=lookback_days)
+        
+        volume_data = (
+            Transaction.objects.filter(status="completed", timestamp__gte=start_date)
+            .annotate(period=TruncFunc("timestamp"))
+            .values("period")
+            .annotate(revenue=Sum("amount"), count=Count("id"))
+            .order_by("period")
+        )
+
+        monthly_data_list = []
+        import calendar
+        for entry in volume_data:
+            if timeframe == "weekly":
+                label = f"W{entry['period'].isocalendar()[1]} ({entry['period'].strftime('%b %d')})"
+            elif timeframe == "daily":
+                label = entry['period'].strftime('%b %d')
+            else:
+                label = calendar.month_name[entry["period"].month]
+
+            monthly_data_list.append({
+                "month": label, # 'month' key kept for frontend compatibility
+                "loans": 0,
+                "transactions": entry["count"],
+                "revenue": float(entry["revenue"] or 0)
+            })
+
+        # 3. Category Distribution
+        category_colors = {
+            "checkbook": "#6C5CE7",
+            "statement": "#0984E3",
+            "card_replacement": "#00B894",
+            "other": "#95A5A6"
+        }
+        type_distribution = []
+        for item in by_type:
+            name = item["request_type"].replace("_", " ").title()
+            type_distribution.append({
+                "name": name,
+                "value": item["count"],
+                "color": category_colors.get(item["request_type"], "#95A5A6")
+            })
+
         return Response(
             {
                 "total_requests": stats["total"],
@@ -293,6 +362,8 @@ class ServiceStatsView(APIView):
                 "in_progress": stats["processing"],
                 "by_type": {item["request_type"]: item["count"] for item in by_type},
                 "average_resolution_time": avg_time_str,
+                "monthly_volume": monthly_data_list,
+                "type_distribution": type_distribution
             }
         )
 
@@ -325,8 +396,42 @@ class RefundViewSet(
         return [IsStaffOrCustomer()]
 
     def perform_create(self, serializer):
-        """Associate the current user with the refund request being created."""
-        serializer.save(user=self.request.user)
+        """Associate the customer (user) and initiator (requested_by) with the refund request.
+        Staff can specify a user, customers apply for themselves.
+        """
+        from core.permissions import STAFF_ROLES
+        user_id = self.request.data.get("user")
+        is_staff_initiator = self.request.user.role in STAFF_ROLES or self.request.user.is_staff
+
+        if user_id and is_staff_initiator:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                customer = User.objects.get(id=user_id)
+                
+                # SECURITY: Enforcement of authority limits for Mobile Bankers
+                if self.request.user.role == "mobile_banker":
+                    from core.models.operational import ClientAssignment
+                    is_assigned = ClientAssignment.objects.filter(
+                        mobile_banker=self.request.user, client=customer, is_active=True
+                    ).exists()
+                    if not is_assigned:
+                        raise PermissionDenied("not authorized to initiate requests for this client")
+
+                # Staff-initiated refund with verification metadata
+                serializer.save(
+                    user=customer, 
+                    requested_by=self.request.user,
+                    id_type=self.request.data.get("id_type", "ghana_card"),
+                    id_number=self.request.data.get("id_number", ""),
+                    verification_notes=self.request.data.get("verification_notes", "")
+                )
+            except User.DoesNotExist:
+                from rest_framework import serializers as drf_serializers
+                raise drf_serializers.ValidationError({"user": "Specified customer does not exist."})
+        else:
+            # Customer applying for themselves
+            serializer.save(user=self.request.user, requested_by=None)
 
     @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):

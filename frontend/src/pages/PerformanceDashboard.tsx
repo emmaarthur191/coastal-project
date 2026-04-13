@@ -1,9 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService, PerformanceDashboardData, SystemHealthData, SystemHealthComponent, PerformanceMetric, PerformanceAlert, PerformanceRecommendation, TransactionVolumeSummary, PerformanceChartData } from '../services/api';
+import { authService, PerformanceDashboardData, SystemHealthData, SystemHealthComponent, PerformanceMetric, PerformanceAlert, PerformanceRecommendation, TransactionVolumeSummary, PerformanceChartData, MLModelStatus } from '../services/api';
+import MLStatusCard from '../components/operational/MLStatusCard';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/ui/modern/GlassCard';
+import ModernStatCard from '../components/ui/modern/ModernStatCard';
 import { Button } from '../components/ui/Button';
+import { 
+  BarChart3, 
+  Activity, 
+  TrendingUp, 
+  AlertOctagon, 
+  Lightbulb, 
+  TrendingDown, 
+  BrainCircuit,
+  Rocket,
+  CheckCircle2,
+  XCircle,
+  Info,
+  Shield,
+  Loader2
+} from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 
 function PerformanceDashboard() {
@@ -21,6 +38,8 @@ function PerformanceDashboard() {
   const [recommendations, setRecommendations] = useState<PerformanceRecommendation[]>([]);
   const [transactionVolume, setTransactionVolume] = useState<Partial<TransactionVolumeSummary>>({});
   const [chartData, setChartData] = useState<Partial<PerformanceChartData>>({});
+  const [mlStatus, setMlStatus] = useState<MLModelStatus | null>(null);
+  const [mlLoading, setMlLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -48,6 +67,9 @@ function PerformanceDashboard() {
           break;
         case 'analytics':
           await fetchAnalytics();
+          break;
+        case 'ml':
+          await fetchMLStatus();
           break;
       }
     } catch (error) {
@@ -93,7 +115,7 @@ function PerformanceDashboard() {
   };
 
   const fetchAnalytics = async () => {
-    const safeFetch = async <T,>(p: Promise<T>) => p.catch(e => ({ success: false, data: undefined } as unknown as T));
+    const safeFetch = async <T,>(p: Promise<T>) => p.catch(_e => ({ success: false, data: undefined } as unknown as T));
     const [volumeResult, chartResult] = await Promise.all([
       safeFetch(authService.getTransactionVolume({ time_range: '24h' })),
       safeFetch(authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' }))
@@ -106,6 +128,25 @@ function PerformanceDashboard() {
       setChartData(chartResult.data);
     }
   };
+  
+  const fetchMLStatus = async () => {
+    setMlLoading(true);
+    const result = await authService.getMLModelStatus();
+    if (result.success && result.data) {
+      setMlStatus(result.data);
+    }
+    setMlLoading(false);
+  };
+
+  const handleTrainModel = async () => {
+    setMlLoading(true);
+    const result = await authService.trainMLModel();
+    if (result.success) {
+      // Refresh status after starting training
+      setTimeout(fetchMLStatus, 2000);
+    }
+    setMlLoading(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -113,19 +154,20 @@ function PerformanceDashboard() {
   };
 
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: '📊' },
-    { id: 'health', name: 'System Health', icon: '❤️' },
-    { id: 'metrics', name: 'Metrics', icon: '📈' },
-    { id: 'alerts', name: 'Alerts', icon: '🚨' },
-    { id: 'recommendations', name: 'Recommendations', icon: '💡' },
-    { id: 'analytics', name: 'Analytics', icon: '📉' }
+    { id: 'dashboard', name: 'Overview', icon: <BarChart3 className="w-full h-full text-indigo-500" /> },
+    { id: 'health', name: 'Health', icon: <Activity className="w-full h-full text-emerald-500" /> },
+    { id: 'metrics', name: 'Metrics', icon: <TrendingUp className="w-full h-full text-blue-500" /> },
+    { id: 'alerts', name: 'Alerts', icon: <AlertOctagon className="w-full h-full text-rose-500" /> },
+    { id: 'recommendations', name: 'Strategic', icon: <Lightbulb className="w-full h-full text-amber-500" /> },
+    { id: 'analytics', name: 'History', icon: <TrendingDown className="w-full h-full text-slate-400" /> },
+    { id: 'ml', name: 'AI Core', icon: <BrainCircuit className="w-full h-full text-violet-500" /> }
   ];
 
   const renderContent = () => {
     if (loading) {
       return (
         <GlassCard className="flex flex-col items-center justify-center p-12">
-          <div className="text-6xl mb-4 animate-bounce-slow">📊</div>
+          <Loader2 className="w-16 h-16 text-primary-500 animate-spin mb-4" />
           <h2 className="text-xl font-bold text-gray-800">Loading Performance Data...</h2>
         </GlassCard>
       );
@@ -134,36 +176,38 @@ function PerformanceDashboard() {
     switch (activeView) {
       case 'dashboard':
         return (
-          <GlassCard className="p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <span>🚀</span> Performance Overview
+          <div className="space-y-8">
+            <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3 tracking-tighter">
+              <Rocket className="w-6 h-6 text-indigo-600" /> Performance Console
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {dashboardData.map((item, index) => (
-                <div key={index} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center transform hover:-translate-y-1 transition-transform duration-300">
-                  <div className="text-3xl mb-3">{item.icon || '📊'}</div>
-                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-1">{item.metric}</h4>
-                  <p className="text-3xl font-black text-coastal-primary">{item.value}</p>
-                  <p className="text-xs text-gray-400 mt-1">{item.unit}</p>
-                </div>
+                <ModernStatCard
+                  key={index}
+                  label={item.metric}
+                  value={item.value}
+                  icon={item.icon || <BarChart3 className="w-6 h-6" />}
+                  subtext={item.unit}
+                  trend="neutral"
+                />
               ))}
             </div>
-          </GlassCard>
+          </div>
         );
 
       case 'health':
         return (
           <GlassCard className="p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <span>🏥</span> System Health Status
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <Activity className="w-6 h-6 text-primary-500" /> System Health Status
             </h3>
 
             <div className={`
                 p-6 rounded-2xl mb-8 border flex items-center gap-4 shadow-sm
                 ${systemHealth.status === 'healthy' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}
             `}>
-              <div className="text-5xl">
-                {systemHealth.status === 'healthy' ? '✅' : '❌'}
+              <div className="flex items-center justify-center w-12 h-12 rounded-full">
+                {systemHealth.status === 'healthy' ? <CheckCircle2 className="w-full h-full text-emerald-500" /> : <XCircle className="w-full h-full text-red-500" />}
               </div>
               <div>
                 <h4 className={`text-xl font-black ${systemHealth.status === 'healthy' ? 'text-emerald-700' : 'text-red-700'}`}>
@@ -182,12 +226,12 @@ function PerformanceDashboard() {
                     ${component.status === 'healthy' ? 'border-gray-100' : 'border-red-100 shadow-red-50'}
                 `}>
                   <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-bold text-gray-800">{component.name}</h4>
-                    <span className="text-xl">{component.status === 'healthy' ? '✅' : '❌'}</span>
+                  <h4 className="font-bold text-slate-900 mb-3">{component.name}</h4>
+                    {component.status === 'healthy' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">{component.message}</p>
-                  <p className="text-xs text-gray-400 font-medium">
-                    Last checked: {new Date(component.last_check).toLocaleTimeString()}
+                  <p className="text-sm text-slate-900 font-medium mb-3">{component.message}</p>
+                  <p className="text-xs text-black font-bold">
+                    Last checked: <span className="font-mono">{new Date(component.last_check).toLocaleTimeString()}</span>
                   </p>
                 </div>
               ))}
@@ -209,8 +253,8 @@ function PerformanceDashboard() {
                   <h4 className="font-bold text-gray-800 mb-4 relative z-10">{metric.name}</h4>
 
                   <div className="flex items-end gap-2 mb-2 relative z-10">
-                    <span className="text-3xl font-black text-gray-900">{metric.value}</span>
-                    <span className="text-xs text-gray-500 font-bold uppercase mb-1.5">{metric.unit}</span>
+                    <span className="text-3xl font-black text-slate-900 font-mono tracking-tighter">{metric.value}</span>
+                    <span className="text-xs text-slate-500 font-bold uppercase mb-1.5 tracking-widest">{metric.unit}</span>
                   </div>
 
                   <div className="flex items-center gap-2 mb-4 relative z-10">
@@ -221,7 +265,7 @@ function PerformanceDashboard() {
                     <span className="text-xs font-bold text-gray-500 uppercase">{metric.status}</span>
                   </div>
 
-                  <p className="text-sm text-gray-500 relative z-10">
+                  <p className="text-sm text-slate-900 font-medium relative z-10">
                     {metric.description}
                   </p>
                 </div>
@@ -247,18 +291,16 @@ function PerformanceDashboard() {
                       alert.severity === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}
                     `}>
                     <div className="mb-4 md:mb-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xl">
-                          {alert.severity === 'critical' ? '🚨' : alert.severity === 'warning' ? '⚠️' : 'ℹ️'}
-                        </span>
+                      <div className="flex items-center gap-3 mb-1">
+                        {alert.severity === 'critical' ? <AlertOctagon className="w-6 h-6 text-red-500" /> : alert.severity === 'warning' ? <AlertOctagon className="w-6 h-6 text-amber-500" /> : <Info className="w-6 h-6 text-blue-500" />}
                         <h4 className={`font-bold ${alert.severity === 'critical' ? 'text-red-900' :
                           alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
                           }`}>{alert.title}</h4>
                       </div>
-                      <p className={`text-sm ml-8 ${alert.severity === 'critical' ? 'text-red-700' :
-                        alert.severity === 'warning' ? 'text-amber-700' : 'text-blue-700'
+                      <p className={`text-sm ml-8 font-medium ${alert.severity === 'critical' ? 'text-red-900' :
+                        alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
                         }`}>{alert.message}</p>
-                      <p className="text-xs opacity-60 ml-8 mt-1">
+                      <p className="text-xs text-black font-bold ml-8 mt-1">
                         {new Date(alert.timestamp).toLocaleString()}
                       </p>
                     </div>
@@ -287,12 +329,12 @@ function PerformanceDashboard() {
             <div className="space-y-6">
               {recommendations.map((rec, index) => (
                 <div key={index} className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
-                  <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl text-indigo-600">
-                    💡
+                  <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                    <Lightbulb className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-lg font-bold text-gray-800 mb-2">{rec.title}</h4>
-                    <p className="text-gray-600 mb-4 leading-relaxed">{rec.description}</p>
+                    <h4 className="text-lg font-bold text-slate-900 mb-2">{rec.title}</h4>
+                    <p className="text-slate-900 font-medium mb-4 leading-relaxed">{rec.description}</p>
 
                     <div className="flex flex-wrap gap-4">
                       <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
@@ -319,33 +361,97 @@ function PerformanceDashboard() {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <GlassCard className="p-6 text-center">
-                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Total Volume</h4>
-                <div className="text-4xl font-black text-coastal-primary">{transactionVolume.total || 0}</div>
-                <div className="text-xs text-gray-400 mt-1">transactions (24h)</div>
-              </GlassCard>
-              <GlassCard className="p-6 text-center">
-                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Success Rate</h4>
-                <div className="text-4xl font-black text-emerald-500">{transactionVolume.success_rate || 0}%</div>
-                <div className="text-xs text-gray-400 mt-1">completion rate</div>
-              </GlassCard>
-              <GlassCard className="p-6 text-center">
-                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Avg Response</h4>
-                <div className="text-4xl font-black text-blue-500">{transactionVolume.avg_response_time || 0}ms</div>
-                <div className="text-xs text-gray-400 mt-1">latency</div>
-              </GlassCard>
+              <ModernStatCard 
+                label="Aggregate Volume" 
+                value={transactionVolume.total || 0} 
+                icon={<BarChart3 className="w-6 h-6" />}
+                subtext="Transactions (24h)"
+              />
+              <ModernStatCard 
+                label="Success Rate" 
+                value={`${transactionVolume.success_rate || 0}%`} 
+                icon={<CheckCircle2 className="w-6 h-6" />}
+                trend="up"
+                colorClass="text-emerald-500"
+              />
+              <ModernStatCard 
+                label="Latency" 
+                value={`${transactionVolume.avg_response_time || 0}ms`} 
+                icon={<Activity className="w-6 h-6" />}
+                colorClass="text-blue-500"
+              />
             </div>
 
             <GlassCard className="p-8">
               <h3 className="text-xl font-bold text-gray-800 mb-6">Response Time Analysis</h3>
               <div className="h-64 flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                 <div className="text-center">
-                  <div className="text-4xl mb-2 opacity-20">📉</div>
+                  <TrendingDown className="w-12 h-12 text-slate-200 mx-auto mb-2" />
                   <p className="text-gray-400 font-medium">Chart Visualization Placeholder</p>
                   <p className="text-xs text-gray-300 mt-1">{(chartData.datasets?.length || 0)} data points available</p>
                 </div>
               </div>
             </GlassCard>
+          </div>
+        );
+
+      case 'ml':
+        return (
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <BrainCircuit className="w-8 h-8 text-primary-600" /> Machine Learning Core
+            </h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <MLStatusCard 
+                status={mlStatus} 
+                onRetrain={handleTrainModel} 
+                loading={mlLoading}
+              />
+              
+              <div className="space-y-6">
+                <GlassCard className="p-6 border-blue-100 bg-blue-50/30">
+                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-blue-600" /> Fraud Protection Strategy
+                  </h4>
+                  <p className="text-sm text-blue-800 leading-relaxed">
+                    The AI engine uses an <strong>Isolation Forest</strong> algorithm to detect anomalous transaction patterns. It learns from:
+                  </p>
+                  <ul className="mt-4 space-y-2 text-xs text-blue-700 font-medium">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                      Temporal Velocity (Frequency of spends)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                      Geospatial Drift (IP & Location changes)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                      Contextual Sizing (Deviation from mean)
+                    </li>
+                  </ul>
+                </GlassCard>
+
+                <GlassCard className="p-6">
+                  <h4 className="font-bold text-gray-800 mb-3">Model Parameters</h4>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-xs text-gray-500 font-bold uppercase">Algorithm</span>
+                      <span className="text-xs font-black text-coastal-primary">ISOLATION FOREST</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-xs text-gray-500 font-bold uppercase">Contamination</span>
+                      <span className="text-xs font-black text-gray-800">0.05 (AUTO)</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-xs text-gray-500 font-bold uppercase">Features</span>
+                      <span className="text-xs font-black text-gray-800">14-DIMENSIONAL</span>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+            </div>
           </div>
         );
 

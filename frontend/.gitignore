@@ -17,5 +17,10 @@ ios/
 # npm auth tokens — never commit
 .npmrc
 
-# Test caches
+# Test caches & logs
 .pytest_cache/
+*_output.txt
+*_errors.txt
+tsc_fixed.txt
+lint_output.txt
+typescript_errors.txt

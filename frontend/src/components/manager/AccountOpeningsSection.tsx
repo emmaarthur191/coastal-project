@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import GlassCard from '../ui/modern/GlassCard';
 import { AccountOpeningsService } from '../../api/services/AccountOpeningsService';
-import type { AccountOpeningRequest } from '../../api/models/AccountOpeningRequest';
+import { apiService } from '../../services/api';
+import { AccountOpeningRequest, NextOfKin } from '../../types';
 
 interface AccountOpeningsSectionProps {
     onRefreshDashboard?: () => void;
 }
 
-interface NextOfKin {
-    name: string;
-    relationship: string;
-    address: string;
-    stakePercentage?: string;
-    stake_percentage?: string;
-}
 
 const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefreshDashboard }) => {
     const [requests, setRequests] = useState<AccountOpeningRequest[]>([]);
@@ -30,7 +24,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
 
             const statusFilter = filter === 'all' ? undefined : (filter as 'approved' | 'completed' | 'pending' | 'rejected');
 
-            const response = await AccountOpeningsService.apiBankingAccountOpeningsList(
+            const response = await AccountOpeningsService.bankingAccountOpeningsList(
                 undefined, // accountType
                 undefined, // ordering
                 undefined, // page
@@ -60,10 +54,14 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             setActionLoading(true);
             setError(null);
 
-            const blob = await AccountOpeningsService.apiBankingAccountOpeningsApproveAndPrintCreate(request.id!);
+            // Use apiService wrapper which correctly handles blob response
+            const result = await apiService.approveAndPrintAccountOpening(request.id!);
+            if (!result.success || !result.blob) {
+                throw new Error(result.error || 'Failed to generate Welcome Letter');
+            }
 
             // Handle PDF Download
-            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            const url = window.URL.createObjectURL(new Blob([result.blob], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', `WelcomeLetter_${request.last_name}_${request.id}.pdf`);
@@ -93,7 +91,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             setActionLoading(true);
             setError(null);
 
-            await AccountOpeningsService.apiBankingAccountOpeningsRejectCreate(request.id!, {
+            await AccountOpeningsService.bankingAccountOpeningsRejectCreate(request.id!, {
                 ...request,
                 rejection_reason: reason
             });
@@ -141,7 +139,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                             <div className="space-y-2 text-sm">
                                 <p><span className="text-slate-500">Name:</span> {selectedRequest?.full_name || `${selectedRequest?.first_name || ''} ${selectedRequest?.last_name || 'Unknown'}`}</p>
                                 <p><span className="text-slate-500">Date of Birth:</span> {selectedRequest.date_of_birth}</p>
-                                <p><span className="text-slate-500">Gender:</span> {(selectedRequest as { gender?: string }).gender || 'N/A'}</p>
+                                <p><span className="text-slate-500">Gender:</span> {selectedRequest.gender || 'N/A'}</p>
                             </div>
                         </div>
 
@@ -211,7 +209,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                             {Array.isArray(selectedRequest.next_of_kin_data) ? (
-                                                (selectedRequest.next_of_kin_data as unknown as NextOfKin[]).map((kin, idx) => (
+                                                (selectedRequest.next_of_kin_data as NextOfKin[]).map((kin, idx) => (
                                                     <tr key={idx} className="text-sm">
                                                         <td className="py-2 text-slate-800 dark:text-slate-200">{kin.name || 'N/A'}</td>
                                                         <td className="py-2 text-slate-600 dark:text-slate-400">{kin.relationship || 'N/A'}</td>

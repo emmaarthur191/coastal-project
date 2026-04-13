@@ -5,6 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/ui/modern/GlassCard';
 import { Button } from '../components/ui/Button';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { 
+  User, 
+  Settings as SettingsIcon, 
+  Activity, 
+  Clock, 
+  Heart, 
+  Bell, 
+  Mail, 
+  Save, 
+  CheckCircle, 
+  XCircle,
+  Zap
+} from 'lucide-react';
 
 // Extended interfaces to match backend response structure
 interface SystemSetting extends SystemSettingData {
@@ -140,19 +153,19 @@ function Settings() {
   };
 
   const menuItems = [
-    { id: 'user-settings', name: 'User Settings', icon: '👤' },
-    { id: 'system-settings', name: 'System Settings', icon: '⚙️' },
-    { id: 'api-usage', name: 'API Usage', icon: '📊' },
-    { id: 'rate-limits', name: 'Rate Limits', icon: '⏱️' },
-    { id: 'health-checks', name: 'Health Checks', icon: '❤️' }
+    { id: 'user-settings', name: 'User Settings', icon: <User className="w-5 h-5" /> },
+    { id: 'system-settings', name: 'System Settings', icon: <SettingsIcon className="w-5 h-5" /> },
+    { id: 'api-usage', name: 'API Usage', icon: <Activity className="w-5 h-5" /> },
+    { id: 'rate-limits', name: 'Rate Limits', icon: <Clock className="w-5 h-5" /> },
+    { id: 'health-checks', name: 'Health Checks', icon: <Heart className="w-5 h-5" /> }
   ];
 
   const renderContent = () => {
     if (loading) {
       return (
         <GlassCard className="flex flex-col items-center justify-center p-12">
-          <div className="text-6xl mb-4 animate-spin-slow">⚙️</div>
-          <h2 className="text-xl font-bold text-gray-800">Loading Configuration...</h2>
+          <SettingsIcon className="w-16 h-16 mb-4 animate-spin-slow text-slate-900 opacity-20" />
+          <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">Synchronizing Configuration...</h2>
         </GlassCard>
       );
     }
@@ -165,7 +178,7 @@ function Settings() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
-                <label htmlFor="theme-select" className="block text-sm font-bold text-gray-700 mb-2 ml-1">Theme</label>
+                <label htmlFor="theme-select" className="block text-[10px] font-black uppercase text-slate-900 mb-2 ml-1 tracking-widest">Aesthetic Matrix</label>
                 <div className="relative">
                   <select
                     id="theme-select"
@@ -173,9 +186,9 @@ function Settings() {
                     onChange={(e) => setUserSettingsForm({ ...userSettingsForm, theme: e.target.value })}
                     className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all appearance-none font-medium text-gray-700"
                   >
-                    <option value="light">☀️ Light Mode</option>
-                    <option value="dark">🌙 Dark Mode</option>
-                    <option value="auto">🖥️ System Default</option>
+                    <option value="light">Light Mode</option>
+                    <option value="dark">Dark Mode</option>
+                    <option value="auto">System Default</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                 </div>
@@ -190,10 +203,10 @@ function Settings() {
                     onChange={(e) => setUserSettingsForm({ ...userSettingsForm, language: e.target.value })}
                     className="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-400 outline-none transition-all appearance-none font-medium text-gray-700"
                   >
-                    <option value="en">🇺🇸 English</option>
-                    <option value="es">🇪🇸 Spanish</option>
-                    <option value="fr">🇫🇷 French</option>
-                    <option value="de">🇩🇪 German</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                 </div>
@@ -203,12 +216,12 @@ function Settings() {
             <div className="space-y-4 mb-8">
               <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-blue-200 transition-colors cursor-pointer" onClick={() => setUserSettingsForm({ ...userSettingsForm, notifications: !userSettingsForm.notifications })}>
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-colors ${userSettingsForm.notifications ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-400'}`}>
-                    🔔
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${userSettingsForm.notifications ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-400'}`}>
+                    <Bell className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-800">Push Notifications</h4>
-                    <p className="text-xs text-gray-500">Receive alerts about new transactions and messages</p>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tight">Push Notifications</h4>
+                    <p className="text-[10px] text-slate-900 font-bold uppercase tracking-widest opacity-60">System-wide operational alerts</p>
                   </div>
                 </div>
                 <div className={`w-12 h-6 rounded-full p-1 transition-colors ${userSettingsForm.notifications ? 'bg-blue-500' : 'bg-gray-300'}`}>
@@ -218,12 +231,12 @@ function Settings() {
 
               <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-blue-200 transition-colors cursor-pointer" onClick={() => setUserSettingsForm({ ...userSettingsForm, email_updates: !userSettingsForm.email_updates })}>
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-colors ${userSettingsForm.email_updates ? 'bg-purple-100 text-purple-600' : 'bg-gray-200 text-gray-400'}`}>
-                    📧
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${userSettingsForm.email_updates ? 'bg-purple-100 text-purple-600' : 'bg-gray-200 text-gray-400'}`}>
+                    <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-800">Email Updates</h4>
-                    <p className="text-xs text-gray-500">Weekly summaries and marketing updates</p>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tight">Email Updates</h4>
+                    <p className="text-[10px] text-slate-900 font-bold uppercase tracking-widest opacity-60">Audit logs and diagnostic reports</p>
                   </div>
                 </div>
                 <div className={`w-12 h-6 rounded-full p-1 transition-colors ${userSettingsForm.email_updates ? 'bg-purple-500' : 'bg-gray-300'}`}>
@@ -232,8 +245,9 @@ function Settings() {
               </div>
             </div>
 
-            <Button onClick={handleSaveUserSettings} className="w-full md:w-auto px-8" variant="primary">
-              Save Changes 💾
+            <Button onClick={handleSaveUserSettings} className="w-full md:w-auto px-8 gap-2" variant="primary">
+              <Save className="w-4 h-4" />
+              Save Changes
             </Button>
           </GlassCard>
         );
@@ -247,12 +261,12 @@ function Settings() {
                 <div key={index} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                      ⚙️
+                      <SettingsIcon className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded uppercase">{setting.setting_type}</span>
                   </div>
-                  <h4 className="font-bold text-gray-800 mb-1">{setting.key}</h4>
-                  <p className="text-sm font-mono text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 break-all">
+                  <h4 className="font-black text-slate-900 uppercase tracking-tight mb-1">{setting.key}</h4>
+                  <p className="text-[10px] font-black text-slate-900 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 break-all font-mono">
                     {setting.value}
                   </p>
                 </div>
@@ -271,7 +285,9 @@ function Settings() {
                   {/* Background decoration */}
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
 
-                  <div className="text-4xl mb-3 opacity-80 group-hover:scale-110 transition-transform duration-300">📊</div>
+                  <div className="flex justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <Activity className="w-10 h-10 text-blue-500 opacity-80" />
+                  </div>
 
                   <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-2 truncate" title={usage.endpoint}>
                     {usage.endpoint}
@@ -296,18 +312,18 @@ function Settings() {
               {Array.isArray(rateLimits) && rateLimits.map((limit, index) => (
                 <div key={index} className="flex flex-col md:flex-row justify-between items-center p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
                   <div className="mb-4 md:mb-0 text-center md:text-left">
-                    <h4 className="font-bold text-gray-800 text-lg mb-1">{limit.name}</h4>
-                    <p className="text-sm text-gray-500">{limit.description}</p>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tight text-lg mb-1">{limit.name}</h4>
+                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest opacity-60">{limit.description}</p>
                   </div>
-                  <div className="flex items-center gap-4 bg-gray-50 px-6 py-3 rounded-xl border border-gray-200">
+                  <div className="flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-xl border-2 border-slate-300">
                     <div className="text-right">
-                      <div className="text-2xl font-black text-gray-800 leading-none">
+                      <div className="text-2xl font-black text-slate-900 leading-none">
                         {limit.requests_per_hour?.toLocaleString()}
                       </div>
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Req / Hour</div>
+                      <div className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">REQ / HOUR</div>
                     </div>
                     <div className="h-8 w-[1px] bg-gray-300"></div>
-                    <div className="text-2xl">⚡</div>
+                    <Zap className="w-6 h-6 text-amber-500" />
                   </div>
                 </div>
               ))}
@@ -327,7 +343,7 @@ function Settings() {
                 `}>
                   <div className="flex justify-between items-start mb-4 relative z-10">
                     <div className={`p-2 rounded-lg ${check.status === 'healthy' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                      {check.status === 'healthy' ? '✅' : '❌'}
+                      {check.status === 'healthy' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                     </div>
                     <span className={`text-xs font-bold uppercase py-1 px-2 rounded ${check.status === 'healthy' ? 'bg-white/50 text-emerald-700' : 'bg-white/50 text-red-700'}`}>
                       {check.status}

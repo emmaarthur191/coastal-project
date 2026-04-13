@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 
 const SearchModal = ({
@@ -8,7 +9,7 @@ const SearchModal = ({
   setSearchQuery,
   searchResults,
   decryptedMessages,
-  handleSearch
+  _handleSearch
 }) => {
   if (!showSearch) return null;
 
@@ -19,9 +20,11 @@ const SearchModal = ({
           <h3 className="text-lg font-bold">Search Messages</h3>
           <button
             onClick={() => setShowSearch(false)}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Close search"
+            title="Close search"
           >
-            ×
+            <X className="w-5 h-5" />
           </button>
         </div>
 

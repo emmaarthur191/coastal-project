@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
+import { FileText, Download } from 'lucide-react';
 
 interface Payslip {
     id: number;
@@ -90,8 +91,10 @@ const StaffPayslipViewer: React.FC = () => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-secondary-200">
-            <h2 className="text-2xl font-bold text-secondary-900 mb-6">📄 My Payslips</h2>
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-secondary-200">
+            <h2 className="text-2xl font-bold text-secondary-900 mb-6 flex items-center gap-2">
+                <FileText className="w-6 h-6 text-primary-600" /> My Payslips
+            </h2>
 
             {error && (
                 <div className="bg-error-50 text-error-700 p-4 rounded-lg mb-6 border border-error-200">
@@ -172,9 +175,9 @@ const StaffPayslipViewer: React.FC = () => {
                                     <td className="p-4 text-center">
                                         <button
                                             onClick={() => handleDownload(payslip.id, payslip.month, payslip.year)}
-                                            className="text-primary-600 hover:text-primary-800 font-bold hover:underline flex items-center justify-center gap-1 mx-auto"
+                                            className="text-primary-600 hover:text-primary-800 font-bold hover:underline flex items-center justify-center gap-2 mx-auto"
                                         >
-                                            <span>📥</span> Download PDF
+                                            <Download className="w-4 h-4" /> Download PDF
                                         </button>
                                     </td>
                                 </tr>

@@ -1,7 +1,7 @@
-"""PDF generation services for payslips and statements."""
-
 import io
+import os
 
+from django.conf import settings
 from django.utils import timezone
 
 from reportlab.lib import colors
@@ -13,7 +13,30 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 COMPANY_NAME = "Coastal Auto Tech Credit Union"
 COMPANY_ADDRESS = "P.O. Box 123, Accra, Ghana"
-COMPANY_PHONE = "+233 XX XXX XXXX"
+COMPANY_PHONE = "0538352030"
+
+
+def draw_watermark(canvas, doc):
+    """Draw a faded watermark of the company logo in the center of the page."""
+    canvas.saveState()
+    # Path to the logo in the static directory
+    logo_path = os.path.join(settings.BASE_DIR, "core", "static", "core", "img", "logo.png")
+    if os.path.exists(logo_path):
+        # Set transparency for the watermark
+        canvas.setFillAlpha(0.05)
+        # Center of A4 is approx 105mm, 148mm
+        # Logo size 120mm
+        canvas.drawImage(
+            logo_path,
+            (210 * mm - 120 * mm) / 2,
+            (297 * mm - 120 * mm) / 2,
+            width=120 * mm,
+            height=120 * mm,
+            mask="auto",
+            preserveAspectRatio=True,
+        )
+    canvas.restoreState()
+
 
 
 def generate_generic_report_pdf(title, subtitle, headers, data, summary_data=None):
@@ -107,7 +130,7 @@ def generate_generic_report_pdf(title, subtitle, headers, data, summary_data=Non
     elements.append(Paragraph(f"Generated on {timezone.now().strftime('%B %d, %Y at %I:%M %p')}", footer_style))
     elements.append(Paragraph("Coastal Auto Tech Credit Union - Official Report", footer_style))
 
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
     buffer.seek(0)
     return buffer
 
@@ -135,10 +158,11 @@ def generate_payslip_pdf(payslip):
     # Payslip Title
     elements.append(
         Paragraph(
-            f"<b>PAYSLIP - {payslip.get_month_display()} {payslip.year}</b>",
+            f"<b>{payslip.get_month_display().upper()} PAYSLIP - {payslip.year}</b>",
             ParagraphStyle("PayslipTitle", parent=styles["Heading2"], alignment=TA_CENTER),
         )
     )
+
     elements.append(Spacer(1, 5 * mm))
 
     # Employee Info
@@ -147,8 +171,9 @@ def generate_payslip_pdf(payslip):
         ["Staff ID:", payslip.staff.staff_id or "N/A"],
         ["SSNIT Number:", getattr(payslip.staff, "ssnit_number", None) or "N/A"],
         ["Department:", payslip.staff.role.replace("_", " ").title()],
-        ["Pay Period:", f"{payslip.pay_period_start} to {payslip.pay_period_end}"],
+        ["Pay Period:", f"{payslip.pay_period_start.strftime('%d %b %Y')} to {payslip.pay_period_end.strftime('%d %b %Y')}"],
         ["Date Issued:", timezone.now().strftime("%B %d, %Y")],
+
     ]
     emp_table = Table(emp_data, colWidths=[60 * mm, 100 * mm])
     emp_table.setStyle(
@@ -242,7 +267,7 @@ def generate_payslip_pdf(payslip):
     elements.append(Paragraph(f"Generated on {timezone.now().strftime('%B %d, %Y at %I:%M %p')}", footer_style))
     elements.append(Paragraph("This is a computer-generated document. No signature required.", footer_style))
 
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
     buffer.seek(0)
     return buffer
 
@@ -352,7 +377,7 @@ def generate_statement_pdf(statement, transactions):
     elements.append(Paragraph(f"Generated on {timezone.now().strftime('%B %d, %Y at %I:%M %p')}", footer_style))
     elements.append(Paragraph("This is a computer-generated statement.", footer_style))
 
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
     buffer.seek(0)
     return buffer
 
@@ -402,7 +427,16 @@ def generate_account_opening_letter_pdf(opening_request, account_number, temp_pa
 
     # Account Details Table
     elements.append(Paragraph("<b>YOUR ACCOUNT DETAILS</b>", heading_style))
+    
+    # Retrieve member_number from associated account if available
+    member_id = "Pending"
+    if opening_request.created_account and opening_request.created_account.user:
+        member_id = opening_request.created_account.user.member_number or "N/A"
+    elif opening_request.existing_member:
+        member_id = opening_request.existing_member.member_number or "N/A"
+
     account_data = [
+        ["Member ID:", member_id],
         ["Account Number:", account_number],
         ["Account Type:", opening_request.get_account_type_display()],
         ["Initial Deposit:", f"GHS {opening_request.initial_deposit:,.2f}"],
@@ -471,7 +505,7 @@ def generate_account_opening_letter_pdf(opening_request, account_number, temp_pa
     elements.append(Paragraph("<b>The Management</b>", normal_style))
     elements.append(Paragraph(COMPANY_NAME, normal_style))
 
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
     buffer.seek(0)
     return buffer
 
@@ -585,6 +619,6 @@ def generate_staff_welcome_letter_pdf(user, temp_password):
     elements.append(Paragraph("__________________________", normal_style))
     elements.append(Paragraph("<b>Operations Manager / HR</b>", normal_style))
 
-    doc.build(elements)
+    doc.build(elements, onFirstPage=draw_watermark, onLaterPages=draw_watermark)
     buffer.seek(0)
     return buffer

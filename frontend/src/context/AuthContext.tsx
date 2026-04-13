@@ -1,19 +1,8 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { authService } from '../services/api';
+import type { User, UserExtended } from '../types';
 
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  name?: string;
-  first_name?: string;
-  last_name?: string;
-  role?: string;
-  needs_verification?: boolean;
-  phone?: string;
-  two_factor_phone?: string;
-  otp_verified?: boolean;
-}
+export type { User };
 
 interface AuthResponse {
   authenticated: boolean;
@@ -21,7 +10,7 @@ interface AuthResponse {
 }
 
 export interface AuthContextType {
-  user: User | null;
+  user: UserExtended | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -34,6 +23,7 @@ export interface AuthContextType {
   isMobileBanker: boolean;
   isOperationsManager: boolean;
   isMember: boolean;
+  updateUser: (user: UserExtended | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,7 +44,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserExtended | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -98,6 +88,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: data.error };
       }
 
+      if ('error' in data && typeof (data as { error?: string }).error === 'string') {
+        throw new Error((data as { error?: string }).error);
+      }
       if (data.user) {
         setUser(data.user);
         return { success: true };
@@ -124,7 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isCashier = user?.role === 'cashier';
   const isMobileBanker = user?.role === 'mobile_banker';
   const isOperationsManager = user?.role === 'operations_manager';
-  const isMember = user?.role === 'customer' || user?.role === 'member';
+  const isMember = (user?.role as string) === 'customer' || (user?.role as string) === 'member';
 
   const getDashboardRoute = () => {
     if (isManager) return '/manager-dashboard';
@@ -145,6 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isMobileBanker,
     isOperationsManager,
     isMember,
+    updateUser: (newUser: UserExtended | null) => setUser(newUser),
   };
 
 

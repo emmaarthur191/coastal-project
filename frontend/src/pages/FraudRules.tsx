@@ -1,8 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api, API_BASE_URL, PaginatedResponse } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FraudRule, FraudRuleRequest, RuleTypeEnum, SeverityEnum } from '../api';
+import { FraudRule, RuleTypeEnum, SeverityEnum } from '../api';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { 
+  CircleDollarSign, 
+  Zap, 
+  Globe, 
+  Clock, 
+  User, 
+  Shield, 
+  ShieldCheck, 
+  PlusCircle, 
+  Pencil,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Activity
+} from 'lucide-react';
 import './FraudRules.css';
 
 // Get WebSocket base URL from environment
@@ -25,7 +40,7 @@ const FraudRules: React.FC = React.memo(() => {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingRule, setEditingRule] = useState<FraudRule | null>(null);
-  const [formData, setFormData] = useState<FraudRuleRequest>({
+  const [formData, setFormData] = useState<Partial<FraudRule>>({
     name: '',
     description: '',
     rule_type: RuleTypeEnum.TRANSACTION_AMOUNT,
@@ -166,12 +181,12 @@ const FraudRules: React.FC = React.memo(() => {
 
   const getRuleTypeIcon = (type: RuleTypeEnum) => {
     switch (type) {
-      case RuleTypeEnum.TRANSACTION_AMOUNT: return '💰';
-      case RuleTypeEnum.VELOCITY: return '⚡';
-      case RuleTypeEnum.GEOGRAPHIC: return '🌍';
-      case RuleTypeEnum.TIME_BASED: return '🕒';
-      case RuleTypeEnum.ACCOUNT_ACTIVITY: return '👤';
-      default: return '🛡️';
+      case RuleTypeEnum.TRANSACTION_AMOUNT: return <CircleDollarSign className="w-5 h-5 text-emerald-500" />;
+      case RuleTypeEnum.VELOCITY: return <Zap className="w-5 h-5 text-amber-500" />;
+      case RuleTypeEnum.GEOGRAPHIC: return <Globe className="w-5 h-5 text-blue-500" />;
+      case RuleTypeEnum.TIME_BASED: return <Clock className="w-5 h-5 text-slate-500" />;
+      case RuleTypeEnum.ACCOUNT_ACTIVITY: return <User className="w-5 h-5 text-coastal-primary" />;
+      default: return <Shield className="w-5 h-5 text-coastal-primary" />;
     }
   };
 
@@ -204,8 +219,8 @@ const FraudRules: React.FC = React.memo(() => {
 
       {/* Stats Summary */}
       <div className="stats-summary">
-        <h2 className="stats-title">
-          🛡️ Active Rules Summary
+        <h2 className="stats-title flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-coastal-primary" /> Active Rules Summary
         </h2>
         <div className="stats-grid">
           <div className="stat-item">
@@ -238,9 +253,9 @@ const FraudRules: React.FC = React.memo(() => {
         <button
           onClick={() => setShowCreateDialog(true)}
           aria-label="Create new fraud detection rule"
-          className="create-rule-btn"
+          className="create-rule-btn flex items-center gap-2"
         >
-          <span>➕</span> Create New Rule
+          <PlusCircle className="w-4 h-4" /> Create New Rule
         </button>
       </div>
 
@@ -278,8 +293,9 @@ const FraudRules: React.FC = React.memo(() => {
                 <button
                   onClick={() => openEditDialog(rule)}
                   className="edit-rule-btn"
+                  title="Edit Rule"
                 >
-                  ✏️
+                  <Pencil className="w-4 h-4" />
                 </button>
               </div>
             </div>

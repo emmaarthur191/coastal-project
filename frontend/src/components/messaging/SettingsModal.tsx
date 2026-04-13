@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Settings, Volume2, VolumeX, Eye, EyeOff, Shield, Users, X } from 'lucide-react';
+import { Settings, Volume2, VolumeX, Eye, Shield, Users, X, Loader2 } from 'lucide-react';
 
 interface Theme {
   name: string;
@@ -414,7 +414,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         {saving && (
           <div className="px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-800">
             <p className="text-sm text-blue-600 dark:text-blue-400 flex items-center">
-              <span className="animate-spin mr-2">⟳</span> Saving preferences...
+              <Loader2 className="animate-spin mr-2 w-4 h-4" /> Saving preferences...
             </p>
           </div>
         )}

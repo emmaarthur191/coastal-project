@@ -3,32 +3,28 @@ import { Mic, MicOff, Video, VideoOff, Phone, Minimize2, Maximize2 } from 'lucid
 import { logger } from '../../utils/logger';
 import './CallOverlay.css';
 
-interface Participant {
-    id: string;
-    first_name: string;
-    last_name?: string;
-}
-
-interface ActiveCall {
-    id: string;
-    type: 'video' | 'audio';
-    participants: Participant[];
-    isInitiator: boolean;
-}
+import { ActiveCall, CallParticipant, WebSocketSignal, IWebSocketManager, User } from '../../types';
 
 interface CallOverlayProps {
     activeCall: ActiveCall;
     onEndCall: () => void;
-    wsManager: any;
-    currentUser: any;
-    incomingSignal: any;
+    wsManager: IWebSocketManager;
+    currentUser: User | null;
+    incomingSignal: WebSocketSignal | null;
 }
+
+// WebRTC Configuration - Moved outside to prevent re-creation
+const rtcConfig: RTCConfiguration = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+    ],
+};
 
 const CallOverlay: React.FC<CallOverlayProps> = ({
     activeCall,
     onEndCall,
     wsManager,
-    currentUser,
     incomingSignal,
 }) => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -39,17 +35,9 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
     const [isMinimized, setIsMinimized] = useState(false);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
-    const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
-    const signalQueue = useRef<any[]>([]);
+    const peerConnections = useRef<Map<string | number, RTCPeerConnection>>(new Map());
+    const signalQueue = useRef<WebSocketSignal[]>([]);
     const isEndingRef = useRef(false);
-
-    // WebRTC Configuration
-    const rtcConfig: RTCConfiguration = {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-        ],
-    };
 
     const handleEndCall = useCallback(() => {
         if (isEndingRef.current) return;
@@ -68,7 +56,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
         activeCall.participants.forEach(p => {
             try {
                 wsManager.sendEndCall(p.id);
-            } catch (err) {
+            } catch (_err) {
                 logger.warn(`[CALL] Failed to send end call signal to ${p.id}`);
             }
         });
@@ -88,7 +76,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
     }, [localStream, onEndCall, wsManager, activeCall.participants]);
 
     // Create RTCPeerConnection helper
-    const createPeerConnection = useCallback(async (participant: Participant, stream: MediaStream) => {
+    const createPeerConnection = useCallback(async (participant: CallParticipant, stream: MediaStream) => {
         if (peerConnections.current.has(participant.id)) return;
 
         logger.log(`[CALL] Creating PeerConnection for ${participant.first_name} (${participant.id})`);
@@ -105,7 +93,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
             logger.log(`[CALL] Received remote track from ${participant.id} (tracks: ${event.streams[0]?.getTracks().length})`);
             setRemoteStreams(prev => {
                 const newMap = new Map(prev);
-                newMap.set(participant.id, event.streams[0]);
+                newMap.set(String(participant.id), event.streams[0]);
                 return newMap;
             });
         };
@@ -132,7 +120,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
                     peerConnections.current.delete(participant.id);
                     setRemoteStreams(prev => {
                         const newMap = new Map(prev);
-                        newMap.delete(participant.id);
+                        newMap.delete(String(participant.id));
                         return newMap;
                     });
 
@@ -159,7 +147,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
     }, [activeCall.isInitiator, wsManager, handleEndCall]);
 
     // Handle Incoming Signals
-    const processSignal = useCallback(async (signal: any) => {
+    const processSignal = useCallback(async (signal: WebSocketSignal) => {
         try {
             const { type, offer, answer, candidate, sender_id } = signal;
             const senderId = sender_id;
@@ -189,7 +177,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
 
             switch (type) {
                 case 'call_offer':
-                    if (!activeCall.isInitiator) {
+                    if (!activeCall.isInitiator && offer) {
                         logger.log(`[CALL] Handling offer from ${senderId}`);
                         await pc.setRemoteDescription(new RTCSessionDescription(offer));
                         const answerSd = await pc.createAnswer();
@@ -198,17 +186,19 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
                     }
                     break;
                 case 'call_answer':
-                    if (activeCall.isInitiator) {
+                    if (activeCall.isInitiator && answer) {
                         logger.log(`[CALL] Handling answer from ${senderId}`);
                         await pc.setRemoteDescription(new RTCSessionDescription(answer));
                     }
                     break;
                 case 'new_ice_candidate':
-                    logger.log(`[CALL] Handling candidate from ${senderId}`);
-                    try {
-                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-                    } catch (e) {
-                        logger.error('[CALL] Error adding ice candidate:', e);
+                    if (candidate) {
+                        logger.log(`[CALL] Handling candidate from ${senderId}`);
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                        } catch (e) {
+                            logger.error('[CALL] Error adding ice candidate:', e);
+                        }
                     }
                     break;
                 case 'call_end':
@@ -217,7 +207,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
                     peerConnections.current.delete(senderId);
                     setRemoteStreams(prev => {
                         const newMap = new Map(prev);
-                        newMap.delete(senderId);
+                        newMap.delete(String(senderId));
                         return newMap;
                     });
                     if (peerConnections.current.size === 0) handleEndCall();
@@ -226,7 +216,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
         } catch (error) {
             logger.error('[CALL] Error processing signal:', error);
         }
-    }, [localStream, activeCall.isInitiator, createPeerConnection, handleEndCall, wsManager]);
+    }, [localStream, activeCall.isInitiator, activeCall.participants, createPeerConnection, handleEndCall, wsManager]);
 
     // Initialize Call
     useEffect(() => {
@@ -268,7 +258,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
             isCancelled = true;
             handleEndCall();
         };
-    }, []); // Only on mount
+    }, [activeCall.type, activeCall.participants, createPeerConnection, handleEndCall]);
 
     // Process queued signals when localStream becomes available
     useEffect(() => {
@@ -310,7 +300,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
     };
 
     const renderRemoteVideos = () => {
-        const streams = Array.from(remoteStreams.entries()) as [string, MediaStream][];
+        const streams = Array.from(remoteStreams.entries());
 
         if (streams.length === 0) {
             return (
@@ -339,7 +329,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
         return (
             <div className={`w-full h-full grid ${gridCols} gap-4 p-4`}>
                 {streams.map(([userId, stream]) => {
-                    const participant = activeCall.participants.find(p => p.id === userId) || { first_name: 'Unknown', last_name: '' } as Participant;
+                    const participant = activeCall.participants.find(p => String(p.id) === userId) || { first_name: 'Unknown', last_name: '' } as CallParticipant;
                     return (
                         <div key={userId} className="relative bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 group">
                             <video
@@ -366,7 +356,6 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
             >
                 {remoteStreams.size > 0 ? (
                     <div className="absolute inset-0">
-                        {/* Show first remote stream if available */}
                         <video
                             ref={el => { if (el && Array.from(remoteStreams.values())[0]) el.srcObject = Array.from(remoteStreams.values())[0]; }}
                             autoPlay

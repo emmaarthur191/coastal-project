@@ -1,27 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AccountOpeningsService } from '../api/services/AccountOpeningsService';
-import type { AccountOpeningRequest } from '../api/models/AccountOpeningRequest';
+import type {
+  AccountWithDetails,
+  AccountOpeningRequest,
+  StaffAccountSummary,
+  ApiResponse
+} from '../types';
+import type { AccountOpeningRequest as BaseAccountOpeningRequest } from '../api/models/AccountOpeningRequest';
 import { authService } from '../services/api';
+import { AccountOpeningsService } from '../api/services/AccountOpeningsService';
+import { BankingService } from '../api/services/BankingService';
 
 type ViewMode = 'pending' | 'approved' | 'active' | 'all';
-
-interface Account {
-  id: number;
-  account_number: string;
-  account_type?: string;
-  balance?: string | number;
-  is_active?: boolean;
-  customer_name?: string;
-  user?: { id: string | number; full_name: string; email: string; phone?: string };
-  created_at: string | null;
-}
-
-interface AccountSummaryData {
-  total_accounts: number;
-  active_accounts: number;
-  total_balance: number;
-  recent_accounts: number;
-}
 
 const STATUS_BADGE: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-800',
@@ -41,8 +30,8 @@ const AccountsTab: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<AccountOpeningRequest | null>(null);
 
   // ── Active accounts state ────────────────────────────────────────────────
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [summary, setSummary] = useState<AccountSummaryData | null>(null);
+  const [accounts, setAccounts] = useState<AccountWithDetails[]>([]);
+  const [summary, setSummary] = useState<StaffAccountSummary | null>(null);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -51,7 +40,7 @@ const AccountsTab: React.FC = () => {
     setRequestsLoading(true);
     setRequestsError(null);
     try {
-      const res = await AccountOpeningsService.apiBankingAccountOpeningsList(
+      const res = await AccountOpeningsService.bankingAccountOpeningsList(
         undefined, undefined, undefined, status
       );
       setRequests(res.results || []);
@@ -67,11 +56,13 @@ const AccountsTab: React.FC = () => {
     setAccountsLoading(true);
     try {
       const [acctRes, summaryRes] = await Promise.all([
-        authService.getStaffAccounts(),
-        authService.getStaffAccountsSummary(),
+        authService.getStaffAccounts() as Promise<ApiResponse<AccountWithDetails[]>>,
+        authService.getStaffAccountsSummary() as Promise<ApiResponse<StaffAccountSummary>>,
       ]);
       if (acctRes.success) setAccounts(acctRes.data || []);
-      if (summaryRes.success) setSummary(summaryRes.data as AccountSummaryData);
+      if (summaryRes.success) setSummary(summaryRes.data || null);
+    } catch (e) {
+      console.error('Failed to fetch accounts or summary', e);
     } finally {
       setAccountsLoading(false);
     }
@@ -90,7 +81,7 @@ const AccountsTab: React.FC = () => {
     if (!confirm(`Approve account for ${req.first_name || ''} ${req.last_name || ''}?`)) return;
     setActionLoading(true);
     try {
-      await AccountOpeningsService.apiBankingAccountOpeningsApproveCreate(req.id!, req);
+      await AccountOpeningsService.bankingAccountOpeningsApproveCreate(req.id!, req as BaseAccountOpeningRequest);
       fetchRequests('pending');
     } catch (e) {
       alert('Approval failed: ' + (e instanceof Error ? e.message : 'Unknown error'));
@@ -104,7 +95,7 @@ const AccountsTab: React.FC = () => {
     if (!reason) return;
     setActionLoading(true);
     try {
-      await AccountOpeningsService.apiBankingAccountOpeningsRejectCreate(req.id!, { ...req, rejection_reason: reason });
+      await AccountOpeningsService.bankingAccountOpeningsRejectCreate(req.id!, { ...req, rejection_reason: reason } as BaseAccountOpeningRequest);
       fetchRequests('pending');
     } catch (e) {
       alert('Rejection failed: ' + (e instanceof Error ? e.message : 'Unknown error'));
@@ -117,7 +108,7 @@ const AccountsTab: React.FC = () => {
     if (!confirm(`Dispatch login credentials for ${req.first_name || ''} ${req.last_name || ''}?`)) return;
     setActionLoading(true);
     try {
-      await AccountOpeningsService.apiBankingAccountOpeningsDispatchCredentialsCreate(req.id!, req);
+      await BankingService.bankingAccountOpeningsDispatchCredentialsCreate(req.id!, req as BaseAccountOpeningRequest);
       fetchRequests('approved');
     } catch (e) {
       alert('Dispatch failed: ' + (e instanceof Error ? e.message : 'Unknown error'));

@@ -26,8 +26,7 @@ const LoanApprovalsSection: React.FC = () => {
     try {
       const response = await authService.getPendingLoans();
       if (response.success && response.data) {
-        // The backend returns a PaginatedResponse structure in response.data
-        const loansData = response.data.results || [];
+        const loansData = Array.isArray(response.data) ? response.data : response.data.results || [];
         setLoans(loansData);
         setFilteredLoans(loansData);
       } else {
@@ -53,7 +52,7 @@ const LoanApprovalsSection: React.FC = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(loan =>
         (loan.borrower_name || loan.applicant || '').toLowerCase().includes(term) ||
-        (loan.purpose || loan.description || '').toLowerCase().includes(term) ||
+        (loan.purpose || '').toLowerCase().includes(term) ||
         loan.id.toString().includes(searchTerm)
       );
     }
@@ -210,13 +209,13 @@ const LoanApprovalsSection: React.FC = () => {
                   </span>
                 </div>
                 <div className="loan-purpose">
-                  {loan.purpose || loan.description || 'No description provided'}
+                  {loan.purpose || 'No purpose provided'}
                 </div>
                 <div className="loan-amount">
                   {formatCurrencyGHS(loan.amount || 0)}
                 </div>
                 <div className="loan-date">
-                  Applied: {loan.application_date ? new Date(loan.application_date).toLocaleDateString() : 'N/A'}
+                  Applied: {loan.created_at ? new Date(loan.created_at).toLocaleDateString() : 'N/A'}
                 </div>
               </div>
 

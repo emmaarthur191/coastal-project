@@ -4,8 +4,9 @@
 /* eslint-disable */
 import type { Payslip } from './Payslip';
 export type PaginatedPayslipList = {
-    count: number;
+    count?: number;
     next?: string | null;
     previous?: string | null;
-    results: Array<Payslip>;
+    results?: Array<Payslip>;
 };
+

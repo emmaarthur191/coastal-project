@@ -5,13 +5,13 @@ describe('Logger Redaction', () => {
     beforeEach(() => {
         // Reset dev override
         if (typeof window !== 'undefined') {
-            delete (window as any).__LOGGER_DEV_OVERRIDE__;
+            delete (window as typeof window & { __LOGGER_DEV_OVERRIDE__?: boolean }).__LOGGER_DEV_OVERRIDE__;
         }
         vi.restoreAllMocks();
     });
 
     it('should redact sensitive fields in non-development mode', () => {
-        (window as any).__LOGGER_DEV_OVERRIDE__ = false;
+        (window as typeof window & { __LOGGER_DEV_OVERRIDE__?: boolean }).__LOGGER_DEV_OVERRIDE__ = false;
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
         const sensitiveData = JSON.stringify({
@@ -33,7 +33,7 @@ describe('Logger Redaction', () => {
     });
 
     it('should redact recursive objects and arrays', () => {
-        (window as any).__LOGGER_DEV_OVERRIDE__ = false;
+        (window as typeof window & { __LOGGER_DEV_OVERRIDE__?: boolean }).__LOGGER_DEV_OVERRIDE__ = false;
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
         const complexData = {
@@ -51,7 +51,11 @@ describe('Logger Redaction', () => {
 
         logger.error('Complex Log:', complexData);
 
-        const redactedObj = consoleSpy.mock.calls[0][2] as any;
+        const redactedObj = consoleSpy.mock.calls[0][2] as {
+            user: { first_name: string; id_number: string; metadata: { email: string; } };
+            tags: string[];
+            safeField: string;
+        };
 
         expect(redactedObj.user.first_name).toBe('[REDACTED]');
         expect(redactedObj.user.id_number).toBe('[REDACTED]');
@@ -61,7 +65,7 @@ describe('Logger Redaction', () => {
     });
 
     it('should neutralize homoglyph bypasses via Unicode normalization', () => {
-        (window as any).__LOGGER_DEV_OVERRIDE__ = false;
+        (window as typeof window & { __LOGGER_DEV_OVERRIDE__?: boolean }).__LOGGER_DEV_OVERRIDE__ = false;
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
         // Unicode Cyrillic 'а' (U+0430) instead of Latin 'a' (U+0061)
@@ -75,7 +79,7 @@ describe('Logger Redaction', () => {
     });
 
     it('should not redact in development mode', () => {
-        (window as any).__LOGGER_DEV_OVERRIDE__ = true;
+        (window as typeof window & { __LOGGER_DEV_OVERRIDE__?: boolean }).__LOGGER_DEV_OVERRIDE__ = true;
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         const pii = 'id_number: GHA-123456';
 

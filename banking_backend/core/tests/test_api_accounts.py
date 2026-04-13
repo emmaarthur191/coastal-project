@@ -111,8 +111,8 @@ class TestAccountOpening:
             "phone_number": "+233244000111",
             "email": "john@test.com",
             "account_type": "daily_susu",
-            "identification_type": "ghana_card",
-            "identification_number": "GHA-123456789-0",
+            "id_type": "ghana_card",
+            "id_number": "GHA-123456789-0",
         }
         response = api_client.post(url, data)
         assert response.status_code == status.HTTP_201_CREATED

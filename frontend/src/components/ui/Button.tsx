@@ -1,9 +1,10 @@
-import React, { ButtonHTMLAttributes, ElementType } from 'react';
+import React, { ElementType } from 'react';
+import { motion, HTMLMotionProps } from 'framer-motion';
 
 /**
  * Props for the Button component.
  */
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
     /** The visual style variant of the button. Defaults to 'primary'. */
     variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost';
     /** The size of the button. Defaults to 'md'. */
@@ -12,6 +13,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     icon?: ElementType;
     /** Additional CSS classes to apply to the button. */
     className?: string; // Explicitly allow className
+    /** Standard React children */
+    children?: React.ReactNode;
 }
 
 /**
@@ -19,7 +22,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Supports glassmorphism effects and micro-animations.
  *
  * @param props - The properties to configure the button.
- * @returns A styled HTML button element.
+ * @returns A styled motion button element.
  */
 export const Button: React.FC<ButtonProps> = ({
     children,
@@ -32,7 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
     icon: Icon,
     ...props
 }) => {
-    const baseStyles = "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
+    const baseStyles = "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
         primary: "bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-400 shadow-lg shadow-blue-500/20 focus:ring-blue-500 border border-transparent",
@@ -50,7 +53,9 @@ export const Button: React.FC<ButtonProps> = ({
     };
 
     return (
-        <button
+        <motion.button
+            whileHover={{ y: -2, scale: 1.02, transition: { duration: 0.5, ease: [0.2, 0, 0, 1] as const } }}
+            whileTap={{ scale: 0.98 }}
             type={type}
             onClick={onClick}
             disabled={disabled}
@@ -59,6 +64,6 @@ export const Button: React.FC<ButtonProps> = ({
         >
             {Icon && <Icon className="w-4 h-4 mr-2" />}
             {children}
-        </button>
+        </motion.button>
     );
 };

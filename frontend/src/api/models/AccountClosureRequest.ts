@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ClosureReasonEnum } from './ClosureReasonEnum';
-import type { StatusE5aEnum } from './StatusE5aEnum';
+import type { Status669Enum } from './Status669Enum';
 /**
  * Serializer for account closure requests.
  */
@@ -15,9 +15,9 @@ export type AccountClosureRequest = {
     readonly customer_name: string;
     closure_reason: ClosureReasonEnum;
     other_reason?: string;
-    phone_number: string;
+    readonly phone_number: string;
     otp_verified?: boolean;
-    readonly status: StatusE5aEnum;
+    readonly status: Status669Enum;
     readonly processed_by: number | null;
     readonly submitted_by: number | null;
     readonly rejection_reason: string;
@@ -27,3 +27,4 @@ export type AccountClosureRequest = {
     readonly updated_at: string;
     readonly closed_at: string | null;
 };
+

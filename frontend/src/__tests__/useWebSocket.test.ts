@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 const mockUser = { id: 1, role: 'staff' };
@@ -42,7 +42,7 @@ describe('useWebSocket Hook', () => {
 
         // @ts-expect-error - mocking global WebSocket
         global.WebSocket = vi.fn().mockImplementation(function () { return mockWs; });
-        (global.WebSocket as any).OPEN = 1;
+        (global.WebSocket as unknown as Record<string, unknown>).OPEN = 1;
 
         const { result } = renderHook(() => useWebSocket({
             url: 'ws://localhost/test',
@@ -80,7 +80,7 @@ describe('useWebSocket Hook', () => {
 
         // @ts-expect-error - mocking global WebSocket
         global.WebSocket = vi.fn().mockImplementation(function () { return mockWs; });
-        (global.WebSocket as any).OPEN = 1;
+        (global.WebSocket as unknown as Record<string, unknown>).OPEN = 1;
 
         const { result } = renderHook(() => useWebSocket({
             url: 'ws://localhost/test',
@@ -98,8 +98,8 @@ describe('useWebSocket Hook', () => {
         await waitFor(() => expect(result.current.isConnected).toBe(true));
 
         await act(async () => {
-            (mockWs as any).readyState = 1;
-            (mockWs as any).onopen();
+            (mockWs as unknown as Record<string, unknown>).readyState = 1;
+            (mockWs as unknown as { onopen: () => void }).onopen();
         });
 
         await waitFor(() => expect(result.current.isConnected).toBe(true));
@@ -115,7 +115,7 @@ describe('useWebSocket Hook', () => {
         const mockWs = { send: vi.fn(), close: vi.fn(), readyState: 0, onopen: null, onmessage: null };
         // @ts-expect-error - mocking global WebSocket
         global.WebSocket = vi.fn().mockImplementation(function () { return mockWs; });
-        (global.WebSocket as any).OPEN = 1;
+        (global.WebSocket as unknown as Record<string, unknown>).OPEN = 1;
 
         const onMessage = vi.fn();
         const { result } = renderHook(() => useWebSocket({
@@ -127,15 +127,15 @@ describe('useWebSocket Hook', () => {
         await waitFor(() => expect(mockWs.onopen).not.toBeNull());
 
         await act(async () => {
-            (mockWs as any).readyState = 1;
-            (mockWs as any).onopen();
+            (mockWs as unknown as Record<string, unknown>).readyState = 1;
+            (mockWs as unknown as { onopen: () => void }).onopen();
         });
 
         await waitFor(() => expect(mockWs.onmessage).not.toBeNull());
 
         const mockData = { type: 'test', payload: 'hello' };
         await act(async () => {
-            (mockWs as any).onmessage({ data: JSON.stringify(mockData) });
+            (mockWs as unknown as { onmessage: (event: { data: string }) => void }).onmessage({ data: JSON.stringify(mockData) });
         });
 
         await waitFor(() => expect(result.current.lastMessage).toEqual(mockData));

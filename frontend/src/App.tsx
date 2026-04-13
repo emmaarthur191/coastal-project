@@ -28,8 +28,8 @@ const FraudAlerts = lazy(() => import('./pages/FraudAlerts'));
 const FraudCases = lazy(() => import('./pages/FraudCases'));
 const FraudRules = lazy(() => import('./pages/FraudRules'));
 const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage'));
-const StaffOTPVerificationPage = lazy(() => import('./pages/StaffOTPVerificationPage'));
 const BankingOperations = lazy(() => import('./pages/BankingOperations'));
+const PerformanceDashboard = lazy(() => import('./pages/PerformanceDashboard'));
 
 // Import components
 import ProtectedMemberRoute from './components/ProtectedMemberRoute'
@@ -117,7 +117,12 @@ function AppContent() {
   }
 
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <NetworkStatusIndicator />
       <ErrorBoundary>
         <div className="App">
@@ -194,7 +199,7 @@ function AppContent() {
               </ProtectedStaffRoute>
             } />
             <Route path="/mobile-banker-dashboard" element={
-              <ProtectedStaffRoute allowedRoles={['mobile_banker', 'manager', 'operations_manager']}>
+              <ProtectedStaffRoute allowedRoles={['mobile_banker']}>
                 <Suspense fallback={<PageLoading />}>
                   <MobileBankerDashboard />
                 </Suspense>
@@ -249,6 +254,13 @@ function AppContent() {
                 </Suspense>
               </ProtectedRoute>
             } />
+            <Route path="/performance" element={
+              <ProtectedStaffRoute allowedRoles={['manager', 'operations_manager']}>
+                <Suspense fallback={<PageLoading />}>
+                  <PerformanceDashboard />
+                </Suspense>
+              </ProtectedStaffRoute>
+            } />
             <Route path="/reports" element={
               <ProtectedRoute>
                 <Suspense fallback={<PageLoading />}>
@@ -272,13 +284,6 @@ function AppContent() {
             <Route path="/staff-verification" element={
               <ProtectedRoute>
                 <StaffVerificationPanel />
-              </ProtectedRoute>
-            } />
-            <Route path="/staff-otp-verification" element={
-              <ProtectedRoute>
-                <Suspense fallback={<PageLoading />}>
-                  <StaffOTPVerificationPage />
-                </Suspense>
               </ProtectedRoute>
             } />
           </Routes>

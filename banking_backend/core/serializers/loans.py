@@ -8,6 +8,7 @@ from core.models.loans import Loan
 class LoanSerializer(serializers.ModelSerializer):
     borrower_name = serializers.SerializerMethodField()
     borrower_email = serializers.SerializerMethodField()
+    initiator_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Loan
@@ -26,6 +27,7 @@ class LoanSerializer(serializers.ModelSerializer):
             "digital_address",
             "town",
             "city",
+            "verification_notes",
             "next_of_kin_1_name",
             "next_of_kin_1_relationship",
             "next_of_kin_1_phone",
@@ -47,6 +49,8 @@ class LoanSerializer(serializers.ModelSerializer):
             "monthly_income",
             "employment_status",
             "outstanding_balance",
+            "requested_by",
+            "initiator_name",
             "status",
             "approved_at",
             "created_at",
@@ -62,6 +66,8 @@ class LoanSerializer(serializers.ModelSerializer):
             "updated_at",
             "borrower_name",
             "borrower_email",
+            "requested_by",
+            "initiator_name",
         ]
 
     def get_borrower_name(self, obj):
@@ -69,6 +75,9 @@ class LoanSerializer(serializers.ModelSerializer):
 
     def get_borrower_email(self, obj):
         return obj.user.email if obj.user else ""
+
+    def get_initiator_name(self, obj):
+        return obj.requested_by.get_full_name() if obj.requested_by else "Customer"
 
     def to_representation(self, instance):
         """Apply PII masking to sensitive fields in API responses based on user role."""

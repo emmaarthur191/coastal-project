@@ -69,7 +69,6 @@ class ComplaintSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "status",
-            "resolution",
             "assigned_to",
             "resolved_by",
             "resolved_at",
@@ -92,6 +91,7 @@ class CashAdvanceSerializer(serializers.ModelSerializer):
 
     user_name = serializers.SerializerMethodField()
     approved_by_name = serializers.SerializerMethodField()
+    submitted_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = CashAdvance
@@ -104,19 +104,27 @@ class CashAdvanceSerializer(serializers.ModelSerializer):
             "status",
             "approved_by",
             "approved_by_name",
+            "submitted_by",
+            "submitted_by_name",
             "repayment_date",
             "repaid_at",
             "notes",
+            "id_type",
+            "id_number",
+            "verification_notes",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "approved_by", "repaid_at", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "approved_by", "submitted_by", "repaid_at", "created_at", "updated_at"]
 
     def get_user_name(self, obj):
         return obj.user.get_full_name() if obj.user else None
 
     def get_approved_by_name(self, obj):
         return obj.approved_by.get_full_name() if obj.approved_by else None
+
+    def get_submitted_by_name(self, obj):
+        return obj.submitted_by.get_full_name() if obj.submitted_by else "Customer"
 
 
 class CashDrawerDenominationSerializer(serializers.ModelSerializer):
@@ -259,7 +267,15 @@ class ClientAssignmentSerializer(serializers.ModelSerializer):
         user = request.user if request else None
 
         # Determine if user has permission to view full PII
-        can_view_pii = user and (user.role in ["admin", "manager", "operations_manager"] or user.is_superuser)
+        # Permission granted if:
+        # 1. User is an admin/manager
+        # 2. User is the specific mobile banker assigned to this client
+        is_assigned_banker = user and instance.mobile_banker == user
+        can_view_pii = user and (
+            user.role in ["admin", "manager", "operations_manager"] 
+            or user.is_superuser
+            or is_assigned_banker
+        )
 
         if not can_view_pii:
             # Mask client name and location
