@@ -350,9 +350,9 @@ class AccountOpeningViewSet(
                 }
             )
         except Exception as e:
-            logger.error(f"Failed Stage 1 approval for request {opening_request.id}: {e}")
+            logger.exception(f"Failed Stage 1 approval for request {opening_request.id}")
             return Response(
-                {"status": "error", "message": f"Step 1 failed: {e!s}"},
+                {"status": "error", "message": "Step 1 approval failed. Please contact support."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -409,9 +409,9 @@ class AccountOpeningViewSet(
                 }
             )
         except Exception as e:
-            logger.error(f"Failed Stage 2 dispatch for request {opening_request.id}: {e}")
+            logger.exception(f"Failed Stage 2 dispatch for request {opening_request.id}")
             return Response(
-                {"status": "error", "message": f"Step 2 failed: {e!s}"},
+                {"status": "error", "message": "Step 2 dispatch failed. Please contact support."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -616,8 +616,9 @@ class AccountOpeningViewSet(
         request.session[f"{session_key}_time"] = timezone.now().isoformat()
         request.session.save()
 
-        # Mock SMS send (In production this calls SendexaService)
-        logger.info(f"OTP for {phone_number}: {otp_code}")
+        # SECURITY FIX: Never log OTP codes in production
+        if settings.DEBUG:
+            logger.info(f"OTP for {phone_number}: [REDACTED]")
 
         return Response({"status": "success", "message": "OTP sent successfully."})
 

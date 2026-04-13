@@ -28,8 +28,8 @@ class SecretManager:
             try:
                 with open(secret_path, 'r') as f:
                     return f.read().strip()
-            except Exception as e:
-                logger.error(f"Failed to read secret from {secret_path}: {e}")
+            except Exception:
+                logger.error(f"Failed to read secret from dedicated file.")
         
         # 2. Check for .env file in secrets dir (Render standard for env-group-files)
         env_file_path = os.path.join(secrets_dir, ".env")
@@ -39,8 +39,8 @@ class SecretManager:
                     for line in f:
                         if line.startswith(f"{key_name}="):
                             return line.split('=', 1)[1].strip().strip('"').strip("'")
-            except Exception as e:
-                logger.error(f"Failed to read from {env_file_path}: {e}")
+            except Exception:
+                logger.error(f"Failed to read from .env secret file.")
         
         return None
 

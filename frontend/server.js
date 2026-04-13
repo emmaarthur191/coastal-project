@@ -3,6 +3,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,25 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_URL || 'https://coastal-backend-annc.onrender.com';
+
+// SECURITY: Global Rate Limiter (High-Severity SAST Fix)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // Limit each IP to 1000 requests per window
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    message: {
+        status: 429,
+        error: 'Too many requests, please try again later.'
+    },
+    skip: (req) => {
+        // Skip rate limiting for static assets (images, fonts, etc.)
+        return req.url.match(/\.(png|jpg|jpeg|gif|svg|webp|woff|woff2|eot|ttf|otf|css|js)$/);
+    }
+});
+
+// Apply rate limiting to all requests (except skipped static assets)
+app.use(limiter);
 
 // Security Headers & CSP
 app.use((req, res, next) => {

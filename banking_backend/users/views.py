@@ -454,7 +454,11 @@ class SendOTPView(APIView):
             logger.error(f"[OTP Error] Failed to send SMS: {response}")
             # If Sendexa fails (e.g. Cloudflare block), return a specific error to help diagnosis
             if not settings.DEBUG:
-                return Response({"error": f"Failed to send SMS code. {response}"}, status=status.HTTP_502_BAD_GATEWAY)
+                logger.error(f"Failed to send SMS code for user. Gateway response: {response}")
+                return Response(
+                    {"error": "Failed to send secure SMS. Please contact support."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
 
         response_data = {
             "success": True,
@@ -1328,9 +1332,9 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 )
 
         except Exception as e:
-            logger.error(f"Staff Approve & Print failed: {e}")
+            logger.exception(f"Staff Approve & Print failed for user {user.id}")
             return Response(
-                {"status": "error", "message": f"Approval failed: {e!s}"},
+                {"status": "error", "message": "Staff approval failed. Internal error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

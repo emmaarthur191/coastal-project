@@ -87,7 +87,8 @@ class VisitScheduleViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
             visit.status = "completed"  # Auto-complete on check-in for this bank's policy
             visit.save()
         except Exception as e:
-            return Response({"error": f"Invalid coordinates provided: {e!s}"}, status=400)
+            logger.error(f"Invalid coordinates provided (internal): {e!s}")
+            return Response({"error": "Invalid location format provided."}, status=400)
 
         return Response(
             {

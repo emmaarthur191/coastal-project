@@ -69,7 +69,7 @@ class LoanService:
         if not target_account:
             # IAO SECURITY CHECK: Prevent disbursement if no active account is available.
             raise ValidationError(
-                f"User {loan.user.email} has no active accounts for loan disbursement. Activate an account first."
+                f"User has no active accounts for loan disbursement. Activate an account first."
             )
 
         loan.status = "approved"
@@ -138,8 +138,8 @@ class LoanService:
             else:
                 logger.warning(f"Loan SMS failed for loan {loan.id}: {result}")
 
-        except Exception as e:
-            logger.error(f"Loan SMS notification error for loan {loan.id}: {e}")
+        except Exception:
+            logger.exception(f"Loan SMS notification service error for loan {loan.id}")
 
     @staticmethod
     @transaction.atomic

@@ -93,8 +93,8 @@ class TransactionService:
 
             if is_anomaly:
                 logger.warning(f"Transaction flagged by ML Fraud Detector (Level: {fraud_risk_level})")
-        except Exception as e:
-            logger.warning(f"Fraud detector error: {e}")
+        except Exception:
+            logger.exception("Fraud detector service error encountered.")
 
         status = "pending_approval" if (requires_approval or is_anomaly) else "completed"
         processed_at = None if (requires_approval or is_anomaly) else timezone.now()
@@ -317,8 +317,8 @@ class TransactionService:
             else:
                 logger.warning(f"SMS failed for transaction {tx_id}: {result}")
 
-        except Exception as e:
-            logger.error(f"SMS notification error for tx {tx_id}: {e}")
+        except Exception:
+            logger.exception(f"SMS notification service error for tx {tx_id}")
 
     @staticmethod
     def _mask_account_number(acc_num):

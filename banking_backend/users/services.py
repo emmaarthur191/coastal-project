@@ -70,9 +70,8 @@ class SendexaService:
         # 1. Normalize and Verify
         normalized_phone = SendexaService.normalize_phone_number(phone_number)
         if not SendexaService.is_valid_e164(normalized_phone):
-            error_msg = f"Invalid phone format: '{phone_number}' -> '{normalized_phone}'"
-            logger.error(f"Sendexa: {error_msg}")
-            return False, error_msg
+            logger.error(f"Sendexa: Invalid phone format provided for SMS delivery.")
+            return False, "Invalid phone format"
 
         # 2. Persistence with Encryption (PII Protection)
         from core.models.reliability import SmsOutbox
@@ -146,8 +145,8 @@ class SendexaService:
                 outbox.save()
                 return False, outbox.error_message or "Unknown error"
 
-            except Exception as e:
-                logger.error(f"Sendexa: Attempt {attempt+1} failed: {e}")
+            except Exception:
+                logger.exception(f"Sendexa: Attempt {attempt+1} failed.")
                 if attempt == max_retries - 1:
                     outbox.status = "failed"
                     outbox.error_message = str(e)[:1000]
