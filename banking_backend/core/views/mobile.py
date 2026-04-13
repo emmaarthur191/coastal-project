@@ -510,5 +510,5 @@ class ProcessRepaymentView(APIView):
                 }
             )
         except Exception as e:
-            logger.error(f"Mobile repayment failed: {e}")
-            return Response({"error": str(e)}, status=400)
+            logger.exception("Mobile repayment failed")
+            return Response({"error": "An internal error occurred during processing."}, status=400)

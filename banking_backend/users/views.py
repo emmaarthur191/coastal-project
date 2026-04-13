@@ -143,7 +143,8 @@ class LoginView(APIView):
 
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except PermissionDenied as e:
-            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            logger.warning(f"Login permission denied: {e}")
+            return Response({"detail": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
 
         user = serializer.validated_data["user"]
 
@@ -1334,7 +1335,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.exception(f"Staff Approve & Print failed for user {user.id}")
             return Response(
-                {"status": "error", "message": "Staff approval failed. Internal error occurred."},
+                {"status": "error", "message": "An internal error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

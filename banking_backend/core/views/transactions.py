@@ -101,9 +101,9 @@ class TransactionViewSet(
                 )
                 serializer.instance = tx
         except InsufficientFundsError as e:
-            raise ValidationError({"status": "error", "message": str(e), "code": "INSUFFICIENT_FUNDS"})
+            raise ValidationError({"status": "error", "message": "Insufficient funds to complete this transaction.", "code": "INSUFFICIENT_FUNDS"})
         except (InvalidTransactionError, BankingException) as e:
-            raise ValidationError({"status": "error", "message": str(e), "code": "INVALID_TRANSACTION"})
+            raise ValidationError({"status": "error", "message": "The requested transaction is invalid.", "code": "INVALID_TRANSACTION"})
         except Exception as e:
             logger.error(f"Unexpected error during transaction creation: {e}")
             raise ValidationError({"status": "error", "message": "An unexpected error occurred during processing."})

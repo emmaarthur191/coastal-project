@@ -519,9 +519,9 @@ class AccountOpeningViewSet(
                 )
 
         except Exception as e:
-            logger.error(f"Approve & Print failed for request {opening_request.id}: {e}")
+            logger.exception(f"Approve & Print failed for request {opening_request.id}")
             return Response(
-                {"status": "error", "message": f"Approval failed: {e!s}"},
+                {"status": "error", "message": "Account activation failure.", "code": "ACTIVATION_FAILED"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -617,10 +617,9 @@ class AccountOpeningViewSet(
         request.session[f"{session_key}_time"] = timezone.now().isoformat()
         request.session.save()
 
-        # SECURITY FIX: Never log OTP codes or full phone numbers in production
+        # SECURITY FIX: Completely removed dynamic PII lineages from logs to satisfy CodeQL
         if settings.DEBUG:
-            safe_phone = f"{phone_number[:3]}***{phone_number[-2:]}" if phone_number else "Unknown"
-            logger.info(f"OTP for {safe_phone}: [REDACTED]")
+            logger.info("OTP dispatch event recorded")
 
         return Response({"status": "success", "message": "OTP sent successfully."})
 

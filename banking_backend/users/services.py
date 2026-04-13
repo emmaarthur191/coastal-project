@@ -87,8 +87,7 @@ class SendexaService:
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
         if settings.DEBUG and not api_token_b64:
-            safe_phone = f"{normalized_phone[:3]}***{normalized_phone[-2:]}" if normalized_phone else "Unknown"
-            logger.info(f"Sendexa [DEBUG MOCK]: To {safe_phone}, Msg: {message[:20]}...")
+            logger.info("Sendexa [DEBUG MOCK]: SMS entry validated")
             outbox.status = "sent"
             outbox.sent_at = timezone.now()
             outbox.save()

@@ -220,7 +220,7 @@ class MLFraudDetector:
             return result
 
         except Exception as e:
-            logger.error(f"Error in fraud prediction: {e}")
+            logger.exception("Error in fraud prediction")
             # Return safe default on error
             return {
                 "is_anomaly": False,
@@ -228,7 +228,7 @@ class MLFraudDetector:
                 "risk_level": "unknown",
                 "features": {},
                 "raw_score": 0.0,
-                "error": str(e),
+                "error": "Internal prediction error",
             }
 
     def train(self, transactions_queryset=None, min_samples: int = 100) -> dict:

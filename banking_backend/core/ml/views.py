@@ -56,9 +56,10 @@ class MLFraudAnalysisView(APIView):
         except Transaction.DoesNotExist:
             return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error analyzing transaction: {e}")
+            logger.exception("Fraud analysis failure")
             return Response(
-                {"error": "Analysis failed", "detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"status": "error", "message": "An unexpected error occurred during fraud analysis.", "code": "ANALYSIS_FAILED"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
