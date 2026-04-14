@@ -13,11 +13,10 @@ from rest_framework_simplejwt.tokens import UntypedToken
 
 @database_sync_to_async
 def get_user(token):
+    User = get_user_model()
     try:
-        UntypedToken(token)
         decoded_data = UntypedToken(token)
         user_id = decoded_data["user_id"]
-        User = get_user_model()
         return User.objects.get(id=user_id)
     except (InvalidToken, TokenError, User.DoesNotExist):
         return AnonymousUser()
