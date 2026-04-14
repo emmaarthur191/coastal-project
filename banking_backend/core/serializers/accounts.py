@@ -193,7 +193,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
         # Authorized roles: operations_manager, manager, admin (and superusers/staff)
         is_staff_gate = bool(user and (user.is_superuser or getattr(user, "is_staff", False)))
         user_role = str(getattr(user, "role", "customer")).lower().strip()
-        AUTHORIZED_ROLES = ["admin", "manager", "operations_manager"]
+        AUTHORIZED_ROLES = ["admin", "manager", "operations_manager", "cashier", "mobile_banker"]
         
         can_view_pii = is_staff_gate or (user_role in AUTHORIZED_ROLES)
 

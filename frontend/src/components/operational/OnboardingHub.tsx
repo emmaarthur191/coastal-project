@@ -136,14 +136,19 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="w-10 h-10 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center mx-auto">
-                      {req.photo ? (
+                      {req.photo && req.photo !== '[ENCRYPTED_PII_PHOTO]' ? (
                         <img
                           src={getImageSrc(req.photo)}
                           alt="Preview"
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <User className="w-6 h-6 text-slate-500 dark:text-slate-300 opacity-50" />
+                        <div className="flex flex-col items-center justify-center text-slate-500 opacity-50">
+                          <User className="w-5 h-5" />
+                          {req.photo === '[ENCRYPTED_PII_PHOTO]' && (
+                            <span className="text-[7px] font-black uppercase tracking-tighter mt-1 leading-none">Masked</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
