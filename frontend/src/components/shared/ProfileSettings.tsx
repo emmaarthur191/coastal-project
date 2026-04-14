@@ -18,12 +18,14 @@ import { Button } from '../ui/Button';
 import GlassCard from '../ui/modern/GlassCard';
 import { logger } from '../../utils/logger';
 import { UserExtended } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProfileSettingsProps {
   user: UserExtended;
 }
 
 const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user }) => {
+  const { updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   
@@ -93,6 +95,9 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user }) => {
       const res = await apiService.updateProfile(profileForm);
       if (res.success) {
         setMessage({ text: 'Profile updated successfully!', type: 'success' });
+        if (res.data) {
+          updateUser(res.data);
+        }
       } else {
         setMessage({ text: res.error || 'Failed to update profile', type: 'error' });
       }

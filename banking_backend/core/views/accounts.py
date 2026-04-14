@@ -516,17 +516,18 @@ class AccountOpeningViewSet(
 
                 # 4. Generate PDF Welcome Letter
                 from core.pdf_services import generate_account_opening_letter_pdf
-                from core.utils.async_stream import async_file_iterator
 
                 pdf_buffer = generate_account_opening_letter_pdf(
                     opening_request, new_account.account_number, temp_password
                 )
 
-                # 5. Notify Customer of Account Number (Physical Onboarding Confirmed)
+                # 5. Notify Customer of Account Number
                 self._send_account_number_sms(opening_request, new_account)
 
+                # Rewind buffer and return FileResponse directly (Modern Django 5.x ASGI handling)
+                pdf_buffer.seek(0)
                 return FileResponse(
-                    async_file_iterator(pdf_buffer),
+                    pdf_buffer,
                     as_attachment=True,
                     filename=f"Coastal_Welcome_{new_account.account_number}.pdf",
                     content_type="application/pdf",
