@@ -149,7 +149,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_messagethread_participants" (
             "id" BIGSERIAL PRIMARY KEY,
             "messagethread_id" BIGINT NOT NULL REFERENCES "core_messagethread" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("messagethread_id", "user_id")
         )""",
     )
@@ -181,7 +181,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_message_read_by" (
             "id" BIGSERIAL PRIMARY KEY,
             "message_id" BIGINT NOT NULL REFERENCES "core_message" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("message_id", "user_id")
         )""",
     )
@@ -268,7 +268,7 @@ def sync_missing_tables():
         """CREATE TABLE "admin_notification_target_users" (
             "id" BIGSERIAL PRIMARY KEY,
             "adminnotification_id" BIGINT NOT NULL REFERENCES "admin_notification" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("adminnotification_id", "user_id")
         )""",
     )
@@ -398,7 +398,7 @@ def sync_missing_tables():
         """CREATE TABLE "core_chatroom_members" (
             "id" BIGSERIAL PRIMARY KEY,
             "chatroom_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("chatroom_id", "user_id")
         )""",
     )
@@ -412,7 +412,7 @@ def sync_missing_tables():
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "room_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
-            "sender_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+            "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -428,7 +428,7 @@ def sync_missing_tables():
             "notes" TEXT NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "mobile_banker_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+            "mobile_banker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -443,7 +443,7 @@ def sync_missing_tables():
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "recipient_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
-            "sender_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+            "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -799,7 +799,7 @@ def main():
     print("  Smart Migration Script v8 (Exhaustive Sync & Cleanup)")
     print("=" * 60)
 
-    core_tables = ["account", "transaction", "user", "loan"]
+    core_tables = ["account", "transaction", "users_user", "loan"]
 
     # RETRY LOGIC: Handle connection exhaustion during deployment overlaps
     max_retries = 5

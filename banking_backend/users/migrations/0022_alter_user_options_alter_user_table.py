@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelTable(
             name="user",
-            table="user",
+            table="users_user",
         ),
     ]
