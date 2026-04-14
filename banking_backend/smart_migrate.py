@@ -247,10 +247,10 @@ def sync_missing_tables():
         "user_activity",
         """CREATE TABLE "user_activity" (
             "id" BIGSERIAL PRIMARY KEY,
-            "activity_type" VARCHAR(100) NOT NULL,
-            "description" TEXT NOT NULL,
+            "action" VARCHAR(50) NOT NULL,
             "ip_address" INET NULL,
-            "user_agent" TEXT NULL,
+            "user_agent" TEXT NOT NULL DEFAULT '',
+            "details" JSONB NOT NULL DEFAULT '{}',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
@@ -723,6 +723,13 @@ def sync_missing_columns():
     add_column_if_not_exists(
         "account_statement", "requested_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE'
     )
+
+    # UserActivity Alignment
+    add_column_if_not_exists("user_activity", "action", "VARCHAR(50) DEFAULT 'unspecified' NOT NULL")
+    add_column_if_not_exists("user_activity", "details", "JSONB DEFAULT '{}' NOT NULL")
+    # Clean up legacy names if they exist
+    drop_column_if_exists("user_activity", "activity_type")
+    drop_column_if_exists("user_activity", "description")
     add_column_if_not_exists("account_statement", "transaction_count", "INTEGER DEFAULT 0 NOT NULL")
     add_column_if_not_exists("account_statement", "opening_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
     add_column_if_not_exists("account_statement", "closing_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
