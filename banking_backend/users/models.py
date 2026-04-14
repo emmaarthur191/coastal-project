@@ -6,41 +6,66 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
-    """Custom manager for the User model with email as the unique identifier."""
+    """
+    Improved UserManager for Coastal Banking.
+    Handles 'email'-less accounts by using phone_number as an identifier.
+    """
 
-    def create_user(self, email=None, password=None, **extra_fields):
-        """Create and save a regular User with the given email (optional) and password."""
-        if not email and "username" not in extra_fields:
-            raise ValueError("Either Email or Username must be set")
-        
-        if email:
+    def create_user(self, email=None, phone_number=None, password=None, **extra_fields):
+        """
+        Create and return a regular user with email or phone_number fallback.
+        """
+        if not email and not phone_number:
+            raise ValueError("Either 'email' or 'phone_number' must be set")
+
+        # If no email but phone is provided → use phone as username
+        if not email and phone_number:
+            # Clean phone number for use as a username
+            username = str(phone_number).replace(" ", "").replace("+", "").replace("-", "")
+            email = None  # email remains None
+        else:
             email = self.normalize_email(email)
+            # Default username to email prefix if not provided
             if "username" not in extra_fields:
-                extra_fields["username"] = email.split("@")[0]
+                extra_fields["username"] = email.split("@")[0] if email else None
         
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        # Determine final username if it wasn't set by logic above or passed in
+        username = extra_fields.get("username")
+
+        # Set default values
+        extra_fields.setdefault("is_active", True)
+
+        user = self.model(
+            email=email,
+            phone_number=phone_number,
+            username=username,
+            **extra_fields
+        )
+
+        if password:
+            user.set_password(password)
+        else:
+            # SECURITY: Enforce minimum 12 chars for generated passwords
+            user.set_password(self.make_random_password(length=12))
+
         user.save(using=self._db)
+        logger.info(f"User created successfully - Username: {username}, Email: {email}, Phone: {phone_number}")
         return user
 
-    def create_superuser(self, email=None, password=None, **extra_fields):
-        """Create and save a SuperUser with the given email and password."""
-        if not email:
-            # Fallback for superuser username if no email provided
-            if "username" not in extra_fields:
-                extra_fields["username"] = "admin"
-            email = None
-            
+    def create_superuser(self, email=None, phone_number=None, password=None, **extra_fields):
+        """Create a superuser with complete system access."""
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("role", "admin")
+        extra_fields.setdefault("is_approved", True)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return self.create_user(email, password, **extra_fields)
+        return self.create_user(email, phone_number, password, **extra_fields)
+
 
 
 class User(AbstractUser):

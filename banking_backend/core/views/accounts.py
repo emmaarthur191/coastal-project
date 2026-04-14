@@ -289,9 +289,16 @@ class AccountOpeningViewSet(
 
                 User = get_user_model()
 
-                # Get email/phone or fallbacks
-                user_email = opening_request.email or getattr(opening_request, 'applicant_email', None)
-                user_phone = opening_request.phone_number or getattr(opening_request, 'applicant_phone', None)
+                # Get email/phone or fallbacks using robust extraction
+                user_email = (
+                    getattr(opening_request, 'email', None) or 
+                    getattr(opening_request, 'applicant_email', None)
+                )
+                user_phone = (
+                    getattr(opening_request, 'phone_number', None) or 
+                    getattr(opening_request, 'applicant_phone', None) or 
+                    getattr(opening_request, 'phone', None)
+                )
                 
                 customer_user = None
 
@@ -305,41 +312,25 @@ class AccountOpeningViewSet(
                     customer_user = User.objects.filter(phone_number_hash=phone_hash, role="customer").first()
 
                 if not customer_user:
-                    # Clean identifiers for username creation
                     if not user_email and not user_phone:
                         return Response(
                             {"status": "error", "message": "Either Email or Phone number is required to create a customer account."},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    # Determine username: priority email prefix > cleaned phone number
-                    if user_email:
-                        username = user_email.split('@')[0]
-                    else:
-                        # Fallback to phone number as username (login)
-                        username = user_phone.replace(" ", "").replace("+", "")
-                    
-                    # Ensure username uniqueness (extremely rare collision if using UUID-like phone)
-                    if User.objects.filter(username=username).exists():
-                         import secrets
-                         username = f"{username}_{secrets.token_hex(2)}"
-
-                    # Initial random password (will be reset/resent in Stage 2)
-                    import secrets
-                    temp_initial_pwd = secrets.token_urlsafe(12)
-
+                    # Use the improved UserManager to handle all fallback logic and password generation
                     customer_user = User.objects.create_user(
-                        username=username,
-                        email=user_email, # Now nullable in User model
-                        password=temp_initial_pwd,
+                        email=user_email,
+                        phone_number=user_phone,
                         first_name=opening_request.first_name,
                         last_name=opening_request.last_name,
                         role="customer",
                     )
-                    
-                # Always ensure phone is set/updated on the customer user record
-                if user_phone:
+                
+                # Ensure phone is set/updated on the customer user record (PII property setter)
+                if user_phone and not customer_user.phone_number:
                     customer_user.phone_number = user_phone
+
                 
                 # Copy/Sync ID Information
                 customer_user.id_type = opening_request.id_type

@@ -46,6 +46,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     profile_photo = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+
 
     class Meta:
         model = User
@@ -129,7 +133,10 @@ class StaffCreationSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, min_length=12)
     password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=False, allow_blank=True)
+
 
     class Meta:
         model = User
