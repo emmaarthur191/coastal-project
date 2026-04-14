@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smart Migration Script v9 - Exhaustive Production Schema Sync & Cleanup.
+"""Smart Migration Script v10 - Exhaustive Production Schema Sync & Cleanup.
 
 This script ensures the production database has all required tables and columns,
 aligns naming with actual db_table definitions, and cleans up redundant duplicates.
@@ -574,6 +574,8 @@ def sync_missing_columns():
 
     # Users: Core Alignment
     set_column_nullable("users_user", "email", True)
+    set_column_nullable("users_user", "first_name", True)
+    set_column_nullable("users_user", "last_name", True)
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "staff_number", "INTEGER DEFAULT 0 NOT NULL")
