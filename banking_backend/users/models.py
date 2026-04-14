@@ -1,8 +1,12 @@
 """User models for the Coastal Banking Application."""
 
+import logging
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+
+logger = logging.getLogger(__name__)
+
 
 
 class UserManager(BaseUserManager):
