@@ -70,7 +70,7 @@ def drop_column_if_exists(table_name: str, column_name: str) -> bool:
 
 
 def rescue_identity_data():
-    \"\"\"Data Rescue: Rename existing 'user' table to 'users_user' if present.\"\"\"
+    """Data Rescue: Rename existing 'user' table to 'users_user' if present."""
     if table_exists("user") and not table_exists("users_user"):
         print("\n[RESCUE] Detected existing 'user' table. Attempting to rename to 'users_user'...")
         with connection.cursor() as cursor:
