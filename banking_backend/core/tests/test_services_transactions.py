@@ -145,5 +145,5 @@ class TestTransactionServiceApproval:
             transaction_type="transfer",
         )
 
-        with pytest.raises(InvalidTransactionError, match="Self-approval is not allowed"):
+        with pytest.raises(InvalidTransactionError, match="Maker-Checker violation"):
             TransactionService.approve_transaction(tx.id, sender_account.user)
