@@ -91,9 +91,11 @@ def analyze_fraud_patterns(self):
         # Check for unusual transaction patterns
         suspicious_transactions = []
 
-        # Large transactions
+        # Large transactions (check both completed and pending_approval)
         large_transactions = Transaction.objects.filter(
-            amount__gt=Decimal("10000.00"), status="completed", timestamp__gte=timezone.now() - timedelta(hours=24)
+            amount__gt=Decimal("10000.00"), 
+            status__in=["completed", "pending_approval"], 
+            timestamp__gte=timezone.now() - timedelta(hours=24)
         )
 
         for transaction in large_transactions:
@@ -106,7 +108,8 @@ def analyze_fraud_patterns(self):
 
         # Rapid successive transactions
         recent_transactions = Transaction.objects.filter(
-            timestamp__gte=timezone.now() - timedelta(hours=1), status="completed"
+            timestamp__gte=timezone.now() - timedelta(hours=1), 
+            status__in=["completed", "pending_approval"]
         ).select_related("from_account__user")
 
         user_transaction_counts = {}
@@ -238,9 +241,9 @@ def system_health_check(self):
             db_status = "unhealthy"
             health_issues.append(f"Database connectivity issue: {e}")
 
-        # Check for pending transactions older than 24 hours
+        # Check for pending approval transactions older than 24 hours
         old_pending_transactions = Transaction.objects.filter(
-            status="pending", timestamp__lt=timezone.now() - timedelta(hours=24)
+            status="pending_approval", timestamp__lt=timezone.now() - timedelta(hours=24)
         ).count()
 
         if old_pending_transactions > 0:

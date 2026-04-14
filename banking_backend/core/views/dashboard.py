@@ -505,7 +505,7 @@ class OperationsMetricsView(APIView):
                 {
                     "status": "error",
                     "message": "Failed to calculate operations metrics",
-                    "details": str(e) if settings.DEBUG else None,
+                    "details": "Clinical diagnostics logged locally" if settings.DEBUG else None,
                     "code": "METRICS_ERROR",
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

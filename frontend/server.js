@@ -44,7 +44,7 @@ app.use((req, res, next) => {
     // Content Security Policy (CSP)
     const cspDirectives = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+        "script-src 'self' https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: blob: https:",
@@ -62,7 +62,7 @@ app.use((req, res, next) => {
 const apiProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: true,
-    secure: false,
+    secure: true,
     cookieDomainRewrite: {
         "*": "" // Rewrite all cookie domains to match the client's domain
     },
@@ -108,7 +108,7 @@ app.use('/api', apiProxy);
 const wsProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: true,
-    secure: false,
+    secure: true,
     ws: true, // Enable WebSocket proxying
     pathRewrite: {
         '^/ws': '/ws'

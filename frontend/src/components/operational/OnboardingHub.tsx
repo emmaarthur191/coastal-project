@@ -134,8 +134,8 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                     <div className="text-sm font-black text-slate-900">{req.first_name} {req.last_name}</div>
                     <div className="text-[10px] text-slate-700 font-bold">{req.phone_number}</div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center">
+                  <td className="px-4 py-3 text-center">
+                    <div className="w-10 h-10 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center mx-auto">
                       {req.photo ? (
                         <img
                           src={getImageSrc(req.photo)}
@@ -143,7 +143,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <User className="w-6 h-6 text-slate-300 opacity-50" />
+                        <User className="w-6 h-6 text-slate-500 dark:text-slate-300 opacity-50" />
                       )}
                     </div>
                   </td>
@@ -204,138 +204,140 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
 
       {/* Applicant Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:pl-72 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <GlassCard className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto border border-black/10">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-black text-slate-900 mb-0.5">
-                  {selectedRequest.first_name} {selectedRequest.last_name}
-                </h3>
-                <p className="text-blue-700 font-black uppercase tracking-widest text-xs">
-                  {selectedRequest.account_type?.replace('_', ' ')} Application
-                </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in lg:left-[288px]">
+          <GlassCard className="w-full max-w-2xl flex flex-col max-h-[90vh] border border-black/10 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 mb-0.5">
+                    {selectedRequest.first_name} {selectedRequest.last_name}
+                  </h3>
+                  <p className="text-blue-700 font-black uppercase tracking-widest text-xs">
+                    {selectedRequest.account_type?.replace('_', ' ')} Application
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedRequest(null);
+                  }}
+                  className="p-2 hover:bg-black/10 rounded-full transition-colors text-slate-900"
+                  title="Close details modal"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedRequest(null);
-                }}
-                className="p-2 hover:bg-black/10 rounded-full transition-colors text-slate-900"
-                title="Close details modal"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Photo Section */}
-              <div className="flex flex-col items-center gap-4">
-                <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] w-full text-center">Applicant Photo</h4>
-                <div className="w-full aspect-square rounded-2xl bg-black/5 border border-black/10 overflow-hidden flex items-center justify-center shadow-inner group">
-                  {selectedRequest.photo && selectedRequest.photo !== '[ENCRYPTED_PII_PHOTO]' ? (
-                    <img
-                      src={getImageSrc(selectedRequest.photo)}
-                      alt="Applicant"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="text-center p-4">
-                      <User className="w-12 h-12 text-slate-200 mx-auto mb-2" />
-                      <span className="text-[10px] text-slate-600 font-black">
-                        {selectedRequest.photo === '[ENCRYPTED_PII_PHOTO]' ? 'Photo Restricted (Permissions Required)' : 'No Photo Attached'}
-                      </span>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* Photo Section */}
+                <div className="flex flex-col items-center gap-4">
+                  <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] w-full text-center">Applicant Photo</h4>
+                  <div className="w-full aspect-square rounded-2xl bg-black/5 border border-black/10 overflow-hidden flex items-center justify-center shadow-inner group">
+                    {selectedRequest.photo && selectedRequest.photo !== '[ENCRYPTED_PII_PHOTO]' ? (
+                      <img
+                        src={getImageSrc(selectedRequest.photo)}
+                        alt="Applicant"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="text-center p-4">
+                        <User className="w-12 h-12 text-slate-200 mx-auto mb-2" />
+                        <span className="text-[10px] text-slate-600 font-black">
+                          {selectedRequest.photo === '[ENCRYPTED_PII_PHOTO]' ? 'Photo Restricted (Permissions Required)' : 'No Photo Attached'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedRequest.photo && (
+                    <p className="text-[9px] text-emerald-700 font-black uppercase tracking-widest bg-emerald-500/5 px-2 py-1 rounded-full border border-emerald-500/10">Verified Capture</p>
                   )}
                 </div>
-                {selectedRequest.photo && (
-                  <p className="text-[9px] text-emerald-700 font-black uppercase tracking-widest bg-emerald-500/5 px-2 py-1 rounded-full border border-emerald-500/10">Verified Capture</p>
-                )}
+
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <section>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Personal Information</h4>
+                      <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Nationality</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.nationality || 'Ghanaian'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Date of Birth</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.date_of_birth}</span>
+                        </div>
+                      </div>
+                    </section>
+                    <section>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Contact Details</h4>
+                      <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Phone</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.phone_number}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Email</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.email || '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-slate-600 font-bold">Digital Address</span>
+                          <span className="text-xs text-cyan-700 font-black font-mono tracking-wider">{selectedRequest.digital_address || 'Not Provided'}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 border-t border-black/5 pt-2 mt-1">
+                          <span className="text-xs text-slate-600 font-bold">Home Address</span>
+                          <span className="text-xs text-slate-900 font-bold leading-relaxed">{selectedRequest.address}</span>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                  <div className="space-y-4">
+                    <section>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Identification</h4>
+                      <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Type</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.id_type}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">ID Number</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.id_number}</span>
+                        </div>
+                      </div>
+                    </section>
+                    <section>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Employment</h4>
+                      <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Occupation</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.occupation || '—'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-600 font-bold">Work Location</span>
+                          <span className="text-xs text-slate-900 font-black">{selectedRequest.location || '—'}</span>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </div>
               </div>
 
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <section>
-                    <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Personal Information</h4>
-                    <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Nationality</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.nationality || 'Ghanaian'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Date of Birth</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.date_of_birth}</span>
-                      </div>
-                    </div>
-                  </section>
-                  <section>
-                    <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Contact Details</h4>
-                    <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Phone</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.phone_number}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Email</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.email || '—'}</span>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-slate-600 font-bold">Digital Address</span>
-                        <span className="text-xs text-cyan-700 font-black font-mono tracking-wider">{selectedRequest.digital_address || 'Not Provided'}</span>
-                      </div>
-                      <div className="flex flex-col gap-1 border-t border-black/5 pt-2 mt-1">
-                        <span className="text-xs text-slate-600 font-bold">Home Address</span>
-                        <span className="text-xs text-slate-900 font-bold leading-relaxed">{selectedRequest.address}</span>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-                <div className="space-y-4">
-                  <section>
-                    <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Identification</h4>
-                    <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Type</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.id_type}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">ID Number</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.id_number}</span>
-                      </div>
-                    </div>
-                  </section>
-                  <section>
-                    <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Employment</h4>
-                    <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Occupation</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.occupation || '—'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-xs text-slate-600 font-bold">Work Location</span>
-                        <span className="text-xs text-slate-900 font-black">{selectedRequest.location || '—'}</span>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-              </div>
-            </div>
-
-            {/* Paper-First Compliance Information */}
-            <div className="mt-4 p-4 bg-emerald-500/5 border border-emerald-200/20 rounded-xl mb-6">
-              <div className="flex items-start gap-4">
-                <div className="pt-1">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <span className="block text-sm font-black text-slate-900 mb-1">KYC Verified Review</span>
-                  <span className="block text-xs text-slate-600 leading-relaxed font-bold">
-                    This applicant has provided all required physical documents. Review the details below and proceed with approval to generate their 24-month high-interest savings account.
-                  </span>
+              {/* Paper-First Compliance Information */}
+              <div className="mt-4 p-4 bg-emerald-500/5 border border-emerald-200/20 rounded-xl mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="pt-1">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black text-slate-900 mb-1">KYC Verified Review</span>
+                    <span className="block text-xs text-slate-600 leading-relaxed font-bold">
+                      This applicant has provided all required physical documents. Review the details above and proceed with approval to generate their 24-month high-interest savings account.
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 pt-6 border-t border-black/10">
+            <div className="flex gap-4 p-6 border-t border-black/10 bg-black/5 sticky bottom-0 z-10">
               <Button
                 variant="secondary"
                 onClick={() => {

@@ -180,7 +180,7 @@ class CeleryTasksTestCase(TestCase):
             from_account=self.account,
             amount=Decimal("100.00"),
             transaction_type="transfer",
-            status="pending",
+            status="pending_approval",
         )
         # Bypassing auto_now_add for testing
         Transaction.objects.filter(id=tx.id).update(timestamp=timezone.now() - timedelta(hours=25))

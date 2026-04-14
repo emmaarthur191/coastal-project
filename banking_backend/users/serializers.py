@@ -403,6 +403,6 @@ class UserSessionSerializer(serializers.Serializer):
     name = serializers.CharField()
     role = serializers.CharField()
     last_activity = serializers.DateTimeField()
-    ip_address = serializers.IPAddressField(allow_null=True)
+    ip_address = serializers.CharField(allow_null=True)  # Using CharField to avoid DRF IPAddressField unpack bug
     device = serializers.CharField(allow_null=True)
     location = serializers.CharField(allow_null=True)

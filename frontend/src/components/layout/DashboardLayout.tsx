@@ -1,4 +1,5 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import { Dialog } from '@headlessui/react';
 import logo from '../../assets/logo.png';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -45,7 +46,7 @@ export default function DashboardLayout({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Update browser tab title with user's name
-    React.useEffect(() => {
+    useEffect(() => {
         const appName = "Coastal Credit Union";
         if (user?.name) {
             document.title = `${user.name} | ${appName}`;
@@ -55,6 +56,21 @@ export default function DashboardLayout({
             document.title = `${title} | ${appName}`;
         }
     }, [user, title]);
+
+    const { theme } = useTheme();
+    
+    // Manage Global Sunrise Theme for Dashboard visibility
+    useEffect(() => {
+        if (theme === 'light') {
+            document.body.classList.add('sunrise-mode');
+        } else {
+            document.body.classList.remove('sunrise-mode');
+        }
+        
+        return () => {
+            document.body.classList.remove('sunrise-mode');
+        };
+    }, [theme]);
 
     const displayName = user?.name || (user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User');
     const roleDisplay = user?.role ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Member';

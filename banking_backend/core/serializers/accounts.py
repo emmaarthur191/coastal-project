@@ -189,13 +189,15 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
 
         # Determine if user has permission to view full PII
         # Authorized roles: operations_manager, manager, admin (and superusers/staff)
-        is_staff_gate = user and (user.is_superuser or getattr(user, "is_staff", False))
-        user_role = str(getattr(user, "role", "customer")).lower()
+        is_staff_gate = bool(user and (user.is_superuser or getattr(user, "is_staff", False)))
+        user_role = str(getattr(user, "role", "customer")).lower().strip()
         AUTHORIZED_ROLES = ["admin", "manager", "operations_manager"]
         
         can_view_pii = is_staff_gate or (user_role in AUTHORIZED_ROLES)
 
         if not can_view_pii:
+            if settings.DEBUG:
+                logger.debug(f"PII Redaction: User {user.id if user else 'Anon'} (role: {user_role}) denied access to request {instance.id}")
             # Mask ID number
             data["id_number"] = mask_id_number(data.get("id_number"))
             # Mask phone number
