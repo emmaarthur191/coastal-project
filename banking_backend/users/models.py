@@ -338,19 +338,9 @@ class User(AbstractUser):
     daily_limit_reset_date = models.DateField(null=True, blank=True)
     key_version = models.IntegerField(default=1, help_text="The version of the encryption key used for PII.")
 
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
-
-    # Security constants
-    MAX_FAILED_ATTEMPTS = 5
-    LOCKOUT_DURATION_MINUTES = 30
     
     class Meta:
         db_table = "users_user"
-
-    def __str__(self):
-        """Return the user's email address."""
-        return self.email
 
     def is_locked(self):
         """Check if account is currently locked."""
