@@ -69,6 +69,30 @@ def drop_column_if_exists(table_name: str, column_name: str) -> bool:
             return False
 
 
+def rescue_identity_data():
+    \"\"\"Data Rescue: Rename existing 'user' table to 'users_user' if present.\"\"\"
+    if table_exists("user") and not table_exists("users_user"):
+        print("\n[RESCUE] Detected existing 'user' table. Attempting to rename to 'users_user'...")
+        with connection.cursor() as cursor:
+            try:
+                # Rename the main table
+                cursor.execute('ALTER TABLE "user" RENAME TO "users_user"')
+                print("    + Renamed identity table: user -> users_user")
+                
+                # Also rename the primary key sequence if possible (PostgreSQL specific)
+                try:
+                    cursor.execute('ALTER SEQUENCE "user_id_seq" RENAME TO "users_user_id_seq"')
+                    print("    + Renamed ID sequence: user_id_seq -> users_user_id_seq")
+                except Exception:
+                    pass
+                
+                return True
+            except Exception as e:
+                print(f"    ! Failed to rename table: {e}")
+                return False
+    return False
+
+
 def create_table_if_not_exists(table_name: str, create_sql: str) -> bool:
     """Create a table if it doesn't exist."""
     if table_exists(table_name):
@@ -123,7 +147,7 @@ def sync_missing_tables():
             "thread_id" VARCHAR(100) NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "parent_message_id" BIGINT NULL REFERENCES "core_bankingmessage" ("id") ON DELETE CASCADE,
-            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -139,7 +163,7 @@ def sync_missing_tables():
             "last_message_at" TIMESTAMP WITH TIME ZONE NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "created_by_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL
+            "created_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
         )""",
     )
 
@@ -170,7 +194,7 @@ def sync_missing_tables():
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "edited_at" TIMESTAMP WITH TIME ZONE NULL,
             "reactions" JSONB NOT NULL DEFAULT '{}',
-            "sender_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL,
+            "sender_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
             "thread_id" BIGINT NOT NULL REFERENCES "core_messagethread" ("id") ON DELETE CASCADE
         )""",
     )
@@ -193,8 +217,8 @@ def sync_missing_tables():
             "id" BIGSERIAL PRIMARY KEY,
             "reason" TEXT NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "blocked_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
-            "blocker_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "blocked_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "blocker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("blocker_id", "blocked_id")
         )""",
     )
@@ -228,7 +252,7 @@ def sync_missing_tables():
             "ip_address" INET NULL,
             "user_agent" TEXT NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -310,7 +334,7 @@ def sync_missing_tables():
             "font_size" VARCHAR(10) NOT NULL DEFAULT 'medium',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "user_id" BIGINT NOT NULL UNIQUE REFERENCES "user" ("id") ON DELETE CASCADE
+            "user_id" BIGINT NOT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -442,7 +466,7 @@ def sync_missing_tables():
             "priority" VARCHAR(10) NOT NULL DEFAULT 'medium',
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "recipient_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "recipient_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
@@ -463,8 +487,8 @@ def sync_missing_tables():
             "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "client_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
-            "mobile_banker_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+            "client_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            "mobile_banker_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
             UNIQUE ("mobile_banker_id", "client_id")
         )""",
     )
@@ -495,8 +519,8 @@ def sync_missing_tables():
             "notes" TEXT NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "created_user_id" BIGINT NULL UNIQUE REFERENCES "user" ("id") ON DELETE SET NULL,
-            "submitted_by_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+            "created_user_id" BIGINT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "submitted_by_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
         )""",
     )
 
@@ -513,7 +537,7 @@ def sync_missing_tables():
             "response_body" TEXT NULL,
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
             "locked_at" TIMESTAMP WITH TIME ZONE NULL,
-            "user_id" BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL
+            "user_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL
         )""",
     )
 
@@ -525,8 +549,8 @@ def sync_missing_columns():
     print("--> Syncing missing columns...")
 
     # Users
-    add_column_if_not_exists("user", "id_type", "VARCHAR(50) NULL")
-    add_column_if_not_exists("user", "id_number", "VARCHAR(50) NULL")
+    add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
+    add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "staff_number", "INTEGER DEFAULT 0 NOT NULL")
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "member_number", "VARCHAR(20) UNIQUE NULL")
@@ -678,26 +702,26 @@ def sync_missing_columns():
     # Maker-Checker & Processing (Transactions, Checks, Refunds)
     add_column_if_not_exists("transaction", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
     add_column_if_not_exists(
-        "transaction", "approved_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
+        "transaction", "approved_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
     )
     add_column_if_not_exists("transaction", "approval_date", "TIMESTAMP WITH TIME ZONE NULL")
 
     add_column_if_not_exists(
-        "check_deposit", "submitted_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
+        "check_deposit", "submitted_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
     )
     add_column_if_not_exists(
-        "check_deposit", "processed_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
+        "check_deposit", "processed_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
     )
     add_column_if_not_exists("check_deposit", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
     add_column_if_not_exists("check_deposit", "cleared_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     add_column_if_not_exists(
-        "refund", "processed_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE SET NULL'
+        "refund", "processed_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL'
     )
     add_column_if_not_exists("refund", "processed_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     add_column_if_not_exists(
-        "account_statement", "requested_by_id", 'BIGINT NULL REFERENCES "user" ("id") ON DELETE CASCADE'
+        "account_statement", "requested_by_id", 'BIGINT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE'
     )
     add_column_if_not_exists("account_statement", "transaction_count", "INTEGER DEFAULT 0 NOT NULL")
     add_column_if_not_exists("account_statement", "opening_balance", "NUMERIC(15,2) DEFAULT 0.00 NOT NULL")
@@ -745,7 +769,6 @@ def drop_redundant_duplicates():
     """
     print("--> Checking for redundant duplicate tables...")
     redundant_map = {
-        "users_user": "user",
         "users_useractivity": "user_activity",
         "users_auditlog": "audit_log",
         "users_adminnotification": "admin_notification",
@@ -829,6 +852,12 @@ def main():
         print("[OK] Standard migrations succeeded.")
     except Exception as e:
         print(f"[WARN] Standard migrations failed, falling back to smart sync: {e}")
+
+    # Phase 0.5: Rescue Identity Data if it exists under the old name
+    rescue_identity_data()
+
+    # Refresh core tables list after potential rescue
+    existing_tables = [t for t in core_tables if table_exists(t)]
 
     # Phase 1: Smart Sync
     if len(existing_tables) >= 3:
