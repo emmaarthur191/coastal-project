@@ -1,4 +1,5 @@
 import os
+import warnings
 from decimal import Decimal
 from urllib.parse import urlparse
 
@@ -13,6 +14,15 @@ env = environ.Env(
     DEBUG=(bool, False)
 )
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# SECURITY: Suppress the StreamingHttpResponse sync iterator warning for ASGI.
+# We are progressively migrating to async_file_iterator, but some legacy
+# cases may still trigger this warning during the transition.
+warnings.filterwarnings(
+    "ignore",
+    message="StreamingHttpResponse must consume synchronous iterators",
+)
+
 
 # =============================================================================
 # Sentry Error Monitoring (Production)
@@ -235,6 +245,13 @@ if not DEBUG:
     conn_max_age = env.int("CONN_MAX_AGE", default=0)
     DATABASES["default"]["CONN_MAX_AGE"] = conn_max_age
 
+# Authentication Backends
+# https://docs.djangoproject.com/en/5.1/ref/settings/#authentication-backends
+AUTHENTICATION_BACKENDS = [
+    "users.authentication_backends.DualAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -304,11 +321,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom user model
 AUTH_USER_MODEL = "users.User"
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "users.authentication_backends.EmailBackend",
-]
 
 # Django REST Framework
 # Django REST Framework

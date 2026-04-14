@@ -17,43 +17,45 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email=None, phone_number=None, password=None, **extra_fields):
         """
-        Create and return a regular user with email or phone_number fallback.
+        Create user with smart fallback: email → phone_number as username
         """
         if not email and not phone_number:
-            raise ValueError("Either 'email' or 'phone_number' must be set")
+            raise ValueError("Either 'email' or 'phone_number' must be set.")
 
-        # If no email but phone is provided → use phone as username
-        if not email and phone_number:
+        # Determine username
+        if email:
+            email = self.normalize_email(email)
+            username = email.split("@")[0]
+        elif phone_number:
             # Clean phone number for use as a username
             username = str(phone_number).replace(" ", "").replace("+", "").replace("-", "")
-            email = None  # email remains None
         else:
-            email = self.normalize_email(email)
-            # Default username to email prefix if not provided
-            if "username" not in extra_fields:
-                extra_fields["username"] = email.split("@")[0] if email else None
-        
-        # Determine final username if it wasn't set by logic above or passed in
-        username = extra_fields.get("username")
+            username = None
 
-        # Set default values
+        if not username:
+            raise ValueError("Could not generate username from email or phone.")
+
+        # Prepare extra fields
         extra_fields.setdefault("is_active", True)
 
+        # Create user instance - correctly uses properties for sensitive fields
         user = self.model(
             email=email,
-            phone_number=phone_number,
-            username=username,
+            phone_number=phone_number,  # Correctly triggers property setter for encryption
+            username=username,          # Explicitly set username
             **extra_fields
         )
 
-        if password:
-            user.set_password(password)
-        else:
+        # Set password
+        if password is None:
             # SECURITY: Use Django's crypto utility for secure random passwords
-            user.set_password(get_random_string(length=12))
+            password = get_random_string(length=12)
+        user.set_password(password)
 
-        user.save(using=self._db)
-        logger.info(f"User created successfully - Username: {username}, Email: {email}, Phone: {phone_number}")
+        # Save with force_insert to avoid issues during initial creation
+        user.save(using=self._db, force_insert=True)
+
+        logger.info(f"User created successfully → Username: {username} | Email: {email} | Phone: {phone_number}")
         return user
 
     def create_superuser(self, email=None, phone_number=None, password=None, **extra_fields):
@@ -88,11 +90,15 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, blank=True, null=True)
     is_approved = models.BooleanField(default=False)
 
-    # FIX: Remove clashing CharFields inherited from AbstractUser to ensure properties work correctly.
-    first_name = None
-    last_name = None
-
     objects = UserManager()
+
+    # User Management Configuration
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    def __str__(self):
+        """Robust string representation for various identify fallback chains."""
+        return self.email or self.phone_number or self.username or "Unknown User"
 
     # SECURITY: Encrypted storage for PII/Internal IDs (Zero-Plaintext compliance)
     id_number_encrypted = models.TextField(blank=True, default="")
