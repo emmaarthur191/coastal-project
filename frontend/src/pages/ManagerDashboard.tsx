@@ -151,7 +151,7 @@ function ManagerDashboard() {
       }}
       onLogout={handleLogout}
     >
-      <div className="p-1 md:p-4">
+      <div className="p-4 lg:p-10">
         {renderContent()}
       </div>
     </DashboardLayout>

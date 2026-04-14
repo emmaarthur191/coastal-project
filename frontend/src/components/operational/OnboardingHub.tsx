@@ -21,7 +21,6 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
 
   useEffect(() => {
     if (mode === 'manager') {
-      console.log(`[OnboardingHub] Mode: ${mode}, User Role: ${_user?.role}`);
       fetchRequests();
     }
   }, [mode, _user]);
@@ -205,7 +204,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
 
       {/* Applicant Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:pl-72 bg-black/60 backdrop-blur-sm animate-fade-in">
           <GlassCard className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto border border-black/10">
             <div className="flex justify-between items-start mb-4">
               <div>

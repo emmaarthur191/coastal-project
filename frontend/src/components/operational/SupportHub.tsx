@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiService, Complaint, ServiceRequestExtended, ComplaintStats, CreateComplaintData, CreateServiceRequestData, LoginAttemptRecord, AuditLogRecord, ChatRoomData, ChatMessageData, User } from '../../services/api';
+import { apiService, Complaint, ServiceRequestExtended, ComplaintStats, CreateComplaintData, CreateServiceRequestData, ChatRoomData, ChatMessageData, User } from '../../services/api';
 import GlassCard from '../ui/modern/GlassCard';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { 
   MessageSquareQuote, 
   ClipboardList, 
-  ShieldAlert, 
   PlusCircle, 
   CheckCircle2, 
   X
@@ -426,7 +425,7 @@ const SupportHub: React.FC<SupportHubProps> = ({ mode, initialTab = 'complaints'
 
       {/* Complaint Detail Modal */}
       {selectedComplaint && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 lg:pl-72 overflow-y-auto animate-fade-in">
           <GlassCard className="w-full max-w-2xl border border-white/20 shadow-2xl relative">
             <button onClick={() => setSelectedComplaint(null)} className="absolute top-4 right-4 text-slate-900 hover:text-black p-2" aria-label="Close complaint details" title="Close complaint details">
               <X className="w-5 h-5" />
