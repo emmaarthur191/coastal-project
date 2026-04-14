@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Smart Migration Script v8 - Exhaustive Production Schema Sync & Cleanup.
+"""Smart Migration Script v9 - Exhaustive Production Schema Sync & Cleanup.
 
 This script ensures the production database has all required tables and columns,
 aligns naming with actual db_table definitions, and cleans up redundant duplicates.
@@ -66,6 +66,30 @@ def drop_column_if_exists(table_name: str, column_name: str) -> bool:
             return True
         except Exception as e:
             print(f"    ! Error dropping {table_name}.{column_name}: {e}")
+            return False
+
+
+def set_column_nullable(table_name: str, column_name: str, nullable: bool = True) -> bool:
+    """Set a column to be nullable or NOT NULL (PostgreSQL/standard SQL)."""
+    if not table_exists(table_name):
+        return False
+    if not column_exists(table_name, column_name):
+        return False
+
+    with connection.cursor() as cursor:
+        action = "DROP NOT NULL" if nullable else "SET NOT NULL"
+        sql = f'ALTER TABLE "{table_name}" ALTER COLUMN "{column_name}" {action}'
+        try:
+            cursor.execute(sql)
+            print(f"    * Set {table_name}.{column_name} nullable={nullable}")
+            return True
+        except Exception as e:
+            # Fallback for SQLite which doesn't support ALTER COLUMN DROP NOT NULL
+            if "syntax error" in str(e).lower() or "sqlite" in str(connection.vendor):
+                # SQLite doesn't strictly enforce NOT NULL if we don't want it to, 
+                # but standard ALTER table doesn't support this. We ignore for SQLite.
+                return True
+            print(f"    ! Error changing nullability for {table_name}.{column_name}: {e}")
             return False
 
 
@@ -548,7 +572,8 @@ def sync_missing_columns():
     """Add any columns that exist in models but not in the database."""
     print("--> Syncing missing columns...")
 
-    # Users
+    # Users: Core Alignment
+    set_column_nullable("users_user", "email", True)
     add_column_if_not_exists("users_user", "id_type", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "id_number", "VARCHAR(50) NULL")
     add_column_if_not_exists("users_user", "staff_number", "INTEGER DEFAULT 0 NOT NULL")
@@ -830,7 +855,7 @@ def backfill_existing_user_approvals():
 def main():
     """Run the smart migration sync v8."""
     print("=" * 60)
-    print("  Smart Migration Script v8 (Exhaustive Sync & Cleanup)")
+    print("  Smart Migration Script v9 (Exhaustive Sync & Cleanup)")
     print("=" * 60)
 
     core_tables = ["account", "transaction", "users_user", "loan"]

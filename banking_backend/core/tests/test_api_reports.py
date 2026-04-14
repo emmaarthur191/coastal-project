@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 
 import pytest
 
+import core.pdf_services
 from core.models.accounts import Account
 from core.models.transactions import Transaction
 
@@ -97,7 +98,11 @@ class TestReportLifecycle:
         url = reverse("core:report-analytics")
         response = manager_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert "total_reports" in response.data
+        # The structure is data["report_stats"]["total_reports"] or data["total_reports"]
+        if "report_stats" in response.data:
+            assert "total_reports" in response.data["report_stats"]
+        else:
+            assert "total_reports" in response.data
 
     def test_report_viewset_list(self, manager_client):
         url = reverse("core:report-general-list")

@@ -10,6 +10,7 @@ import {
 import './MessagingPage.css';
 
 import { authService } from '../services/api';
+import EnhancedWebSocketManager from '../utils/messaging/EnhancedWebSocketManager';
 
 /**
  * WhatsApp Clone Messaging Page
@@ -114,25 +115,17 @@ export default function MessagingPage() {
         }
     };
 
-    // WebSocket
-    const connectWebSocket = useCallback((roomId) => {
-        // Clear any existing reconnection timeout
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-            reconnectTimeoutRef.current = null;
+    // WebSocket logic using EnhancedWebSocketManager
+    const connectWebSocket = useCallback((roomId: string | number) => {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
         }
 
-        if (socketRef.current) socketRef.current.close();
-
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/chat/${roomId}/`;
-        console.warn('Connecting to WebSocket:', wsUrl);
-        const socket = new WebSocket(wsUrl);
-
-        socket.onopen = () => setWsConnected(true);
-        socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
+        const manager = new EnhancedWebSocketManager(
+            roomId,
+            user?.id,
+            // onMessage
+            (data) => {
                 if (data.type === 'message') {
                     setMessages(prev => [...prev, {
                         id: data.id,
@@ -143,17 +136,23 @@ export default function MessagingPage() {
                         is_own: data.sender_id === user?.id
                     }]);
                 }
-            } catch (e) { console.error('WS Error', e); }
-        };
-        socket.onclose = () => {
-            setWsConnected(false);
-            // Attempt to reconnect after 3 seconds
-            reconnectTimeoutRef.current = setTimeout(() => {
-                console.warn('Attempting to reconnect WebSocket...');
-                connectWebSocket(roomId);
-            }, 3000);
-        };
-        socketRef.current = socket;
+            },
+            // onError
+            (err) => console.error('WS Error:', err),
+            // onConnectionChange
+            (connected) => setWsConnected(connected),
+            // onTyping
+            (data) => console.log('Typing:', data),
+            // onPresence (optional)
+            null,
+            // onReaction (optional)
+            null,
+            // onSignal (optional)
+            null
+        );
+
+        manager.connect();
+        socketRef.current = manager;
     }, [user?.id]);
 
     const selectRoom = (room) => {
@@ -174,8 +173,8 @@ export default function MessagingPage() {
         setShowEmojiPicker(false);
 
         try {
-            if (socketRef.current?.readyState === WebSocket.OPEN) {
-                socketRef.current.send(JSON.stringify({ type: 'message', content }));
+            if (socketRef.current && wsConnected) {
+                socketRef.current.sendMessage({ type: 'message', content });
             } else {
                 // REST Fallback (using authService)
                 await authService.sendChatMessage(selectedRoom.id, content);
@@ -197,7 +196,7 @@ export default function MessagingPage() {
             }
             // Close WebSocket connection
             if (socketRef.current) {
-                socketRef.current.close();
+                socketRef.current.disconnect();
             }
         };
     }, []);

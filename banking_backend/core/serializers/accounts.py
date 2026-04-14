@@ -1,8 +1,10 @@
-"""Account-related serializers for Coastal Banking."""
-
+import logging
+from django.conf import settings
 from rest_framework import serializers
 
 from core.models.accounts import Account, AccountClosureRequest, AccountOpeningRequest
+
+logger = logging.getLogger(__name__)
 
 
 class AccountSerializer(serializers.ModelSerializer):

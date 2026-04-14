@@ -13,8 +13,9 @@ class EnhancedWebSocketManager {
     this.onSignal = onSignal;
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
+    this.maxReconnectAttempts = 10;
     this.reconnectDelay = 1000;
+    this.maxDelay = 30000;
     this.isConnecting = false;
     this.heartbeatInterval = null;
     this.typingTimeout = null;
@@ -134,7 +135,13 @@ class EnhancedWebSocketManager {
 
   attemptReconnect() {
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+    if (this.reconnectAttempts > this.maxReconnectAttempts) {
+        console.error('[WEBSOCKET] Maximum reconnection attempts reached');
+        this.onConnectionChange?.(false);
+        return;
+    }
+
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), this.maxDelay);
 
     console.log(`[WEBSOCKET] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
 

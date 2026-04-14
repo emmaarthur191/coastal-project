@@ -8,22 +8,29 @@ from django.db import models
 class UserManager(BaseUserManager):
     """Custom manager for the User model with email as the unique identifier."""
 
-    def create_user(self, email, password=None, **extra_fields):
-        """Create and save a regular User with the given email and password."""
-        if not email:
-            raise ValueError("The Email field must be set")
-        email = self.normalize_email(email)
-        # Handle username if not provided but required by AbstractUser
-        if "username" not in extra_fields:
-            extra_fields["username"] = email.split("@")[0]
-
+    def create_user(self, email=None, password=None, **extra_fields):
+        """Create and save a regular User with the given email (optional) and password."""
+        if not email and "username" not in extra_fields:
+            raise ValueError("Either Email or Username must be set")
+        
+        if email:
+            email = self.normalize_email(email)
+            if "username" not in extra_fields:
+                extra_fields["username"] = email.split("@")[0]
+        
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(self, email=None, password=None, **extra_fields):
         """Create and save a SuperUser with the given email and password."""
+        if not email:
+            # Fallback for superuser username if no email provided
+            if "username" not in extra_fields:
+                extra_fields["username"] = "admin"
+            email = None
+            
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("role", "admin")
@@ -48,8 +55,12 @@ class User(AbstractUser):
         ("admin", "Administrator"),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="customer")
-    email = models.EmailField(unique=True, blank=False)
+    email = models.EmailField(unique=True, blank=True, null=True)
     is_approved = models.BooleanField(default=False)
+
+    # FIX: Remove clashing CharFields inherited from AbstractUser to ensure properties work correctly.
+    first_name = None
+    last_name = None
 
     objects = UserManager()
 

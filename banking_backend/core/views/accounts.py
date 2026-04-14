@@ -289,41 +289,63 @@ class AccountOpeningViewSet(
 
                 User = get_user_model()
 
-                user_email = opening_request.email
+                # Get email/phone or fallbacks
+                user_email = opening_request.email or getattr(opening_request, 'applicant_email', None)
+                user_phone = opening_request.phone_number or getattr(opening_request, 'applicant_phone', None)
+                
                 customer_user = None
 
+                # 1a. Try to find existing user by email or phone
                 if user_email:
                     customer_user = User.objects.filter(email=user_email).first()
+                
+                if not customer_user and user_phone:
+                    from core.utils.field_encryption import hash_field
+                    phone_hash = hash_field(user_phone)
+                    customer_user = User.objects.filter(phone_number_hash=phone_hash, role="customer").first()
 
                 if not customer_user:
-                    # Generate username from email or a random suffix (never raw PII)
-                    if user_email:
-                        username = user_email
-                    else:
-                        import uuid
+                    # Clean identifiers for username creation
+                    if not user_email and not user_phone:
+                        return Response(
+                            {"status": "error", "message": "Either Email or Phone number is required to create a customer account."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
-                        username = f"user_{uuid.uuid4().hex[:8]}"
+                    # Determine username: priority email prefix > cleaned phone number
+                    if user_email:
+                        username = user_email.split('@')[0]
+                    else:
+                        # Fallback to phone number as username (login)
+                        username = user_phone.replace(" ", "").replace("+", "")
+                    
+                    # Ensure username uniqueness (extremely rare collision if using UUID-like phone)
+                    if User.objects.filter(username=username).exists():
+                         import secrets
+                         username = f"{username}_{secrets.token_hex(2)}"
 
                     # Initial random password (will be reset/resent in Stage 2)
                     import secrets
-
                     temp_initial_pwd = secrets.token_urlsafe(12)
 
                     customer_user = User.objects.create_user(
                         username=username,
-                        email=user_email or "",
+                        email=user_email, # Now nullable in User model
                         password=temp_initial_pwd,
                         first_name=opening_request.first_name,
                         last_name=opening_request.last_name,
                         role="customer",
                     )
-                    if hasattr(customer_user, "phone_number"):
-                        customer_user.phone_number = opening_request.phone_number
-
-                    # Copy ID Information
-                    customer_user.id_type = opening_request.id_type
-                    customer_user.id_number = opening_request.id_number
-                    customer_user.save()
+                    
+                # Always ensure phone is set/updated on the customer user record
+                if user_phone:
+                    customer_user.phone_number = user_phone
+                
+                # Copy/Sync ID Information
+                customer_user.id_type = opening_request.id_type
+                customer_user.id_number = opening_request.id_number
+                customer_user.is_approved = True # User is approved once request is approved
+                customer_user.save()
 
                 # 2. Automated Account Creation for the CLIENT
                 new_account = AccountService.create_account(
