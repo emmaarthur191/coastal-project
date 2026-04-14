@@ -4,9 +4,9 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.utils.crypto import get_random_string
 
 logger = logging.getLogger(__name__)
-
 
 
 class UserManager(BaseUserManager):
@@ -49,8 +49,8 @@ class UserManager(BaseUserManager):
         if password:
             user.set_password(password)
         else:
-            # SECURITY: Enforce minimum 12 chars for generated passwords
-            user.set_password(self.make_random_password(length=12))
+            # SECURITY: Use Django's crypto utility for secure random passwords
+            user.set_password(get_random_string(length=12))
 
         user.save(using=self._db)
         logger.info(f"User created successfully - Username: {username}, Email: {email}, Phone: {phone_number}")
@@ -69,6 +69,7 @@ class UserManager(BaseUserManager):
             raise ValueError("Superuser must have is_superuser=True.")
 
         return self.create_user(email, phone_number, password, **extra_fields)
+
 
 
 
