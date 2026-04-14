@@ -111,7 +111,7 @@ class UserSerializer(serializers.ModelSerializer):
                 data["name"] = data["first_name"] or data["username"]
         else:
             # For self-viewers, managers or staff targets, ensure full name is accurate
-            data["name"] = f"{instance.first_name} {instance.last_name}".strip() or instance.username
+            data["name"] = instance.get_full_name() # Use our new decrypted override
             data["staff_id"] = instance.staff_id # Ensure staff_id is present and clear
 
         return data

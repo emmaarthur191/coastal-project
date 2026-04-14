@@ -250,6 +250,15 @@ class User(AbstractUser):
 
         return decrypt_field(self.work_address_encrypted, version=self.key_version)
 
+    def get_full_name(self):
+        """Standard Django method override: return decrypted full name."""
+        name = f"{self.first_name} {self.last_name}".strip()
+        return name if name else self.username
+
+    def get_short_name(self):
+        """Standard Django method override: return decrypted first name."""
+        return self.first_name if self.first_name else self.username
+
     @work_address.setter
     def work_address(self, value):
         """Encrypt and set the work address."""

@@ -55,6 +55,26 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
     setLoading(false);
   };
 
+  const handleApprove = async (id: string | number) => {
+    if (!confirm('Are you sure you want to approve this application?')) return;
+
+    setLoading(true);
+    try {
+      const res = await apiService.approveAccountOpening(id);
+      if (res.success) {
+        toast.success('Account Opening Approved Successfully');
+        fetchRequests();
+        setSelectedRequest(null);
+      } else {
+        toast.error(res.error || 'Approval failed');
+      }
+    } catch (_err) {
+      toast.error('An unexpected error occurred during approval');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (mode === 'staff') {
     return (
       <div className="space-y-6">
@@ -299,15 +319,15 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
             </div>
 
             {/* Paper-First Compliance Information */}
-            <div className="mt-4 p-4 bg-blue-500/5 border border-blue-200/20 rounded-xl mb-6">
+            <div className="mt-4 p-4 bg-emerald-500/5 border border-emerald-200/20 rounded-xl mb-6">
               <div className="flex items-start gap-4">
                 <div className="pt-1">
-                  <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <span className="block text-sm font-black text-slate-900 mb-1">KYC Review Only</span>
+                  <span className="block text-sm font-black text-slate-900 mb-1">KYC Verified Review</span>
                   <span className="block text-xs text-slate-600 leading-relaxed font-bold">
-                    This portal is currently restricted to viewing and auditing applicant details as per the <b>Paper-First Security Protocol</b>. Approval functionality is managed via the core CORE banking system.
+                    This applicant has provided all required physical documents. Review the details below and proceed with approval to generate their 24-month high-interest savings account.
                   </span>
                 </div>
               </div>
@@ -324,6 +344,14 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                 title="Reject this onboarding application"
               >
                 Reject Application
+              </Button>
+              <Button
+                onClick={() => handleApprove(selectedRequest.id)}
+                disabled={loading}
+                className="flex-[2] py-3 bg-emerald-600 text-white font-black hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all"
+                title="Approve applicant and generate account credentials"
+              >
+                {loading ? 'Processing...' : 'Approve & Issue Credentials'}
               </Button>
             </div>
           </GlassCard>
