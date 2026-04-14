@@ -525,6 +525,7 @@ class AccountOpeningViewSet(
 
                 # 4. Generate PDF Welcome Letter
                 from core.pdf_services import generate_account_opening_letter_pdf
+                from core.utils.async_stream import async_file_iterator
 
                 pdf_buffer = generate_account_opening_letter_pdf(
                     opening_request, new_account.account_number, temp_password
@@ -534,7 +535,7 @@ class AccountOpeningViewSet(
                 self._send_account_number_sms(opening_request, new_account)
 
                 return FileResponse(
-                    pdf_buffer,
+                    async_file_iterator(pdf_buffer),
                     as_attachment=True,
                     filename=f"Coastal_Welcome_{new_account.account_number}.pdf",
                     content_type="application/pdf",

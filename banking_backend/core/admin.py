@@ -483,12 +483,13 @@ class AccountOpeningRequestAdmin(admin.ModelAdmin):
                 opening_request.save()
 
                 # 4. Generate the PDF Letter
+                from core.utils.async_stream import async_file_iterator
                 pdf_buffer = generate_account_opening_letter_pdf(
                     opening_request, new_account.account_number, temp_password
                 )
 
                 filename = f"Account_Opening_{new_account.account_number}.pdf"
-                return FileResponse(pdf_buffer, as_attachment=True, filename=filename)
+                return FileResponse(async_file_iterator(pdf_buffer), as_attachment=True, filename=filename)
 
         except Exception as e:
             self.message_user(request, f"Critical error during approval: {e!s}", admin.messages.ERROR)

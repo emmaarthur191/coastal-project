@@ -1325,8 +1325,10 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
                 SendexaService.send_sms(user.phone_number, message)
 
+                from core.utils.async_stream import async_file_iterator
+
                 return FileResponse(
-                    pdf_buffer,
+                    async_file_iterator(pdf_buffer),
                     as_attachment=True,
                     filename=f"Coastal_Staff_Welcome_{user.staff_id}.pdf",
                     content_type="application/pdf",

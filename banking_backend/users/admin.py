@@ -271,10 +271,11 @@ class UserAdmin(BaseUserAdmin):
             self._log_admin_action(request, user, "staff_approved_and_printed")
 
             # 4. Generate PDF
+            from core.utils.async_stream import async_file_iterator
             pdf_buffer = generate_staff_welcome_letter_pdf(user, temp_password)
 
             filename = f"Staff_Welcome_{user.staff_id or user.username}.pdf"
-            return FileResponse(pdf_buffer, as_attachment=True, filename=filename)
+            return FileResponse(async_file_iterator(pdf_buffer), as_attachment=True, filename=filename)
 
         except Exception as e:
             self.message_user(request, f"Error approving staff: {e!s}", messages.ERROR)
