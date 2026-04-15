@@ -8586,6 +8586,19 @@ components:
           readOnly: true
         is_read:
           type: boolean
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        read_by:
+          type: array
+          items:
+            type: integer
+          description: Users who have read this message
+        parent:
+          type: integer
+          nullable: true
+          description: Parent message for threaded replies
         attachment_url:
           type: string
           format: uri

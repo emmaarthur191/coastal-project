@@ -303,6 +303,13 @@ class ChatMessage(models.Model):
         self.content_encrypted = encrypt_field(value) if value else ""
 
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    read_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="read_chat_messages", blank=True, help_text="Users who have read this message"
+    )
+    parent = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="replies", help_text="Parent message for threaded replies"
+    )
     attachment_url = models.URLField(blank=True, null=True)
     attachment_name = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
