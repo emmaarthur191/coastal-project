@@ -1329,7 +1329,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
                 return FileResponse(
                     async_file_iterator(pdf_buffer),
-                    as_attachment=True,
+                    as_attachment=False,
                     filename=f"Coastal_Staff_Welcome_{user.staff_id}.pdf",
                     content_type="application/pdf",
                 )

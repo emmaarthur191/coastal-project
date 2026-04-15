@@ -36,6 +36,8 @@ from users.authentication import JWTCookieAuthentication
 
 logger = logging.getLogger(__name__)
 
+from core.utils.async_stream import async_file_iterator
+
 
 @extend_schema_view(
     list=extend_schema(summary="List all bank accounts", tags=["Accounts"]),
@@ -527,8 +529,8 @@ class AccountOpeningViewSet(
                 # Rewind buffer and return FileResponse directly (Modern Django 5.x ASGI handling)
                 pdf_buffer.seek(0)
                 return FileResponse(
-                    pdf_buffer,
-                    as_attachment=True,
+                    async_file_iterator(pdf_buffer),
+                    as_attachment=False,
                     filename=f"Coastal_Welcome_{new_account.account_number}.pdf",
                     content_type="application/pdf",
                 )

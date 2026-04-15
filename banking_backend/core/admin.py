@@ -489,7 +489,7 @@ class AccountOpeningRequestAdmin(admin.ModelAdmin):
                 )
 
                 filename = f"Account_Opening_{new_account.account_number}.pdf"
-                return FileResponse(async_file_iterator(pdf_buffer), as_attachment=True, filename=filename)
+                return FileResponse(async_file_iterator(pdf_buffer), as_attachment=False, filename=filename)
 
         except Exception as e:
             self.message_user(request, f"Critical error during approval: {e!s}", admin.messages.ERROR)

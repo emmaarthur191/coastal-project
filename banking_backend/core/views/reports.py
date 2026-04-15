@@ -741,7 +741,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
                 )
 
             if payslip.pdf_file:
-                return FileResponse(async_file_iterator(payslip.pdf_file), as_attachment=True)
+                return FileResponse(async_file_iterator(payslip.pdf_file), as_attachment=False)
 
             return Response(
                 {"status": "error", "message": "PDF not available", "code": "FILE_NOT_FOUND"},
@@ -876,7 +876,7 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
                 return Response({"error": "Not authorized"}, status=403)
 
             if statement.pdf_file:
-                return FileResponse(async_file_iterator(statement.pdf_file), as_attachment=True)
+                return FileResponse(async_file_iterator(statement.pdf_file), as_attachment=False)
 
             return Response(
                 {"status": "error", "message": "PDF not available", "code": "FILE_NOT_FOUND"},
