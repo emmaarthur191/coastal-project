@@ -33,8 +33,19 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatMessage
-        fields = ["id", "sender", "sender_name", "content", "is_read", "created_at"]
-        read_only_fields = ["id", "sender", "sender_name", "created_at"]
+        fields = [
+            "id",
+            "sender",
+            "sender_name",
+            "content",
+            "is_read",
+            "attachment_url",
+            "attachment_name",
+            "reactions",
+            "created_at",
+            "edited_at",
+        ]
+        read_only_fields = ["id", "sender", "sender_name", "created_at", "edited_at"]
 
     def get_sender_name(self, obj):
         return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.email
@@ -231,3 +242,63 @@ class MarkMessagesReadView(APIView):
         updated = room.messages.filter(is_read=False).exclude(sender=request.user).update(is_read=True)
 
         return Response({"marked_read": updated})
+
+
+class AddReactionView(APIView):
+    """POST /api/chat/rooms/<room_id>/messages/<message_id>/reactions/add/
+    Add an emoji reaction to a chat message.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, room_id, message_id):
+        room = get_object_or_404(ChatRoom.objects.filter(members=request.user), id=room_id)
+        message = get_object_or_404(ChatMessage, id=message_id, room=room)
+
+        emoji = request.data.get("emoji")
+        if not emoji:
+            return Response({"error": "Emoji is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update reactions JSON
+        reactions = message.reactions or {}
+        if emoji not in reactions:
+            reactions[emoji] = []
+
+        user_id = request.user.id
+        if user_id not in reactions[emoji]:
+            reactions[emoji].append(user_id)
+
+        message.reactions = reactions
+        message.save()
+
+        return Response({"status": "success", "reactions": reactions})
+
+
+class RemoveReactionView(APIView):
+    """POST /api/chat/rooms/<room_id>/messages/<message_id>/reactions/remove/
+    Remove an emoji reaction from a chat message.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, room_id, message_id):
+        room = get_object_or_404(ChatRoom.objects.filter(members=request.user), id=room_id)
+        message = get_object_or_404(ChatMessage, id=message_id, room=room)
+
+        emoji = request.data.get("emoji")
+        if not emoji:
+            return Response({"error": "Emoji is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        reactions = message.reactions or {}
+        if emoji in reactions:
+            user_id = request.user.id
+            if user_id in reactions[emoji]:
+                reactions[emoji].remove(user_id)
+                # Cleanup empty emoji keys
+                if not reactions[emoji]:
+                    del reactions[emoji]
+
+        message.reactions = reactions
+        message.save()
+
+        return Response({"status": "success", "reactions": reactions})

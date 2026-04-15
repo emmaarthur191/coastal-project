@@ -47,7 +47,7 @@ sentry-sdk==2.22.0
 # Utilities
 Pillow==12.2.0
 joblib==1.4.2
-numpy==2.2.3
+numpy==1.26.4
 scikit-learn==1.6.1
 pydantic==2.12.5
 pydantic-core==2.41.5
@@ -59,7 +59,7 @@ Faker==38.2.0
 user-agents==2.2.0
 
 # Production API Documentation
-drf-spectacular==0.29.0
+drf-spectacular==0.27.2
 
 # Testing (Required for CI/CD)
 pytest==9.0.3

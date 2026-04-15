@@ -26,11 +26,14 @@ from .views import (
     CashDrawerViewSet,
     CashFlowView,
     # Chat views
+    AddReactionView,
     ChatMessageCreateView,
     ChatMessageListView,
     ChatRoomCreateView,
     ChatRoomDetailView,
     ChatRoomListView,
+    MarkMessagesReadView,
+    RemoveReactionView,
     CheckDepositViewSet,
     ClientAssignmentViewSet,
     ComplaintViewSet,
@@ -183,6 +186,8 @@ urlpatterns = [
     path("chat/rooms/<int:pk>/", ChatRoomDetailView.as_view(), name="chat-room-detail"),
     path("chat/rooms/<int:room_id>/messages/", ChatMessageListView.as_view(), name="chat-messages"),
     path("chat/rooms/<int:room_id>/messages/send/", ChatMessageCreateView.as_view(), name="chat-send"),
+    path("chat/rooms/<int:room_id>/messages/<int:message_id>/reactions/add/", AddReactionView.as_view(), name="chat-add-reaction"),
+    path("chat/rooms/<int:room_id>/messages/<int:message_id>/reactions/remove/", RemoveReactionView.as_view(), name="chat-remove-reaction"),
     path("chat/rooms/<int:room_id>/read/", MarkMessagesReadView.as_view(), name="chat-mark-read"),
     # ML Fraud Detection API
     path("ml/fraud/analyze/", MLFraudAnalysisView.as_view(), name="ml-fraud-analyze"),

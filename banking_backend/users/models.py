@@ -39,6 +39,8 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_active", True)
 
         # Create user instance - correctly uses properties for sensitive fields
+        # SECURITY: Pop username from extra_fields to avoid multiple value TypeError
+        extra_fields.pop("username", None)
         user = self.model(
             email=email,
             phone_number=phone_number,  # Correctly triggers property setter for encryption

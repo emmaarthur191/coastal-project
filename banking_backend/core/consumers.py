@@ -62,25 +62,65 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.room_group_name,
                     {
                         "type": "chat_message",
-                        "message_id": message["id"],
+                        "id": message["id"],
                         "content": message["content"],
                         "sender_id": message["sender_id"],
                         "sender_name": message["sender_name"],
-                        "timestamp": message["timestamp"],
+                        "created_at": message["created_at"],
                     },
                 )
 
-            elif message_type == "typing":
+            elif message_type in ["typing_start", "typing_stop"]:
                 # Broadcast typing indicator
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         "type": "typing_indicator",
+                        "event_type": message_type,
                         "user_id": self.user.id,
-                        "user_name": self.user.first_name or self.user.email,
-                        "is_typing": data.get("is_typing", True),
+                        "user_name": self.user.get_full_name() or self.user.email,
                     },
                 )
+
+            elif message_type in ["reaction_added", "reaction_removed"]:
+                # Broadcast reaction update
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "reaction_broadcast",
+                        "event_type": message_type,
+                        "message_id": data.get("message_id"),
+                        "emoji": data.get("emoji"),
+                        "user_id": self.user.id,
+                    },
+                )
+
+            elif message_type in ["call_offer", "call_answer", "new_ice_candidate"]:
+                # Signaling for WebRTC
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "signaling_broadcast",
+                        "event_type": message_type,
+                        "payload": data.get("payload"),
+                        "sender_id": self.user.id,
+                    },
+                )
+
+            elif message_type == "presence_update":
+                # User's online status
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "presence_broadcast",
+                        "user_id": self.user.id,
+                        "status": data.get("status", "online"),
+                    },
+                )
+
+            elif message_type == "ping":
+                # Heartbeat from client
+                await self.send(text_data=json.dumps({"type": "pong"}))
 
         except json.JSONDecodeError:
             pass
@@ -91,11 +131,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps(
                 {
                     "type": "message",
-                    "id": event["message_id"],
+                    "id": event["id"],
                     "content": event["content"],
                     "sender_id": event["sender_id"],
                     "sender_name": event["sender_name"],
-                    "timestamp": event["timestamp"],
+                    "created_at": event["created_at"],
                 }
             )
         )
@@ -107,12 +147,40 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send(
                 text_data=json.dumps(
                     {
-                        "type": "typing",
+                        "type": event["event_type"],
                         "user_id": event["user_id"],
                         "user_name": event["user_name"],
-                        "is_typing": event["is_typing"],
                     }
                 )
+            )
+
+    async def reaction_broadcast(self, event):
+        """Send reaction update to WebSocket."""
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": event["event_type"],
+                    "message_id": event["message_id"],
+                    "emoji": event["emoji"],
+                    "user_id": event["user_id"],
+                }
+            )
+        )
+
+    async def signaling_broadcast(self, event):
+        """Relay WebRTC signals to all other participants."""
+        if event["sender_id"] != self.user.id:
+            await self.send(
+                text_data=json.dumps(
+                    {"type": event["event_type"], "payload": event["payload"], "sender_id": event["sender_id"]}
+                )
+            )
+
+    async def presence_broadcast(self, event):
+        """Send presence status update."""
+        if event["user_id"] != self.user.id:
+            await self.send(
+                text_data=json.dumps({"type": "presence_update", "user_id": event["user_id"], "status": event["status"]})
             )
 
     @database_sync_to_async
@@ -138,5 +206,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "content": message.content,
             "sender_id": self.user.id,
             "sender_name": f"{self.user.first_name} {self.user.last_name}".strip() or self.user.email,
-            "timestamp": message.created_at.isoformat(),
+            "created_at": message.created_at.isoformat(),
         }

@@ -31,6 +31,8 @@ from core.views.chat_views import (
     ChatRoomDetailView,
     ChatRoomListView,
     MarkMessagesReadView,
+    AddReactionView,
+    RemoveReactionView,
 )
 
 # Dashboard views
@@ -111,6 +113,8 @@ from core.views.transactions import TransactionViewSet
 
 # Export all views for backward compatibility
 __all__ = [
+    "AddReactionView",
+    "RemoveReactionView",
     "AccountBalanceView",
     "AccountClosureViewSet",
     "AccountOpeningViewSet",

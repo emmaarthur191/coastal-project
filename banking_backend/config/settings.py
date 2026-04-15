@@ -404,7 +404,6 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API for banking backend system",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    # OTHER SETTINGS
 }
 
 # Caching - use Redis in production, local memory for development

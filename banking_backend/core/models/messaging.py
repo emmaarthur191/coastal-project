@@ -303,7 +303,11 @@ class ChatMessage(models.Model):
         self.content_encrypted = encrypt_field(value) if value else ""
 
     is_read = models.BooleanField(default=False)
+    attachment_url = models.URLField(blank=True, null=True)
+    attachment_name = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(null=True, blank=True)
+    reactions = models.JSONField(default=dict, blank=True)
 
     class Meta:
         db_table = "core_chatmessage"
