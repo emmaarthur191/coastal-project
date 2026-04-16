@@ -491,12 +491,7 @@ class AccountOpeningViewSet(
                     customer_user.profile_photo = opening_request.photo
                     customer_user.save()
                 else:
-                    # For existing members, we just ensure they are approved
                     customer_user.is_approved = True
-                    # If they already had a password, we might not want to reset it 
-                    # UNLESS it's a new account type request and we want to provide 
-                    # them with a fresh login for this session's welcome letter.
-                    # Standard policy: Update password for new account opening letter.
                     customer_user.set_password(temp_password)
                     customer_user.save(update_fields=["is_approved", "password"])
 
@@ -514,29 +509,60 @@ class AccountOpeningViewSet(
                 opening_request.created_account = new_account
                 opening_request.save()
 
-                # 4. Generate PDF Welcome Letter
-                from core.pdf_services import generate_account_opening_letter_pdf
+            # 4. Generate PDF Welcome Letter (Outside atomic to ensure DB commit first)
+            from core.pdf_services import generate_account_opening_letter_pdf
+            from django.http import HttpResponse
 
-                pdf_buffer = generate_account_opening_letter_pdf(
-                    opening_request, new_account.account_number, temp_password
-                )
+            pdf_buffer = generate_account_opening_letter_pdf(
+                opening_request, new_account.account_number, temp_password
+            )
 
-                # 5. Notify Customer of Account Number
-                self._send_account_number_sms(opening_request, new_account)
+            # 5. Notify Customer of Account Number
+            self._send_account_number_sms(opening_request, new_account)
 
-                # Rewind buffer and return FileResponse directly
-                pdf_buffer.seek(0)
-                return FileResponse(
-                    pdf_buffer,
-                    as_attachment=False,
-                    filename=f"Coastal_Welcome_{new_account.account_number}.pdf",
-                    content_type="application/pdf",
-                )
+            # Standardize response using HttpResponse for reliable binary delivery in DRF
+            response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
+            response["Content-Disposition"] = f'attachment; filename="Coastal_Welcome_{new_account.account_number}.pdf"'
+            return response
 
         except Exception as e:
             logger.exception(f"Approve & Print failed for request {opening_request.id}")
             return Response(
-                {"status": "error", "message": "Account activation failure.", "code": "ACTIVATION_FAILED"},
+                {"status": "error", "message": f"Account activation failure: {str(e)}", "code": "ACTIVATION_FAILED"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=True, methods=["get"], url_path="print-letter", permission_classes=[IsManagerOrAdmin])
+    def print_letter(self, request, pk=None):
+        """
+        Re-prints the welcome letter for an already completed request.
+        Password is redacted for security as it is not stored.
+        """
+        opening_request = self.get_object()
+
+        if opening_request.status != "completed" or not opening_request.created_account:
+            return Response(
+                {"status": "error", "message": "Only completed requests with accounts can be printed.", "code": "INVALID_STATUS"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from core.pdf_services import generate_account_opening_letter_pdf
+            from django.http import HttpResponse
+
+            # Use "********" as password placeholder since it was not stored
+            pdf_buffer = generate_account_opening_letter_pdf(
+                opening_request, opening_request.created_account.account_number, "********"
+            )
+
+            response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
+            response["Content-Disposition"] = f'attachment; filename="Coastal_Welcome_{opening_request.created_account.account_number}.pdf"'
+            return response
+
+        except Exception as e:
+            logger.exception(f"Print Letter failed for request {opening_request.id}")
+            return Response(
+                {"status": "error", "message": "Failed to generate letter.", "code": "GENERATION_FAILED"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

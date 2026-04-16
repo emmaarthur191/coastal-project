@@ -1455,6 +1455,15 @@ export const apiService = {
     }
   },
 
+  async printAccountOpeningLetter(id: string | number): Promise<{ success: boolean; blob?: Blob; error?: string }> {
+    try {
+      const response = await api.get(`banking/account-openings/${id}/print-letter/`, { responseType: 'blob' });
+      return { success: true, blob: response.data as Blob };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Print failed' };
+    }
+  },
+
   async getTransactionsList(): Promise<{ success: boolean; data?: Transaction[]; error?: string }> {
     try {
       const response = await api.get<Transaction[]>('transactions/');

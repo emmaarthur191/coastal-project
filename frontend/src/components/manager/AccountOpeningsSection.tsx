@@ -60,23 +60,63 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                 throw new Error(result.error || 'Failed to generate Welcome Letter');
             }
 
-            // Handle PDF Download
-            const url = window.URL.createObjectURL(new Blob([result.blob], { type: 'application/pdf' }));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `WelcomeLetter_${request.last_name}_${request.id}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode?.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            // Handle PDF - Open in New Tab for immediate printing
+            if (result.blob) {
+                const blob = new Blob([result.blob], { type: 'application/pdf' });
+                const blobUrl = window.URL.createObjectURL(blob);
+                const printWindow = window.open(blobUrl, '_blank');
+                if (!printWindow) {
+                    // Fallback to download if popup blocked
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.setAttribute('download', `WelcomeLetter_${request.last_name}_${request.id}.pdf`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                }
+            }
 
             await fetchRequests();
             onRefreshDashboard?.();
             setSelectedRequest(null);
-            alert('Account approved and Welcome Letter downloaded successfully.');
+            alert('Account approved successfully. The Welcome Letter has been opened for printing.');
         } catch (error: unknown) {
             console.error('Failed to approve and print:', error);
             const msg = error instanceof Error ? error.message : 'Failed to approve and print welcome letter';
+            setError(msg);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handlePrintLetter = async (request: AccountOpeningRequest) => {
+        try {
+            setActionLoading(true);
+            setError(null);
+
+            const result = await apiService.printAccountOpeningLetter(request.id!);
+            if (!result.success || !result.blob) {
+                throw new Error(result.error || 'Failed to generate Welcome Letter');
+            }
+
+            // Handle PDF - Open in New Tab for immediate printing
+            const blob = new Blob([result.blob], { type: 'application/pdf' });
+            const blobUrl = window.URL.createObjectURL(blob);
+            const printWindow = window.open(blobUrl, '_blank');
+            
+            if (!printWindow) {
+                // Fallback to download if popup blocked
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.setAttribute('download', `WelcomeLetter_${request.last_name}_${request.id}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                alert('Popup blocked. The Welcome Letter has been downloaded instead.');
+            }
+        } catch (error: unknown) {
+            console.error('Failed to print letter:', error);
+            const msg = error instanceof Error ? error.message : 'Failed to generate welcome letter';
             setError(msg);
         } finally {
             setActionLoading(false);
@@ -265,6 +305,21 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold disabled:opacity-50"
                             >
                                 Reject Request
+                            </button>
+                        </div>
+                    )}
+
+                    {selectedRequest.status === 'completed' && (
+                        <div className="mt-8">
+                            <button
+                                onClick={() => handlePrintLetter(selectedRequest)}
+                                disabled={actionLoading}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                {actionLoading ? 'Generating...' : 'Print Welcome Letter'}
                             </button>
                         </div>
                     )}
