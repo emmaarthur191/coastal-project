@@ -875,7 +875,7 @@ class AccountStatementViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, 
                 return Response({"error": "Not authorized"}, status=403)
 
             if statement.pdf_file:
-                return FileResponse(async_file_iterator(statement.pdf_file), as_attachment=False)
+                return FileResponse(statement.pdf_file, as_attachment=False)
 
             return Response(
                 {"status": "error", "message": "PDF not available", "code": "FILE_NOT_FOUND"},
