@@ -36,7 +36,7 @@ from users.authentication import JWTCookieAuthentication
 
 logger = logging.getLogger(__name__)
 
-from core.utils.async_stream import async_file_iterator
+
 
 
 @extend_schema_view(
@@ -475,19 +475,17 @@ class AccountOpeningViewSet(
                     temp_password = secrets.token_urlsafe(8)
 
                 if not customer_user:
-                    # Legacy Fix: Generate placeholder email if missing to satisfy User model requirements
-                    effective_email = email if email else f"legacy_{opening_request.id}@members.coastal.com"
-                    username = effective_email
+                    # Pass both email and phone_number to ensure the UserManager fallback logic works correctly.
+                    # Convert empty strings to None to satisfy the 'email or phone_number' requirement.
                     customer_user = User.objects.create_user(
-                        username=username,
-                        email=effective_email,
+                        email=email or None,
+                        phone_number=opening_request.phone_number or None,
                         password=temp_password,
                         first_name=opening_request.first_name,
                         last_name=opening_request.last_name,
                         role="customer",
                     )
                     customer_user.is_approved = True  # Approve access
-                    customer_user.phone_number = opening_request.phone_number
                     customer_user.id_type = opening_request.id_type
                     customer_user.id_number = opening_request.id_number
                     customer_user.profile_photo = opening_request.photo
@@ -526,10 +524,10 @@ class AccountOpeningViewSet(
                 # 5. Notify Customer of Account Number
                 self._send_account_number_sms(opening_request, new_account)
 
-                # Rewind buffer and return FileResponse directly (Modern Django 5.x ASGI handling)
+                # Rewind buffer and return FileResponse directly
                 pdf_buffer.seek(0)
                 return FileResponse(
-                    async_file_iterator(pdf_buffer),
+                    pdf_buffer,
                     as_attachment=False,
                     filename=f"Coastal_Welcome_{new_account.account_number}.pdf",
                     content_type="application/pdf",

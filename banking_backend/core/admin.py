@@ -444,10 +444,11 @@ class AccountOpeningRequestAdmin(admin.ModelAdmin):
                 temp_password = secrets.token_urlsafe(8)
 
                 if not customer_user:
-                    username = user_email if user_email else f"cust_{secrets.token_hex(4)}"
+                    # Pass both email and phone_number to ensure the UserManager fallback logic works correctly.
+                    # Convert empty strings to None to satisfy the 'email or phone_number' requirement.
                     customer_user = User.objects.create_user(
-                        username=username,
-                        email=user_email or "",
+                        email=user_email or None,
+                        phone_number=opening_request.phone_number or None,
                         password=temp_password,
                         first_name=opening_request.first_name,
                         last_name=opening_request.last_name,
@@ -455,7 +456,6 @@ class AccountOpeningRequestAdmin(admin.ModelAdmin):
                         is_approved=True,  # Auto-approve the created user
                         is_active=True,
                     )
-                    customer_user.phone_number = opening_request.phone_number
                     customer_user.id_type = opening_request.id_type
                     customer_user.id_number = opening_request.id_number
                     customer_user.save()
@@ -483,13 +483,12 @@ class AccountOpeningRequestAdmin(admin.ModelAdmin):
                 opening_request.save()
 
                 # 4. Generate the PDF Letter
-                from core.utils.async_stream import async_file_iterator
                 pdf_buffer = generate_account_opening_letter_pdf(
                     opening_request, new_account.account_number, temp_password
                 )
 
                 filename = f"Account_Opening_{new_account.account_number}.pdf"
-                return FileResponse(async_file_iterator(pdf_buffer), as_attachment=False, filename=filename)
+                return FileResponse(pdf_buffer, as_attachment=False, filename=filename)
 
         except Exception as e:
             self.message_user(request, f"Critical error during approval: {e!s}", admin.messages.ERROR)

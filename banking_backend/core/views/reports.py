@@ -15,7 +15,6 @@ from django.core.files.storage import default_storage
 from django.http import FileResponse, HttpResponse
 from django.utils import timezone
 from django.db.models import Avg, Count, ExpressionWrapper, F, Sum
-from core.utils.async_stream import async_file_iterator
 from core.services.report_generation import ReportService
 
 
@@ -741,7 +740,7 @@ class PayslipViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericVi
                 )
 
             if payslip.pdf_file:
-                return FileResponse(async_file_iterator(payslip.pdf_file), as_attachment=False)
+                return FileResponse(payslip.pdf_file, as_attachment=False)
 
             return Response(
                 {"status": "error", "message": "PDF not available", "code": "FILE_NOT_FOUND"},
