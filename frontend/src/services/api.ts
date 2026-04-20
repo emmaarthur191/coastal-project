@@ -696,9 +696,7 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
         apiLogger.error(`[API ERROR ${status}]`, msg);
 
         // Throw specialized error for better handling
-        const apiError: ApiError = new Error(
-          sanitizeErrorMessage(nonFieldErrors?.[0] as string || (errorData as Record<string, unknown>).error as string || (errorData as Record<string, unknown>).detail as string || `HTTP error! status: ${processedResponse.status}`)
-        ) as ApiError;
+        const apiError: ApiError = new Error(sanitizeErrorMessage(msg)) as ApiError;
         apiError.status = processedResponse.status;
         apiError.data = errorData;
 

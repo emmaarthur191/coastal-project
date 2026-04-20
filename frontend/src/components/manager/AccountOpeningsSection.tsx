@@ -309,7 +309,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
                         </div>
                     )}
 
-                    {selectedRequest.status === 'completed' && (
+                    {['approved', 'completed'].includes(selectedRequest.status || '') && (
                         <div className="mt-8">
                             <button
                                 onClick={() => handlePrintLetter(selectedRequest)}

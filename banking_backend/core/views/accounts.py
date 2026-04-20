@@ -528,7 +528,7 @@ class AccountOpeningViewSet(
         except Exception as e:
             logger.exception(f"Approve & Print failed for request {opening_request.id}")
             return Response(
-                {"status": "error", "message": f"Account activation failure: {str(e)}", "code": "ACTIVATION_FAILED"},
+                {"status": "error", "message": "Account activation failed due to an internal error. Please contact a system administrator.", "code": "ACTIVATION_FAILED"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -540,9 +540,9 @@ class AccountOpeningViewSet(
         """
         opening_request = self.get_object()
 
-        if opening_request.status != "completed" or not opening_request.created_account:
+        if opening_request.status not in ["approved", "completed"] or not opening_request.created_account:
             return Response(
-                {"status": "error", "message": "Only completed requests with accounts can be printed.", "code": "INVALID_STATUS"},
+                {"status": "error", "message": "Only approved or completed requests with accounts can be printed.", "code": "INVALID_STATUS"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
