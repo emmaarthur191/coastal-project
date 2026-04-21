@@ -50,6 +50,12 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             return;
         }
 
+        // Open window synchronously to bypass popup blockers
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write('<body><div style="font-family:sans-serif;padding:20px;text-align:center;">Generating Welcome Letter... Please wait.</div></body>');
+        }
+
         try {
             setActionLoading(true);
             setError(null);
@@ -57,6 +63,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             // Use apiService wrapper which correctly handles blob response
             const result = await apiService.approveAndPrintAccountOpening(request.id!);
             if (!result.success || !result.blob) {
+                if (printWindow) printWindow.close();
                 throw new Error(result.error || 'Failed to generate Welcome Letter');
             }
 
@@ -64,9 +71,11 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             if (result.blob) {
                 const blob = new Blob([result.blob], { type: 'application/pdf' });
                 const blobUrl = window.URL.createObjectURL(blob);
-                const printWindow = window.open(blobUrl, '_blank');
-                if (!printWindow) {
-                    // Fallback to download if popup blocked
+                
+                if (printWindow) {
+                    printWindow.location.href = blobUrl;
+                } else {
+                    // Fallback to download if popup window was somehow instantly destroyed
                     const link = document.createElement('a');
                     link.href = blobUrl;
                     link.setAttribute('download', `WelcomeLetter_${request.last_name}_${request.id}.pdf`);
@@ -84,27 +93,36 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             console.error('Failed to approve and print:', error);
             const msg = error instanceof Error ? error.message : 'Failed to approve and print welcome letter';
             setError(msg);
+            if (printWindow) printWindow.close();
         } finally {
             setActionLoading(false);
         }
     };
 
     const handlePrintLetter = async (request: AccountOpeningRequest) => {
+        // Open window synchronously to bypass popup blockers
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write('<body><div style="font-family:sans-serif;padding:20px;text-align:center;">Generating Welcome Letter... Please wait.</div></body>');
+        }
+
         try {
             setActionLoading(true);
             setError(null);
 
             const result = await apiService.printAccountOpeningLetter(request.id!);
             if (!result.success || !result.blob) {
+                if (printWindow) printWindow.close();
                 throw new Error(result.error || 'Failed to generate Welcome Letter');
             }
 
-            // Handle PDF - Open in New Tab for immediate printing
+            // Handle PDF
             const blob = new Blob([result.blob], { type: 'application/pdf' });
             const blobUrl = window.URL.createObjectURL(blob);
-            const printWindow = window.open(blobUrl, '_blank');
             
-            if (!printWindow) {
+            if (printWindow) {
+                printWindow.location.href = blobUrl;
+            } else {
                 // Fallback to download if popup blocked
                 const link = document.createElement('a');
                 link.href = blobUrl;
@@ -118,6 +136,7 @@ const AccountOpeningsSection: React.FC<AccountOpeningsSectionProps> = ({ onRefre
             console.error('Failed to print letter:', error);
             const msg = error instanceof Error ? error.message : 'Failed to generate welcome letter';
             setError(msg);
+            if (printWindow) printWindow.close();
         } finally {
             setActionLoading(false);
         }

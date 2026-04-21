@@ -12,11 +12,7 @@ import {
   Shield, 
   ShieldCheck, 
   PlusCircle, 
-  Pencil,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Activity
+  Pencil
 } from 'lucide-react';
 import './FraudRules.css';
 

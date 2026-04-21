@@ -135,6 +135,10 @@ class User(AbstractUser):
 
     id_type = models.CharField(max_length=50, null=True, blank=True)
     
+    # Security Constants
+    MAX_FAILED_ATTEMPTS = 5
+    LOCKOUT_DURATION_MINUTES = 15
+
     # Banking Operations: Client Assignment
     assigned_banker = models.ForeignKey(
         "self",
