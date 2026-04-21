@@ -7,7 +7,6 @@ access (scraping/exfiltration) and unusual transaction patterns.
 import logging
 import time
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -68,7 +67,7 @@ class BulkAccessDetectionMiddleware:
             total_in_window = sum(entry[1] for entry in history)
             cache.set(cache_key, history, timeout=window_seconds)
 
-            if total_in_window > self.MAX_RECORDS_PER_MIN: # Keep settings name for compatibility
+            if total_in_window > self.MAX_RECORDS_PER_MIN:  # Keep settings name for compatibility
                 self._trigger_alert(request, total_in_window, f"Bulk Access Detected ({total_in_window} in 10 minutes)")
 
         return response

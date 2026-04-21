@@ -6,16 +6,16 @@ a modular structure.
 
 # Import reliability models
 # Import domain-specific models
-from core.models.accounts import (
+from core.models.accounts import (  # noqa: F401
     Account,
     AccountClosureRequest,
     AccountOpeningRequest,
 )
-from core.models.fraud import FraudAlert, FraudRule
-from core.models.hr import Expense, Payslip
-from core.models.loans import Loan
-from core.models.marketing import Product, Promotion
-from core.models.messaging import (
+from core.models.fraud import FraudAlert, FraudRule  # noqa: F401
+from core.models.hr import Expense, Payslip  # noqa: F401
+from core.models.loans import Loan  # noqa: F401
+from core.models.marketing import Product, Promotion  # noqa: F401
+from core.models.messaging import (  # noqa: F401
     BankingMessage,
     BlockedUser,
     ChatMessage,
@@ -25,7 +25,7 @@ from core.models.messaging import (
     OperationsMessage,
     UserMessagePreference,
 )
-from core.models.operational import (
+from core.models.operational import (  # noqa: F401
     CashAdvance,
     CashDrawer,
     CashDrawerDenomination,
@@ -36,15 +36,15 @@ from core.models.operational import (
     ServiceRequest,
     VisitSchedule,
 )
-from core.models.reliability import GlobalSequence, IdempotencyKey, SmsOutbox
-from core.models.reporting import (
+from core.models.reliability import GlobalSequence, IdempotencyKey, SmsOutbox  # noqa: F401
+from core.models.reporting import (  # noqa: F401
     PerformanceMetric,
     Report,
     ReportSchedule,
     ReportTemplate,
     SystemHealth,
 )
-from core.models.transactions import (
+from core.models.transactions import (  # noqa: F401
     AccountStatement,
     CheckDeposit,
     Refund,

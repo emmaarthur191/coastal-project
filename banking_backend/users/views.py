@@ -1297,7 +1297,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 # 1. Generate Staff ID via Signal (Atomic GlobalSequence)
-                # We save once to trigger the post_save signal which handles the sequence
+                # Save once to trigger signal for ID sequence handling
                 if not user.staff_id or not user.staff_number:
                     user.save()
                     user.refresh_from_db()
@@ -1309,17 +1309,24 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 user.set_password(temp_password)
                 user.is_approved = True
                 user.is_active = True
-                user.save(update_fields=["password", "is_approved", "is_active"])
+                fields_to_update = ["password", "is_approved", "is_active"]
+                user.save(update_fields=fields_to_update)
 
-                # 3. Generate Welcome Letter (using the now-guaranteed staff_id)
-                from core.pdf_services import generate_staff_welcome_letter_pdf
+                # 3. Generate Welcome Letter (using staff_id)
+                from core.pdf_services import (
+                    generate_staff_welcome_letter_pdf
+                )
 
-                pdf_buffer = generate_staff_welcome_letter_pdf(user, temp_password)
+                pdf_buffer = generate_staff_welcome_letter_pdf(
+                    user, temp_password
+                )
 
                 # 4. Optional SMS Fallback
                 message = (
-                    f"Coastal Banking: Welcome {user.first_name}! Your staff account is approved. "
-                    f"ID: {user.staff_id}. Credentials handover via Manager. Login with your email."
+                    f"Coastal Banking: Welcome {user.first_name}! "
+                    f"Your staff account is approved. "
+                    f"ID: {user.staff_id}. Credentials handover via Manager. "
+                    f"Login with your email."
                 )
                 from users.services import SendexaService
 
@@ -1327,22 +1334,26 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
                 from core.utils.async_stream import async_file_iterator
 
+                filename = f"Coastal_Staff_Welcome_{user.staff_id}.pdf"
                 return FileResponse(
                     async_file_iterator(pdf_buffer),
                     as_attachment=False,
-                    filename=f"Coastal_Staff_Welcome_{user.staff_id}.pdf",
+                    filename=filename,
                     content_type="application/pdf",
                 )
 
-        except Exception as e:
-            logger.exception(f"Staff Approve & Print failed for user {user.id}")
+        except Exception:
+            logger.exception(
+                f"Staff Approve & Print failed for user {user.id}"
+            )
             return Response(
                 {"status": "error", "message": "An internal error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class SecurityDiagnosticsView(APIView):
-    """Staff-only diagnostic endpoint for verifying cluster configuration and secret mounting."""
+    """Staff diagnostic for cluster config and secret mounting."""
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request, *args, **kwargs):
@@ -1360,11 +1371,19 @@ class SecurityDiagnosticsView(APIView):
         secret_service = SecretService()
         status = {
             "environment": os.environ.get("DJANGO_ENV", "development"),
-            "secret_storage": "file_injection" if mounted_secrets else "environment_variables",
+            "secret_storage": (
+                "file_injection" if mounted_secrets else "environment_variables"
+            ),
             "mounted_secrets_count": len(mounted_secrets),
             "critical_checks": {
-                "field_encryption_key": secret_service.get_secret("FIELD_ENCRYPTION_KEY") is not None,
-                "sendexa_api_key": secret_service.get_secret("SENDEXA_API_KEY") is not None,
+                "field_encryption_key": (
+                    secret_service.get_secret("FIELD_ENCRYPTION_KEY")
+                    is not None
+                ),
+                "sendexa_api_key": (
+                    secret_service.get_secret("SENDEXA_API_KEY")
+                    is not None
+                ),
             },
             "timestamp": now().isoformat(),
         }
