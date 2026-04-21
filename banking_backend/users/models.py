@@ -57,12 +57,7 @@ class UserManager(BaseUserManager):
         # Save with force_insert to avoid issues during initial creation
         user.save(using=self._db, force_insert=True)
 
-        masked_email = f"{email[:3]}...@{email.split('@')[-1]}" if "@" in email else "***"
-        masked_phone = f"{phone_number[:5]}***" if phone_number else "***"
-        logger.info(
-            f"User created successfully → Username: {username} | "
-            f"Email: {masked_email} | Phone: {masked_phone}"
-        )
+        logger.info("User created successfully and saved to the database.")
         return user
 
     def create_superuser(self, email=None, phone_number=None, password=None, **extra_fields):
