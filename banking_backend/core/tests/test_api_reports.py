@@ -116,7 +116,7 @@ class TestReportLifecycle:
 
     @patch("core.report_download.default_storage.exists", return_value=True)
     @patch("core.report_download.default_storage.open", return_value=MagicMock())
-    @patch("core.report_download.async_file_iterator", return_value=["testdata"])
+    @patch("core.utils.async_stream.async_file_iterator", return_value=["testdata"])
     def test_download_report_by_pk(self, mock_iter, mock_open, mock_exists, api_client, manager_user):
         """Verify report download via report_<pk> format."""
         from core.models.reporting import Report

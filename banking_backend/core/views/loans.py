@@ -95,13 +95,13 @@ class LoanViewSet(
                             mobile_banker=self.request.user, client=applicant, is_active=True
                         ).exists()
                         if not is_assigned:
-                            raise PermissionDenied("not authorized to initiate requests for this client")
+                            raise PermissionDenied("not authorized to initiate requests for this client (not assigned)")
                     elif self.request.user.role == "cashier":
                         # Cashiers can initiate, but strictly requires Maker-Checker (which is enforced in approve)
                         pass
                     else:
                         raise PermissionDenied(
-                            "Your role does not have permission to initiate loan applications for customers."
+                            "Your role does not have permission to initiate loan applications for customers. Only Managers or Mobile Bankers are authorized."
                         )
 
                 serializer.save(

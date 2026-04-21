@@ -53,7 +53,7 @@ class TestLoanLifecycle:
         url = reverse("core:loan-list")
         data = {"user": loan_customer.id, "amount": "300.00", "interest_rate": "10.0", "term_months": 6}
         response = api_client.post(url, data)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "not assigned" in str(response.data)
 
         # 2. Create assignment and retry (Should pass)

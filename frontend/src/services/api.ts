@@ -97,7 +97,7 @@ import type {
   MemberLookupResult,
   StaffId,
   MLModelStatus,
-  MLFraudAnalysis
+  MLFraudAnalysis,
 } from '../types';
 
 export type {
@@ -195,13 +195,10 @@ export type {
   AuditLogRecord,
   StaffId,
   MLModelStatus,
-  MLFraudAnalysis
+  MLFraudAnalysis,
 };
 
 import axios from 'axios';
-
-
-
 
 // Logging utility for API debugging - PRODUCTION SAFE (no output in production)
 const API_SERVICE_IS_DEV = import.meta.env.DEV || import.meta.env.MODE === 'development';
@@ -214,7 +211,7 @@ const API_SERVICE_IS_DEV = import.meta.env.DEV || import.meta.env.MODE === 'deve
 function handleApiError(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as Record<string, unknown> | undefined;
-    
+
     if (data) {
       // 1. Handle DRF 'detail' or 'error' top-level keys
       const dataRecord = data as Record<string, unknown>;
@@ -242,7 +239,7 @@ function handleApiError(error: unknown, fallback: string): string {
         }
       }
     }
-    
+
     // 3. Handle Status-based fallback
     const status = error.response?.status;
     if (status === 401) return 'Session expired. Please log in again.';
@@ -251,7 +248,7 @@ function handleApiError(error: unknown, fallback: string): string {
     if (status === 429) return 'Too many requests. Please try again later.';
     if (status && status >= 500) return 'Internal server error. Our team has been notified.';
   }
-  
+
   if (error instanceof Error) return error.message;
   return fallback;
 }
@@ -268,7 +265,10 @@ function extractResults<T>(data: unknown): T[] {
 
 const apiLogger = {
   info: (...args: unknown[]) => {
-    if (import.meta.env.DEV || (typeof window !== 'undefined' && (window as Window & { DEBUG_API?: boolean }).DEBUG_API)) {
+    if (
+      import.meta.env.DEV ||
+      (typeof window !== 'undefined' && (window as Window & { DEBUG_API?: boolean }).DEBUG_API)
+    ) {
       console.warn('[API INFO]', ...args);
     }
   },
@@ -286,7 +286,7 @@ const apiLogger = {
     if (typeof window !== 'undefined' && (window as Window & { DEBUG_API?: boolean }).DEBUG_API) {
       console.warn('[API DEBUG]', ...args);
     }
-  }
+  },
 };
 
 // Use environment variable for API URL
@@ -308,11 +308,11 @@ const getApiBaseUrl = () => {
     // });
   }
 
-
-
   // Priority 2: Check VITE_PROD_API_URL (Explicit Production)
   if (prodUrlEnv) {
-    if (!isProd) { /* Debug log removed */ }
+    if (!isProd) {
+      /* Debug log removed */
+    }
     return prodUrlEnv.endsWith('/') ? prodUrlEnv : prodUrlEnv + '/';
   }
 
@@ -329,8 +329,6 @@ const getApiBaseUrl = () => {
 
 // HTTPS enforcement removed - let the deployment environment handle this
 // Local development uses HTTP, production should use a reverse proxy with HTTPS
-
-
 
 // Extend Window interface for Sentry
 declare global {
@@ -351,7 +349,9 @@ if (import.meta.env.DEV) {
 // @deprecated Use backend-managed httpOnly cookies instead
 function _setStoredTokens(_access: string, _refresh: string) {
   // No-op: tokens are handled by backend httpOnly cookies
-  apiLogger.warn('setStoredTokens is deprecated. Tokens are now managed by backend httpOnly cookies.');
+  apiLogger.warn(
+    'setStoredTokens is deprecated. Tokens are now managed by backend httpOnly cookies.'
+  );
 }
 
 export function _getStoredTokens(): { accessToken: string | null; refreshToken: string | null } {
@@ -414,7 +414,6 @@ export async function refreshToken() {
   return refreshAccessToken();
 }
 
-
 // Request timeout configuration
 const API_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 3;
@@ -469,10 +468,13 @@ addResponseInterceptor((response) => {
 addErrorInterceptor((error, config) => {
   const duration = Date.now() - (config.startTime || 0);
 
-  // Enhanced error tracking - only log if it's a raw network error 
+  // Enhanced error tracking - only log if it's a raw network error
   // (Standard API status errors are handled in apiCall)
   if (!(error as ApiError).status) {
-    apiLogger.error(`Network interceptor error: ${config.method} ${config.url} (${duration}ms)`, error);
+    apiLogger.error(
+      `Network interceptor error: ${config.method} ${config.url} (${duration}ms)`,
+      error
+    );
   }
 
   // Could send to error tracking service here
@@ -480,12 +482,12 @@ addErrorInterceptor((error, config) => {
     window.Sentry.captureException(error, {
       tags: {
         api_call: `${config.method} ${config.url}`,
-        duration: duration.toString()
+        duration: duration.toString(),
       },
       extra: {
         config,
-        errorData: (error as ApiError).data
-      }
+        errorData: (error as ApiError).data,
+      },
     });
   }
 
@@ -493,7 +495,7 @@ addErrorInterceptor((error, config) => {
 });
 
 // Sleep utility for retry delays
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Calculate retry delay with exponential backoff
 const getRetryDelay = (attempt: number) => RETRY_DELAY * Math.pow(2, attempt);
@@ -543,7 +545,7 @@ async function getCsrfToken(): Promise<string | null> {
   try {
     const response = await fetch(`${API_BASE_URL}users/csrf/`, {
       method: 'GET',
-      credentials: 'include'
+      credentials: 'include',
     });
     if (response.ok) {
       const data = await response.json();
@@ -569,12 +571,20 @@ function generateIdempotencyKey(): string {
 /**
  * Core API caller with retry logic, interceptors, and error handling
  */
-async function apiCall<T = unknown>(method: string, url: string, data?: unknown, config?: RequestConfig, retryCount = 0, idempotencyKey?: string): Promise<{ data: T }> {
+async function apiCall<T = unknown>(
+  method: string,
+  url: string,
+  data?: unknown,
+  config?: RequestConfig,
+  retryCount = 0,
+  idempotencyKey?: string
+): Promise<{ data: T }> {
   const startTime = Date.now();
 
   // For state-changing requests, ensure we have an idempotency key that persists across retries
   const isStateChanging = ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase());
-  const effectiveIdempotencyKey = (isStateChanging && !idempotencyKey) ? generateIdempotencyKey() : idempotencyKey;
+  const effectiveIdempotencyKey =
+    isStateChanging && !idempotencyKey ? generateIdempotencyKey() : idempotencyKey;
 
   const requestConfig = { method, url, data, ...config } as RequestConfig;
 
@@ -611,9 +621,12 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
     };
 
     // Don't stringify FormData
-    const body = (data && method !== 'GET')
-      ? (data instanceof FormData ? data : JSON.stringify(data))
-      : undefined;
+    const body =
+      data && method !== 'GET'
+        ? data instanceof FormData
+          ? data
+          : JSON.stringify(data)
+        : undefined;
 
     // Build query string if params are present
     let finalUrl = url;
@@ -667,13 +680,15 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
             apiLogger.error('[API] Received HTML instead of JSON - check backend URL:', preview);
             errorData = {
               detail: 'Unexpected HTML response - check backend URL or server configuration',
-              html_preview: preview
+              html_preview: preview,
             };
           } else {
             // Handle non-JSON error responses gracefully
             const textResponse = await processedResponse.text();
             console.warn('[DEBUG] Non-JSON text response:', textResponse);
-            errorData = { detail: textResponse || `HTTP error! status: ${processedResponse.status}` };
+            errorData = {
+              detail: textResponse || `HTTP error! status: ${processedResponse.status}`,
+            };
           }
         } catch (parseError) {
           // If response parsing fails, create a generic error
@@ -687,12 +702,13 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
         // Check for DRF's non_field_errors (array) first, then detail, error, message
         const nonFieldErrors = responseBodyData?.non_field_errors as string[] | undefined;
         console.warn('[DEBUG] nonFieldErrors:', nonFieldErrors);
-        const msg = nonFieldErrors?.[0] || 
-                    (typeof responseBodyData?.detail === 'string' ? responseBodyData.detail : null) || 
-                    (typeof responseBodyData?.error === 'string' ? responseBodyData.error : null) || 
-                    (typeof responseBodyData?.message === 'string' ? responseBodyData.message : null) || 
-                    `HTTP error! status: ${status}`;
-        
+        const msg =
+          nonFieldErrors?.[0] ||
+          (typeof responseBodyData?.detail === 'string' ? responseBodyData.detail : null) ||
+          (typeof responseBodyData?.error === 'string' ? responseBodyData.error : null) ||
+          (typeof responseBodyData?.message === 'string' ? responseBodyData.message : null) ||
+          `HTTP error! status: ${status}`;
+
         apiLogger.error(`[API ERROR ${status}]`, msg);
 
         // Throw specialized error for better handling
@@ -711,11 +727,16 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
 
         // Handle specific status codes
         if (processedResponse.status === 403) {
-          throw new Error(msg || 'Access denied - insufficient permissions. Please contact an administrator.');
+          throw new Error(
+            msg || 'Access denied - insufficient permissions. Please contact an administrator.'
+          );
         }
         if (processedResponse.status === 401) {
           // If the token is fundamentally invalid (not just expired), don't even try to refresh
-          if (msg && (msg.includes('not valid for any token type') || msg.includes('token_not_valid'))) {
+          if (
+            msg &&
+            (msg.includes('not valid for any token type') || msg.includes('token_not_valid'))
+          ) {
             apiLogger.warn('Mangled session detected (invalid token type). Forcing logout.');
             window.dispatchEvent(new Event('auth:logout'));
             throw apiError;
@@ -737,7 +758,9 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
         // Check if error is retryable and we haven't exceeded max retries
         if (isRetryableError(apiError) && retryCount < MAX_RETRIES) {
           const delay = getRetryDelay(retryCount);
-          apiLogger.warn(`Retrying ${method} ${url} in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+          apiLogger.warn(
+            `Retrying ${method} ${url} in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`
+          );
           await sleep(delay);
           return apiCall(method, url, data, config, retryCount + 1, effectiveIdempotencyKey);
         }
@@ -766,7 +789,9 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
       }
 
       const duration = Date.now() - startTime;
-      apiLogger.info(`API call successful: ${method} ${url} (${duration}ms, attempt ${retryCount + 1})`);
+      apiLogger.info(
+        `API call successful: ${method} ${url} (${duration}ms, attempt ${retryCount + 1})`
+      );
       return { data: responseData as T };
     } catch (fetchError) {
       clearTimeout(timeoutId);
@@ -782,7 +807,12 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
       }
 
       // Handle AbortError (timeout)
-      if (fetchError && typeof fetchError === 'object' && 'name' in fetchError && fetchError.name === 'AbortError') {
+      if (
+        fetchError &&
+        typeof fetchError === 'object' &&
+        'name' in fetchError &&
+        fetchError.name === 'AbortError'
+      ) {
         apiLogger.warn(`API call timeout: ${method} ${url} (${duration}ms)`);
         const timeoutError = new Error('Request timeout') as ApiError;
         timeoutError.status = 0;
@@ -791,7 +821,9 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
         // Retry timeout errors
         if (retryCount < MAX_RETRIES) {
           const delay = getRetryDelay(retryCount);
-          apiLogger.warn(`Retrying ${method} ${url} after timeout in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+          apiLogger.warn(
+            `Retrying ${method} ${url} after timeout in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`
+          );
           await sleep(delay);
           return apiCall(method, url, data, config, retryCount + 1, effectiveIdempotencyKey);
         }
@@ -802,7 +834,9 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
       // Retry other network errors
       if (isRetryableError(fetchError) && retryCount < MAX_RETRIES) {
         const delay = getRetryDelay(retryCount);
-        apiLogger.warn(`Retrying ${method} ${url} after network error in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+        apiLogger.warn(
+          `Retrying ${method} ${url} after network error in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`
+        );
         await sleep(delay);
         return apiCall(method, url, data, config, retryCount + 1, effectiveIdempotencyKey);
       }
@@ -812,16 +846,17 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
   } catch (error) {
     const duration = Date.now() - startTime;
 
-    // Enhanced error handling - only re-log if it doesn't have a status 
+    // Enhanced error handling - only re-log if it doesn't have a status
     // (Already logged above in status check)
     if (error && typeof error === 'object' && 'status' in error) {
       throw error; // Already a properly formatted and logged error
     }
 
     // Handle network and other errors
-    const errorMessage = error && typeof error === 'object' && 'message' in error
-      ? (error as Error).message
-      : 'Network error';
+    const errorMessage =
+      error && typeof error === 'object' && 'message' in error
+        ? (error as Error).message
+        : 'Network error';
 
     apiLogger.error(`API call network error: ${method} ${url} (${duration}ms)`, error);
     const networkError = new Error(errorMessage) as ApiError;
@@ -830,7 +865,6 @@ async function apiCall<T = unknown>(method: string, url: string, data?: unknown,
     throw networkError;
   }
 }
-
 
 // Error message sanitization helper
 function sanitizeErrorMessage(message: unknown): string {
@@ -844,21 +878,20 @@ function sanitizeErrorMessage(message: unknown): string {
 
   // Ensure message is a string to prevent TypeError when calling replace()
   let sanitized = String(message || '');
-  sensitivePatterns.forEach(pattern => {
+  sensitivePatterns.forEach((pattern) => {
     sanitized = sanitized.replace(pattern, '[REDACTED]');
   });
 
   // If message contains suspicious content, use generic message
   // Allow most characters but block actual HTML tags to prevent XSS
   if (/[<>]/.test(sanitized)) {
-     // Still generic if it looks like an HTML tag injection attempt
+    // Still generic if it looks like an HTML tag injection attempt
     return 'An error occurred. Please try again or contact support if the problem persists.';
   }
 
   // Allow sanitized messages even in production for visibility
   return sanitized;
 }
-
 
 // Use Mock data only if no real data is available (primarily for development fallbacks)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -869,7 +902,7 @@ const MockMemberDashboardData: MemberDashboardData = {
   savings_balance: 0,
   available_tabs: [],
   user_permissions: {},
-  membership_status: {}
+  membership_status: {},
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -879,41 +912,54 @@ const MockAccountSummary: AccountSummary = {
   total_savings: 0,
   total_loans: 0,
   available_balance: 0,
-  monthly_contributions: 0
+  monthly_contributions: 0,
 };
 
 // Authentication service
 export const cacheUtils = {
   // Invalidate specific query patterns
-  invalidateQueries: (queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void }, patterns: string[]) => {
-    patterns.forEach(pattern => {
+  invalidateQueries: (
+    queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void },
+    patterns: string[]
+  ) => {
+    patterns.forEach((pattern) => {
       queryClient.invalidateQueries({ queryKey: [pattern] });
     });
   },
 
   // Invalidate user-related queries
-  invalidateUserData: (queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void }) => {
+  invalidateUserData: (queryClient: {
+    invalidateQueries: (options: { queryKey: string[] }) => void;
+  }) => {
     queryClient.invalidateQueries({ queryKey: ['user'] });
     queryClient.invalidateQueries({ queryKey: ['users'] });
   },
 
   // Invalidate banking data
-  invalidateBankingData: (queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void }) => {
+  invalidateBankingData: (queryClient: {
+    invalidateQueries: (options: { queryKey: string[] }) => void;
+  }) => {
     queryClient.invalidateQueries({ queryKey: ['banking'] });
     queryClient.invalidateQueries({ queryKey: ['accounts'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
   },
 
   // Invalidate fraud data
-  invalidateFraudData: (queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void }) => {
+  invalidateFraudData: (queryClient: {
+    invalidateQueries: (options: { queryKey: string[] }) => void;
+  }) => {
     queryClient.invalidateQueries({ queryKey: ['fraud'] });
   },
 
   // Selective invalidation based on operation type
-  invalidateByOperation: (queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void }, operation: string, resource: string) => {
+  invalidateByOperation: (
+    queryClient: { invalidateQueries: (options: { queryKey: string[] }) => void },
+    operation: string,
+    resource: string
+  ) => {
     const key = `${operation}_${resource}`;
     queryClient.invalidateQueries({ queryKey: [key] });
-  }
+  },
 };
 
 // Banking API service
@@ -921,18 +967,24 @@ export const cacheUtils = {
 export const api = {
   get: <T = unknown>(url: string, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
     apiCall<T>('GET', url, undefined, { ...config }),
-  post: <T = unknown>(url: string, data?: unknown, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
-    apiCall<T>('POST', url, data, { ...config }),
-  put: <T = unknown>(url: string, data?: unknown, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
-    apiCall<T>('PUT', url, data, { ...config }),
-  patch: <T = unknown>(url: string, data?: unknown, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
-    apiCall<T>('PATCH', url, data, { ...config }),
+  post: <T = unknown>(
+    url: string,
+    data?: unknown,
+    config: Partial<RequestConfig> = {}
+  ): Promise<{ data: T }> => apiCall<T>('POST', url, data, { ...config }),
+  put: <T = unknown>(
+    url: string,
+    data?: unknown,
+    config: Partial<RequestConfig> = {}
+  ): Promise<{ data: T }> => apiCall<T>('PUT', url, data, { ...config }),
+  patch: <T = unknown>(
+    url: string,
+    data?: unknown,
+    config: Partial<RequestConfig> = {}
+  ): Promise<{ data: T }> => apiCall<T>('PATCH', url, data, { ...config }),
   delete: <T = unknown>(url: string, config: Partial<RequestConfig> = {}): Promise<{ data: T }> =>
     apiCall<T>('DELETE', url, undefined, { ...config }),
 };
-
-
-
 
 export const apiService = {
   async getMemberDashboardData(): Promise<MemberDashboardData> {
@@ -979,7 +1031,9 @@ export const apiService = {
     }
   },
 
-  async createUser(userData: CreateUserData | FormData): Promise<{ success: boolean; data?: { staff_id: string }; error?: string }> {
+  async createUser(
+    userData: CreateUserData | FormData
+  ): Promise<{ success: boolean; data?: { staff_id: string }; error?: string }> {
     try {
       // Use any for userData to accommodate FormData or objects if needed, but return typed
       const response = await api.post<{ staff_id: string }>('users/staff/create/', userData);
@@ -990,7 +1044,9 @@ export const apiService = {
     }
   },
 
-  async createExpense(expenseData: ExpenseData): Promise<{ success: boolean; data?: Expense; error?: string }> {
+  async createExpense(
+    expenseData: ExpenseData
+  ): Promise<{ success: boolean; data?: Expense; error?: string }> {
     try {
       const response = await api.post<Expense>('operations/expenses/', expenseData);
       return { success: true, data: response.data };
@@ -1000,34 +1056,57 @@ export const apiService = {
     }
   },
 
-  async getTransactions(params: Record<string, string | number | boolean | undefined> = {}): Promise<{ success: boolean; data?: PaginatedResponse<Transaction>; error?: string }> {
+  async getTransactions(
+    params: Record<string, string | number | boolean | undefined> = {}
+  ): Promise<{ success: boolean; data?: PaginatedResponse<Transaction>; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<Transaction>>('transactions/', { params: params as Record<string, string | number | boolean> });
+      const response = await api.get<PaginatedResponse<Transaction>>('transactions/', {
+        params: params as Record<string, string | number | boolean>,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async approveTransaction(transactionId: string | number): Promise<{ success: boolean; error?: string }> {
+  async approveTransaction(
+    transactionId: string | number
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await api.post<{ status: string }>(`transactions/${transactionId}/approve/`, {});
+      const response = await api.post<{ status: string }>(
+        `transactions/${transactionId}/approve/`,
+        {}
+      );
       return { success: response.data.status === 'success' };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
     }
   },
 
-  async rejectTransaction(transactionId: string | number, reason: string = 'Rejected by Manager'): Promise<{ success: boolean; error?: string }> {
+  async rejectTransaction(
+    transactionId: string | number,
+    reason: string = 'Rejected by Manager'
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await api.post<{ status: string }>(`transactions/${transactionId}/reject/`, { reason });
+      const response = await api.post<{ status: string }>(`transactions/${transactionId}/reject/`, {
+        reason,
+      });
       return { success: response.data.status === 'success' };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 
-  async getAllTransactions(params?: Record<string, string | number | boolean | undefined>): Promise<{ success: boolean; data: { transactions: Transaction[]; pagination: { count: number; next: string | null; previous: string | null } }; error?: string }> {
+  async getAllTransactions(
+    params?: Record<string, string | number | boolean | undefined>
+  ): Promise<{
+    success: boolean;
+    data: {
+      transactions: Transaction[];
+      pagination: { count: number; next: string | null; previous: string | null };
+    };
+    error?: string;
+  }> {
     try {
       const result = await this.getTransactions(params);
       if (result.success && result.data) {
@@ -1038,29 +1117,42 @@ export const apiService = {
             pagination: {
               count: result.data.count,
               next: result.data.next,
-              previous: result.data.previous
-            }
-          }
+              previous: result.data.previous,
+            },
+          },
         };
       }
       return {
         success: false,
         data: { transactions: [], pagination: { count: 0, next: null, previous: null } },
-        error: result.error || 'Failed to fetch transactions'
+        error: result.error || 'Failed to fetch transactions',
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transactions';
-      return { success: false, data: { transactions: [], pagination: { count: 0, next: null, previous: null } }, error: errorMessage };
+      return {
+        success: false,
+        data: { transactions: [], pagination: { count: 0, next: null, previous: null } },
+        error: errorMessage,
+      };
     }
   },
 
-  async getBalanceInquiry(): Promise<{ success: boolean; data?: { available_balance: number; total_balance: number }; error?: string }> {
+  async getBalanceInquiry(): Promise<{
+    success: boolean;
+    data?: { available_balance: number; total_balance: number };
+    error?: string;
+  }> {
     try {
-      const response = await api.get<{ available_balance: number; total_balance: number }>('accounts/balance/');
+      const response = await api.get<{ available_balance: number; total_balance: number }>(
+        'accounts/balance/'
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       apiLogger.error('Error fetching balance:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Balance query failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Balance query failed',
+      };
     }
   },
 
@@ -1077,34 +1169,54 @@ export const apiService = {
     }
   },
 
-  async createServiceRequest(data: CreateServiceRequestData): Promise<{ success: boolean; data?: ServiceRequest; error?: string }> {
+  async createServiceRequest(
+    data: CreateServiceRequestData
+  ): Promise<{ success: boolean; data?: ServiceRequest; error?: string }> {
     try {
       const response = await api.post<ServiceRequest>('users/service-requests/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Service request failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Service request failed',
+      };
     }
   },
 
-  async getServiceRequests(): Promise<{ success: boolean; data?: ServiceRequestExtended[]; error?: string }> {
+  async getServiceRequests(): Promise<{
+    success: boolean;
+    data?: ServiceRequestExtended[];
+    error?: string;
+  }> {
     try {
-      const response = await api.get<PaginatedResponse<ServiceRequestExtended> | ServiceRequestExtended[]>('services/requests/');
+      const response = await api.get<
+        PaginatedResponse<ServiceRequestExtended> | ServiceRequestExtended[]
+      >('services/requests/');
       return { success: true, data: extractResults<ServiceRequestExtended>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fetch failed') };
     }
   },
 
-  async submitServiceRequest(data: CreateServiceRequestData): Promise<{ success: boolean; data?: ServiceRequestExtended; error?: string }> {
+  async submitServiceRequest(
+    data: CreateServiceRequestData
+  ): Promise<{ success: boolean; data?: ServiceRequestExtended; error?: string }> {
     try {
       const response = await api.post<ServiceRequestExtended>('services/requests/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Submission failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Submission failed',
+      };
     }
   },
 
-  async getServiceRequestStats(): Promise<{ success: boolean; data?: Record<string, number>; error?: string }> {
+  async getServiceRequestStats(): Promise<{
+    success: boolean;
+    data?: Record<string, number>;
+    error?: string;
+  }> {
     try {
       const response = await api.get<Record<string, number>>('services/stats/');
       return { success: true, data: response.data };
@@ -1113,16 +1225,26 @@ export const apiService = {
     }
   },
 
-  async enable2FA(data: { otp: string; secret?: string }): Promise<{ success: boolean; error?: string }> {
+  async enable2FA(data: {
+    otp: string;
+    secret?: string;
+  }): Promise<{ success: boolean; error?: string }> {
     try {
       await api.post('users/verify-otp/', { ...data, verification_type: '2fa_setup' });
       return { success: true };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : '2FA enablement failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '2FA enablement failed',
+      };
     }
   },
 
-  async getFraudAlerts(): Promise<{ success: boolean; data?: PaginatedResponse<FraudAlert>; error?: string }> {
+  async getFraudAlerts(): Promise<{
+    success: boolean;
+    data?: PaginatedResponse<FraudAlert>;
+    error?: string;
+  }> {
     try {
       const response = await api.get<PaginatedResponse<FraudAlert>>('banking/fraud-alerts/');
       return { success: true, data: response.data };
@@ -1131,12 +1253,20 @@ export const apiService = {
     }
   },
 
-  async resolveFraudAlert(alertId: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async resolveFraudAlert(
+    alertId: string | number
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post<{ status: string }>(`banking/fraud-alerts/${alertId}/resolve/`, {});
+      const response = await api.post<{ status: string }>(
+        `banking/fraud-alerts/${alertId}/resolve/`,
+        {}
+      );
       return { success: response.data.status === 'success', data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Resolution failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Resolution failed',
+      };
     }
   },
 
@@ -1145,20 +1275,27 @@ export const apiService = {
       const response = await api.post<{ status: string }>('banking/fraud-alerts/run-check/', {});
       return { success: response.data.status === 'success', data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Fraud sweep failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Fraud sweep failed',
+      };
     }
   },
 
   async getLoans(): Promise<{ success: boolean; data?: LoanExtended[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<LoanExtended> | LoanExtended[]>('banking/loans/');
+      const response = await api.get<PaginatedResponse<LoanExtended> | LoanExtended[]>(
+        'banking/loans/'
+      );
       return { success: true, data: extractResults<LoanExtended>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fetch failed') };
     }
   },
 
-  async createLoan(data: CreateLoanData): Promise<{ success: boolean; data?: Loan; error?: string }> {
+  async createLoan(
+    data: CreateLoanData
+  ): Promise<{ success: boolean; data?: Loan; error?: string }> {
     try {
       const response = await api.post<Loan>('banking/loans/', data);
       return { success: true, data: response.data };
@@ -1167,7 +1304,9 @@ export const apiService = {
     }
   },
 
-  async approveLoan(loanId: string | number): Promise<{ success: boolean; data?: Loan; error?: string }> {
+  async approveLoan(
+    loanId: string | number
+  ): Promise<{ success: boolean; data?: Loan; error?: string }> {
     try {
       const response = await api.post<Loan>(`banking/loans/${loanId}/approve/`, {});
       return { success: true, data: response.data };
@@ -1176,7 +1315,10 @@ export const apiService = {
     }
   },
 
-  async rejectLoan(loanId: string | number, notes?: string): Promise<{ success: boolean; data?: Loan; error?: string }> {
+  async rejectLoan(
+    loanId: string | number,
+    notes?: string
+  ): Promise<{ success: boolean; data?: Loan; error?: string }> {
     try {
       const response = await api.post<Loan>(`banking/loans/${loanId}/reject/`, { notes });
       return { success: true, data: response.data };
@@ -1185,9 +1327,13 @@ export const apiService = {
     }
   },
 
-  async getPendingLoans(page = 1): Promise<{ success: boolean; data?: PaginatedResponse<LoanExtended>; error?: string }> {
+  async getPendingLoans(
+    page = 1
+  ): Promise<{ success: boolean; data?: PaginatedResponse<LoanExtended>; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<LoanExtended>>(`banking/loans/pending/?page=${page}`);
+      const response = await api.get<PaginatedResponse<LoanExtended>>(
+        `banking/loans/pending/?page=${page}`
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
@@ -1196,32 +1342,47 @@ export const apiService = {
 
   async getComplaints(): Promise<{ success: boolean; data?: Complaint[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<Complaint> | Complaint[]>('banking/complaints/');
+      const response = await api.get<PaginatedResponse<Complaint> | Complaint[]>(
+        'banking/complaints/'
+      );
       return { success: true, data: extractResults<Complaint>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fetch failed') };
     }
   },
 
-  async submitComplaint(data: CreateComplaintData): Promise<{ success: boolean; data?: Complaint; error?: string }> {
+  async submitComplaint(
+    data: CreateComplaintData
+  ): Promise<{ success: boolean; data?: Complaint; error?: string }> {
     try {
       const response = await api.post<Complaint>('banking/complaints/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Submission failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Submission failed',
+      };
     }
   },
 
-  async getComplaintSummary(): Promise<{ success: boolean; data?: ComplaintStats; error?: string }> {
+  async getComplaintSummary(): Promise<{
+    success: boolean;
+    data?: ComplaintStats;
+    error?: string;
+  }> {
     try {
-      const response = await api.get<{ summary: ComplaintStats }>('banking/complaints/reports/summary/');
+      const response = await api.get<{ summary: ComplaintStats }>(
+        'banking/complaints/reports/summary/'
+      );
       return { success: true, data: response.data?.summary };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async createComplaint(data: CreateComplaintData): Promise<{ success: boolean; data?: Complaint; error?: string }> {
+  async createComplaint(
+    data: CreateComplaintData
+  ): Promise<{ success: boolean; data?: Complaint; error?: string }> {
     try {
       const response = await api.post<Complaint>('banking/complaints/', data);
       return { success: true, data: response.data };
@@ -1230,38 +1391,52 @@ export const apiService = {
     }
   },
 
-
-
-  async rejectCashAdvance(advanceId: string | number, notes?: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async rejectCashAdvance(
+    advanceId: string | number,
+    notes?: string
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post<unknown>(`banking/cash-advances/${advanceId}/reject/`, { notes });
+      const response = await api.post<unknown>(`banking/cash-advances/${advanceId}/reject/`, {
+        notes,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 
-
-
-  async rejectRefund(refundId: string | number, admin_notes?: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async rejectRefund(
+    refundId: string | number,
+    admin_notes?: string
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await api.post<unknown>(`banking/refunds/${refundId}/reject/`, { admin_notes });
+      const response = await api.post<unknown>(`banking/refunds/${refundId}/reject/`, {
+        admin_notes,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 
-  async getMessageThreads(): Promise<{ success: boolean; data?: PaginatedResponse<MessageThreadExtended>; error?: string }> {
+  async getMessageThreads(): Promise<{
+    success: boolean;
+    data?: PaginatedResponse<MessageThreadExtended>;
+    error?: string;
+  }> {
     try {
-      const response = await api.get<PaginatedResponse<MessageThreadExtended>>('banking/message-threads/');
+      const response = await api.get<PaginatedResponse<MessageThreadExtended>>(
+        'banking/message-threads/'
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async createMessageThread(data: CreateMessageThreadData): Promise<{ success: boolean; data?: MessageThreadExtended; error?: string }> {
+  async createMessageThread(
+    data: CreateMessageThreadData
+  ): Promise<{ success: boolean; data?: MessageThreadExtended; error?: string }> {
     try {
       const response = await api.post<MessageThreadExtended>('banking/message-threads/', data);
       return { success: true, data: response.data };
@@ -1270,18 +1445,28 @@ export const apiService = {
     }
   },
 
-  async getThreadMessages(threadId: string | number): Promise<{ success: boolean; data?: MessageExtended[]; error?: string }> {
+  async getThreadMessages(
+    threadId: string | number
+  ): Promise<{ success: boolean; data?: MessageExtended[]; error?: string }> {
     try {
-      const response = await api.get<MessageExtended[]>(`banking/message-threads/${threadId}/messages/`);
+      const response = await api.get<MessageExtended[]>(
+        `banking/message-threads/${threadId}/messages/`
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async createMessage(data: { thread_id: string | number; content: string }): Promise<{ success: boolean; data?: MessageExtended; error?: string }> {
+  async createMessage(data: {
+    thread_id: string | number;
+    content: string;
+  }): Promise<{ success: boolean; data?: MessageExtended; error?: string }> {
     try {
-      const response = await api.post<MessageExtended>(`banking/message-threads/${data.thread_id}/messages/`, { content: data.content });
+      const response = await api.post<MessageExtended>(
+        `banking/message-threads/${data.thread_id}/messages/`,
+        { content: data.content }
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Send failed' };
@@ -1300,11 +1485,14 @@ export const apiService = {
   /**
    * Request a bank account closure (Operational Workflow)
    */
-  async closeAccount(accountId: string | number, data: { reason: string; notes?: string; otp?: string }): Promise<{ success: boolean; data?: AccountClosureRequest; error?: string }> {
+  async closeAccount(
+    accountId: string | number,
+    data: { reason: string; notes?: string; otp?: string }
+  ): Promise<{ success: boolean; data?: AccountClosureRequest; error?: string }> {
     try {
-      const response = await api.post<AccountClosureRequest>('banking/account-closures/', { 
-        account: accountId, 
-        ...data 
+      const response = await api.post<AccountClosureRequest>('banking/account-closures/', {
+        account: accountId,
+        ...data,
       });
       return { success: true, data: response.data };
     } catch (error: unknown) {
@@ -1315,10 +1503,15 @@ export const apiService = {
   /**
    * Fetch all bank account closure requests
    */
-  async getAccountClosures(): Promise<{ success: boolean; data?: AccountClosureRequest[]; error?: string }> {
+  async getAccountClosures(): Promise<{
+    success: boolean;
+    data?: AccountClosureRequest[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<AccountClosureRequest[]>('banking/account-closures/');
-      const data = (response.data as { results?: AccountClosureRequest[] }).results || response.data;
+      const data =
+        (response.data as { results?: AccountClosureRequest[] }).results || response.data;
       return { success: true, data: Array.isArray(data) ? data : [] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
@@ -1340,7 +1533,10 @@ export const apiService = {
   /**
    * Reject an account closure request
    */
-  async rejectAccountClosure(id: string | number, reason: string): Promise<{ success: boolean; error?: string }> {
+  async rejectAccountClosure(
+    id: string | number,
+    reason: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       await api.post(`banking/account-closures/${id}/reject/`, { reason });
       return { success: true };
@@ -1352,9 +1548,15 @@ export const apiService = {
   /**
    * Fetch authenticated user's payslips
    */
-  async getMyPayslips(params?: { month?: number; year?: number }): Promise<{ success: boolean; data?: Payslip[]; error?: string }> {
+  async getMyPayslips(params?: {
+    month?: number;
+    year?: number;
+  }): Promise<{ success: boolean; data?: Payslip[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<Payslip>>('operations/payslips/my_payslips/', { params });
+      const response = await api.get<PaginatedResponse<Payslip>>(
+        'operations/payslips/my_payslips/',
+        { params }
+      );
       const data = response.data.results || response.data;
       return { success: true, data: data as Payslip[] };
     } catch (error: unknown) {
@@ -1362,103 +1564,169 @@ export const apiService = {
     }
   },
 
-  async reviewLoan(loanId: string | number, status: 'approved' | 'rejected'): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async reviewLoan(
+    loanId: string | number,
+    status: 'approved' | 'rejected'
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`banking/loans/${loanId}/review/`, { status });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Loan review failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Loan review failed',
+      };
     }
   },
 
-  async reviewCashAdvance(advanceId: string | number, status: 'approved' | 'rejected'): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async reviewCashAdvance(
+    advanceId: string | number,
+    status: 'approved' | 'rejected'
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`banking/cash-advances/${advanceId}/review/`, { status });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Cash advance review failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Cash advance review failed',
+      };
     }
   },
 
-  async reviewRefund(refundId: string | number, status: 'approved' | 'rejected'): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async reviewRefund(
+    refundId: string | number,
+    status: 'approved' | 'rejected'
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`banking/refunds/${refundId}/review/`, { status });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Refund review failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Refund review failed',
+      };
     }
   },
 
-  async reviewFraudAlert(alertId: string | number, status: 'confirmed' | 'dismissed'): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async reviewFraudAlert(
+    alertId: string | number,
+    status: 'confirmed' | 'dismissed'
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`banking/fraud-alerts/${alertId}/review/`, { status });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Fraud review failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Fraud review failed',
+      };
     }
   },
 
-  async getAccountOpenings(): Promise<{ success: boolean; data?: AccountOpeningRequest[]; error?: string }> {
+  async getAccountOpenings(): Promise<{
+    success: boolean;
+    data?: AccountOpeningRequest[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<AccountOpeningRequest[]>('banking/account-openings/');
-      const data = (response.data as { results?: AccountOpeningRequest[] }).results || response.data;
+      const data =
+        (response.data as { results?: AccountOpeningRequest[] }).results || response.data;
       return { success: true, data: Array.isArray(data) ? data : [] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async submitAccountOpening(data: CreateAccountOpeningData): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+  async submitAccountOpening(
+    data: CreateAccountOpeningData
+  ): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
     try {
-      const response = await api.post<AccountOpeningRequest>('banking/account-openings/submit-request/', data);
+      const response = await api.post<AccountOpeningRequest>(
+        'banking/account-openings/submit-request/',
+        data
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Submission failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Submission failed',
+      };
     }
   },
 
-  async approveAccountOpening(id: string | number): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+  async approveAccountOpening(
+    id: string | number
+  ): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
     try {
-      const response = await api.post<AccountOpeningRequest>(`banking/account-openings/${id}/approve/`);
+      const response = await api.post<AccountOpeningRequest>(
+        `banking/account-openings/${id}/approve/`
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Approval failed' };
     }
   },
 
-  async rejectAccountOpening(id: string | number, reason: string): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+  async approveAndPrintAccountOpening(
+    id: string | number
+  ): Promise<{ success: boolean; blob?: Blob; error?: string }> {
     try {
-      const response = await api.post<AccountOpeningRequest>(`banking/account-openings/${id}/reject/`, { reason });
+      const response = await api.post(
+        `banking/account-openings/${id}/approve-and-print/`,
+        {},
+        {
+          responseType: 'blob',
+        }
+      );
+      return { success: true, blob: response.data as Blob };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Approval and print failed',
+      };
+    }
+  },
+
+  async reprintAccountOpeningLetter(
+    id: string | number
+  ): Promise<{ success: boolean; blob?: Blob; error?: string }> {
+    try {
+      const response = await api.get(`banking/account-openings/${id}/print-letter/`, {
+        responseType: 'blob',
+      });
+      return { success: true, blob: response.data as Blob };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : 'Reprint failed' };
+    }
+  },
+
+  async rejectAccountOpening(
+    id: string | number,
+    reason: string
+  ): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+    try {
+      const response = await api.post<AccountOpeningRequest>(
+        `banking/account-openings/${id}/reject/`,
+        { reason }
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Rejection failed' };
     }
   },
 
-  async dispatchCredentials(id: string | number): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
+  async dispatchCredentials(
+    id: string | number
+  ): Promise<{ success: boolean; data?: AccountOpeningRequest; error?: string }> {
     try {
-      const response = await api.post<AccountOpeningRequest>(`banking/account-openings/${id}/dispatch-credentials/`);
+      const response = await api.post<AccountOpeningRequest>(
+        `banking/account-openings/${id}/dispatch-credentials/`
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Dispatch failed' };
-    }
-  },
-
-  async approveAndPrintAccountOpening(id: string | number): Promise<{ success: boolean; blob?: Blob; error?: string }> {
-    try {
-      const response = await api.post(`banking/account-openings/${id}/approve-and-print/`, {}, { responseType: 'blob' });
-      return { success: true, blob: response.data as Blob };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Approval & Print failed' };
-    }
-  },
-
-  async printAccountOpeningLetter(id: string | number): Promise<{ success: boolean; blob?: Blob; error?: string }> {
-    try {
-      const response = await api.get(`banking/account-openings/${id}/print-letter/`, { responseType: 'blob' });
-      return { success: true, blob: response.data as Blob };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Print failed' };
     }
   },
 
@@ -1471,7 +1739,11 @@ export const apiService = {
     }
   },
 
-  async getPerformanceMetrics(): Promise<{ success: boolean; data?: PerformanceMetric[]; error?: string }> {
+  async getPerformanceMetrics(): Promise<{
+    success: boolean;
+    data?: PerformanceMetric[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<PerformanceMetric[]>('performance/metrics/');
       return { success: true, data: response.data };
@@ -1480,16 +1752,24 @@ export const apiService = {
     }
   },
 
-  async getServiceStats(timeframe?: string): Promise<{ success: boolean; data?: ServiceStats; error?: string }> {
+  async getServiceStats(
+    timeframe?: string
+  ): Promise<{ success: boolean; data?: ServiceStats; error?: string }> {
     try {
-      const response = await api.get<ServiceStats>(`services/stats/${timeframe ? `?timeframe=${timeframe}` : ''}`);
+      const response = await api.get<ServiceStats>(
+        `services/stats/${timeframe ? `?timeframe=${timeframe}` : ''}`
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async getPerformanceDashboardData(): Promise<{ success: boolean; data?: PerformanceDashboardData[]; error?: string }> {
+  async getPerformanceDashboardData(): Promise<{
+    success: boolean;
+    data?: PerformanceDashboardData[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<PerformanceDashboardData[]>('performance/dashboard-data/');
       return { success: true, data: response.data };
@@ -1498,7 +1778,9 @@ export const apiService = {
     }
   },
 
-  async getPerformanceChartData(params?: DateRangeParams): Promise<{ success: boolean; data?: PerformanceChartData; error?: string }> {
+  async getPerformanceChartData(
+    params?: DateRangeParams
+  ): Promise<{ success: boolean; data?: PerformanceChartData; error?: string }> {
     try {
       const response = await api.get<PerformanceChartData>('performance/chart/', { params });
       return { success: true, data: response.data };
@@ -1516,7 +1798,11 @@ export const apiService = {
     }
   },
 
-  async getPerformanceAlerts(): Promise<{ success: boolean; data?: PerformanceAlert[]; error?: string }> {
+  async getPerformanceAlerts(): Promise<{
+    success: boolean;
+    data?: PerformanceAlert[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<PerformanceAlert[]>('performance/alerts/');
       return { success: true, data: response.data };
@@ -1525,16 +1811,25 @@ export const apiService = {
     }
   },
 
-  async getTransactionVolume(params?: DateRangeParams): Promise<{ success: boolean; data?: TransactionVolumeSummary; error?: string }> {
+  async getTransactionVolume(
+    params?: DateRangeParams
+  ): Promise<{ success: boolean; data?: TransactionVolumeSummary; error?: string }> {
     try {
       const response = await api.get<TransactionVolumeSummary>('performance/volume/', { params });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Volume fetch failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Volume fetch failed',
+      };
     }
   },
 
-  async getPerformanceRecommendations(): Promise<{ success: boolean; data?: PerformanceRecommendation[]; error?: string }> {
+  async getPerformanceRecommendations(): Promise<{
+    success: boolean;
+    data?: PerformanceRecommendation[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<PerformanceRecommendation[]>('performance/recommendations/');
       return { success: true, data: response.data };
@@ -1554,16 +1849,22 @@ export const apiService = {
 
   async trainMLModel(): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const response = await api.post<{ status: string; message?: string }>('ml/fraud/model/train/');
+      const response = await api.post<{ status: string; message?: string }>(
+        'ml/fraud/model/train/'
+      );
       return { success: true, message: response.data.message || 'Training task initiated' };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'ML model training failed') };
     }
   },
 
-  async analyzeTransactionFraud(transactionId: string | number): Promise<{ success: boolean; data?: MLFraudAnalysis; error?: string }> {
+  async analyzeTransactionFraud(
+    transactionId: string | number
+  ): Promise<{ success: boolean; data?: MLFraudAnalysis; error?: string }> {
     try {
-      const response = await api.post<MLFraudAnalysis>('ml/fraud/analyze/', { transaction_id: transactionId });
+      const response = await api.post<MLFraudAnalysis>('ml/fraud/analyze/', {
+        transaction_id: transactionId,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fraud analysis failed') };
@@ -1579,16 +1880,16 @@ export const apiService = {
     }
   },
 
-  async generateOperationalReport(params: { 
-    type: string; 
-    format: 'pdf' | 'csv'; 
-    date_from?: string; 
-    date_to?: string; 
-    limit?: number; 
+  async generateOperationalReport(params: {
+    type: string;
+    format: 'pdf' | 'csv';
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
   }): Promise<{ success: boolean; data?: Blob; error?: string }> {
     try {
       const response = await api.post('operations/reports/generate/', params, {
-        responseType: 'blob'
+        responseType: 'blob',
       });
       return { success: true, data: response.data as Blob };
     } catch (error: unknown) {
@@ -1596,16 +1897,26 @@ export const apiService = {
     }
   },
 
-  async getReportTemplates(): Promise<{ success: boolean; data?: ReportTemplate[]; error?: string }> {
+  async getReportTemplates(): Promise<{
+    success: boolean;
+    data?: ReportTemplate[];
+    error?: string;
+  }> {
     try {
-      const response = await api.get<PaginatedResponse<ReportTemplate> | ReportTemplate[]>('reports/templates/');
+      const response = await api.get<PaginatedResponse<ReportTemplate> | ReportTemplate[]>(
+        'reports/templates/'
+      );
       return { success: true, data: extractResults<ReportTemplate>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fetch failed') };
     }
   },
 
-  async getReportSchedules(): Promise<{ success: boolean; data?: ReportSchedule[]; error?: string }> {
+  async getReportSchedules(): Promise<{
+    success: boolean;
+    data?: ReportSchedule[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<ReportSchedule[]>('reports/schedules/');
       return { success: true, data: response.data };
@@ -1614,48 +1925,77 @@ export const apiService = {
     }
   },
 
-  async createReportTemplate(data: CreateReportTemplateData): Promise<{ success: boolean; data?: ReportTemplate; error?: string }> {
+  async createReportTemplate(
+    data: CreateReportTemplateData
+  ): Promise<{ success: boolean; data?: ReportTemplate; error?: string }> {
     try {
       const response = await api.post<ReportTemplate>('reports/templates/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Template creation failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Template creation failed',
+      };
     }
   },
 
-  async createReportSchedule(data: CreateReportScheduleData): Promise<{ success: boolean; data?: ReportSchedule; error?: string }> {
+  async createReportSchedule(
+    data: CreateReportScheduleData
+  ): Promise<{ success: boolean; data?: ReportSchedule; error?: string }> {
     try {
       const response = await api.post<ReportSchedule>('reports/schedules/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Schedule creation failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Schedule creation failed',
+      };
     }
   },
 
-  async getReportAnalytics(): Promise<{ success: boolean; data?: ReportAnalytics; error?: string }> {
+  async getReportAnalytics(): Promise<{
+    success: boolean;
+    data?: ReportAnalytics;
+    error?: string;
+  }> {
     try {
       const response = await api.get<ReportAnalytics>('reports/analytics/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Analytics fetch failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Analytics fetch failed',
+      };
     }
   },
 
-  async generateReport(templateId: string | number): Promise<{ success: boolean; data?: GeneratedReport; error?: string }> {
+  async generateReport(
+    templateId: string | number
+  ): Promise<{ success: boolean; data?: GeneratedReport; error?: string }> {
     try {
-      const response = await api.post<GeneratedReport>(`reporting/reports/generate/`, { template: templateId });
+      const response = await api.post<GeneratedReport>(`reporting/reports/generate/`, {
+        template: templateId,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Generation failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Generation failed',
+      };
     }
   },
 
-  async updateUserSettings(data: Record<string, unknown>): Promise<{ success: boolean; data?: UserSettings; error?: string }> {
+  async updateUserSettings(
+    data: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: UserSettings; error?: string }> {
     try {
       const response = await api.put<UserSettings>('users/settings/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Settings update failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Settings update failed',
+      };
     }
   },
 
@@ -1664,31 +2004,52 @@ export const apiService = {
       const response = await api.get<UserSettings[]>('users/settings/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Settings fetch failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Settings fetch failed',
+      };
     }
   },
 
-  async calculateServiceCharge(data: Record<string, unknown>): Promise<{ success: boolean; data?: ServiceChargeCalculation; error?: string }> {
+  async calculateServiceCharge(
+    data: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: ServiceChargeCalculation; error?: string }> {
     try {
-      const response = await api.post<ServiceChargeCalculation>('operations/calculate-service-charge/', data);
+      const response = await api.post<ServiceChargeCalculation>(
+        'operations/calculate-service-charge/',
+        data
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Service charge calculation failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Service charge calculation failed',
+      };
     }
   },
 
-  async calculateCommission(data: Record<string, unknown> = {}): Promise<{ success: boolean; data?: CommissionCalculationResult; error?: string }> {
+  async calculateCommission(
+    data: Record<string, unknown> = {}
+  ): Promise<{ success: boolean; data?: CommissionCalculationResult; error?: string }> {
     try {
-      const response = await api.post<CommissionCalculationResult>('operations/calculate-commission/', data);
+      const response = await api.post<CommissionCalculationResult>(
+        'operations/calculate-commission/',
+        data
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Commission calculation failed') };
     }
   },
 
-  async calculateInterest(data: Record<string, unknown> = {}): Promise<{ success: boolean; data?: InterestCalculationResult; error?: string }> {
+  async calculateInterest(
+    data: Record<string, unknown> = {}
+  ): Promise<{ success: boolean; data?: InterestCalculationResult; error?: string }> {
     try {
-      const response = await api.post<InterestCalculationResult>('operations/calculate-interest/', data);
+      const response = await api.post<InterestCalculationResult>(
+        'operations/calculate-interest/',
+        data
+      );
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Interest calculation failed') };
@@ -1698,14 +2059,14 @@ export const apiService = {
   async exportTransactions(params: Record<string, unknown>): Promise<Blob> {
     const response = await api.get<Blob>('transactions/export/', {
       params: params as Record<string, string | number | boolean>,
-      responseType: 'blob'
+      responseType: 'blob',
     });
     return response.data;
   },
 
   async generateReceipt(transactionId: string): Promise<Blob> {
     const response = await api.get<Blob>(`transactions/${transactionId}/receipt/`, {
-      responseType: 'blob'
+      responseType: 'blob',
     });
     return response.data;
   },
@@ -1719,12 +2080,15 @@ export const apiService = {
     }
   },
 
-  async login(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const response = await api.post<{ user: User }>('users/auth/login/', { email, password });
       return {
         success: true,
-        user: response.data.user
+        user: response.data.user,
       };
     } catch (error: unknown) {
       apiLogger.error('Login error:', error);
@@ -1741,7 +2105,9 @@ export const apiService = {
     return { success: true };
   },
 
-  async register(userData: Record<string, unknown>): Promise<{ success: boolean; user?: User; error?: string }> {
+  async register(
+    userData: Record<string, unknown>
+  ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const response = await api.post<{ user: User }>('users/auth/register/', userData);
       return { success: true, user: response.data.user };
@@ -1751,9 +2117,26 @@ export const apiService = {
     }
   },
 
-  async verifyOTP(payload: string | { email?: string; phone_number?: string; otp_code?: string; otp?: string; verification_type?: string }, phone_number?: string): Promise<{ success: boolean; error?: string;[key: string]: unknown }> {
+  async verifyOTP(
+    payload:
+      | string
+      | {
+          email?: string;
+          phone_number?: string;
+          otp_code?: string;
+          otp?: string;
+          verification_type?: string;
+        },
+    phone_number?: string
+  ): Promise<{ success: boolean; error?: string; [key: string]: unknown }> {
     try {
-      let data: { email?: string; phone_number?: string; otp_code?: string; otp?: string; verification_type?: string };
+      let data: {
+        email?: string;
+        phone_number?: string;
+        otp_code?: string;
+        otp?: string;
+        verification_type?: string;
+      };
       if (typeof payload === 'string') {
         data = { email: payload, otp: phone_number }; // legacy mismatch handling
       } else {
@@ -1767,7 +2150,9 @@ export const apiService = {
     }
   },
 
-  async resetPassword(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  async resetPassword(
+    email: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const response = await api.post<{ message: string }>('users/password-reset/', { email });
       return { success: true, message: response.data.message };
@@ -1777,7 +2162,9 @@ export const apiService = {
     }
   },
 
-  async createAccount(accountData: Record<string, unknown>): Promise<{ success: boolean; account?: Account; error?: string }> {
+  async createAccount(
+    accountData: Record<string, unknown>
+  ): Promise<{ success: boolean; account?: Account; error?: string }> {
     try {
       const response = await api.post<Account>('accounts/create_account/', accountData);
       return { success: true, account: response.data };
@@ -1787,7 +2174,11 @@ export const apiService = {
     }
   },
 
-  async getManagerOverview(): Promise<{ success: boolean; data?: ManagerOverviewData; error?: string }> {
+  async getManagerOverview(): Promise<{
+    success: boolean;
+    data?: ManagerOverviewData;
+    error?: string;
+  }> {
     try {
       const response = await api.get<ManagerOverviewData>('accounts/manager/overview/');
       return { success: true, data: response.data };
@@ -1801,15 +2192,17 @@ export const apiService = {
             pendingApprovals: 12,
             totalMembers: 1250,
             dailyTransactions: 450,
-            systemHealth: 98
-          }
+            systemHealth: 98,
+          },
         };
       }
       return { success: false, error: msg };
     }
   },
 
-  async sendOTP(payload: string | { email?: string; phone_number?: string; verification_type?: string }): Promise<{ success: boolean; message?: string; error?: string }> {
+  async sendOTP(
+    payload: string | { email?: string; phone_number?: string; verification_type?: string }
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const data = typeof payload === 'string' ? { email: payload } : payload;
       const response = await api.post<{ message: string }>('users/send-otp/', data);
@@ -1822,26 +2215,37 @@ export const apiService = {
 
   async getServiceCharges(): Promise<{ success: boolean; data?: ServiceCharge[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<ServiceCharge> | ServiceCharge[]>('operations/service-charges/');
+      const response = await api.get<PaginatedResponse<ServiceCharge> | ServiceCharge[]>(
+        'operations/service-charges/'
+      );
       const data = Array.isArray(response.data) ? response.data : response.data.results;
-      return { success: true, data: data as ServiceCharge[] || [] };
+      return { success: true, data: (data as ServiceCharge[]) || [] };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
   },
 
-  async createServiceCharge(data: CreateServiceChargeData | Record<string, unknown>): Promise<{ success: boolean; data?: ServiceCharge; error?: string }> {
+  async createServiceCharge(
+    data: CreateServiceChargeData | Record<string, unknown>
+  ): Promise<{ success: boolean; data?: ServiceCharge; error?: string }> {
     try {
       const response = await api.post<ServiceCharge>('operations/service-charges/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to create service charge' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create service charge',
+      };
     }
   },
 
-  async getStaffIds(filters: Record<string, string | number | boolean | undefined> = {}): Promise<{ success: boolean; data?: StaffId[]; error?: string }> {
+  async getStaffIds(
+    filters: Record<string, string | number | boolean | undefined> = {}
+  ): Promise<{ success: boolean; data?: StaffId[]; error?: string }> {
     try {
-      const response = await api.get<{ status: string; data?: StaffId[] }>('users/staff-ids/', { params: filters });
+      const response = await api.get<{ status: string; data?: StaffId[] }>('users/staff-ids/', {
+        params: filters,
+      });
       const data = response.data?.data || [];
       return { success: true, data: Array.isArray(data) ? data : [] };
     } catch (error: unknown) {
@@ -1849,21 +2253,35 @@ export const apiService = {
     }
   },
 
-  async getOperationalMetrics(): Promise<{ success: boolean; data?: OperationsMetrics; error?: string }> {
+  async getOperationalMetrics(): Promise<{
+    success: boolean;
+    data?: OperationsMetrics;
+    error?: string;
+  }> {
     try {
       const response = await api.get<OperationsMetrics>('operations/metrics/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch metrics' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch metrics',
+      };
     }
   },
 
-  async getBranchActivity(): Promise<{ success: boolean; data?: BranchActivity[]; error?: string }> {
+  async getBranchActivity(): Promise<{
+    success: boolean;
+    data?: BranchActivity[];
+    error?: string;
+  }> {
     try {
       const response = await api.get('operations/branch-activity/');
       return { success: true, data: response.data as BranchActivity[] };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch activity' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch activity',
+      };
     }
   },
 
@@ -1872,7 +2290,10 @@ export const apiService = {
       const response = await api.get('operations/system-alerts/');
       return { success: true, data: response.data as SystemAlert[] };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch alerts' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch alerts',
+      };
     }
   },
 
@@ -1881,40 +2302,62 @@ export const apiService = {
       const response = await api.get<WorkflowStatus>('operations/workflow-status/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch status' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch status',
+      };
     }
   },
 
-  async generateOperationsReport(payload: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async generateOperationsReport(
+    payload: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post('operations/generate-report/', payload);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to generate report' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to generate report',
+      };
     }
   },
 
-  async getMobileBankerMetrics(): Promise<{ success: boolean; data?: MobileBankerMetric; error?: string }> {
+  async getMobileBankerMetrics(): Promise<{
+    success: boolean;
+    data?: MobileBankerMetric;
+    error?: string;
+  }> {
     try {
       const response = await api.get('operations/mobile-banker-metrics/');
       return { success: true, data: response.data as MobileBankerMetric };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch metrics' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch metrics',
+      };
     }
   },
 
   async getVisits(): Promise<{ success: boolean; data?: VisitSchedule[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<VisitSchedule> | VisitSchedule[]>('operations/visit-schedules/');
+      const response = await api.get<PaginatedResponse<VisitSchedule> | VisitSchedule[]>(
+        'operations/visit-schedules/'
+      );
       return { success: true, data: extractResults<VisitSchedule>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Failed to fetch visits') };
     }
   },
 
-  async getAssignments(params: Record<string, string | number | boolean | undefined> = {}): Promise<{ success: boolean; data: AssignedClient[]; error?: string }> {
+  async getAssignments(
+    params: Record<string, string | number | boolean | undefined> = {}
+  ): Promise<{ success: boolean; data: AssignedClient[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<AssignedClient> | AssignedClient[]>('operations/assignments/my-clients/', { params });
+      const response = await api.get<PaginatedResponse<AssignedClient> | AssignedClient[]>(
+        'operations/assignments/my-clients/',
+        { params }
+      );
       return { success: true, data: extractResults<AssignedClient>(response.data) };
     } catch (error: unknown) {
       return { success: false, data: [], error: handleApiError(error, 'Fetch failed') };
@@ -1923,34 +2366,54 @@ export const apiService = {
 
   async getMobileMessages(): Promise<{ success: boolean; data?: MobileMessage[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<MobileMessage> | MobileMessage[]>('operations/messages/');
+      const response = await api.get<PaginatedResponse<MobileMessage> | MobileMessage[]>(
+        'operations/messages/'
+      );
       const data = extractResults<MobileMessage>(response.data);
-      const sorted = [...data].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      const sorted = [...data].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
       return { success: true, data: sorted };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Failed to fetch messages') };
     }
   },
 
-  async getStaffAccounts(): Promise<{ success: boolean; data?: AccountWithDetails[]; error?: string }> {
+  async getStaffAccounts(): Promise<{
+    success: boolean;
+    data?: AccountWithDetails[];
+    error?: string;
+  }> {
     try {
-      const response = await api.get<PaginatedResponse<AccountWithDetails> | AccountWithDetails[]>('banking/staff-accounts/'); // Response might be paginated
+      const response = await api.get<PaginatedResponse<AccountWithDetails> | AccountWithDetails[]>(
+        'banking/staff-accounts/'
+      ); // Response might be paginated
       return { success: true, data: extractResults<AccountWithDetails>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Failed to fetch accounts') };
     }
   },
 
-  async getStaffAccountsSummary(): Promise<{ success: boolean; data?: StaffAccountSummary; error?: string }> {
+  async getStaffAccountsSummary(): Promise<{
+    success: boolean;
+    data?: StaffAccountSummary;
+    error?: string;
+  }> {
     try {
       const response = await api.get<StaffAccountSummary>('accounts/summary/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch account summary' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch account summary',
+      };
     }
   },
 
-  async requestAccountClosure(data: { account_number: string; reason: string }): Promise<{ success: boolean; data?: AccountClosureRequest; error?: string }> {
+  async requestAccountClosure(data: {
+    account_number: string;
+    reason: string;
+  }): Promise<{ success: boolean; data?: AccountClosureRequest; error?: string }> {
     try {
       const response = await api.post<AccountClosureRequest>('banking/account-closures/', data);
       return { success: true, data: response.data };
@@ -1959,16 +2422,22 @@ export const apiService = {
     }
   },
 
-  async searchAccounts(query: string): Promise<{ success: boolean; data?: Account[]; error?: string }> {
+  async searchAccounts(
+    query: string
+  ): Promise<{ success: boolean; data?: Account[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<Account> | Account[]>(`accounts/search/?q=${query}`);
+      const response = await api.get<PaginatedResponse<Account> | Account[]>(
+        `accounts/search/?q=${query}`
+      );
       return { success: true, data: extractResults<Account>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Search failed') };
     }
   },
 
-  async updateProfile(data: Partial<UserExtended>): Promise<{ success: boolean; data?: UserExtended; error?: string }> {
+  async updateProfile(
+    data: Partial<UserExtended>
+  ): Promise<{ success: boolean; data?: UserExtended; error?: string }> {
     try {
       const response = await api.patch<UserExtended>('users/me/', data);
       return { success: true, data: response.data };
@@ -1986,13 +2455,15 @@ export const apiService = {
     }
   },
 
-
   async getCashFlow(): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.get('operations/cash-flow/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch cash flow' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch cash flow',
+      };
     }
   },
 
@@ -2001,25 +2472,38 @@ export const apiService = {
       const response = await api.get('operations/expenses/');
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch expenses' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch expenses',
+      };
     }
   },
 
-  async generatePayslip(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async generatePayslip(
+    formData: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post('operations/generate-payslip/', formData);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to generate payslip' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to generate payslip',
+      };
     }
   },
 
-  async generateStatement(formData: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async generateStatement(
+    formData: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post('banking/generate-statement/', formData);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to generate statement' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to generate statement',
+      };
     }
   },
 
@@ -2028,11 +2512,19 @@ export const apiService = {
       const response = await api.get('users/members/');
       return { success: true, data: response.data as unknown[] };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch members' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch members',
+      };
     }
   },
 
-  async assignClient(data: { mobile_banker: string; client: string; priority: string; location: string }): Promise<{ success: boolean; data?: AssignedClient; error?: string }> {
+  async assignClient(data: {
+    mobile_banker: string;
+    client: string;
+    priority: string;
+    location: string;
+  }): Promise<{ success: boolean; data?: AssignedClient; error?: string }> {
     try {
       const response = await api.post<AssignedClient>('operations/assignments/', data);
       return { success: true, data: response.data };
@@ -2047,7 +2539,8 @@ export const apiService = {
         else {
           const fieldErrors: string[] = [];
           for (const [key, value] of Object.entries(errorData)) {
-            if (key !== 'status' && Array.isArray(value) && value.length > 0) fieldErrors.push(`${key}: ${value[0]}`);
+            if (key !== 'status' && Array.isArray(value) && value.length > 0)
+              fieldErrors.push(`${key}: ${value[0]}`);
           }
           if (fieldErrors.length > 0) errorMsg = fieldErrors.join(', ');
         }
@@ -2058,15 +2551,20 @@ export const apiService = {
 
   async getChatRooms(): Promise<{ success: boolean; data?: ChatRoomData[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<ChatRoomData> | ChatRoomData[]>('chat/rooms/');
+      const response = await api.get<PaginatedResponse<ChatRoomData> | ChatRoomData[]>(
+        'chat/rooms/'
+      );
       const rooms = extractResults<ChatRoomData>(response.data);
-      
+
       // SECURITY: Hide message previews if they are redacted/encrypted for the current user's role
-      const processedRooms = rooms.map(room => ({
+      const processedRooms = rooms.map((room) => ({
         ...room,
-        last_message: (room.last_message && (room.last_message.content.includes('redacted') || room.last_message.content.includes('ENC:'))) 
-          ? { ...room.last_message, content: '[Access Denied]' }
-          : room.last_message
+        last_message:
+          room.last_message &&
+          (room.last_message.content.includes('redacted') ||
+            room.last_message.content.includes('ENC:'))
+            ? { ...room.last_message, content: '[Access Denied]' }
+            : room.last_message,
       }));
 
       return { success: true, data: processedRooms };
@@ -2075,18 +2573,30 @@ export const apiService = {
     }
   },
 
-  async createChatRoom(memberIds: (number | string)[], name = '', isGroup = false): Promise<{ success: boolean; data?: ChatRoomData; error?: string }> {
+  async createChatRoom(
+    memberIds: (number | string)[],
+    name = '',
+    isGroup = false
+  ): Promise<{ success: boolean; data?: ChatRoomData; error?: string }> {
     try {
-      const response = await api.post<ChatRoomData>('chat/rooms/create/', { member_ids: memberIds, name, is_group: isGroup });
+      const response = await api.post<ChatRoomData>('chat/rooms/create/', {
+        member_ids: memberIds,
+        name,
+        is_group: isGroup,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Creation failed' };
     }
   },
 
-  async getChatMessages(roomId: number | string): Promise<{ success: boolean; data?: ChatMessageData[]; error?: string }> {
+  async getChatMessages(
+    roomId: number | string
+  ): Promise<{ success: boolean; data?: ChatMessageData[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<ChatMessageData> | ChatMessageData[]>(`chat/rooms/${roomId}/messages/`);
+      const response = await api.get<PaginatedResponse<ChatMessageData> | ChatMessageData[]>(
+        `chat/rooms/${roomId}/messages/`
+      );
       const data = extractResults<ChatMessageData>(response.data);
       return { success: true, data: [...data].reverse() };
     } catch (error: unknown) {
@@ -2094,9 +2604,14 @@ export const apiService = {
     }
   },
 
-  async sendChatMessage(roomId: number | string, content: string): Promise<{ success: boolean; data?: ChatMessageData; error?: string }> {
+  async sendChatMessage(
+    roomId: number | string,
+    content: string
+  ): Promise<{ success: boolean; data?: ChatMessageData; error?: string }> {
     try {
-      const response = await api.post<ChatMessageData>(`chat/rooms/${roomId}/messages/send/`, { content });
+      const response = await api.post<ChatMessageData>(`chat/rooms/${roomId}/messages/send/`, {
+        content,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Send failed' };
@@ -2112,43 +2627,70 @@ export const apiService = {
     }
   },
 
-  async updateAssignment(id: number | string, data: Partial<AssignedClient> & { mobile_banker?: string }): Promise<{ success: boolean; data?: AssignedClient; error?: string }> {
+  async updateAssignment(
+    id: number | string,
+    data: Partial<AssignedClient> & { mobile_banker?: string }
+  ): Promise<{ success: boolean; data?: AssignedClient; error?: string }> {
     try {
       const response = await api.patch<AssignedClient>(`operations/assignments/${id}/`, data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to update assignment' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update assignment',
+      };
     }
   },
 
-  async scheduleVisit(data: { client_name: string; location: string; scheduled_time: string; notes?: string }): Promise<{ success: boolean; data?: ScheduleVisitResponse; error?: string }> {
+  async scheduleVisit(data: {
+    client_name: string;
+    location: string;
+    scheduled_time: string;
+    notes?: string;
+  }): Promise<{ success: boolean; data?: ScheduleVisitResponse; error?: string }> {
     try {
       const response = await api.post<ScheduleVisitResponse>('operations/schedule-visit/', data);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to schedule visit' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to schedule visit',
+      };
     }
   },
 
-  async completeVisit(id: number | string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async completeVisit(
+    id: number | string
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`operations/visit-schedules/${id}/complete/`);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to complete visit' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to complete visit',
+      };
     }
   },
 
-  async completeAssignment(id: number | string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async completeAssignment(
+    id: number | string
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`operations/assignments/${id}/complete/`);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to complete assignment' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to complete assignment',
+      };
     }
   },
 
-  async repayLoan(loanId: number | string, amount: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async repayLoan(
+    loanId: number | string,
+    amount: string | number
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`loans/${loanId}/repay/`, { amount });
       return { success: true, data: response.data };
@@ -2157,7 +2699,10 @@ export const apiService = {
     }
   },
 
-  async repayLoanCashier(loanId: number | string, amount: string | number): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  async repayLoanCashier(
+    loanId: number | string,
+    amount: string | number
+  ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
       const response = await api.post(`banking/cash-advances/${loanId}/repay_loan/`, { amount });
       return { success: true, data: response.data };
@@ -2166,18 +2711,25 @@ export const apiService = {
     }
   },
 
-  async getClientsToMap(): Promise<{ success: boolean; data?: ClientsForMappingResult[]; error?: string }> {
+  async getClientsToMap(): Promise<{
+    success: boolean;
+    data?: ClientsForMappingResult[];
+    error?: string;
+  }> {
     try {
-        const response = await api.get<{ success: boolean; data?: ClientsForMappingResult[] }>('users/clients-for-mapping/');
-        const data = response.data?.data || [];
-        return { success: true, data: Array.isArray(data) ? data : [] };
+      const response = await api.get<{ success: boolean; data?: ClientsForMappingResult[] }>(
+        'users/clients-for-mapping/'
+      );
+      const data = response.data?.data || [];
+      return { success: true, data: Array.isArray(data) ? data : [] };
     } catch (error: unknown) {
-        return { success: false, error: handleApiError(error, 'Fetch failed') };
+      return { success: false, error: handleApiError(error, 'Fetch failed') };
     }
   },
 
-
-  async createCashAdvance(data: Record<string, unknown>): Promise<{ success: boolean; data?: CashAdvanceExtended; error?: string }> {
+  async createCashAdvance(
+    data: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: CashAdvanceExtended; error?: string }> {
     try {
       const response = await api.post<CashAdvanceExtended>('banking/cash-advances/', data);
       return { success: true, data: response.data };
@@ -2185,8 +2737,10 @@ export const apiService = {
       return { success: false, error: handleApiError(error, 'Advance creation failed') };
     }
   },
-  
-  async createRefund(data: Record<string, unknown>): Promise<{ success: boolean; data?: RefundExtended; error?: string }> {
+
+  async createRefund(
+    data: Record<string, unknown>
+  ): Promise<{ success: boolean; data?: RefundExtended; error?: string }> {
     try {
       const response = await api.post<RefundExtended>('banking/refunds/', data);
       return { success: true, data: response.data };
@@ -2195,9 +2749,15 @@ export const apiService = {
     }
   },
 
-  async getCashAdvances(): Promise<{ success: boolean; data?: CashAdvanceExtended[]; error?: string }> {
+  async getCashAdvances(): Promise<{
+    success: boolean;
+    data?: CashAdvanceExtended[];
+    error?: string;
+  }> {
     try {
-      const response = await api.get<PaginatedResponse<CashAdvanceExtended> | CashAdvanceExtended[]>('banking/cash-advances/');
+      const response = await api.get<
+        PaginatedResponse<CashAdvanceExtended> | CashAdvanceExtended[]
+      >('banking/cash-advances/');
       return { success: true, data: extractResults<CashAdvanceExtended>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fetch failed') };
@@ -2206,7 +2766,9 @@ export const apiService = {
 
   async getRefunds(): Promise<{ success: boolean; data?: RefundExtended[]; error?: string }> {
     try {
-      const response = await api.get<PaginatedResponse<RefundExtended> | RefundExtended[]>('banking/refunds/');
+      const response = await api.get<PaginatedResponse<RefundExtended> | RefundExtended[]>(
+        'banking/refunds/'
+      );
       return { success: true, data: extractResults<RefundExtended>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Fetch failed') };
@@ -2230,11 +2792,17 @@ export const apiService = {
       return { success: false, error: handleApiError(error, 'Approval failed') };
     }
   },
-  
-  async getLoginAttempts(email?: string): Promise<{ success: boolean; data?: LoginAttemptRecord[]; error?: string }> {
+
+  async getLoginAttempts(
+    email?: string
+  ): Promise<{ success: boolean; data?: LoginAttemptRecord[]; error?: string }> {
     try {
-      const url = email ? `users/auth/login-attempts/?email=${email}` : 'users/auth/login-attempts/';
-      const response = await api.get<LoginAttemptRecord[] | PaginatedResponse<LoginAttemptRecord>>(url);
+      const url = email
+        ? `users/auth/login-attempts/?email=${email}`
+        : 'users/auth/login-attempts/';
+      const response = await api.get<LoginAttemptRecord[] | PaginatedResponse<LoginAttemptRecord>>(
+        url
+      );
       return { success: true, data: extractResults<LoginAttemptRecord>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Login attempts fetch failed') };
@@ -2243,35 +2811,52 @@ export const apiService = {
 
   async getAuditLogs(): Promise<{ success: boolean; data?: AuditLogRecord[]; error?: string }> {
     try {
-      const response = await api.get<AuditLogRecord[] | PaginatedResponse<AuditLogRecord>>('users/audit-logs/');
+      const response = await api.get<AuditLogRecord[] | PaginatedResponse<AuditLogRecord>>(
+        'users/audit-logs/'
+      );
       return { success: true, data: extractResults<AuditLogRecord>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Audit logs fetch failed') };
     }
   },
 
-  async getComplaintDetail(id: string | number): Promise<{ success: boolean; data?: Complaint; error?: string }> {
+  async getComplaintDetail(
+    id: string | number
+  ): Promise<{ success: boolean; data?: Complaint; error?: string }> {
     try {
       const response = await api.get<Complaint>(`banking/complaints/${id}/`);
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Complaint fetch failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Complaint fetch failed',
+      };
     }
   },
 
-  async resolveComplaint(id: string | number, resolution: string): Promise<{ success: boolean; data?: Complaint; error?: string }> {
+  async resolveComplaint(
+    id: string | number,
+    resolution: string
+  ): Promise<{ success: boolean; data?: Complaint; error?: string }> {
     try {
-      const response = await api.post<Complaint>(`banking/complaints/${id}/resolve/`, { resolution });
+      const response = await api.post<Complaint>(`banking/complaints/${id}/resolve/`, {
+        resolution,
+      });
       return { success: true, data: response.data };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Complaint resolution failed' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Complaint resolution failed',
+      };
     }
   },
 
-  async lookupMember(memberNumber: string): Promise<{ success: boolean; data?: MemberLookupResult; error?: string }> {
+  async lookupMember(
+    memberNumber: string
+  ): Promise<{ success: boolean; data?: MemberLookupResult; error?: string }> {
     try {
       const response = await api.get<ApiResponse<MemberLookupResult>>(`users/member-lookup/`, {
-        params: { member_number: memberNumber }
+        params: { member_number: memberNumber },
       });
       return { success: true, data: response.data.data };
     } catch (error: unknown) {
@@ -2279,16 +2864,26 @@ export const apiService = {
     }
   },
 
-  async assignBankerToClient(clientId: string | number, bankerId: string | number | null): Promise<{ success: boolean; message?: string; error?: string }> {
+  async assignBankerToClient(
+    clientId: string | number,
+    bankerId: string | number | null
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const response = await api.post('users/assign-banker/', { client_id: clientId, banker_id: bankerId });
+      const response = await api.post('users/assign-banker/', {
+        client_id: clientId,
+        banker_id: bankerId,
+      });
       const data = response.data as { success: boolean; message: string };
       return { success: true, message: data.message };
     } catch (error: unknown) {
       return { success: false, error: handleApiError(error, 'Banker assignment failed') };
     }
   },
-  async getSystemSettings(): Promise<{ success: boolean; data?: SystemSettingData[]; error?: string }> {
+  async getSystemSettings(): Promise<{
+    success: boolean;
+    data?: SystemSettingData[];
+    error?: string;
+  }> {
     try {
       const response = await api.get<SystemSettingData[]>('operations/settings/');
       return { success: true, data: response.data };
@@ -2325,9 +2920,13 @@ export const apiService = {
   },
 
   async approveStaff(id: string | number): Promise<Blob> {
-    const response = await api.post(`users/staff-management/${id}/approve-and-print/`, {}, { responseType: 'blob' });
+    const response = await api.post(
+      `users/staff-management/${id}/approve-and-print/`,
+      {},
+      { responseType: 'blob' }
+    );
     return response.data as Blob;
-  }
+  },
 };
 
 export const authService = apiService;

@@ -502,11 +502,17 @@ class AccountOpeningViewSet(
                     initial_balance=opening_request.initial_deposit,
                 )
 
-                # 3. Update Request Status
+                # 3. Update Request Status & Tracking
                 opening_request.status = "completed"
-                opening_request.processed_by = request.user
+                opening_request.approved_by = request.user
                 opening_request.approved_at = timezone.now()
+                # Tracking credential issuance (one-click approval includes printing)
+                opening_request.credentials_approved_by = request.user
+                opening_request.credentials_sent_at = timezone.now()
                 opening_request.created_account = new_account
+                
+                # Enforce system constraints (like Maker-Checker)
+                opening_request.full_clean()
                 opening_request.save()
 
             # 4. Generate PDF Welcome Letter (Outside atomic to ensure DB commit first)
@@ -521,8 +527,9 @@ class AccountOpeningViewSet(
             self._send_account_number_sms(opening_request, new_account)
 
             # Standardize response using HttpResponse for reliable binary delivery in DRF
+            # Use 'inline' to allow browser to open the PDF immediately for native printing
             response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
-            response["Content-Disposition"] = f'attachment; filename="Coastal_Welcome_{new_account.account_number}.pdf"'
+            response["Content-Disposition"] = f'inline; filename="Coastal_Welcome_{new_account.account_number}.pdf"'
             return response
 
         except Exception as e:
@@ -556,7 +563,7 @@ class AccountOpeningViewSet(
             )
 
             response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
-            response["Content-Disposition"] = f'attachment; filename="Coastal_Welcome_{opening_request.created_account.account_number}.pdf"'
+            response["Content-Disposition"] = f'inline; filename="Coastal_Welcome_{opening_request.created_account.account_number}.pdf"'
             return response
 
         except Exception as e:

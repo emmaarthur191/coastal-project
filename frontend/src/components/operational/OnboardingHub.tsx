@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import AccountOpeningTab from '../staff/AccountOpeningTab';
 import { getImageSrc } from '../../utils/image';
-import { ShieldCheck, Lightbulb, User, X, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Lightbulb, User, X, RefreshCw, Printer } from 'lucide-react';
 
 interface OnboardingHubProps {
   mode: 'staff' | 'manager';
@@ -18,6 +18,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
   const [requests, setRequests] = useState<AccountOpeningRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<AccountOpeningRequest | null>(null);
   const [loading, setLoading] = useState(false);
+  const [viewTab, setViewTab] = useState<'pending' | 'completed'>('pending');
 
   useEffect(() => {
     if (mode === 'manager') {
@@ -39,7 +40,6 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
     }
   };
 
-
   const handleReject = async (id: string | number) => {
     const reason = prompt('Please enter rejection reason:');
     if (!reason) return;
@@ -56,13 +56,26 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
   };
 
   const handleApprove = async (id: string | number) => {
-    if (!confirm('Are you sure you want to approve this application?')) return;
+    if (
+      !confirm(
+        'Are you sure you want to approve this application? This will generate the member account and welcome letter.'
+      )
+    )
+      return;
 
     setLoading(true);
     try {
-      const res = await apiService.approveAccountOpening(id);
-      if (res.success) {
-        toast.success('Account Opening Approved Successfully');
+      const res = await apiService.approveAndPrintAccountOpening(id);
+      if (res.success && res.blob) {
+        toast.success('Account Approved & Letter Generated');
+
+        // Create blob URL and open in new tab for immediate printing
+        const url = window.URL.createObjectURL(res.blob);
+        const printWindow = window.open(url, '_blank');
+        if (!printWindow) {
+          toast.error('Pop-up blocked! Please allow pop-ups to view the welcome letter.');
+        }
+
         fetchRequests();
         setSelectedRequest(null);
       } else {
@@ -75,6 +88,24 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
     }
   };
 
+  const handleReprint = async (id: string | number) => {
+    setLoading(true);
+    try {
+      const res = await apiService.reprintAccountOpeningLetter(id);
+      if (res.success && res.blob) {
+        const url = window.URL.createObjectURL(res.blob);
+        window.open(url, '_blank');
+        toast.success('Opening print window...');
+      } else {
+        toast.error(res.error || 'Failed to generate letter');
+      }
+    } catch (_err) {
+      toast.error('Reprint failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (mode === 'staff') {
     return (
       <div className="space-y-6">
@@ -82,7 +113,10 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
         <GlassCard className="p-6 bg-blue-500/5 border-blue-500/10">
           <p className="text-xs text-blue-400 font-medium italic flex items-center gap-2">
             <Lightbulb className="w-4 h-4 text-blue-400 shrink-0" />
-            <span><b>Note:</b> After submitting, instruct the member to visit an Operations Manager for final document verification and letter collection.</span>
+            <span>
+              <b>Note:</b> After submitting, instruct the member to visit an Operations Manager for
+              final document verification and letter collection.
+            </span>
           </p>
         </GlassCard>
       </div>
@@ -104,16 +138,40 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
               Physical KYC Compliance: April 2026
             </span>
           </h3>
-          <Button
-            onClick={fetchRequests}
-            variant="ghost"
-            className="text-sm flex items-center gap-2"
-            title="Refresh the onboarding requests list"
-            aria-label="Refresh List"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh List
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                onClick={() => setViewTab('pending')}
+                className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                  viewTab === 'pending'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Pending Review
+              </button>
+              <button
+                onClick={() => setViewTab('completed')}
+                className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                  viewTab === 'completed'
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Completed Portals
+              </button>
+            </div>
+            <Button
+              onClick={fetchRequests}
+              variant="ghost"
+              className="text-sm flex items-center gap-2"
+              title="Refresh the onboarding requests list"
+              aria-label="Refresh List"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh List
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -128,66 +186,92 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {requests.filter(r => r.status === 'pending').map((req) => (
-                <tr key={req.id} className="group hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-black text-slate-900">{req.first_name} {req.last_name}</div>
-                    <div className="text-[10px] text-slate-700 font-bold">{req.phone_number}</div>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="w-10 h-10 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center mx-auto">
-                      {req.photo && req.photo !== '[ENCRYPTED_PII_PHOTO]' ? (
-                        <img
-                          src={getImageSrc(req.photo)}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-500 opacity-50">
-                          <User className="w-5 h-5" />
-                          {req.photo === '[ENCRYPTED_PII_PHOTO]' && (
-                            <span className="text-[7px] font-black uppercase tracking-tighter mt-1 leading-none">Masked</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-xs text-blue-700 font-black uppercase tracking-widest">{req.account_type?.replace('_', ' ')}</div>
-                    <div className="text-[10px] text-cyan-700 font-black font-mono mt-0.5">{req.digital_address || 'NO-GPS'}</div>
-                    <div className="text-[10px] text-slate-800 font-bold mt-0.5 truncate max-w-[150px]">{req.address}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-500 text-[9px] font-bold rounded-full border border-yellow-500/20 uppercase">
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setSelectedRequest(req)}
-                        className="text-blue-700 font-black hover:text-blue-900 hover:bg-blue-500/10"
-                        title="View applicant detailed information"
-                        aria-label={`View details for ${req.first_name} ${req.last_name}`}
-                      >
-                        View Details
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleReject(req.id)}
-                        className="text-red-700 font-black hover:text-red-900 hover:bg-red-500/10"
-                        title="Reject account opening application"
-                        aria-label={`Reject application for ${req.first_name} ${req.last_name}`}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {requests
+                .filter((r) =>
+                  viewTab === 'pending'
+                    ? r.status === 'pending'
+                    : r.status === 'completed' || r.status === 'approved'
+                )
+                .map((req) => (
+                  <tr key={req.id} className="group hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="text-sm font-black text-slate-900">
+                        {req.first_name} {req.last_name}
+                      </div>
+                      <div className="text-[10px] text-slate-700 font-bold">{req.phone_number}</div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="w-10 h-10 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center mx-auto">
+                        {req.photo && req.photo !== '[ENCRYPTED_PII_PHOTO]' ? (
+                          <img
+                            src={getImageSrc(req.photo)}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-slate-500 opacity-50">
+                            <User className="w-5 h-5" />
+                            {req.photo === '[ENCRYPTED_PII_PHOTO]' && (
+                              <span className="text-[7px] font-black uppercase tracking-tighter mt-1 leading-none">
+                                Masked
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-blue-700 font-black uppercase tracking-widest">
+                        {req.account_type?.replace('_', ' ')}
+                      </div>
+                      <div className="text-[10px] text-cyan-700 font-black font-mono mt-0.5">
+                        {req.digital_address || 'NO-GPS'}
+                      </div>
+                      <div className="text-[10px] text-slate-800 font-bold mt-0.5 truncate max-w-[150px]">
+                        {req.address}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-500 text-[9px] font-bold rounded-full border border-yellow-500/20 uppercase">
+                        {req.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedRequest(req)}
+                          className="text-blue-700 font-black hover:text-blue-900 hover:bg-blue-500/10"
+                          title="View applicant detailed information"
+                        >
+                          Details
+                        </Button>
+                        {viewTab === 'pending' ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleReject(req.id)}
+                            className="text-red-700 font-black hover:text-red-900 hover:bg-red-500/10"
+                            title="Reject account opening application"
+                          >
+                            Reject
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleReprint(req.id)}
+                            className="text-emerald-700 font-black hover:text-emerald-900 hover:bg-emerald-500/10 flex items-center gap-2"
+                            title="Reprint welcome letter"
+                          >
+                            Print Letter
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               {loading && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-gray-400 animate-pulse">
@@ -195,13 +279,21 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                   </td>
                 </tr>
               )}
-              {!loading && requests.filter(r => r.status === 'pending').length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center text-slate-900 font-black uppercase text-[10px] tracking-[0.3em] bg-slate-50 border-2 border-dashed border-slate-200 rounded-b-2xl">
-                    No Active Onboarding Sessions found
-                  </td>
-                </tr>
-              )}
+              {!loading &&
+                requests.filter((r) =>
+                  viewTab === 'pending'
+                    ? r.status === 'pending'
+                    : r.status === 'completed' || r.status === 'approved'
+                ).length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-12 text-center text-slate-900 font-black uppercase text-[10px] tracking-[0.3em] bg-slate-50 border-2 border-dashed border-slate-200 rounded-b-2xl"
+                    >
+                      No {viewTab} onboarding sessions found
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
@@ -236,7 +328,9 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {/* Photo Section */}
                 <div className="flex flex-col items-center gap-4">
-                  <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] w-full text-center">Applicant Photo</h4>
+                  <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] w-full text-center">
+                    Applicant Photo
+                  </h4>
                   <div className="w-full aspect-square rounded-2xl bg-black/5 border border-black/10 overflow-hidden flex items-center justify-center shadow-inner group">
                     {selectedRequest.photo && selectedRequest.photo !== '[ENCRYPTED_PII_PHOTO]' ? (
                       <img
@@ -248,77 +342,109 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                       <div className="text-center p-4">
                         <User className="w-12 h-12 text-slate-200 mx-auto mb-2" />
                         <span className="text-[10px] text-slate-600 font-black">
-                          {selectedRequest.photo === '[ENCRYPTED_PII_PHOTO]' ? 'Photo Restricted (Permissions Required)' : 'No Photo Attached'}
+                          {selectedRequest.photo === '[ENCRYPTED_PII_PHOTO]'
+                            ? 'Photo Restricted (Permissions Required)'
+                            : 'No Photo Attached'}
                         </span>
                       </div>
                     )}
                   </div>
                   {selectedRequest.photo && (
-                    <p className="text-[9px] text-emerald-700 font-black uppercase tracking-widest bg-emerald-500/5 px-2 py-1 rounded-full border border-emerald-500/10">Verified Capture</p>
+                    <p className="text-[9px] text-emerald-700 font-black uppercase tracking-widest bg-emerald-500/5 px-2 py-1 rounded-full border border-emerald-500/10">
+                      Verified Capture
+                    </p>
                   )}
                 </div>
 
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <section>
-                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Personal Information</h4>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                        Personal Information
+                      </h4>
                       <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Nationality</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.nationality || 'Ghanaian'}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.nationality || 'Ghanaian'}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Date of Birth</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.date_of_birth}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.date_of_birth}
+                          </span>
                         </div>
                       </div>
                     </section>
                     <section>
-                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Contact Details</h4>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                        Contact Details
+                      </h4>
                       <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Phone</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.phone_number}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.phone_number}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Email</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.email || '—'}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.email || '—'}
+                          </span>
                         </div>
                         <div className="flex flex-col gap-1">
                           <span className="text-xs text-slate-600 font-bold">Digital Address</span>
-                          <span className="text-xs text-cyan-700 font-black font-mono tracking-wider">{selectedRequest.digital_address || 'Not Provided'}</span>
+                          <span className="text-xs text-cyan-700 font-black font-mono tracking-wider">
+                            {selectedRequest.digital_address || 'Not Provided'}
+                          </span>
                         </div>
                         <div className="flex flex-col gap-1 border-t border-black/5 pt-2 mt-1">
                           <span className="text-xs text-slate-600 font-bold">Home Address</span>
-                          <span className="text-xs text-slate-900 font-bold leading-relaxed">{selectedRequest.address}</span>
+                          <span className="text-xs text-slate-900 font-bold leading-relaxed">
+                            {selectedRequest.address}
+                          </span>
                         </div>
                       </div>
                     </section>
                   </div>
                   <div className="space-y-4">
                     <section>
-                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Identification</h4>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                        Identification
+                      </h4>
                       <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Type</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.id_type}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.id_type}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">ID Number</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.id_number}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.id_number}
+                          </span>
                         </div>
                       </div>
                     </section>
                     <section>
-                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Employment</h4>
+                      <h4 className="text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                        Employment
+                      </h4>
                       <div className="space-y-2 bg-black/5 p-4 rounded-xl border border-black/5">
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Occupation</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.occupation || '—'}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.occupation || '—'}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-xs text-slate-600 font-bold">Work Location</span>
-                          <span className="text-xs text-slate-900 font-black">{selectedRequest.location || '—'}</span>
+                          <span className="text-xs text-slate-900 font-black">
+                            {selectedRequest.location || '—'}
+                          </span>
                         </div>
                       </div>
                     </section>
@@ -333,9 +459,13 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                     <ShieldCheck className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <span className="block text-sm font-black text-slate-900 mb-1">KYC Verified Review</span>
+                    <span className="block text-sm font-black text-slate-900 mb-1">
+                      KYC Verified Review
+                    </span>
                     <span className="block text-xs text-slate-600 leading-relaxed font-bold">
-                      This applicant has provided all required physical documents. Review the details above and proceed with approval to generate their 24-month high-interest savings account.
+                      This applicant has provided all required physical documents. Review the
+                      details above and proceed with approval to generate their 24-month
+                      high-interest savings account.
                     </span>
                   </div>
                 </div>
@@ -344,24 +474,53 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
 
             <div className="flex gap-4 p-6 border-t border-black/10 bg-black/5 sticky bottom-0 z-10">
               <Button
-                variant="secondary"
-                onClick={() => {
-                  handleReject(selectedRequest.id);
-                  setSelectedRequest(null);
-                }}
-                className="flex-1 py-3 border border-black/10 text-red-700 font-black hover:bg-red-500/10"
-                title="Reject this onboarding application"
+                variant="ghost"
+                onClick={() => setSelectedRequest(null)}
+                className="flex-1 py-3 text-slate-600 font-black hover:bg-black/5"
+                title="Exit record viewer"
               >
-                Reject Application
+                Close
               </Button>
-              <Button
-                onClick={() => handleApprove(selectedRequest.id)}
-                disabled={loading}
-                className="flex-[2] py-3 bg-emerald-600 text-white font-black hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all"
-                title="Approve applicant and generate account credentials"
-              >
-                {loading ? 'Processing...' : 'Approve & Issue Credentials'}
-              </Button>
+
+              {selectedRequest.status === 'pending' ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      handleReject(selectedRequest.id);
+                      setSelectedRequest(null);
+                    }}
+                    className="flex-1 py-3 border border-red-200 text-red-700 font-black hover:bg-red-50"
+                    title="Reject this onboarding application"
+                  >
+                    Reject App
+                  </Button>
+                  <Button
+                    onClick={() => handleApprove(selectedRequest.id)}
+                    disabled={loading}
+                    className="flex-[2] py-3 bg-emerald-600 text-white font-black hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
+                    title="Approve applicant and generate account credentials"
+                  >
+                    {loading ? 'Processing...' : 'Approve & Issue Credentials'}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => handleReprint(selectedRequest.id)}
+                  disabled={loading}
+                  className="flex-[2] py-3 bg-blue-600 text-white font-black hover:bg-blue-700 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                  title="Reprint the welcome letter for this customer"
+                >
+                  {loading ? (
+                    'Generating...'
+                  ) : (
+                    <>
+                      <Printer className="w-4 h-4" />
+                      Reprint Welcome Letter
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </GlassCard>
         </div>

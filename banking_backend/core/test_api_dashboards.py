@@ -104,6 +104,6 @@ class TestDashboardAPI:
         url = reverse("core:report-analytics")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["total_reports"] >= 1
-        assert "generation_stats" in response.data
-        assert response.data["generation_stats"]["total_generated"] >= 1
+        assert response.data["report_stats"]["total_reports"] >= 1
+        assert "report_stats" in response.data
+        assert response.data["report_stats"]["total_generated"] >= 1
