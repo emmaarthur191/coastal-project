@@ -41,7 +41,7 @@ psutil==6.1.1
 
 # Monitoring & Logs
 prometheus_client==0.23.1
-rich==14.2.0
+rich==15.0.0
 sentry-sdk==2.22.0
 
 # Utilities
