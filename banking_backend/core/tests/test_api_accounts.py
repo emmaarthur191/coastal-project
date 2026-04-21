@@ -138,7 +138,7 @@ class TestAccountOpening:
         req.refresh_from_db()
         assert req.status == "approved"
         assert req.created_account is not None
-        assert req.created_account.user.username == "jane.smith@test.com"
+        assert req.created_account.user.username == "jane.smith"
 
 
 @pytest.mark.django_db

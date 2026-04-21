@@ -72,6 +72,11 @@ class TestMobileBankerWorkflows:
         account = Account.objects.create(
             user=customer_user, account_number="DEP-123", balance=10, account_type="daily_susu"
         )
+        # SECURITY: Assign client to mobile banker to pass the 403 gate
+        ClientAssignment.objects.create(
+            mobile_banker=mobile_banker, client=customer_user, status="assigned", is_active=True
+        )
+
         url = reverse("core:mobile-ops-process-deposit")
         data = {"member_id": customer_user.id, "amount": 100.0, "account_type": "daily_susu"}
         response = mb_client.post(url, data, format="json")
@@ -83,6 +88,11 @@ class TestMobileBankerWorkflows:
         account = Account.objects.create(
             user=customer_user, account_number="WITH-123", balance=10, account_type="daily_susu"
         )
+        # SECURITY: Assign client to mobile banker to pass the 403 gate
+        ClientAssignment.objects.create(
+            mobile_banker=mobile_banker, client=customer_user, status="assigned", is_active=True
+        )
+
         url = reverse("core:mobile-ops-process-withdrawal")
         data = {"member_id": customer_user.id, "amount": 500.0}
         response = mb_client.post(url, data, format="json")

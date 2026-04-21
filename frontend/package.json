@@ -33,7 +33,7 @@
     "amplitude-js": "^8.21.9",
     "autoprefixer": "^10.4.21",
     "axios": "^1.15.0",
-    "dompurify": "^3.3.1",
+    "dompurify": "^3.4.0",
     "emoji-picker-react": "^4.16.1",
     "express": "^4.21.2",
     "express-rate-limit": "^8.3.2",
@@ -88,11 +88,11 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write --ignore-unknown"
+      "npx eslint --fix",
+      "npx prettier --write --ignore-unknown"
     ],
     "*.{js,jsx,json,css,md}": [
-      "prettier --write --ignore-unknown"
+      "npx prettier --write --ignore-unknown"
     ]
   }
 }
