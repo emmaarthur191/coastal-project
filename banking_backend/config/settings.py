@@ -186,14 +186,45 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "core.middleware.anomaly_detection.BulkAccessDetectionMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "core.middleware.mtls_verification.MTLSVerificationMiddleware",
     "csp.middleware.CSPMiddleware",  # Replace XFrameOptionsMiddleware with CSP
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
+
+# Sentinel Gatekeeper: Controlled Degradation & Resilience Config
+SENTINEL_GATEKEEPER_CONFIG = {
+    "TIERS": {
+        "CRITICAL": [
+            "/api/banking/", 
+            "/api/accounts/create/", 
+            "/api/ml/predict/",
+            "/api/staff/approve/"
+        ],
+        "STANDARD": [
+            "/api/accounts/summary/", 
+            "/api/accounts/history/",
+            "/api/analytics/"
+        ],
+        "PUBLIC": [
+            "/api/public/", 
+            "/api/status/",
+            "/api/health/"
+        ],
+    },
+    "ALERT_STORM_PROTECTION": {
+        "MIN_INTERVAL": 300,  # 5 minutes between duplicate alerts
+        "MAX_ALERTS_PER_HOUR": 10
+    },
+    "CIRCUIT_BREAKER": {
+        "ERROR_THRESHOLD": 5,
+        "RECOVERY_TIMEOUT": 60,  # 1 minute auto-retry
+    }
+}
 
 TEMPLATES = [
     {

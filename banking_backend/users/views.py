@@ -115,12 +115,11 @@ class LoginView(APIView):
 
             # Security: Check if account is locked
             if lookup_user.is_locked():
-                remaining = (lookup_user.locked_until - timezone.now()).seconds // 60
                 return Response(
                     {
                         "status": "error",
-                        "message": f"Account locked due to too many failed attempts. Try again in {remaining} minutes.",
-                        "code": "ACCOUNT_LOCKED",
+                        "message": "Invalid credentials or account locked. Please try again later or contact support.",
+                        "code": "AUTHENTICATION_FAILED",
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )
@@ -137,8 +136,12 @@ class LoginView(APIView):
                     is_locked = SecurityService.handle_failed_login(lookup_user, request)
                     if is_locked:
                         return Response(
-                            {"error": "Account locked due to too many failed attempts.", "code": "ACCOUNT_LOCKED"},
-                            status=status.HTTP_403_FORBIDDEN,
+                            {
+                                "status": "error", 
+                                "message": "Invalid credentials or account locked.", 
+                                "code": "AUTHENTICATION_FAILED"
+                            },
+                            status=status.HTTP_403_FORBIDDEN
                         )
 
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

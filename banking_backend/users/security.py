@@ -104,12 +104,30 @@ class SecurityService:
 
     @staticmethod
     def record_login_attempt(request):
-        """Increment the login attempt counter for this IP."""
+        """Increment the login attempt counter for this IP and the target user."""
         ip = SecurityService.get_client_ip(request)
-        cache_key = SecurityService.LOGIN_RATE_LIMIT_KEY.format(ip)
+        cache_key_ip = SecurityService.LOGIN_RATE_LIMIT_KEY.format(ip)
 
-        attempts = cache.get(cache_key, 0)
-        cache.set(cache_key, attempts + 1, SecurityService.get_window())
+        attempts_ip = cache.get(cache_key_ip, 0)
+        cache.set(cache_key_ip, attempts_ip + 1, SecurityService.get_window())
+
+        # Per-User Global Velocity Check (Credential Stuffing Protection)
+        email = request.data.get("email")
+        if email:
+            cache_key_user = f"user_login_velocity:{email}"
+            attempts_user = cache.get(cache_key_user, 0)
+            cache.set(cache_key_user, attempts_user + 1, 300)
+
+            if attempts_user + 1 == 15:  # Detection threshold
+                from core.models.operational import SystemAlert
+                SystemAlert.objects.create(
+                    alert_type="security",
+                    severity="high",
+                    title="Credential Stuffing Velocity Alert",
+                    message=f"High frequency of login attempts for user {email} detected across multiple IP addresses.",
+                    is_active=True,
+                    metadata={"email": email, "last_ip": ip}
+                )
 
     @staticmethod
     def get_location_info(ip):

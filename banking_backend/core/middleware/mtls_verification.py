@@ -18,11 +18,12 @@ class MTLSVerificationMiddleware:
     MTLS_HEADER = "HTTP_X_SSL_CLIENT_VERIFY"
     MTLS_SUCCESS_VALUE = "SUCCESS"
     MTLS_REQUIRED_PATHS = [
+        "/api/accounts/summary/",
         "/api/banking/",
         "/api/operations/",
         "/api/reports/",
-        "/api/users/staff/",
-        "/api/users/management/",
+        "/api/audit/",
+        "/api/ml/",
     ]
 
     def __init__(self, get_response):
@@ -43,6 +44,16 @@ class MTLSVerificationMiddleware:
                 logger.warning(
                     f"mTLS REJECTION: Path {request.path} accessed without valid "
                     f"client certificate. Status: {verify_status}. IP: {self._get_client_ip(request)}"
+                )
+                
+                # Purple Team Requirement: Alert on mTLS spoofing or absence
+                from core.models.operational import SystemAlert
+                SystemAlert.objects.create(
+                    alert_type="security",
+                    severity="high",
+                    title="mTLS Verification Failure",
+                    message=f"Unauthorized access attempt to staff endpoint {request.path} without valid client certificate. Status: {verify_status}",
+                    metadata={"path": request.path, "status": verify_status, "ip": self._get_client_ip(request)}
                 )
                 
                 # Fail-closed for staff endpoints

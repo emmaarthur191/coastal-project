@@ -420,3 +420,36 @@ class ClientAssignment(models.Model):
 
     def __str__(self):
         return f"{self.client_name or self.client.email} assigned to {self.mobile_banker.email}"
+
+
+class SystemAlert(models.Model):
+    """Dedicated model for security and system critical alerts."""
+
+    ALERT_TYPES = [
+        ("security", "Security Incident"),
+        ("performance", "Performance Degradation"),
+        ("reliability", "Infrastructure Failure"),
+    ]
+
+    SEVERITY_LEVELS = [
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+        ("critical", "Critical"),
+    ]
+
+    alert_type = models.CharField(max_length=20, choices=ALERT_TYPES, default="security")
+    severity = models.CharField(max_length=20, choices=SEVERITY_LEVELS, default="medium")
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_active = models.BooleanField(default=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "system_alert"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.severity.upper()}] {self.title}"

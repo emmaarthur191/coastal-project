@@ -34,6 +34,7 @@ from core.models.operational import (  # noqa: F401
     Device,
     ServiceCharge,
     ServiceRequest,
+    SystemAlert,
     VisitSchedule,
 )
 from core.models.reliability import GlobalSequence, IdempotencyKey, SmsOutbox  # noqa: F401
