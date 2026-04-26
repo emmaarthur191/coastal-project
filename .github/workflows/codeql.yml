@@ -64,7 +64,8 @@ jobs:
       run: |
         cd frontend
         npm install --legacy-peer-deps
-        npx cap sync android
+                    npm run build
+                  npx cap sync android
         cd android
         chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
