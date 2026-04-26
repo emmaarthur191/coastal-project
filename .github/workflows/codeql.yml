@@ -62,7 +62,10 @@ jobs:
     - name: Build Android Project
       if: matrix.language == 'java-kotlin'
       run: |
-        cd frontend/android
+        cd frontend
+        npm install --legacy-peer-deps
+        npx cap sync android
+        cd android
         chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
 

@@ -27,18 +27,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core React
-          'vendor-react': ['react', 'react-dom'],
-
-          // Routing
-          'vendor-router': ['react-router-dom'],
-
-          // State Management & Data Fetching
-          'vendor-query': ['@tanstack/react-query'],
-
-          // UI Library & Charts (Grouped for stability)
-          'vendor-ui': ['lucide-react', 'recharts'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) return 'vendor-react';
+            if (id.includes('react-router-dom')) return 'vendor-router';
+            if (id.includes('@tanstack/react-query')) return 'vendor-query';
+            if (id.includes('lucide-react') || id.includes('recharts')) return 'vendor-ui';
+            return 'vendor';
+          }
         },
       },
     },
