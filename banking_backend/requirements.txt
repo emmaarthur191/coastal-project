@@ -1,13 +1,13 @@
 # Coastal Banking Backend - Remediated Requirements
 # Core Framework
-Django==5.1.15
-djangorestframework==3.16.1
+Django==5.2.13
+djangorestframework==3.17.1
 djangorestframework-simplejwt==5.5.1
-django-environ==0.12.0
-django-filter==25.1
+django-environ==0.13.0
+django-filter==25.2
 django-prometheus==2.4.1
-django-cors-headers==4.7.0
-django-csp==3.8
+django-cors-headers==4.9.0
+django-csp==4.0
 
 # Security & Auth
 cryptography==46.0.7
