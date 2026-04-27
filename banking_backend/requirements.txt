@@ -24,7 +24,7 @@ requests==2.33.0
 
 # Database
 psycopg2-binary==2.9.11
-redis==7.1.0
+redis==7.4.0
 
 # Production Deployment (Render)
 whitenoise==6.9.0
