@@ -36,7 +36,7 @@
     "dompurify": "^3.4.0",
     "emoji-picker-react": "^4.16.1",
     "express": "^4.21.2",
-    "express-rate-limit": "^8.3.2",
+    "express-rate-limit": "^8.5.1",
     "framer-motion": "^12.38.0",
     "http-proxy-middleware": "^2.0.6",
     "lucide-react": "^0.555.0",
