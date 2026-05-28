@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api, PaginatedResponse } from '../services/api';
 import { FraudAlert } from '../api/models/FraudAlert';
-import { AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search } from 'lucide-react';
+import { AlertTriangle, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
 import './FraudAlerts.css';
 
 interface FraudStats {
@@ -23,7 +23,7 @@ const FraudAlerts = () => {
   const fetchAlerts = useCallback(async () => {
     try {
       const response = await api.get<PaginatedResponse<FraudAlert>>('/api/fraud/alerts/', {
-        params: filterStatus !== 'all' ? { status: filterStatus } : {}
+        params: filterStatus !== 'all' ? { status: filterStatus } : {},
       });
       setAlerts(response.data.results || []);
     } catch (error) {
@@ -60,7 +60,7 @@ const FraudAlerts = () => {
     try {
       await api.post(`/api/fraud/alerts/${alertId}/resolve/`, {
         resolution_notes: resolutionNotes,
-        action_taken: actionTaken
+        action_taken: actionTaken,
       });
       setSelectedAlert(null);
       setResolutionNotes('');
@@ -76,7 +76,7 @@ const FraudAlerts = () => {
     try {
       await api.post(`/api/fraud/alerts/${alertId}/escalate/`, {
         escalated_to: escalatedTo,
-        escalation_reason: reason
+        escalation_reason: reason,
       });
       fetchAlerts();
       fetchStats();
@@ -87,15 +87,20 @@ const FraudAlerts = () => {
 
   const getSeverityBadgeClass = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'fraud-alert-badge fraud-alert-badge--critical';
-      case 'high': return 'fraud-alert-badge fraud-alert-badge--high';
-      case 'medium': return 'fraud-alert-badge fraud-alert-badge--medium';
-      case 'low': return 'fraud-alert-badge fraud-alert-badge--low';
-      default: return 'fraud-alert-badge fraud-alert-badge--medium';
+      case 'critical':
+        return 'fraud-alert-badge fraud-alert-badge--critical';
+      case 'high':
+        return 'fraud-alert-badge fraud-alert-badge--high';
+      case 'medium':
+        return 'fraud-alert-badge fraud-alert-badge--medium';
+      case 'low':
+        return 'fraud-alert-badge fraud-alert-badge--low';
+      default:
+        return 'fraud-alert-badge fraud-alert-badge--medium';
     }
   };
 
-  const filteredAlerts = alerts.filter(alert => {
+  const filteredAlerts = alerts.filter((alert) => {
     if (filterStatus === 'all') return true;
     if (filterStatus === 'resolved') return alert.is_resolved;
     if (filterStatus === 'unresolved') return !alert.is_resolved;
@@ -169,7 +174,10 @@ const FraudAlerts = () => {
         {[
           { value: 'all', label: `All (${stats.total || 0})` },
           { value: 'unresolved', label: `Unresolved (${stats.unresolved || 0})` },
-          { value: 'resolved', label: `Resolved (${(stats.total || 0) - (stats.unresolved || 0)})` }
+          {
+            value: 'resolved',
+            label: `Resolved (${(stats.total || 0) - (stats.unresolved || 0)})`,
+          },
         ].map((tab) => (
           <button
             key={tab.value}
@@ -191,18 +199,16 @@ const FraudAlerts = () => {
                   <span className={getSeverityBadgeClass(alert.severity || 'medium')}>
                     {(alert.severity || 'medium').toUpperCase()}
                   </span>
-                  <span className={`fraud-alert-badge ${alert.is_resolved ? 'fraud-alert-badge--resolved' : 'fraud-alert-badge--pending'}`}>
+                  <span
+                    className={`fraud-alert-badge ${alert.is_resolved ? 'fraud-alert-badge--resolved' : 'fraud-alert-badge--pending'}`}
+                  >
                     {alert.is_resolved ? 'Resolved' : 'Pending'}
                   </span>
                 </div>
-                <h3 className="fraud-alert-title">
-                  {alert.message.split('\n')[0]}
-                </h3>
+                <h3 className="fraud-alert-title">{alert.message.split('\n')[0]}</h3>
                 <p className="fraud-alert-message">{alert.message}</p>
                 <div className="fraud-alert-meta">
-                  <span className="fraud-alert-meta-item">
-                    👤 User ID: {alert.user}
-                  </span>
+                  <span className="fraud-alert-meta-item">👤 User ID: {alert.user}</span>
                   <span className="fraud-alert-meta-item">
                     📅 {new Date(alert.created_at).toLocaleDateString()}
                   </span>
@@ -231,9 +237,17 @@ const FraudAlerts = () => {
             {/* Alert Details Simplified */}
             <div className="fraud-alert-details">
               <div className="fraud-alert-details-grid">
-                <div><strong>Alert ID:</strong> {alert.id}</div>
-                <div><strong>Resolution:</strong> {alert.is_resolved ? 'Resolved' : 'Pending Action'}</div>
-                {alert.resolved_at && <div><strong>Resolved At:</strong> {new Date(alert.resolved_at).toLocaleString()}</div>}
+                <div>
+                  <strong>Alert ID:</strong> {alert.id}
+                </div>
+                <div>
+                  <strong>Resolution:</strong> {alert.is_resolved ? 'Resolved' : 'Pending Action'}
+                </div>
+                {alert.resolved_at && (
+                  <div>
+                    <strong>Resolved At:</strong> {new Date(alert.resolved_at).toLocaleString()}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -248,8 +262,7 @@ const FraudAlerts = () => {
             <p className="fraud-empty-message">
               {filterStatus === 'all'
                 ? 'There are currently no fraud alerts to review.'
-                : `No ${filterStatus} alerts found.`
-              }
+                : `No ${filterStatus} alerts found.`}
             </p>
           </div>
         )}

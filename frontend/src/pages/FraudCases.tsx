@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { 
-  AlertTriangle, 
-  Clock, 
-  CheckCircle2, 
-  FileText, 
-  User, 
-  Banknote, 
+import {
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  FileText,
+  User,
+  Banknote,
   Calendar,
-  AlertCircle,
-  ShieldCheck,
-  Search
 } from 'lucide-react';
 import './FraudCases.css';
 
@@ -62,7 +59,7 @@ const FraudCases = () => {
   const fetchCases = useCallback(async () => {
     try {
       const response = await api.get<PaginatedCasesResponse | CaseData[]>('/fraud/cases/', {
-        params: filterStatus !== 'all' ? { status: filterStatus } : {}
+        params: filterStatus !== 'all' ? { status: filterStatus } : {},
       });
       // Handle both paginated results and raw arrays
       const data = response.data;
@@ -94,10 +91,13 @@ const FraudCases = () => {
     fetchStats();
   }, [fetchCases, fetchStats]);
 
-  const handleAssignInvestigator = async (caseId: string | number, investigatorId: string | number) => {
+  const handleAssignInvestigator = async (
+    caseId: string | number,
+    investigatorId: string | number
+  ) => {
     try {
       await api.post(`/fraud/cases/${caseId}/assign_investigator/`, {
-        investigator_id: investigatorId
+        investigator_id: investigatorId,
       });
       fetchCases();
     } catch (error) {
@@ -109,7 +109,7 @@ const FraudCases = () => {
     try {
       await api.post(`/fraud/cases/${caseId}/close_case/`, {
         resolution_type: resolutionType,
-        resolution_details: resolutionDetails
+        resolution_details: resolutionDetails,
       });
       setSelectedCase(null);
       setResolutionType('');
@@ -125,7 +125,7 @@ const FraudCases = () => {
     try {
       await api.post(`/fraud/cases/${caseId}/add_evidence/`, {
         evidence_type: evidenceType,
-        evidence_data: evidenceData
+        evidence_data: evidenceData,
       });
       setEvidenceType('');
       setEvidenceData('');
@@ -137,26 +137,36 @@ const FraudCases = () => {
 
   const getPriorityClass = (priority: string) => {
     switch (priority?.toLowerCase()) {
-      case 'critical': return 'fraud-cases-priority-badge--critical';
-      case 'high': return 'fraud-cases-priority-badge--high';
-      case 'medium': return 'fraud-cases-priority-badge--medium';
-      case 'low': return 'fraud-cases-priority-badge--low';
-      default: return 'fraud-cases-priority-badge--default';
+      case 'critical':
+        return 'fraud-cases-priority-badge--critical';
+      case 'high':
+        return 'fraud-cases-priority-badge--high';
+      case 'medium':
+        return 'fraud-cases-priority-badge--medium';
+      case 'low':
+        return 'fraud-cases-priority-badge--low';
+      default:
+        return 'fraud-cases-priority-badge--default';
     }
   };
 
   const getStatusClass = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'open': return 'fraud-cases-status-badge--open';
-      case 'investigating': return 'fraud-cases-status-badge--investigating';
-      case 'closed': return 'fraud-cases-status-badge--closed';
-      case 'escalated': return 'fraud-cases-status-badge--escalated';
-      default: return 'fraud-cases-status-badge--default';
+      case 'open':
+        return 'fraud-cases-status-badge--open';
+      case 'investigating':
+        return 'fraud-cases-status-badge--investigating';
+      case 'closed':
+        return 'fraud-cases-status-badge--closed';
+      case 'escalated':
+        return 'fraud-cases-status-badge--escalated';
+      default:
+        return 'fraud-cases-status-badge--default';
     }
   };
 
-  const filteredCases = cases.filter(caseItem =>
-    filterStatus === 'all' || caseItem.status === filterStatus
+  const filteredCases = cases.filter(
+    (caseItem) => filterStatus === 'all' || caseItem.status === filterStatus
   );
 
   if (loading) {
@@ -228,7 +238,7 @@ const FraudCases = () => {
           { value: 'open', label: `Open (${stats.open_cases || 0})` },
           { value: 'investigating', label: `Investigating (${stats.investigating || 0})` },
           { value: 'closed', label: `Closed (${stats.closed_cases || 0})` },
-          { value: 'escalated', label: `Escalated (${stats.escalated_cases || 0})` }
+          { value: 'escalated', label: `Escalated (${stats.escalated_cases || 0})` },
         ].map((tab) => (
           <button
             key={tab.value}
@@ -247,27 +257,29 @@ const FraudCases = () => {
             <div className="fraud-cases-case-header">
               <div className="fraud-cases-case-info">
                 <div className="fraud-cases-case-badges">
-                  <span className={`fraud-cases-priority-badge ${getPriorityClass(caseItem.priority)}`}>
+                  <span
+                    className={`fraud-cases-priority-badge ${getPriorityClass(caseItem.priority)}`}
+                  >
                     {caseItem.priority?.toUpperCase()}
                   </span>
                   <span className={`fraud-cases-status-badge ${getStatusClass(caseItem.status)}`}>
                     {caseItem.status}
                   </span>
-                  <span className="fraud-cases-case-number">
-                    Case #{caseItem.case_number}
-                  </span>
+                  <span className="fraud-cases-case-number">Case #{caseItem.case_number}</span>
                 </div>
                 <h3 className="fraud-cases-case-title">{caseItem.title}</h3>
                 <p className="fraud-cases-case-description">{caseItem.description}</p>
                 <div className="fraud-cases-case-meta">
                   <span className="fraud-cases-case-meta-item">
-                    <User className="w-3.5 h-3.5" /> {caseItem.primary_account_details?.owner_name || 'Unknown'}
+                    <User className="w-3.5 h-3.5" />{' '}
+                    {caseItem.primary_account_details?.owner_name || 'Unknown'}
                   </span>
                   <span className="fraud-cases-case-meta-item">
                     <Banknote className="w-3.5 h-3.5" /> ${caseItem.estimated_loss || 0}
                   </span>
                   <span className="fraud-cases-case-meta-item">
-                    <Calendar className="w-3.5 h-3.5" /> {new Date(caseItem.created_at).toLocaleDateString()}
+                    <Calendar className="w-3.5 h-3.5" />{' '}
+                    {new Date(caseItem.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -285,7 +297,10 @@ const FraudCases = () => {
                   <>
                     <button
                       onClick={() => {
-                        const type = prompt('Evidence Type (document/screenshot/log/statement/other):', evidenceType);
+                        const type = prompt(
+                          'Evidence Type (document/screenshot/log/statement/other):',
+                          evidenceType
+                        );
                         if (type) {
                           setEvidenceType(type);
                           const data = prompt('Evidence Data:', evidenceData);
@@ -302,7 +317,10 @@ const FraudCases = () => {
 
                     <button
                       onClick={() => {
-                        const type = prompt('Resolution Type (confirmed_fraud/false_positive/insufficient_evidence/resolved):', resolutionType);
+                        const type = prompt(
+                          'Resolution Type (confirmed_fraud/false_positive/insufficient_evidence/resolved):',
+                          resolutionType
+                        );
                         if (type) {
                           setResolutionType(type);
                           const details = prompt('Resolution Details:', resolutionDetails);
@@ -351,11 +369,13 @@ const FraudCases = () => {
                 <div>
                   <strong>Evidence ({caseItem.evidence.length}):</strong>
                   <div className="fraud-cases-evidence-list">
-                    {caseItem.evidence.map((evidence: { type: string; description: string }, index: number) => (
-                      <span key={index} className="fraud-cases-evidence-tag">
-                        {evidence.type}: {evidence.description}
-                      </span>
-                    ))}
+                    {caseItem.evidence.map(
+                      (evidence: { type: string; description: string }, index: number) => (
+                        <span key={index} className="fraud-cases-evidence-tag">
+                          {evidence.type}: {evidence.description}
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -372,8 +392,7 @@ const FraudCases = () => {
             <p className="fraud-cases-empty-text">
               {filterStatus === 'all'
                 ? 'There are currently no fraud cases to review.'
-                : `No ${filterStatus} cases found.`
-              }
+                : `No ${filterStatus} cases found.`}
             </p>
           </div>
         )}
