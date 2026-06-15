@@ -14,7 +14,7 @@
     "lint": "npx eslint src --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "npx eslint src --ext .js,.jsx,.ts,.tsx --fix",
     "postbuild": "echo '✅ Build completed successfully!'",
-    "prepare": "husky"
+    "prepare": "node -e \"if (process.env.CI === 'true') process.exit(0); process.exit(1)\" || husky"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
