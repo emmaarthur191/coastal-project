@@ -12,47 +12,53 @@ import OnboardingHub from '../components/operational/OnboardingHub';
 import FinancialOperationsHub from '../components/operational/FinancialOperationsHub';
 import ProfileSettings from '../components/shared/ProfileSettings';
 import StaffPayslipViewer from '../components/staff/StaffPayslipViewer';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  UserPlus, 
-  ShieldCheck, 
-  Wallet, 
-  Lock, 
-  MessageSquare, 
-  FileSearch, 
+import {
+  LayoutDashboard,
+  FileText,
+  UserPlus,
+  ShieldCheck,
+  Wallet,
+  Lock,
+  MessageSquare,
+  FileSearch,
   User,
   Activity,
   Package,
   CreditCard,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { UserExtended, ManagerDashboardData } from '../types';
-
-
 
 function ManagerDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('overview');
-  const [initialView] = useState<'loans' | 'cash_advances' | 'refunds' | 'pending-loans' | 'reports'>('pending-loans');
+  const [initialView] = useState<
+    'loans' | 'cash_advances' | 'refunds' | 'pending-loans' | 'reports'
+  >('pending-loans');
   const [initialShowForm] = useState(false);
   const [dashboardData, setDashboardData] = useState<ManagerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Simplified Menu for Unified Hub Architecture
-  const menuItems = React.useMemo(() => [
-    { id: 'overview', name: 'Dashboard Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'financial-requests', name: 'Financial Hub', icon: <FileText className="w-5 h-5" /> },
-    { id: 'onboarding', name: 'Member Onboarding', icon: <UserPlus className="w-5 h-5" /> },
-    { id: 'administration', name: 'Administrative Center', icon: <ShieldCheck className="w-5 h-5" /> },
-    { id: 'financial-ops', name: 'Internal Finance', icon: <Wallet className="w-5 h-5" /> },
-    { id: 'support', name: 'Support & Security', icon: <Lock className="w-5 h-5" /> },
-    { id: 'messaging', name: 'Staff Messenger', icon: <MessageSquare className="w-5 h-5" /> },
-    { id: 'my-payslips', name: 'My Payslips', icon: <FileSearch className="w-5 h-5" /> },
-    { id: 'settings', name: 'My Profile', icon: <User className="w-5 h-5" /> }
-  ], []);
-
+  const menuItems = React.useMemo(
+    () => [
+      { id: 'overview', name: 'Dashboard Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
+      { id: 'financial-requests', name: 'Financial Hub', icon: <FileText className="w-5 h-5" /> },
+      { id: 'onboarding', name: 'Member Onboarding', icon: <UserPlus className="w-5 h-5" /> },
+      {
+        id: 'administration',
+        name: 'Administrative Center',
+        icon: <ShieldCheck className="w-5 h-5" />,
+      },
+      { id: 'financial-ops', name: 'Internal Finance', icon: <Wallet className="w-5 h-5" /> },
+      { id: 'support', name: 'Support & Security', icon: <Lock className="w-5 h-5" /> },
+      { id: 'messaging', name: 'Staff Messenger', icon: <MessageSquare className="w-5 h-5" /> },
+      { id: 'my-payslips', name: 'My Payslips', icon: <FileSearch className="w-5 h-5" /> },
+      { id: 'settings', name: 'My Profile', icon: <User className="w-5 h-5" /> },
+    ],
+    []
+  );
 
   const fetchDashboardMetrics = async () => {
     try {
@@ -60,13 +66,37 @@ function ManagerDashboard() {
       if (response.success) {
         setDashboardData({
           branch_metrics: [
-            { label: 'System Uptime', value: response.data.system_uptime, change: '+0.1%', trend: 'up', icon: <Activity className="w-5 h-5" /> },
-            { label: 'Financial Products', value: response.data.financial_products?.toString() || '0', change: 'New', trend: 'neutral', icon: <Package className="w-5 h-5" /> },
-            { label: 'Transactions', value: response.data.transactions_today?.toLocaleString() || '0', change: `+${response.data.transaction_change || 0}%`, trend: 'up', icon: <CreditCard className="w-5 h-5" /> },
-            { label: 'Failed TXs', value: response.data.failed_transactions?.toString() || '0', change: `+${response.data.failed_change || 0}`, trend: 'down', icon: <AlertCircle className="w-5 h-5 text-red-500" /> }
+            {
+              label: 'System Uptime',
+              value: response.data.system_uptime,
+              change: '+0.1%',
+              trend: 'up',
+              icon: <Activity className="w-5 h-5" />,
+            },
+            {
+              label: 'Financial Products',
+              value: response.data.financial_products?.toString() || '0',
+              change: 'New',
+              trend: 'neutral',
+              icon: <Package className="w-5 h-5" />,
+            },
+            {
+              label: 'Transactions',
+              value: response.data.transactions_today?.toLocaleString() || '0',
+              change: `+${response.data.transaction_change || 0}%`,
+              trend: 'up',
+              icon: <CreditCard className="w-5 h-5" />,
+            },
+            {
+              label: 'Failed TXs',
+              value: response.data.failed_transactions?.toString() || '0',
+              change: `+${response.data.failed_change || 0}`,
+              trend: 'down',
+              icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+            },
           ],
           staff_performance: response.data.staff_performance || [],
-          pending_approvals: response.data.pending_approvals || []
+          pending_approvals: response.data.pending_approvals || [],
         });
       }
     } catch (error) {
@@ -87,7 +117,7 @@ function ManagerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--app-bg)]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-coastal-primary"></div>
       </div>
     );
@@ -105,7 +135,13 @@ function ManagerDashboard() {
         );
 
       case 'financial-requests':
-        return <FinancialRequestsHub mode="manager" initialView={initialView} initialShowForm={initialShowForm} />;
+        return (
+          <FinancialRequestsHub
+            mode="manager"
+            initialView={initialView}
+            initialShowForm={initialShowForm}
+          />
+        );
 
       case 'onboarding':
         return <OnboardingHub mode="manager" />;
@@ -122,16 +158,19 @@ function ManagerDashboard() {
       case 'products':
         return <AdministrativeHub mode="manager" initialTab="charges" />;
 
-
       case 'my-payslips':
         return <StaffPayslipViewer />;
-      
-      case 'settings':
 
+      case 'settings':
         return <ProfileSettings user={user} />;
 
       default:
-        return <OverviewSection dashboardData={dashboardData} onRefreshDashboard={fetchDashboardMetrics} />;
+        return (
+          <OverviewSection
+            dashboardData={dashboardData}
+            onRefreshDashboard={fetchDashboardMetrics}
+          />
+        );
     }
   };
 
@@ -139,7 +178,6 @@ function ManagerDashboard() {
     <DashboardLayout
       title="Manager Portal"
       user={user as UserExtended | null}
-
       menuItems={menuItems}
       activeView={activeView}
       onNavigate={(id) => {
@@ -151,9 +189,7 @@ function ManagerDashboard() {
       }}
       onLogout={handleLogout}
     >
-      <div className="p-4 lg:p-10">
-        {renderContent()}
-      </div>
+      <div className="p-4 lg:p-10">{renderContent()}</div>
     </DashboardLayout>
   );
 }

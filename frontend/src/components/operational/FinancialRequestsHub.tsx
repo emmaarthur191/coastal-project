@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  api,
   apiService,
   CashAdvanceExtended,
   RefundExtended,
@@ -11,6 +12,7 @@ import {
 import GlassCard from '../ui/modern/GlassCard';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Pagination } from '../ui/Pagination';
 import { toast } from 'react-hot-toast';
 import { formatCurrencyGHS } from '../../utils/formatters';
 import {
@@ -26,6 +28,7 @@ import {
   Download,
   Clock,
   FileDown,
+  ShieldCheck,
 } from 'lucide-react';
 import MemberSearch from '../shared/MemberSearch';
 import './FinancialRequestsHub.css';
@@ -187,6 +190,16 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
   const [showAllPendingLoans, setShowAllPendingLoans] = useState(false);
   const [showAllApprovedLoans, setShowAllApprovedLoans] = useState(false);
 
+  // Pagination States for Render Optimization
+  const [pendingLoansPage, setPendingLoansPage] = useState(1);
+  const [approvedLoansPage, setApprovedLoansPage] = useState(1);
+  const [pendingAdvancesPage, setPendingAdvancesPage] = useState(1);
+  const [processedAdvancesPage, setProcessedAdvancesPage] = useState(1);
+  const [pendingRefundsPage, setPendingRefundsPage] = useState(1);
+  const [processedRefundsPage, setProcessedRefundsPage] = useState(1);
+  const [reportsPage, setReportsPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
   const fetchAccounts = useCallback(async () => {
     if (mode === 'staff' && accounts.length === 0) {
       const accRes = await apiService.getAccounts();
@@ -198,48 +211,67 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
     fetchAccounts();
   }, [fetchAccounts]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'loans' || activeTab === 'pending-loans') {
-        const res = await apiService.getLoans();
-        if (res.success && res.data) {
-          setLoans(res.data);
+  const fetchData = useCallback(
+    async (forceRefresh = false) => {
+      setLoading(true);
+      try {
+        if (activeTab === 'loans' || activeTab === 'pending-loans') {
+          if (loans.length > 0 && !forceRefresh) {
+            setLoading(false);
+            return;
+          }
+          const res = await apiService.getLoans();
+          if (res.success && res.data) {
+            setLoans(res.data);
+          }
+        } else if (activeTab === 'cash_advances') {
+          if (advances.length > 0 && !forceRefresh) {
+            setLoading(false);
+            return;
+          }
+          const res = await apiService.getCashAdvances();
+          if (res.success && res.data) {
+            setAdvances(res.data);
+          }
+        } else if (activeTab === 'refunds') {
+          if (refunds.length > 0 && !forceRefresh) {
+            setLoading(false);
+            return;
+          }
+          const res = await apiService.getRefunds();
+          if (res.success && res.data) {
+            setRefunds(res.data);
+          }
         }
-      } else if (activeTab === 'cash_advances') {
-        const res = await apiService.getCashAdvances();
-        if (res.success && res.data) {
-          setAdvances(res.data);
-        }
-      } else if (activeTab === 'refunds') {
-        const res = await apiService.getRefunds();
-        if (res.success && res.data) {
-          setRefunds(res.data);
-        }
-      }
 
-      if (mode === 'staff' && accounts.length === 0) {
-        const accRes = await apiService.getAccounts();
-        if (accRes.success && accRes.data) setAccounts(accRes.data);
+        if (mode === 'staff' && accounts.length === 0) {
+          const accRes = await apiService.getAccounts();
+          if (accRes.success && accRes.data) setAccounts(accRes.data);
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error('Failed to sync financial data');
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error(e);
-      toast.error('Failed to sync financial data');
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTab, accounts.length, mode]);
+    },
+    [activeTab, accounts.length, mode, loans.length, advances.length, refunds.length]
+  );
 
-  const fetchReports = useCallback(async () => {
-    try {
-      const res = await apiService.getReports();
-      if (res.success && res.data) {
-        setRecentReports(res.data);
+  const fetchReports = useCallback(
+    async (forceRefresh = false) => {
+      if (recentReports.length > 0 && !forceRefresh) return;
+      try {
+        const res = await apiService.getReports();
+        if (res.success && res.data) {
+          setRecentReports(res.data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch reports:', e);
       }
-    } catch (e) {
-      console.error('Failed to fetch reports:', e);
-    }
-  }, []);
+    },
+    [recentReports.length]
+  );
 
   useEffect(() => {
     if (activeTab === 'reports') {
@@ -248,6 +280,14 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
   }, [activeTab, fetchReports]);
 
   useEffect(() => {
+    setPendingLoansPage(1);
+    setApprovedLoansPage(1);
+    setPendingAdvancesPage(1);
+    setProcessedAdvancesPage(1);
+    setPendingRefundsPage(1);
+    setProcessedRefundsPage(1);
+    setReportsPage(1);
+
     if (!initialLoans || activeTab !== initialView) {
       fetchData();
     }
@@ -444,10 +484,45 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
     }
   };
 
+  const handleDownloadReport = async (fileUrl: string, reportId: number | string) => {
+    const resolvedUrl = fileUrl?.startsWith('/reports/download/') ? `/api${fileUrl}` : fileUrl;
+    if (resolvedUrl) {
+      const toastId = toast.loading('Initiating secure PDF download...');
+      try {
+        const filename =
+          resolvedUrl.substring(resolvedUrl.lastIndexOf('/') + 1) || `report_${reportId}.pdf`;
+        const apiPath = resolvedUrl.startsWith('/api/') ? resolvedUrl.substring(5) : resolvedUrl;
+        const response = await api.get<Blob>(apiPath, { responseType: 'blob' as unknown });
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const localUrl = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = localUrl;
+        link.setAttribute('download', filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(localUrl);
+        toast.success('Report downloaded successfully!', { id: toastId });
+      } catch (err) {
+        console.error('Failed to download report:', err);
+        toast.error('Download failed. Ensure the report has completed processing.', {
+          id: toastId,
+        });
+      }
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'pending-loans': {
         const pending = loans.filter((l) => l.status === 'pending');
+        const paginatedPending = pending.slice(
+          (pendingLoansPage - 1) * ITEMS_PER_PAGE,
+          pendingLoansPage * ITEMS_PER_PAGE
+        );
 
         return (
           <div className="space-y-8">
@@ -461,9 +536,9 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                   {pending.length} Requests Awaiting
                 </span>
               </div>
-              <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="overflow-x-auto bg-white/70 dark:bg-slate-900/30 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-800/60">
                 <table className="w-full text-left text-sm">
-                  <thead className="text-black font-black uppercase text-[10px] tracking-wider border-b border-slate-200 bg-slate-50/50">
+                  <thead className="text-slate-900 dark:text-slate-100 font-black uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
                     <tr>
                       <th className="p-4">Borrower</th>
                       <th className="p-4">Amount</th>
@@ -472,52 +547,36 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {pending.length > 0 ? (
-                      <>
-                        {(showAllPendingLoans ? pending : pending.slice(0, 5)).map((loan) => (
-                          <tr key={loan.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-4">
-                              <div className="text-black font-bold">
-                                {loan.borrower_name || `User ${loan.user}`}
-                              </div>
-                              <div className="text-[10px] text-slate-600 font-bold">
-                                {loan.purpose}
-                              </div>
-                            </td>
-                            <td className="p-4 text-black font-black">
-                              {formatCurrencyGHS(parseFloat(loan.amount))}
-                            </td>
-                            <td className="p-4">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-600 flex items-center gap-1 w-fit">
-                                <Clock className="w-3 h-3" /> PENDING REVIEW
-                              </span>
-                            </td>
-                            <td className="p-4 text-right">
-                              <Button
-                                size="sm"
-                                onClick={() => handleApproveLoan(loan.id)}
-                                disabled={processingId === loan.id}
-                              >
-                                {processingId === loan.id ? 'Processing...' : 'Approve'}
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                        {pending.length > 5 && (
-                          <tr>
-                            <td colSpan={4} className="p-0">
-                              <button
-                                onClick={() => setShowAllPendingLoans(!showAllPendingLoans)}
-                                className="w-full py-3 text-[9px] font-black uppercase tracking-widest text-amber-600/60 hover:text-amber-600 transition-colors bg-amber-50/30"
-                              >
-                                {showAllPendingLoans
-                                  ? 'Show Fewer Requests'
-                                  : `View All Pending Requests (${pending.length})`}
-                              </button>
-                            </td>
-                          </tr>
-                        )}
-                      </>
+                    {paginatedPending.length > 0 ? (
+                      paginatedPending.map((loan) => (
+                        <tr key={loan.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4">
+                            <div className="text-black font-bold">
+                              {loan.borrower_name || `User ${loan.user}`}
+                            </div>
+                            <div className="text-[10px] text-slate-600 font-bold">
+                              {loan.purpose}
+                            </div>
+                          </td>
+                          <td className="p-4 text-black font-black">
+                            {formatCurrencyGHS(parseFloat(loan.amount))}
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-600 flex items-center gap-1 w-fit">
+                              <Clock className="w-3 h-3" /> PENDING REVIEW
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveLoan(loan.id)}
+                              disabled={processingId === loan.id}
+                            >
+                              {processingId === loan.id ? 'Processing...' : 'Approve'}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
                         <td
@@ -530,6 +589,12 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     )}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={pendingLoansPage}
+                  totalItems={pending.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setPendingLoansPage}
+                />
               </div>
             </section>
           </div>
@@ -538,6 +603,10 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
 
       case 'loans': {
         const approved = loans.filter((l) => l.status === 'approved');
+        const paginatedApproved = approved.slice(
+          (approvedLoansPage - 1) * ITEMS_PER_PAGE,
+          approvedLoansPage * ITEMS_PER_PAGE
+        );
 
         return (
           <div className="space-y-8">
@@ -551,9 +620,9 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                   {approved.length} Active Records
                 </span>
               </div>
-              <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="overflow-x-auto bg-white/70 dark:bg-slate-900/30 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-800/60">
                 <table className="w-full text-left text-sm">
-                  <thead className="text-black font-black uppercase text-[10px] tracking-wider border-b border-slate-200 bg-slate-50/50">
+                  <thead className="text-slate-900 dark:text-slate-100 font-black uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
                     <tr>
                       <th className="p-4">Borrower</th>
                       <th className="p-4">Amount</th>
@@ -561,41 +630,25 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {approved.length > 0 ? (
-                      <>
-                        {(showAllApprovedLoans ? approved : approved.slice(0, 5)).map((loan) => (
-                          <tr key={loan.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-4">
-                              <div className="text-black font-bold">
-                                {loan.borrower_name || `User ${loan.user}`}
-                              </div>
-                              <div className="text-[10px] text-slate-600 font-bold">
-                                {loan.purpose}
-                              </div>
-                            </td>
-                            <td className="p-4 text-black font-black">
-                              {formatCurrencyGHS(parseFloat(loan.amount))}
-                            </td>
-                            <td className="p-4 text-right text-[10px] text-slate-500 font-bold">
-                              {new Date(loan.updated_at || '').toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))}
-                        {approved.length > 5 && (
-                          <tr>
-                            <td colSpan={3} className="p-0">
-                              <button
-                                onClick={() => setShowAllApprovedLoans(!showAllApprovedLoans)}
-                                className="w-full py-3 text-[9px] font-black uppercase tracking-widest text-emerald-600/60 hover:text-emerald-600 transition-colors bg-emerald-50/30"
-                              >
-                                {showAllApprovedLoans
-                                  ? 'Show Fewer Records'
-                                  : `View All Approved Records (${approved.length})`}
-                              </button>
-                            </td>
-                          </tr>
-                        )}
-                      </>
+                    {paginatedApproved.length > 0 ? (
+                      paginatedApproved.map((loan) => (
+                        <tr key={loan.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4">
+                            <div className="text-black font-bold">
+                              {loan.borrower_name || `User ${loan.user}`}
+                            </div>
+                            <div className="text-[10px] text-slate-600 font-bold">
+                              {loan.purpose}
+                            </div>
+                          </td>
+                          <td className="p-4 text-black font-black">
+                            {formatCurrencyGHS(parseFloat(loan.amount))}
+                          </td>
+                          <td className="p-4 text-right text-[10px] text-slate-500 font-bold">
+                            {new Date(loan.updated_at || '').toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
                         <td
@@ -608,6 +661,12 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     )}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={approvedLoansPage}
+                  totalItems={approved.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setApprovedLoansPage}
+                />
               </div>
             </section>
           </div>
@@ -618,8 +677,17 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
         const pending = advances.filter((a) => a.status === 'pending');
         const processed = advances.filter((a) => a.status !== 'pending');
 
+        const paginatedPending = pending.slice(
+          (pendingAdvancesPage - 1) * ITEMS_PER_PAGE,
+          pendingAdvancesPage * ITEMS_PER_PAGE
+        );
+        const paginatedProcessed = processed.slice(
+          (processedAdvancesPage - 1) * ITEMS_PER_PAGE,
+          processedAdvancesPage * ITEMS_PER_PAGE
+        );
+
         return (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-500">
             <section>
               <div className="flex items-center justify-between mb-4 px-1">
                 <h3 className="text-sm font-black uppercase tracking-widest text-coastal-primary flex items-center gap-2">
@@ -627,9 +695,9 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                   Pending Advances
                 </h3>
               </div>
-              <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="overflow-x-auto bg-white/70 dark:bg-slate-900/30 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-800/60">
                 <table className="w-full text-left text-sm">
-                  <thead className="text-black font-black uppercase text-[10px] tracking-wider border-b border-slate-200 bg-slate-50/50">
+                  <thead className="text-slate-900 dark:text-slate-100 font-black uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
                     <tr>
                       <th className="p-4">Reference</th>
                       <th className="p-4">Amount</th>
@@ -638,8 +706,8 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {pending.length > 0 ? (
-                      pending.map((a) => (
+                    {paginatedPending.length > 0 ? (
+                      paginatedPending.map((a) => (
                         <tr key={a.id} className="hover:bg-slate-50 transition-colors">
                           <td className="p-4 text-black font-bold">CA-{a.id}</td>
                           <td className="p-4 text-black font-black">
@@ -675,6 +743,12 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     )}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={pendingAdvancesPage}
+                  totalItems={pending.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setPendingAdvancesPage}
+                />
               </div>
             </section>
 
@@ -694,8 +768,8 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {processed.length > 0 ? (
-                      processed.map((a) => (
+                    {paginatedProcessed.length > 0 ? (
+                      paginatedProcessed.map((a) => (
                         <tr key={a.id} className="transition-colors grayscale hover:grayscale-0">
                           <td className="p-3 pl-4 text-slate-600 font-bold text-xs">CA-{a.id}</td>
                           <td className="p-3 text-slate-500 font-black text-xs">
@@ -728,6 +802,12 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     )}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={processedAdvancesPage}
+                  totalItems={processed.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setProcessedAdvancesPage}
+                />
               </div>
             </section>
           </div>
@@ -737,8 +817,17 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
         const pending = refunds.filter((r) => r.status === 'pending');
         const processed = refunds.filter((r) => r.status !== 'pending');
 
+        const paginatedPending = pending.slice(
+          (pendingRefundsPage - 1) * ITEMS_PER_PAGE,
+          pendingRefundsPage * ITEMS_PER_PAGE
+        );
+        const paginatedProcessed = processed.slice(
+          (processedRefundsPage - 1) * ITEMS_PER_PAGE,
+          processedRefundsPage * ITEMS_PER_PAGE
+        );
+
         return (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-500">
             <section>
               <div className="flex items-center justify-between mb-4 px-1">
                 <h3 className="text-sm font-black uppercase tracking-widest text-coastal-primary flex items-center gap-2">
@@ -746,9 +835,9 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                   Pending Refunds
                 </h3>
               </div>
-              <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="overflow-x-auto bg-white/70 dark:bg-slate-900/30 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-800/60">
                 <table className="w-full text-left text-sm">
-                  <thead className="text-black font-black uppercase text-[10px] tracking-wider border-b border-slate-200 bg-slate-50/50">
+                  <thead className="text-slate-900 dark:text-slate-100 font-black uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
                     <tr>
                       <th className="p-4">Reference</th>
                       <th className="p-4">Amount</th>
@@ -757,8 +846,8 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {pending.length > 0 ? (
-                      pending.map((r) => (
+                    {paginatedPending.length > 0 ? (
+                      paginatedPending.map((r) => (
                         <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                           <td className="p-4 text-black font-bold">REF-{String(r.id).slice(-6)}</td>
                           <td className="p-4 text-black font-black">
@@ -794,6 +883,12 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     )}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={pendingRefundsPage}
+                  totalItems={pending.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setPendingRefundsPage}
+                />
               </div>
             </section>
 
@@ -813,8 +908,8 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {processed.length > 0 ? (
-                      processed.map((r) => (
+                    {paginatedProcessed.length > 0 ? (
+                      paginatedProcessed.map((r) => (
                         <tr key={r.id} className="transition-colors grayscale hover:grayscale-0">
                           <td className="p-3 pl-4 text-slate-600 font-bold text-xs">
                             REF-{String(r.id).slice(-6)}
@@ -849,6 +944,12 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                     )}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={processedRefundsPage}
+                  totalItems={processed.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setProcessedRefundsPage}
+                />
               </div>
             </section>
           </div>
@@ -858,16 +959,16 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Unified Command Dock */}
-            <section className="reporting-command-dock">
-              <div className="reporting-dock-header">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-blue-400" />
+            <GlassCard className="p-6 border-slate-200/50 dark:border-slate-800/40 relative overflow-visible shadow-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200/60 dark:border-slate-800/60 transition-colors duration-300">
+                <div className="p-2 bg-blue-500/10 dark:bg-amber-500/10 rounded-xl">
+                  <BarChart3 className="w-5 h-5 text-blue-600 dark:text-amber-500" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white mb-0.5">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">
                     On-Demand Financial Reporting
                   </h3>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  <p className="text-[9px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-widest mt-0.5">
                     Authorized Personnel Only • Encrypted Registry
                   </p>
                 </div>
@@ -875,79 +976,131 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                 {/* Report Type */}
-                <div className="md:col-span-3 reporting-field-group">
-                  <label className="reporting-label">Report Domain</label>
-                  <div className="reporting-input-wrapper">
+                <div className="md:col-span-3 flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-widest">
+                    Report Domain
+                  </label>
+                  <div className="relative">
                     <select
                       title="Select Report Domain"
                       value={reportFilters.type}
                       onChange={(e) => setReportFilters({ ...reportFilters, type: e.target.value })}
-                      className="reporting-select"
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800/60 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:ring-amber-500/20 dark:focus:border-amber-500 focus:outline-none text-slate-900 dark:text-white text-xs font-bold transition-all duration-300 appearance-none cursor-pointer"
                     >
-                      <option value="loans">Loan Portfolio Summary</option>
-                      <option value="cash_advances">Cash Advance Registry</option>
-                      <option value="refunds">Refund Activity Log</option>
-                      <option value="profit_summary">Profit & Loss Overview</option>
-                      <option value="expenses">Operational Expenses</option>
+                      <option
+                        value="loans"
+                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold"
+                      >
+                        Loan Portfolio Summary
+                      </option>
+                      <option
+                        value="cash_advances"
+                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold"
+                      >
+                        Cash Advance Registry
+                      </option>
+                      <option
+                        value="refunds"
+                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold"
+                      >
+                        Refund Activity Log
+                      </option>
+                      <option
+                        value="profit_summary"
+                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold"
+                      >
+                        Profit & Loss Overview
+                      </option>
+                      <option
+                        value="expenses"
+                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold"
+                      >
+                        Operational Expenses
+                      </option>
                     </select>
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 dark:text-slate-400">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
                   </div>
                 </div>
 
                 {/* Format Toggle */}
-                <div className="md:col-span-2 reporting-field-group">
-                  <label className="reporting-label">Export Format</label>
-                  <div className="format-toggle">
+                <div className="md:col-span-3 flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-widest">
+                    Export Format
+                  </label>
+                  <div className="flex bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
                     <button
                       onClick={() => setReportFilters({ ...reportFilters, format: 'pdf' })}
-                      className={`format-toggle-btn ${reportFilters.format === 'pdf' ? 'active' : ''}`}
+                      className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${
+                        reportFilters.format === 'pdf'
+                          ? 'bg-white text-blue-600 dark:bg-amber-500 dark:text-slate-950 shadow-sm font-black'
+                          : 'text-slate-600 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white'
+                      }`}
                     >
                       Adobe PDF
                     </button>
                     <button
                       onClick={() => setReportFilters({ ...reportFilters, format: 'csv' })}
-                      className={`format-toggle-btn ${reportFilters.format === 'csv' ? 'active' : ''}`}
+                      className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${
+                        reportFilters.format === 'csv'
+                          ? 'bg-white text-blue-600 dark:bg-amber-500 dark:text-slate-950 shadow-sm font-black'
+                          : 'text-slate-600 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white'
+                      }`}
                     >
                       Excel CSV
                     </button>
                   </div>
                 </div>
 
-                {/* Date Range Group */}
-                <div className="md:col-span-4 grid grid-cols-2 gap-4">
-                  <div className="reporting-field-group">
-                    <label className="reporting-label">Start Date</label>
-                    <div className="reporting-input-wrapper">
-                      <input
-                        type="date"
-                        title="Start Date"
-                        value={reportFilters.date_from}
-                        onChange={(e) =>
-                          setReportFilters({ ...reportFilters, date_from: e.target.value })
-                        }
-                        className="reporting-date-input"
-                      />
-                    </div>
-                  </div>
-                  <div className="reporting-field-group">
-                    <label className="reporting-label">End Date</label>
-                    <div className="reporting-input-wrapper">
-                      <input
-                        type="date"
-                        title="End Date"
-                        value={reportFilters.date_to}
-                        onChange={(e) =>
-                          setReportFilters({ ...reportFilters, date_to: e.target.value })
-                        }
-                        className="reporting-date-input"
-                      />
-                    </div>
-                  </div>
+                {/* Start Date */}
+                <div className="md:col-span-2 flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-widest">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    title="Start Date"
+                    value={reportFilters.date_from}
+                    onChange={(e) =>
+                      setReportFilters({ ...reportFilters, date_from: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800/60 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:ring-amber-500/20 dark:focus:border-amber-500 focus:outline-none text-slate-900 dark:text-white text-xs font-mono transition-all duration-300"
+                  />
                 </div>
 
-                {/* Submit Action */}
-                <div className="md:col-span-3 h-full pb-[1px]">
+                {/* End Date */}
+                <div className="md:col-span-2 flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-widest">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    title="End Date"
+                    value={reportFilters.date_to}
+                    onChange={(e) =>
+                      setReportFilters({ ...reportFilters, date_to: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800/60 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:ring-amber-500/20 dark:focus:border-amber-500 focus:outline-none text-slate-900 dark:text-white text-xs font-mono transition-all duration-300"
+                  />
+                </div>
+
+                {/* Export Action */}
+                <div className="md:col-span-2">
                   <button
-                    className="reporting-btn-primary w-full h-[46px]"
+                    className="w-full h-[42px] bg-blue-600 hover:bg-blue-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-950 flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest rounded-xl transition-all duration-300 shadow-md shadow-blue-500/10 dark:shadow-amber-500/10 hover:scale-[1.01]"
                     onClick={handleGenerateReport}
                     disabled={generating}
                   >
@@ -958,26 +1111,26 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
               </div>
 
               {/* Security Footer */}
-              <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-center gap-2">
-                <ShieldCheck className="w-3 h-3 text-slate-600" />
-                <p className="text-[8px] font-bold text-slate-600 uppercase tracking-[0.2em]">
+              <div className="mt-6 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-center gap-2 transition-colors duration-300">
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                <p className="text-[8px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-[0.2em]">
                   All reports are automatically watermarked and logged for security auditing.
                 </p>
               </div>
-            </section>
+            </GlassCard>
 
             {/* History Table */}
-            <section className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-              <div className="p-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+            <GlassCard className="p-0 overflow-hidden border-slate-200/50 dark:border-slate-800/40">
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-amber-500 animate-pulse" />
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-650 dark:text-slate-350">
                     Recent Reports Engine Registry
                   </h3>
                 </div>
                 <button
-                  onClick={fetchReports}
-                  className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors"
+                  onClick={() => fetchReports(true)}
+                  className="text-[9px] font-black text-blue-600 dark:text-amber-500 uppercase tracking-widest hover:text-blue-700 dark:hover:text-amber-400 transition-colors"
                 >
                   Refresh List
                 </button>
@@ -986,7 +1139,7 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
               <div className="min-h-[300px]">
                 {recentReports.length > 0 ? (
                   <table className="w-full text-left text-sm">
-                    <thead className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 bg-slate-50/30">
+                    <thead className="text-[9px] font-black text-slate-650 dark:text-slate-350 uppercase tracking-widest border-b border-slate-100/50 dark:border-slate-800/60 bg-slate-50/30 dark:bg-slate-900/20">
                       <tr>
                         <th className="p-4 px-6">Domain Type</th>
                         <th className="p-4">Generated Timestamp</th>
@@ -994,63 +1147,72 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                         <th className="p-4 text-right px-6">Command</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {recentReports.slice(0, 10).map((report, idx) => (
-                        <tr key={idx} className="group hover:bg-slate-50 transition-colors">
-                          <td className="p-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-blue-50 transition-colors">
-                                <FileText className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500" />
+                    <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/40">
+                      {recentReports
+                        .slice((reportsPage - 1) * ITEMS_PER_PAGE, reportsPage * ITEMS_PER_PAGE)
+                        .map((report, idx) => (
+                          <tr
+                            key={idx}
+                            className="group hover:bg-slate-50/80 dark:hover:bg-slate-900/30 transition-colors"
+                          >
+                            <td className="p-4 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 dark:bg-slate-800/60 rounded-lg group-hover:bg-blue-50 dark:group-hover:bg-blue-950/20 transition-colors">
+                                  <FileText className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 dark:text-slate-500 dark:group-hover:text-amber-500" />
+                                </div>
+                                <span className="font-black text-slate-900 dark:text-white capitalize tracking-tight">
+                                  {report.report_type?.replace(/_/g, ' ') || 'Financial Summary'}
+                                </span>
                               </div>
-                              <span className="font-black text-slate-900 capitalize tracking-tight">
-                                {report.report_type?.replace(/_/g, ' ') || 'Financial Summary'}
+                            </td>
+                            <td className="p-4 text-slate-650 dark:text-slate-350 font-bold text-xs font-mono">
+                              {new Date(report.created_at).toLocaleString()}
+                            </td>
+                            <td className="p-4">
+                              <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 rounded text-[9px] font-black uppercase border border-slate-200 dark:border-slate-700/60">
+                                {report.format?.toUpperCase() || 'PDF'}
                               </span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-slate-500 font-bold text-xs font-mono">
-                            {new Date(report.created_at).toLocaleString()}
-                          </td>
-                          <td className="p-4">
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-black uppercase border border-slate-200">
-                              {report.format?.toUpperCase() || 'PDF'}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right px-6">
-                            <a
-                              href={report.file_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all"
-                            >
-                              Download
-                              <Download className="w-3 h-3" />
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="p-4 text-right px-6">
+                              <button
+                                onClick={() => handleDownloadReport(report.file_url, report.id)}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:hover:bg-amber-500 dark:hover:text-slate-950 dark:hover:border-amber-500 transition-all cursor-pointer"
+                              >
+                                Download
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 opacity-40 grayscale">
-                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center mb-4">
-                      <ShieldCheck className="w-8 h-8 text-slate-300" />
+                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center mb-4">
+                      <ShieldCheck className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                       Archived Reporting Registry Empty
                     </p>
                   </div>
                 )}
+                <Pagination
+                  currentPage={reportsPage}
+                  totalItems={recentReports.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setReportsPage}
+                />
               </div>
 
-              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+              <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 border-t border-slate-100/50 dark:border-slate-800/60 flex items-center justify-between">
+                <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
                   Coastal AutoTech Cryptographic Audit Trail Active
                 </p>
-                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                <p className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                   v2.4.0 Engine
                 </p>
               </div>
-            </section>
+            </GlassCard>
           </div>
         );
       default:
@@ -1070,7 +1232,7 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
                 onClick={() => setActiveTab(tab)}
                 title={`Switch to ${tab.replace('_', ' ')} view`}
                 aria-label={`View ${tab.replace('_', ' ')}`}
-                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab ? 'bg-coastal-primary text-white shadow-lg shadow-blue-500/20' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab ? 'bg-blue-600 text-white dark:bg-amber-500 dark:text-slate-950 shadow-lg shadow-blue-500/20 dark:shadow-amber-500/20' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 {tab === 'loans' && <CircleDollarSign className="w-3.5 h-3.5" />}
                 {tab === 'cash_advances' && <Banknote className="w-3.5 h-3.5" />}
@@ -1082,7 +1244,7 @@ const FinancialRequestsHub: React.FC<FinancialRequestsHubProps> = ({
           {mode === 'manager' && (
             <button
               onClick={() => setActiveTab('pending-loans')}
-              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'pending-loans' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'pending-loans' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <Scale className="w-3.5 h-3.5" /> Pending Loans
             </button>

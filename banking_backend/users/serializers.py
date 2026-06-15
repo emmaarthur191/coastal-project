@@ -177,11 +177,14 @@ class StaffCreationSerializer(serializers.ModelSerializer):
     def validate_ssnit_number(self, value):
         import re
 
-        # Legacy Format: One letter followed by 12 digits (e.g., C123456789012)
-        # Total length 13
         clean_value = value.replace("-", "").replace(" ", "").upper()
-        if not re.match(r"^[A-Z][0-9]{12}$", clean_value):
-            raise serializers.ValidationError("SSNIT number must be in legacy format (e.g., C123456789012)")
+        is_legacy = re.match(r"^[A-Z][0-9]{12}$", clean_value)
+        is_ghana_card = re.match(r"^GHA[0-9]{10}$", clean_value)
+
+        if not (is_legacy or is_ghana_card):
+            raise serializers.ValidationError(
+                "SSNIT number must be in legacy format (e.g., C123456789012) or Ghana Card format (e.g., GHA-123456789-0)"
+            )
         return clean_value
 
 

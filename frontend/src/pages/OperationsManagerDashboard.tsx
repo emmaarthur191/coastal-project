@@ -36,8 +36,8 @@ import {
   User,
 } from 'lucide-react';
 
-import { FraudAlert } from '../api/models/FraudAlert';
-import { Message } from '../api/models/Message';
+import type { FraudAlert } from '../api/types.gen';
+import type { Message } from '../api/types.gen';
 
 type ActiveView =
   | 'overview'

@@ -189,6 +189,17 @@ class AccountOpeningRequest(models.Model):
 
     email = models.EmailField(default="", help_text="Customer email for login credentials")
 
+    # Demographic classification for CUA reporting (not PII — not encrypted)
+    GENDER_CHOICES = [
+        ("M", "Male"),
+        ("F", "Female"),
+        ("G", "Group"),
+    ]
+    gender = models.CharField(
+        max_length=1, choices=GENDER_CHOICES, blank=True, default="",
+        help_text="Demographic classification for CUA Financial & Statistical reporting.",
+    )
+
     # Employment Information (Encrypted)
     occupation_encrypted = models.TextField(blank=True, default="")
     work_address_encrypted = models.TextField(blank=True, default="")

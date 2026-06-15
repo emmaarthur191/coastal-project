@@ -83,13 +83,11 @@ class BulkAccessDetectionMiddleware:
         # and potentially set user.is_active = False (Fail-Closed)
         
         # Example: Triggering a dedicated security notification
-        from core.models.operational import SystemAlert
-        SystemAlert.objects.create(
-            alert_type="security",
-            severity="critical",
+        from users.models import AdminNotification
+        AdminNotification.objects.create(
+            priority="critical",
             title="Suspicious Bulk Access Detected",
             message=f"Staff {request.user.email} fetched {count} records in a single query.",
-            is_active=True
         )
 
     def _get_client_ip(self, request):

@@ -46,10 +46,16 @@ class ReportDownloadView(APIView):
             file_handle = default_storage.open(report.file_path, "rb")
             filename = os.path.basename(report.file_path)
 
+            import mimetypes
+            content_type, _ = mimetypes.guess_type(filename)
+            if not content_type:
+                content_type = "application/octet-stream"
+
             return FileResponse(
                 async_file_iterator(file_handle),
                 as_attachment=True,
-                filename=filename
+                filename=filename,
+                content_type=content_type
             )
 
         except Report.DoesNotExist:

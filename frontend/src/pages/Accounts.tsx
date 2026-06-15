@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { formatCurrencyGHS } from '../utils/formatters';
-import { 
-  BarChart3, 
-  CalendarRange, 
-  TrendingUp, 
+import {
+  BarChart3,
+  CalendarRange,
+  TrendingUp,
   CalendarClock,
   Search,
   Plus,
-  FileText
+  FileText,
 } from 'lucide-react';
 import './Accounts.css';
 
@@ -40,18 +40,39 @@ function Accounts() {
   }, []);
 
   // Filter accounts based on active tab and search
-  const filteredAccounts = accounts.filter(account => {
+  const filteredAccounts = accounts.filter((account) => {
     const matchesTab = activeTab === 'all' || account.type === activeTab;
-    const matchesSearch = account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.account_number.includes(searchTerm);
     return matchesTab && matchesSearch;
   });
 
   const accountTypes = [
-    { id: 'all', name: 'All Accounts', icon: <BarChart3 className="w-5 h-5" />, count: accounts.length },
-    { id: 'daily_susu', name: 'Daily Susu', icon: <CalendarRange className="w-5 h-5" />, count: accounts.filter(a => a.type === 'daily_susu').length },
-    { id: 'shares', name: 'Shares', icon: <TrendingUp className="w-5 h-5" />, count: accounts.filter(a => a.type === 'shares').length },
-    { id: 'monthly_contribution', name: 'Monthly Contribution', icon: <CalendarClock className="w-5 h-5" />, count: accounts.filter(a => a.type === 'monthly_contribution').length }
+    {
+      id: 'all',
+      name: 'All Accounts',
+      icon: <BarChart3 className="w-5 h-5" />,
+      count: accounts.length,
+    },
+    {
+      id: 'daily_susu',
+      name: 'Daily Susu',
+      icon: <CalendarRange className="w-5 h-5" />,
+      count: accounts.filter((a) => a.type === 'daily_susu').length,
+    },
+    {
+      id: 'shares',
+      name: 'Shares',
+      icon: <TrendingUp className="w-5 h-5" />,
+      count: accounts.filter((a) => a.type === 'shares').length,
+    },
+    {
+      id: 'monthly_contribution',
+      name: 'Monthly Contribution',
+      icon: <CalendarClock className="w-5 h-5" />,
+      count: accounts.filter((a) => a.type === 'monthly_contribution').length,
+    },
   ];
 
   if (loading) {
@@ -71,12 +92,8 @@ function Accounts() {
       <div className="header-section">
         <div className="header-content">
           <div>
-            <h1 className="header-title">
-              Account Management
-            </h1>
-            <p className="header-subtitle">
-              View and manage all your credit union accounts
-            </p>
+            <h1 className="header-title">Account Management</h1>
+            <p className="header-subtitle">View and manage all your credit union accounts</p>
           </div>
           <div className="action-buttons">
             <button className="btn-view-statements flex items-center gap-2">
@@ -92,10 +109,14 @@ function Accounts() {
         <div className="search-container relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
+            id="accounts-search"
+            name="accounts-search"
             type="text"
             placeholder="Search by account name or number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
+            aria-label="Search by account name or number"
             className="search-input pl-12"
           />
         </div>
@@ -113,9 +134,7 @@ function Accounts() {
               <span className="tab-icon">{type.icon}</span>
               <div className="tab-text-container">
                 <div className="tab-name">{type.name}</div>
-                <div className="tab-count">
-                  {type.count} accounts
-                </div>
+                <div className="tab-count">{type.count} accounts</div>
               </div>
             </button>
           ))}
@@ -133,39 +152,23 @@ function Accounts() {
             {/* Account Header */}
             <div className="account-header">
               <div>
-                <h3 className="account-name-h3">
-                  {account.name}
-                </h3>
-                <p className="account-number-p">
-                  {account.account_number}
-                </p>
+                <h3 className="account-name-h3">{account.name}</h3>
+                <p className="account-number-p">{account.account_number}</p>
               </div>
-              <div className={`account-badge ${account.type}`}>
-                {account.type}
-              </div>
+              <div className={`account-badge ${account.type}`}>{account.type}</div>
             </div>
 
             {/* Balance */}
             <div className="balance-section">
-              <div className="balance-amount">
-                {formatCurrencyGHS(account.balance)}
-              </div>
-              <div className="balance-label">
-                Available Balance
-              </div>
+              <div className="balance-amount">{formatCurrencyGHS(account.balance)}</div>
+              <div className="balance-label">Available Balance</div>
             </div>
 
             {/* Quick Actions */}
             <div className="account-actions">
-              <button className="action-btn transfer">
-                Transfer
-              </button>
-              <button className="action-btn statement">
-                Statement
-              </button>
-              <button className="action-btn details">
-                Details
-              </button>
+              <button className="action-btn transfer">Transfer</button>
+              <button className="action-btn statement">Statement</button>
+              <button className="action-btn details">Details</button>
             </div>
 
             {/* Expanded Details */}
@@ -199,15 +202,13 @@ function Accounts() {
       {filteredAccounts.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon"></div>
-          <h3 className="empty-title">
-            No accounts found
-          </h3>
+          <h3 className="empty-title">No accounts found</h3>
           <p className="empty-text">
-            {searchTerm ? 'Try adjusting your search terms' : 'Get started by opening your first account'}
+            {searchTerm
+              ? 'Try adjusting your search terms'
+              : 'Get started by opening your first account'}
           </p>
-          <button className="empty-btn">
-            Open New Account
-          </button>
+          <button className="empty-btn">Open New Account</button>
         </div>
       )}
     </div>

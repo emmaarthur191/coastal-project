@@ -1,23 +1,24 @@
-import type { Account } from '../api/models/Account';
-import type { AccountAccountTypeEnum } from '../api/models/AccountAccountTypeEnum';
-import type { CashAdvance } from '../api/models/CashAdvance';
-import type { Complaint } from '../api/models/Complaint';
-import type { FraudAlert } from '../api/models/FraudAlert';
-import type { Loan } from '../api/models/Loan';
-import type { Message } from '../api/models/Message';
-import type { MessageThread } from '../api/models/MessageThread';
-import type { Refund } from '../api/models/Refund';
-import type { Report } from '../api/models/Report';
-import type { ReportSchedule } from '../api/models/ReportSchedule';
-import type { ReportTemplate } from '../api/models/ReportTemplate';
-import type { AccountOpeningRequest } from '../api/models/AccountOpeningRequest';
-import type { Transaction } from '../api/models/Transaction';
-import type { User } from '../api/models/User';
-
-import type { Product } from '../api/models/Product';
-import type { Promotion } from '../api/models/Promotion';
-import type { ServiceRequest } from '../api/models/ServiceRequest';
-import type { ReportTypeEnum } from '../api/models/ReportTypeEnum';
+import type {
+  Account,
+  AccountAccountTypeEnum,
+  CashAdvance,
+  Complaint,
+  FraudAlert,
+  Loan,
+  Message,
+  MessageThread,
+  Refund,
+  Report,
+  ReportSchedule,
+  ReportTemplate,
+  AccountOpeningRequest,
+  Transaction,
+  User,
+  Product,
+  Promotion,
+  ServiceRequest,
+  ReportTypeEnum,
+} from '../api/types.gen';
 
 import type {
   ApiResponse,
@@ -1675,7 +1676,7 @@ export const apiService = {
     try {
       const response = await api.post(
         `banking/account-openings/${id}/approve-and-print/`,
-        {},
+        { kyc_verified: true },
         {
           responseType: 'blob',
         }
@@ -1873,8 +1874,8 @@ export const apiService = {
 
   async getReports(): Promise<{ success: boolean; data?: Report[]; error?: string }> {
     try {
-      const response = await api.get<Report[]>('reports/');
-      return { success: true, data: response.data };
+      const response = await api.get<Report[] | PaginatedResponse<Report>>('reports/');
+      return { success: true, data: extractResults<Report>(response.data) };
     } catch (error: unknown) {
       return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
     }
@@ -1970,11 +1971,37 @@ export const apiService = {
   },
 
   async generateReport(
-    templateId: string | number
-  ): Promise<{ success: boolean; data?: GeneratedReport; error?: string }> {
+    templateId: string | number,
+    format: 'pdf' | 'xlsx' = 'pdf'
+  ): Promise<{
+    success: boolean;
+    data?: GeneratedReport;
+    blob?: Blob;
+    filename?: string;
+    error?: string;
+  }> {
     try {
-      const response = await api.post<GeneratedReport>(`reporting/reports/generate/`, {
-        template: templateId,
+      if (format === 'xlsx') {
+        // XLSX returns a binary blob — must set responseType
+        const response = await api.post(
+          `reports/reports/generate/`,
+          {
+            template_id: templateId,
+            format: 'xlsx',
+          },
+          {
+            responseType: 'blob',
+          }
+        );
+        const contentDisposition = response.headers['content-disposition'] || '';
+        const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
+        const filename = filenameMatch ? filenameMatch[1] : 'financial_report.xlsx';
+        return { success: true, blob: response.data as unknown as Blob, filename };
+      }
+
+      const response = await api.post<GeneratedReport>(`reports/reports/generate/`, {
+        template_id: templateId,
+        format,
       });
       return { success: true, data: response.data };
     } catch (error: unknown) {

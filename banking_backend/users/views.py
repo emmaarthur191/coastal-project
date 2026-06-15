@@ -144,7 +144,7 @@ class LoginView(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except PermissionDenied as e:
             logger.warning(f"Login permission denied: {e}")
-            return Response({"detail": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
         user = serializer.validated_data["user"]
 
@@ -453,7 +453,7 @@ class SendOTPView(APIView):
 
         if not success:
             logger.error(f"[OTP Error] Failed to send SMS: {response}")
-            # If Sendexa fails (e.g. Cloudflare block), return a specific error to help diagnosis
+            # If Sendexa fails, return a specific error to help diagnosis
             if not settings.DEBUG:
                 logger.error(f"Failed to send SMS code for user. Gateway response: {response}")
                 return Response(

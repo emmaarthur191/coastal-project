@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api, PaginatedResponse } from '../services/api';
-import { FraudAlert } from '../api/models/FraudAlert';
+import type { FraudAlert } from '../api/types.gen';
 import { AlertTriangle, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Pagination } from '../components/ui/Pagination';
 import './FraudAlerts.css';
 
 interface FraudStats {
@@ -19,6 +20,14 @@ const FraudAlerts = () => {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [actionTaken, setActionTaken] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Pagination states
+  const [alertsPage, setAlertsPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  useEffect(() => {
+    setAlertsPage(1);
+  }, [filterStatus]);
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -107,6 +116,11 @@ const FraudAlerts = () => {
     return true;
   });
 
+  const paginatedAlerts = filteredAlerts.slice(
+    (alertsPage - 1) * ITEMS_PER_PAGE,
+    alertsPage * ITEMS_PER_PAGE
+  );
+
   if (loading) {
     return <div className="fraud-loading">Loading...</div>;
   }
@@ -191,7 +205,7 @@ const FraudAlerts = () => {
 
       {/* Alerts List */}
       <div className="fraud-alerts-list">
-        {filteredAlerts.map((alert) => (
+        {paginatedAlerts.map((alert) => (
           <div key={alert.id} className="fraud-alert-card">
             <div className="fraud-alert-header">
               <div className="fraud-alert-info">
@@ -267,6 +281,12 @@ const FraudAlerts = () => {
           </div>
         )}
       </div>
+      <Pagination
+        currentPage={alertsPage}
+        totalItems={filteredAlerts.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setAlertsPage}
+      />
     </div>
   );
 };

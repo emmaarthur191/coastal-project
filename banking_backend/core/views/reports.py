@@ -256,6 +256,19 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
         file_format = request.data.get("format", "pdf")
         parameters = request.data.get("parameters", {})
 
+        # SECURITY: XLSX financial reports contain sensitive aggregates — restrict to staff
+        if file_format == "xlsx" and request.user.role not in [
+            "manager", "operations_manager", "admin",
+        ] and not request.user.is_superuser:
+            return Response(
+                {
+                    "status": "error",
+                    "message": "XLSX reports are restricted to managers and administrators.",
+                    "code": "PERMISSION_DENIED",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         try:
             template = None
             report_type = "transactions"
@@ -279,11 +292,62 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                 parameters=parameters,
             )
 
+            # ----- XLSX Financial Stats Report (template-based) -----
+            if file_format == "xlsx":
+                try:
+                    from core.xlsx_services import generate_xlsx_report
+
+                    xlsx_buffer = generate_xlsx_report()
+                    filename = f"report_{report.id}_{timezone.now().strftime('%Y%m%d%H%M')}.xlsx"
+                    path = default_storage.save(
+                        f"reports/{filename}", ContentFile(xlsx_buffer.getvalue())
+                    )
+
+                    report.file_path = path
+                    report.status = "completed"
+                    report.file_url = f"/api/reports/download/report_{report.id}/"
+                    report.completed_at = timezone.now()
+                    report.save()
+
+                    # Stream the file back directly using FileResponse
+                    xlsx_buffer.seek(0)
+                    response = FileResponse(
+                        xlsx_buffer,
+                        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+                    return response
+
+                except FileNotFoundError as fnf:
+                    report.status = "failed"
+                    report.error_message = str(fnf)
+                    report.save()
+                    return Response(
+                        {"status": "error", "message": str(fnf), "code": "TEMPLATE_MISSING"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+                except Exception as gen_error:
+                    report.status = "failed"
+                    report.error_message = str(gen_error)
+                    report.save()
+                    raise gen_error
+
+            # ----- PDF / CSV / JSON reports (existing logic) -----
             headers = []
             data = []
             subtitle = f"Generated on {timezone.now().strftime('%Y-%m-%d')}"
 
-            if report_type == "transactions":
+            # Normalize legacy plural names to match ReportTemplate choices
+            _type_aliases = {
+                "transactions": "transaction",
+                "accounts": "account",
+                "loans": "loan",
+                "cash_advances": "cash_advance",
+                "audit_logs": "audit",
+            }
+            normalized_type = _type_aliases.get(report_type, report_type)
+
+            if normalized_type == "transaction":
                 headers = ["Date", "Type", "Amount (GHS)", "Status", "Description"]
                 queryset = Transaction.objects.all().order_by("-timestamp")[:50]
                 for tx in queryset:
@@ -297,9 +361,8 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
-            elif report_type == "loans":
+            elif normalized_type == "loan":
                 headers = ["Date", "Amount (GHS)", "Term", "Status", "Applicant"]
-                # Optimized with select_related for member details
                 queryset = Loan.objects.all().select_related("member").order_by("-created_at")[:50]
                 for loan in queryset:
                     data.append(
@@ -312,9 +375,8 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
-            elif report_type == "accounts":
+            elif normalized_type == "account":
                 headers = ["Account Number", "Type", "Balance (GHS)", "Owner", "Status"]
-                # Optimized with select_related for user details
                 queryset = Account.objects.all().select_related("user").order_by("-created_at")[:50]
                 is_manager = (
                     request.user.role in ["manager", "operations_manager", "admin"] or request.user.is_superuser
@@ -322,7 +384,6 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                 for acc in queryset:
                     acc_num = acc.account_number
                     if not is_manager:
-                        # Mask account number: first 4 and last 4 visible
                         if len(acc_num) > 8:
                             acc_num = f"{acc_num[:4]}****{acc_num[-4:]}"
                         else:
@@ -338,7 +399,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
-            elif report_type == "cash_advances":
+            elif normalized_type == "cash_advance":
                 headers = ["Date", "Amount (GHS)", "Status", "Reason"]
                 queryset = CashAdvance.objects.all().order_by("-created_at")[:50]
                 for ca in queryset:
@@ -351,7 +412,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
-            elif report_type == "audit_logs":
+            elif normalized_type == "audit":
                 headers = ["Date", "Action", "Model", "IP Address"]
                 queryset = AuditLog.objects.all().order_by("-created_at")[:50]
                 for log in queryset:
@@ -364,6 +425,138 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                         ]
                     )
 
+            elif normalized_type == "fraud":
+                from core.models.fraud import FraudAlert
+
+                headers = ["Date", "Severity", "Risk Score", "Status", "Message"]
+                queryset = FraudAlert.objects.all().select_related("user").order_by("-created_at")[:50]
+                for alert in queryset:
+                    data.append(
+                        [
+                            alert.created_at.strftime("%Y-%m-%d") if alert.created_at else "N/A",
+                            alert.get_severity_display(),
+                            f"{alert.risk_score:.1f}" if alert.risk_score is not None else "N/A",
+                            "Resolved" if alert.is_resolved else alert.status.title(),
+                            (alert.message or "")[:40],
+                        ]
+                    )
+
+            elif normalized_type == "compliance":
+                from django.contrib.auth import get_user_model
+                from django.db.models import Q
+
+                User = get_user_model()
+
+                headers = ["Metric", "Value", "Details"]
+
+                # KYC completion: users with id_type + id_number set
+                total_customers = User.objects.filter(role="customer").count()
+                kyc_complete = User.objects.filter(
+                    role="customer",
+                ).exclude(
+                    Q(id_type="") | Q(id_type__isnull=True)
+                ).count()
+                kyc_pct = f"{(kyc_complete / total_customers * 100):.1f}%" if total_customers else "N/A"
+
+                # Approved vs pending account openings
+                total_openings = AccountOpeningRequest.objects.count()
+                pending_openings = AccountOpeningRequest.objects.filter(status="pending").count()
+                approved_openings = AccountOpeningRequest.objects.filter(status__in=["approved", "completed"]).count()
+                rejected_openings = AccountOpeningRequest.objects.filter(status="rejected").count()
+
+                # Gender classification coverage
+                gender_set = User.objects.filter(role="customer").exclude(gender="").count()
+                gender_pct = f"{(gender_set / total_customers * 100):.1f}%" if total_customers else "N/A"
+
+                # Fraud alerts summary
+                from core.models.fraud import FraudAlert
+                unresolved_alerts = FraudAlert.objects.filter(is_resolved=False).count()
+                critical_alerts = FraudAlert.objects.filter(is_resolved=False, severity="critical").count()
+
+                data = [
+                    ["Total Registered Members", str(total_customers), "Role: customer"],
+                    ["KYC Verified Members", str(kyc_complete), f"{kyc_pct} of members have ID on file"],
+                    ["Gender Classification Coverage", str(gender_set), f"{gender_pct} of members have gender set"],
+                    ["Account Openings — Total", str(total_openings), "All-time submissions"],
+                    ["Account Openings — Pending", str(pending_openings), "Awaiting manager review"],
+                    ["Account Openings — Approved", str(approved_openings), "Approved or completed"],
+                    ["Account Openings — Rejected", str(rejected_openings), "Rejected submissions"],
+                    ["Unresolved Fraud Alerts", str(unresolved_alerts), f"{critical_alerts} critical"],
+                ]
+
+            elif normalized_type == "performance":
+                from core.models.reporting import PerformanceMetric
+
+                headers = ["Recorded At", "Metric", "Value", "Unit", "Endpoint"]
+                queryset = PerformanceMetric.objects.all().order_by("-recorded_at")[:50]
+                for metric in queryset:
+                    data.append(
+                        [
+                            metric.recorded_at.strftime("%Y-%m-%d %H:%M") if metric.recorded_at else "N/A",
+                            metric.get_metric_type_display(),
+                            f"{metric.value:,.4f}",
+                            metric.unit,
+                            metric.endpoint or "—",
+                        ]
+                    )
+
+            elif normalized_type == "financial":
+                # Financial summary as tabular PDF using the same data collectors as XLSX
+                from core.xlsx_services import (
+                    _collect_membership_stats,
+                    _collect_account_balances,
+                    _collect_loan_stats,
+                    _collect_receipts_payments,
+                )
+
+                title = "Financial & Statistical Summary"
+                headers = ["Category", "Female", "Male", "Group"]
+                membership = _collect_membership_stats()
+                balances = _collect_account_balances()
+                loans_data = _collect_loan_stats()
+                rp = _collect_receipts_payments()
+
+                data = [
+                    ["— MEMBERSHIP —", "", "", ""],
+                    ["Active Members",
+                     str(membership.get(("active", "F"), 0)),
+                     str(membership.get(("active", "M"), 0)),
+                     str(membership.get(("active", "G"), 0))],
+                    ["Inactive Members",
+                     str(membership.get(("inactive", "F"), 0)),
+                     str(membership.get(("inactive", "M"), 0)),
+                     str(membership.get(("inactive", "G"), 0))],
+                    ["Dormant Members",
+                     str(membership.get(("dormant", "F"), 0)),
+                     str(membership.get(("dormant", "M"), 0)),
+                     str(membership.get(("dormant", "G"), 0))],
+                    ["— SHARES (Active) —", "", "", ""],
+                    ["Balance (GHS)",
+                     f"{balances.get(('shares', 'active', 'F'), 0):,.2f}",
+                     f"{balances.get(('shares', 'active', 'M'), 0):,.2f}",
+                     f"{balances.get(('shares', 'active', 'G'), 0):,.2f}"],
+                    ["— LOANS —", "", "", ""],
+                    ["Disbursed (Count)",
+                     str(loans_data.get(("disbursed_count", "F"), 0)),
+                     str(loans_data.get(("disbursed_count", "M"), 0)),
+                     str(loans_data.get(("disbursed_count", "G"), 0))],
+                    ["Outstanding (GHS)",
+                     f"{loans_data.get(('outstanding_amount', 'F'), 0):,.2f}",
+                     f"{loans_data.get(('outstanding_amount', 'M'), 0):,.2f}",
+                     f"{loans_data.get(('outstanding_amount', 'G'), 0):,.2f}"],
+                    ["Delinquent (GHS)",
+                     f"{loans_data.get(('delinquent_amount', 'F'), 0):,.2f}",
+                     f"{loans_data.get(('delinquent_amount', 'M'), 0):,.2f}",
+                     f"{loans_data.get(('delinquent_amount', 'G'), 0):,.2f}"],
+                    ["— RECEIPTS & PAYMENTS —", "This Month", "", ""],
+                    ["Shares Deposits", f"{rp['shares_deposits']:,.2f}", "", ""],
+                    ["Savings Deposits", f"{rp['savings_deposits']:,.2f}", "", ""],
+                    ["Loan Repayments", f"{rp['loan_repayments']:,.2f}", "", ""],
+                    ["Shares Withdrawals", f"{rp['shares_withdrawals']:,.2f}", "", ""],
+                    ["Savings Withdrawals", f"{rp['savings_withdrawals']:,.2f}", "", ""],
+                    ["Loans Disbursed", f"{rp['loans_disbursed']:,.2f}", "", ""],
+                ]
+
             if file_format == "pdf":
                 try:
                     pdf_buffer = generate_generic_report_pdf(title, subtitle, headers, data)
@@ -372,7 +565,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
 
                     report.file_path = path
                     report.status = "completed"
-                    report.file_url = f"/reports/download/report_{report.id}/"
+                    report.file_url = f"/api/reports/download/report_{report.id}/"
                     report.completed_at = timezone.now()
                     report.save()
 
@@ -383,7 +576,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                     raise gen_error
             else:
                 report.status = "completed"
-                report.file_url = f"/reports/download/report_{report.id}/"
+                report.file_url = f"/api/reports/download/report_{report.id}/"
                 report.completed_at = timezone.now()
                 report.save()
 

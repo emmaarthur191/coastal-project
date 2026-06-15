@@ -338,6 +338,9 @@ class AccountOpeningViewSet(
                 customer_user.id_type = opening_request.id_type
                 customer_user.id_number = opening_request.id_number
                 customer_user.is_approved = True # User is approved once request is approved
+                # Copy demographic classification for CUA reporting
+                if opening_request.gender:
+                    customer_user.gender = opening_request.gender
                 customer_user.save()
 
                 # 2. Automated Account Creation for the CLIENT
@@ -442,6 +445,14 @@ class AccountOpeningViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Paper-First KYC Verification
+        kyc_verified = request.data.get("kyc_verified")
+        if str(kyc_verified).lower() != "true":
+            return Response(
+                {"status": "error", "message": "Physical KYC verification is mandatory for approval."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Maker-Checker Enforcement
         if opening_request.submitted_by == request.user:
             return Response(
@@ -489,6 +500,9 @@ class AccountOpeningViewSet(
                     customer_user.id_type = opening_request.id_type
                     customer_user.id_number = opening_request.id_number
                     customer_user.profile_photo = opening_request.photo
+                    # Copy demographic classification for CUA reporting
+                    if opening_request.gender:
+                        customer_user.gender = opening_request.gender
                     customer_user.save()
                 else:
                     customer_user.is_approved = True

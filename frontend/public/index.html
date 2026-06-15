@@ -152,27 +152,27 @@
       <form action="/login" method="post" style="display: flex; flex-direction: column; gap: 16px;">
         <div>
           <label for="email" style="display: block; margin-bottom: 8px; font-weight: bold;">Email Address:</label>
-          <input type="email" id="email" name="email" required
+          <input type="email" id="email" name="email" required autocomplete="username"
                  style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;" />
         </div>
         <div>
           <label for="password" style="display: block; margin-bottom: 8px; font-weight: bold;">Password:</label>
-          <input type="password" id="password" name="password" required
+          <input type="password" id="password" name="password" required autocomplete="current-password"
                  style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;" />
         </div>
         <div>
           <label for="role" style="display: block; margin-bottom: 8px; font-weight: bold;">Access Role:</label>
-          <select id="role" name="role" required
+          <select id="role" name="role" required autocomplete="off"
                   style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
-            <option value="member"> Member - Personal Banking</option>
-            <option value="cashier"> Cashier - Teller Services</option>
-            <option value="mobile_banker"> Mobile Banker - Field Services</option>
-            <option value="manager"> Manager - Branch Management</option>
-            <option value="operations_manager"> Operations Manager - System Admin</option>
+            <option value="member">👤 Member - Personal Banking</option>
+            <option value="cashier">💼 Cashier - Teller Services</option>
+            <option value="mobile_banker">📱 Mobile Banker - Field Services</option>
+            <option value="manager">👔 Manager - Branch Management</option>
+            <option value="operations_manager">⚙️ Operations Manager - System Admin</option>
           </select>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" id="remember-me" name="remember-me" />
+          <input type="checkbox" id="remember-me" name="remember-me" autocomplete="off" />
           <label for="remember-me">Remember me</label>
         </div>
         <button type="submit"
@@ -184,7 +184,7 @@
         </div>
         <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
           <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-            <span> 256-bit SSL Encrypted • PCI DSS Compliant</span>
+            <span>🔒 256-bit SSL Encrypted • PCI DSS Compliant</span>
           </div>
           <div>© 2025 Coastal Auto Tech Cooperative Credit Union. All rights reserved.</div>
         </div>

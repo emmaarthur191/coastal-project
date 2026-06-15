@@ -4,13 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
 import { Button } from '../components/ui/Button';
-import { 
-  AlertCircle, 
-  User, 
-  Eye, 
-  EyeOff, 
-  ArrowRight
-} from 'lucide-react';
+import { AlertCircle, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import './Login.css';
 
 // Type definitions
@@ -33,7 +27,7 @@ function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false
+    rememberMe: false,
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -46,9 +40,9 @@ function LoginPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
-    setFormData(prev => ({ ...prev, [name]: newValue }));
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
     if (formErrors[name as keyof FormErrors]) {
-      setFormErrors(prev => ({ ...prev, [name]: undefined }));
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -61,7 +55,7 @@ function LoginPage() {
     setIsLoading(true);
     setFormErrors({});
     try {
-      const result = await login(formData.email, formData.password) as LoginResult;
+      const result = (await login(formData.email, formData.password)) as LoginResult;
       if (result.success) {
         const userRole = result.user?.role;
         const roleRoutes: Record<string, string> = {
@@ -87,9 +81,9 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden bg-white">
+    <div className="login-page-container antialiased min-h-[100dvh] flex flex-col lg:flex-row relative overflow-hidden bg-white">
       {/* Left Column - Branding (Vibrant Blue Gradient) */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] as const }}
@@ -98,7 +92,7 @@ function LoginPage() {
         <div className="absolute inset-0 opacity-10 pointer-events-none bg-dot-pattern"></div>
 
         <div className="relative z-10">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
@@ -115,12 +109,14 @@ function LoginPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
+            transition={{ delay: 0.5, duration: 1.2, ease: 'easeOut' }}
             className="mb-12"
           >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-400/10 border border-blue-400/20 text-blue-300 text-[10px] font-black uppercase tracking-[0.3em] mb-6">Established 2026</span>
+            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-400/10 border border-blue-400/20 text-blue-300 text-sm font-bold uppercase tracking-wider mb-6">
+              Established 2026
+            </span>
             <h1 className="text-8xl font-black text-white leading-[0.85] mb-8 tracking-tighter">
-              Finance <br/>
+              Finance <br />
               <span className="text-blue-300">Perfected.</span>
             </h1>
             <p className="text-white/70 text-xl max-w-md leading-relaxed font-medium">
@@ -129,56 +125,33 @@ function LoginPage() {
           </motion.div>
         </div>
 
-        <div className="relative z-10 text-white/20 text-[10px] font-black uppercase tracking-[0.6em]">
+        <div className="relative z-10 text-blue-200 text-sm font-bold uppercase tracking-widest">
           Coastal Auto Tech Cooperative Credit Union
         </div>
       </motion.div>
 
-      {/* Right Column - Frost Glass White Login Interface */}
-      <main className="flex-1 flex flex-col justify-center items-center py-16 px-8 relative bg-slate-50/50 overflow-hidden">
-        {/* Animated Background Elements for Frost Glass Depth */}
-        <div className="absolute inset-0 z-0">
-          <motion.div 
-            animate={{ 
-              x: [0, 50, 0], 
-              y: [0, -30, 0],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-20 -right-20 w-96 h-96 bg-blue-100 rounded-full blur-[100px] opacity-40"
-          />
-          <motion.div 
-            animate={{ 
-              x: [0, -40, 0], 
-              y: [0, 60, 0],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-20 -left-20 w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[120px] opacity-60"
-          />
-        </div>
-
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.98, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
-          className="w-full max-w-md relative z-10"
-        >
-          {/* Frost Glass Card Container */}
-          <div className="p-8 lg:p-10 rounded-[2rem] glass-premium backdrop-blur-3xl">
-            <div className="mb-8 text-center bg-slate-50 p-6 rounded-2xl border border-slate-200">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 ring-4 ring-slate-100/50">
+      {/* Right Column - Clean Professional Login Interface */}
+      <main className="flex-1 flex flex-col justify-center items-center py-16 px-8 relative bg-slate-50 overflow-hidden">
+        <div className="w-full max-w-md relative z-10 animate-[fadeIn_0.5s_ease-out]">
+          {/* Solid Professional Card Container */}
+          <div className="p-8 lg:p-12 rounded-2xl bg-white shadow-[0_20px_50px_rgb(0,0,0,0.07)] border border-slate-200">
+            <div className="mb-10 text-center">
+              <div className="flex justify-center mb-6">
+                <div className="p-4 bg-white rounded-2xl border-2 border-slate-100">
                   <img src={logo} alt="Coastal Logo" className="w-12 h-12 object-contain" />
                 </div>
               </div>
-              <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tighter leading-tight uppercase">Coastal AutoTech <br/> Credit Union</h2>
-              <p className="text-slate-900 font-black text-[10px] uppercase tracking-widest opacity-60">Secure membership authentication</p>
+              <h2 className="text-3xl font-extrabold text-[#001D3A] mb-3 leading-tight uppercase tracking-tight">
+                Coastal AutoTech <br /> Credit Union
+              </h2>
+              <p className="text-slate-600 font-bold text-sm uppercase tracking-wider">
+                Secure membership authentication
+              </p>
             </div>
 
             <AnimatePresence mode="wait">
               {formErrors.submit && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -192,19 +165,26 @@ function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-5">
                 <div className="group relative">
-                  <label className="block text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] mb-2 ml-1">Login ID</label>
+                  <label
+                    htmlFor="login-email"
+                    className="block text-sm font-bold text-slate-900 uppercase tracking-wider mb-2 ml-1"
+                  >
+                    Login ID
+                  </label>
                   <div className="relative">
                     <input
                       ref={emailInputRef}
+                      id="login-email"
                       type="email"
                       name="email"
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full bg-white/30 border-white focus:bg-white text-slate-950 px-6 py-4 rounded-2xl transition-all outline-none border focus:ring-8 focus:ring-blue-600/5 focus:border-blue-600 font-bold text-base shadow-sm placeholder:text-slate-300"
+                      autoComplete="username"
+                      className="w-full bg-white border-slate-300 focus:bg-white text-slate-900 px-5 py-4 rounded-xl transition-all outline-none border-2 focus:ring-4 focus:ring-[#0052CC]/10 focus:border-[#0052CC] font-bold text-base shadow-sm placeholder:text-slate-400"
                       placeholder="Enter Login ID"
                     />
-                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors">
+                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0052CC] transition-colors">
                       <User className="w-5 h-5" />
                     </span>
                   </div>
@@ -212,41 +192,62 @@ function LoginPage() {
 
                 <div className="group">
                   <div className="flex justify-between items-center mb-2 px-1">
-                    <label className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Password</label>
-                    <Link to="/forgot-password" title="Forgot password link" className="text-slate-900 hover:text-blue-600 transition-colors text-[9px] font-black uppercase tracking-widest underline decoration-slate-900/20 underline-offset-4">Reset Password</Link>
+                    <label
+                      htmlFor="login-password"
+                      className="text-sm font-bold text-slate-900 uppercase tracking-wider"
+                    >
+                      Password
+                    </label>
+                    <Link
+                      to="/forgot-password"
+                      title="Forgot password link"
+                      className="text-[#0052CC] hover:text-[#001D3A] transition-colors text-sm font-bold underline decoration-[#0052CC]/30 underline-offset-4"
+                    >
+                      Reset Password
+                    </Link>
                   </div>
                   <div className="relative">
                     <input
                       ref={passwordInputRef}
+                      id="login-password"
                       type={showPassword ? 'text' : 'password'}
                       name="password"
                       required
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="w-full bg-white/30 border-white focus:bg-white text-slate-950 px-6 py-4 rounded-2xl transition-all outline-none border focus:ring-8 focus:ring-blue-600/5 focus:border-blue-600 font-bold text-base shadow-sm placeholder:text-slate-300"
+                      autoComplete="current-password"
+                      className="w-full bg-white border-slate-300 focus:bg-white text-slate-900 px-5 py-4 rounded-xl transition-all outline-none border-2 focus:ring-4 focus:ring-[#0052CC]/10 focus:border-[#0052CC] font-bold text-base shadow-sm placeholder:text-slate-400"
                       placeholder="••••••••••••"
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1.5"
+                      className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0052CC] transition-colors flex items-center gap-1.5 p-2 -mr-2"
                       title={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest opacity-60">{showPassword ? 'Hide' : 'Show'}</span>
-                      {showPassword ? <EyeOff className="w-4 h-4 text-slate-900" /> : <Eye className="w-4 h-4 text-slate-900" />}
+                      <span className="text-sm font-bold text-[#0052CC]">
+                        {showPassword ? 'Hide' : 'Show'}
+                      </span>
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4 text-[#0052CC]" />
+                      ) : (
+                        <Eye className="w-4 h-4 text-[#0052CC]" />
+                      )}
                     </button>
                   </div>
                 </div>
               </div>
 
               <div className="pt-4">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isLoading}
                   variant="primary"
-                  className="w-full py-5 rounded-2xl text-lg shadow-xl shadow-blue-200 font-black uppercase tracking-[0.4em] transition-all hover:translate-y-[-2px] active:translate-y-[1px] bg-[#0052CC] hover:bg-[#0041a3] text-white border-none group"
+                  className="w-full py-4 rounded-xl text-base shadow-lg shadow-blue-600/20 font-bold uppercase tracking-wider transition-all hover:translate-y-[-1px] active:translate-y-[1px] bg-[#0052CC] hover:bg-[#0041a3] text-white border-none group"
                 >
-                  {isLoading ? 'Processing...' : (
+                  {isLoading ? (
+                    'Processing...'
+                  ) : (
                     <span className="flex items-center justify-center gap-2">
                       Secure Access
                       <ArrowRight className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
@@ -256,7 +257,7 @@ function LoginPage() {
               </div>
             </form>
 
-            <div className="mt-10 flex items-center justify-between text-slate-900 text-[9px] font-black uppercase tracking-[0.3em] px-2 opacity-60">
+            <div className="mt-10 flex items-center justify-between text-slate-500 text-sm font-bold uppercase tracking-wider px-2">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -265,12 +266,16 @@ function LoginPage() {
                 Active Link
               </div>
               <div className="flex gap-4">
-                <span className="hover:text-blue-600 cursor-pointer transition-colors border-b border-transparent hover:border-slate-900">Security Audit</span>
-                <span className="hover:text-blue-600 cursor-pointer transition-colors border-b border-transparent hover:border-slate-900">Help Center</span>
+                <span className="hover:text-blue-600 cursor-pointer transition-colors border-b border-transparent hover:border-slate-900">
+                  Security Audit
+                </span>
+                <span className="hover:text-blue-600 cursor-pointer transition-colors border-b border-transparent hover:border-slate-900">
+                  Help Center
+                </span>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </main>
     </div>
   );

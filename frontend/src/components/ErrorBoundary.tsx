@@ -1,5 +1,5 @@
-import React, { ReactNode, ErrorInfo } from "react";
-import * as Sentry from "@sentry/react";
+import React, { ReactNode, ErrorInfo } from 'react';
+import * as Sentry from '@sentry/react';
 
 /**
  * Props for the ErrorBoundary component.
@@ -48,8 +48,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to Sentry
     Sentry.withScope((scope) => {
-      scope.setTag("component", "ErrorBoundary");
-      scope.setLevel("error");
+      scope.setTag('component', 'ErrorBoundary');
+      scope.setLevel('error');
       Sentry.captureException(error, {
         contexts: {
           react: {
@@ -60,11 +60,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     });
 
     // Also log to console for development
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
 
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
   }
 
@@ -80,18 +80,27 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       // Production error UI
       if (import.meta.env.PROD) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--app-bg)]">
             <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6 text-center">
               <div className="mb-4">
-                <svg className="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                <svg
+                  className="mx-auto h-12 w-12 text-red-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">
-                Something went wrong
-              </h1>
+              <h1 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h1>
               <p className="text-gray-600 mb-6">
-                We apologize for the inconvenience. Our team has been notified and is working to fix this issue.
+                We apologize for the inconvenience. Our team has been notified and is working to fix
+                this issue.
               </p>
               <div className="space-y-3">
                 <button
@@ -101,7 +110,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
                   Try Again
                 </button>
                 <button
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => (window.location.href = '/')}
                   className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
                 >
                   Go Home
@@ -114,15 +123,23 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
       // Development error UI with details
       return (
-        <div className="min-h-screen bg-gray-100 p-4">
+        <div className="min-h-[100dvh] bg-gray-100 p-4">
           <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
             <div className="flex items-center mb-4">
-              <svg className="h-8 w-8 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                className="h-8 w-8 text-red-500 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
-              <h1 className="text-xl font-semibold text-gray-900">
-                Development Error
-              </h1>
+              <h1 className="text-xl font-semibold text-gray-900">Development Error</h1>
             </div>
 
             <div className="mb-4">
@@ -151,7 +168,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
               {this.state.errorInfo && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Component Stack</h3>
-                  <pre className="bg-gray-50 border border-gray-200 rounded p-4 text-sm text-gray-800 overflow-auto">
+                  <pre className="bg-[var(--app-bg)] border border-gray-200 rounded p-4 text-sm text-gray-800 overflow-auto">
                     {this.state.errorInfo.componentStack}
                   </pre>
                 </div>

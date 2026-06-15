@@ -10,6 +10,7 @@ import {
   Banknote,
   Calendar,
 } from 'lucide-react';
+import { Pagination } from '../components/ui/Pagination';
 import './FraudCases.css';
 
 interface CaseStats {
@@ -55,6 +56,14 @@ const FraudCases = () => {
   const [evidenceType, setEvidenceType] = useState('');
   const [evidenceData, setEvidenceData] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Pagination states
+  const [casesPage, setCasesPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  useEffect(() => {
+    setCasesPage(1);
+  }, [filterStatus]);
 
   const fetchCases = useCallback(async () => {
     try {
@@ -169,6 +178,11 @@ const FraudCases = () => {
     (caseItem) => filterStatus === 'all' || caseItem.status === filterStatus
   );
 
+  const paginatedCases = filteredCases.slice(
+    (casesPage - 1) * ITEMS_PER_PAGE,
+    casesPage * ITEMS_PER_PAGE
+  );
+
   if (loading) {
     return <div className="fraud-cases-loading">Loading...</div>;
   }
@@ -252,7 +266,7 @@ const FraudCases = () => {
 
       {/* Cases List */}
       <div className="fraud-cases-list">
-        {filteredCases.map((caseItem) => (
+        {paginatedCases.map((caseItem) => (
           <div key={caseItem.id} className="fraud-cases-case-card">
             <div className="fraud-cases-case-header">
               <div className="fraud-cases-case-info">
@@ -397,6 +411,12 @@ const FraudCases = () => {
           </div>
         )}
       </div>
+      <Pagination
+        currentPage={casesPage}
+        totalItems={filteredCases.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCasesPage}
+      />
     </div>
   );
 };

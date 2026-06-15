@@ -110,8 +110,8 @@ if not DEBUG:
     # Secure Cookies
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_SAMESITE = "None"
-    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     # XSS & Content Protection
     SECURE_BROWSER_XSS_FILTER = True
@@ -395,7 +395,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_SECURE": not DEBUG,  # True in production (HTTPS only), False in DEBUG (localhost)
     "AUTH_COOKIE_HTTP_ONLY": True,  # Prevent JS access
     "AUTH_COOKIE_PATH": "/",
-    "AUTH_COOKIE_SAMESITE": "Lax" if DEBUG else "None",  # 'None' required for cross-site (Frontend <-> Backend) in prod
+    "AUTH_COOKIE_SAMESITE": "Lax",  # Enforce Lax in all modes for protocol compliance
 }
 
 # DRF Spectacular (OpenAPI)
@@ -471,7 +471,7 @@ SENDEXA_API_KEY = env("SENDEXA_API_KEY", default="")
 SENDEXA_API_SECRET = env("SENDEXA_API_SECRET", default="")
 SENDEXA_AUTH_TOKEN = env("SENDEXA_AUTH_TOKEN", default="")
 SENDEXA_SENDER_ID = env("SENDEXA_SENDER_ID", default="CACCU")
-SENDEXA_API_URL = env("SENDEXA_API_URL", default="https://server.sendexa.co/v1/sms/send")
+SENDEXA_API_URL = env("SENDEXA_API_URL", default="https://api.sendexa.co/v1/messages")
 
 
 # Database Partitioning

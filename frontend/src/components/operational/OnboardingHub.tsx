@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import AccountOpeningTab from '../staff/AccountOpeningTab';
 import { getImageSrc } from '../../utils/image';
 import { ShieldCheck, Lightbulb, User, X, RefreshCw, Printer } from 'lucide-react';
+import { Pagination } from '../ui/Pagination';
 
 interface OnboardingHubProps {
   mode: 'staff' | 'manager';
@@ -19,6 +20,14 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
   const [selectedRequest, setSelectedRequest] = useState<AccountOpeningRequest | null>(null);
   const [loading, setLoading] = useState(false);
   const [viewTab, setViewTab] = useState<'pending' | 'completed'>('pending');
+
+  // Pagination states
+  const [requestsPage, setRequestsPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  useEffect(() => {
+    setRequestsPage(1);
+  }, [viewTab]);
 
   useEffect(() => {
     if (mode === 'manager') {
@@ -110,9 +119,9 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
     return (
       <div className="space-y-6">
         <AccountOpeningTab />
-        <GlassCard className="p-6 bg-blue-500/5 border-blue-500/10">
-          <p className="text-xs text-blue-400 font-medium italic flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-blue-400 shrink-0" />
+        <GlassCard className="p-6 bg-primary-500/5 border-primary-500/10">
+          <p className="text-xs text-primary-600 dark:text-primary-400 font-medium italic flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-primary-500 dark:text-primary-400 shrink-0" />
             <span>
               <b>Note:</b> After submitting, instruct the member to visit an Operations Manager for
               final document verification and letter collection.
@@ -125,27 +134,27 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
 
   return (
     <div className="space-y-4">
-      <GlassCard className="p-4 shadow-lg border border-slate-200/50">
+      <GlassCard className="p-4 shadow-lg border border-slate-200/50 dark:border-slate-700/50">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-black text-slate-900 flex flex-col gap-0.5">
+          <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-200/20 text-emerald-600">
+              <span className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-200/20 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="w-5 h-5" />
               </span>
               Secure Paper-First Queue
             </div>
-            <span className="text-[9px] text-slate-500 uppercase tracking-[0.2em] ml-9 font-black">
+            <span className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-9 font-black">
               Physical KYC Compliance: April 2026
             </span>
           </h3>
           <div className="flex items-center gap-4">
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setViewTab('pending')}
                 className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
                   viewTab === 'pending'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-primary-500 text-white dark:text-slate-950 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 Pending Review
@@ -154,8 +163,8 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                 onClick={() => setViewTab('completed')}
                 className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
                   viewTab === 'completed'
-                    ? 'bg-white text-emerald-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-emerald-500 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 Completed Portals
@@ -177,7 +186,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="text-slate-900 text-[10px] font-black uppercase tracking-widest border-b border-black/5">
+              <tr className="text-slate-900 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-black/5 dark:border-white/5">
                 <th className="px-4 py-2.5">Applicant</th>
                 <th className="px-4 py-2.5">Photo</th>
                 <th className="px-4 py-2.5">Type & Location</th>
@@ -186,19 +195,26 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {requests
-                .filter((r) =>
+              {(() => {
+                const filteredRequests = requests.filter((r) =>
                   viewTab === 'pending'
                     ? r.status === 'pending'
                     : r.status === 'completed' || r.status === 'approved'
-                )
-                .map((req) => (
+                );
+                const paginatedRequests = filteredRequests.slice(
+                  (requestsPage - 1) * ITEMS_PER_PAGE,
+                  requestsPage * ITEMS_PER_PAGE
+                );
+
+                return paginatedRequests.map((req) => (
                   <tr key={req.id} className="group hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="text-sm font-black text-slate-900">
+                      <div className="text-sm font-black text-slate-900 dark:text-slate-100">
                         {req.first_name} {req.last_name}
                       </div>
-                      <div className="text-[10px] text-slate-700 font-bold">{req.phone_number}</div>
+                      <div className="text-[10px] text-slate-700 dark:text-slate-400 font-bold">
+                        {req.phone_number}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="w-10 h-10 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center mx-auto">
@@ -221,13 +237,13 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-xs text-blue-700 font-black uppercase tracking-widest">
+                      <div className="text-xs text-primary-700 dark:text-primary-400 font-black uppercase tracking-widest">
                         {req.account_type?.replace('_', ' ')}
                       </div>
                       <div className="text-[10px] text-cyan-700 font-black font-mono mt-0.5">
                         {req.digital_address || 'NO-GPS'}
                       </div>
-                      <div className="text-[10px] text-slate-800 font-bold mt-0.5 truncate max-w-[150px]">
+                      <div className="text-[10px] text-slate-800 dark:text-slate-455 font-bold mt-0.5 truncate max-w-[150px]">
                         {req.address}
                       </div>
                     </td>
@@ -242,7 +258,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                           size="sm"
                           variant="ghost"
                           onClick={() => setSelectedRequest(req)}
-                          className="text-blue-700 font-black hover:text-blue-900 hover:bg-blue-500/10"
+                          className="text-primary-700 dark:text-primary-400 font-black hover:text-primary-900 hover:bg-primary-500/10"
                           title="View applicant detailed information"
                         >
                           Details
@@ -271,7 +287,8 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ));
+              })()}
               {loading && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-gray-400 animate-pulse">
@@ -297,6 +314,18 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={requestsPage}
+          totalItems={
+            requests.filter((r) =>
+              viewTab === 'pending'
+                ? r.status === 'pending'
+                : r.status === 'completed' || r.status === 'approved'
+            ).length
+          }
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setRequestsPage}
+        />
       </GlassCard>
 
       {/* Applicant Details Modal */}
@@ -309,7 +338,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                   <h3 className="text-xl font-black text-slate-900 mb-0.5">
                     {selectedRequest.first_name} {selectedRequest.last_name}
                   </h3>
-                  <p className="text-blue-700 font-black uppercase tracking-widest text-xs">
+                  <p className="text-primary-700 dark:text-primary-400 font-black uppercase tracking-widest text-xs">
                     {selectedRequest.account_type?.replace('_', ' ')} Application
                   </p>
                 </div>
@@ -508,7 +537,7 @@ const OnboardingHub: React.FC<OnboardingHubProps> = ({ mode }) => {
                 <Button
                   onClick={() => handleReprint(selectedRequest.id)}
                   disabled={loading}
-                  className="flex-[2] py-3 bg-blue-600 text-white font-black hover:bg-blue-700 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                  className="flex-[2] py-3 bg-primary-500 text-white font-black hover:bg-primary-600 shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2"
                   title="Reprint the welcome letter for this customer"
                 >
                   {loading ? (

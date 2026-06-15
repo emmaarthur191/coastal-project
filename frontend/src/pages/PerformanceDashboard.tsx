@@ -1,25 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService, PerformanceDashboardData, SystemHealthData, SystemHealthComponent, PerformanceMetric, PerformanceAlert, PerformanceRecommendation, TransactionVolumeSummary, PerformanceChartData, MLModelStatus } from '../services/api';
+import {
+  authService,
+  PerformanceDashboardData,
+  SystemHealthData,
+  SystemHealthComponent,
+  PerformanceMetric,
+  PerformanceAlert,
+  PerformanceRecommendation,
+  TransactionVolumeSummary,
+  PerformanceChartData,
+  MLModelStatus,
+} from '../services/api';
 import MLStatusCard from '../components/operational/MLStatusCard';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/ui/modern/GlassCard';
 import ModernStatCard from '../components/ui/modern/ModernStatCard';
 import { Button } from '../components/ui/Button';
-import { 
-  BarChart3, 
-  Activity, 
-  TrendingUp, 
-  AlertOctagon, 
-  Lightbulb, 
-  TrendingDown, 
+import {
+  BarChart3,
+  Activity,
+  TrendingUp,
+  AlertOctagon,
+  Lightbulb,
+  TrendingDown,
   BrainCircuit,
   Rocket,
   CheckCircle2,
   XCircle,
   Info,
   Shield,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 
@@ -115,10 +126,13 @@ function PerformanceDashboard() {
   };
 
   const fetchAnalytics = async () => {
-    const safeFetch = async <T,>(p: Promise<T>) => p.catch(_e => ({ success: false, data: undefined } as unknown as T));
+    const safeFetch = async <T,>(p: Promise<T>) =>
+      p.catch((_e) => ({ success: false, data: undefined }) as unknown as T);
     const [volumeResult, chartResult] = await Promise.all([
       safeFetch(authService.getTransactionVolume({ time_range: '24h' })),
-      safeFetch(authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' }))
+      safeFetch(
+        authService.getPerformanceChartData({ metric_type: 'response_time', time_range: '24h' })
+      ),
     ]);
 
     if (volumeResult.success && volumeResult.data) {
@@ -128,7 +142,7 @@ function PerformanceDashboard() {
       setChartData(chartResult.data);
     }
   };
-  
+
   const fetchMLStatus = async () => {
     setMlLoading(true);
     const result = await authService.getMLModelStatus();
@@ -154,13 +168,33 @@ function PerformanceDashboard() {
   };
 
   const menuItems = [
-    { id: 'dashboard', name: 'Overview', icon: <BarChart3 className="w-full h-full text-indigo-500" /> },
+    {
+      id: 'dashboard',
+      name: 'Overview',
+      icon: <BarChart3 className="w-full h-full text-indigo-500" />,
+    },
     { id: 'health', name: 'Health', icon: <Activity className="w-full h-full text-emerald-500" /> },
-    { id: 'metrics', name: 'Metrics', icon: <TrendingUp className="w-full h-full text-blue-500" /> },
-    { id: 'alerts', name: 'Alerts', icon: <AlertOctagon className="w-full h-full text-rose-500" /> },
-    { id: 'recommendations', name: 'Strategic', icon: <Lightbulb className="w-full h-full text-amber-500" /> },
-    { id: 'analytics', name: 'History', icon: <TrendingDown className="w-full h-full text-slate-400" /> },
-    { id: 'ml', name: 'AI Core', icon: <BrainCircuit className="w-full h-full text-violet-500" /> }
+    {
+      id: 'metrics',
+      name: 'Metrics',
+      icon: <TrendingUp className="w-full h-full text-blue-500" />,
+    },
+    {
+      id: 'alerts',
+      name: 'Alerts',
+      icon: <AlertOctagon className="w-full h-full text-rose-500" />,
+    },
+    {
+      id: 'recommendations',
+      name: 'Strategic',
+      icon: <Lightbulb className="w-full h-full text-amber-500" />,
+    },
+    {
+      id: 'analytics',
+      name: 'History',
+      icon: <TrendingDown className="w-full h-full text-slate-400" />,
+    },
+    { id: 'ml', name: 'AI Core', icon: <BrainCircuit className="w-full h-full text-violet-500" /> },
   ];
 
   const renderContent = () => {
@@ -202,39 +236,62 @@ function PerformanceDashboard() {
               <Activity className="w-6 h-6 text-primary-500" /> System Health Status
             </h3>
 
-            <div className={`
+            <div
+              className={`
                 p-6 rounded-2xl mb-8 border flex items-center gap-4 shadow-sm
                 ${systemHealth.status === 'healthy' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}
-            `}>
+            `}
+            >
               <div className="flex items-center justify-center w-12 h-12 rounded-full">
-                {systemHealth.status === 'healthy' ? <CheckCircle2 className="w-full h-full text-emerald-500" /> : <XCircle className="w-full h-full text-red-500" />}
+                {systemHealth.status === 'healthy' ? (
+                  <CheckCircle2 className="w-full h-full text-emerald-500" />
+                ) : (
+                  <XCircle className="w-full h-full text-red-500" />
+                )}
               </div>
               <div>
-                <h4 className={`text-xl font-black ${systemHealth.status === 'healthy' ? 'text-emerald-700' : 'text-red-700'}`}>
-                  {systemHealth.status === 'healthy' ? 'All Systems Operational' : 'System Issues Detected'}
+                <h4
+                  className={`text-xl font-black ${systemHealth.status === 'healthy' ? 'text-emerald-700' : 'text-red-700'}`}
+                >
+                  {systemHealth.status === 'healthy'
+                    ? 'All Systems Operational'
+                    : 'System Issues Detected'}
                 </h4>
-                <p className="text-sm opacity-70">
-                  Last check completed successfully
-                </p>
+                <p className="text-sm opacity-70">Last check completed successfully</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {systemHealth.components && systemHealth.components.map((component: SystemHealthComponent, index: number) => (
-                <div key={index} className={`
-                    p-5 rounded-2xl border bg-white
-                    ${component.status === 'healthy' ? 'border-gray-100' : 'border-red-100 shadow-red-50'}
-                `}>
-                  <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-bold text-slate-900 mb-3">{component.name}</h4>
-                    {component.status === 'healthy' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {systemHealth.components &&
+                systemHealth.components.map((component: SystemHealthComponent, index: number) => (
+                  <div
+                    key={index}
+                    className={`
+                    p-5 rounded-2xl border bg-white/80 dark:bg-slate-900/40 backdrop-blur-md transition-all duration-300
+                    ${component.status === 'healthy' ? 'border-gray-100 dark:border-slate-800/60' : 'border-red-100 dark:border-red-500/20 shadow-red-50 dark:shadow-none'}
+                `}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-bold text-slate-900 dark:text-white mb-3">
+                        {component.name}
+                      </h4>
+                      {component.status === 'healthy' ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-900 dark:text-slate-350 font-medium mb-3">
+                      {component.message}
+                    </p>
+                    <p className="text-xs text-black dark:text-slate-400 font-bold">
+                      Last checked:{' '}
+                      <span className="font-mono">
+                        {new Date(component.last_check).toLocaleTimeString()}
+                      </span>
+                    </p>
                   </div>
-                  <p className="text-sm text-slate-900 font-medium mb-3">{component.message}</p>
-                  <p className="text-xs text-black font-bold">
-                    Last checked: <span className="font-mono">{new Date(component.last_check).toLocaleTimeString()}</span>
-                  </p>
-                </div>
-              ))}
+                ))}
             </div>
           </GlassCard>
         );
@@ -245,27 +302,42 @@ function PerformanceDashboard() {
             <h3 className="text-2xl font-bold text-gray-800 mb-6">Detailed Metrics</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {metrics.map((metric, index) => (
-                <div key={index} className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden">
-                  <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10
+                <div
+                  key={index}
+                  className="p-5 rounded-2xl bg-white/80 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800/60 shadow-sm relative overflow-hidden backdrop-blur-md transition-all duration-300"
+                >
+                  <div
+                    className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10
                        ${metric.status === 'good' ? 'bg-emerald-500' : metric.status === 'warning' ? 'bg-amber-500' : 'bg-red-500'}
-                   `}></div>
+                   `}
+                  ></div>
 
-                  <h4 className="font-bold text-gray-800 mb-4 relative z-10">{metric.name}</h4>
+                  <h4 className="font-bold text-gray-800 dark:text-white mb-4 relative z-10">
+                    {metric.name}
+                  </h4>
 
                   <div className="flex items-end gap-2 mb-2 relative z-10">
-                    <span className="text-3xl font-black text-slate-900 font-mono tracking-tighter">{metric.value}</span>
-                    <span className="text-xs text-slate-500 font-bold uppercase mb-1.5 tracking-widest">{metric.unit}</span>
+                    <span className="text-3xl font-black text-slate-900 dark:text-amber-500 font-mono tracking-tighter">
+                      {metric.value}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase mb-1.5 tracking-widest">
+                      {metric.unit}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2 mb-4 relative z-10">
-                    <span className={`
+                    <span
+                      className={`
                           w-2 h-2 rounded-full
                           ${metric.status === 'good' ? 'bg-emerald-500' : metric.status === 'warning' ? 'bg-amber-500' : 'bg-red-500'}
-                      `}></span>
-                    <span className="text-xs font-bold text-gray-500 uppercase">{metric.status}</span>
+                      `}
+                    ></span>
+                    <span className="text-xs font-bold text-gray-500 uppercase">
+                      {metric.status}
+                    </span>
                   </div>
 
-                  <p className="text-sm text-slate-900 font-medium relative z-10">
+                  <p className="text-sm text-slate-900 dark:text-slate-350 font-medium relative z-10">
                     {metric.description}
                   </p>
                 </div>
@@ -280,26 +352,54 @@ function PerformanceDashboard() {
             <h3 className="text-2xl font-bold text-gray-800 mb-6">Performance Alerts</h3>
             <div className="space-y-4">
               {alerts.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                  No active alerts
-                </div>
+                <div className="text-center py-12 text-gray-400">No active alerts</div>
               ) : (
                 alerts.map((alert, index) => (
-                  <div key={index} className={`
+                  <div
+                    key={index}
+                    className={`
                         p-5 rounded-xl border flex flex-col md:flex-row justify-between items-start md:items-center
-                        ${alert.severity === 'critical' ? 'bg-red-50 border-red-100' :
-                      alert.severity === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}
-                    `}>
+                        ${
+                          alert.severity === 'critical'
+                            ? 'bg-red-50 border-red-100'
+                            : alert.severity === 'warning'
+                              ? 'bg-amber-50 border-amber-100'
+                              : 'bg-blue-50 border-blue-100'
+                        }
+                    `}
+                  >
                     <div className="mb-4 md:mb-0">
                       <div className="flex items-center gap-3 mb-1">
-                        {alert.severity === 'critical' ? <AlertOctagon className="w-6 h-6 text-red-500" /> : alert.severity === 'warning' ? <AlertOctagon className="w-6 h-6 text-amber-500" /> : <Info className="w-6 h-6 text-blue-500" />}
-                        <h4 className={`font-bold ${alert.severity === 'critical' ? 'text-red-900' :
-                          alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
-                          }`}>{alert.title}</h4>
+                        {alert.severity === 'critical' ? (
+                          <AlertOctagon className="w-6 h-6 text-red-500" />
+                        ) : alert.severity === 'warning' ? (
+                          <AlertOctagon className="w-6 h-6 text-amber-500" />
+                        ) : (
+                          <Info className="w-6 h-6 text-blue-500" />
+                        )}
+                        <h4
+                          className={`font-bold ${
+                            alert.severity === 'critical'
+                              ? 'text-red-900'
+                              : alert.severity === 'warning'
+                                ? 'text-amber-900'
+                                : 'text-blue-900'
+                          }`}
+                        >
+                          {alert.title}
+                        </h4>
                       </div>
-                      <p className={`text-sm ml-8 font-medium ${alert.severity === 'critical' ? 'text-red-900' :
-                        alert.severity === 'warning' ? 'text-amber-900' : 'text-blue-900'
-                        }`}>{alert.message}</p>
+                      <p
+                        className={`text-sm ml-8 font-medium ${
+                          alert.severity === 'critical'
+                            ? 'text-red-900'
+                            : alert.severity === 'warning'
+                              ? 'text-amber-900'
+                              : 'text-blue-900'
+                        }`}
+                      >
+                        {alert.message}
+                      </p>
                       <p className="text-xs text-black font-bold ml-8 mt-1">
                         {new Date(alert.timestamp).toLocaleString()}
                       </p>
@@ -308,10 +408,17 @@ function PerformanceDashboard() {
                       size="sm"
                       className={`
                             bg-white hover:bg-opacity-80 border-transparent shadow-sm
-                            ${alert.severity === 'critical' ? 'text-red-600' :
-                          alert.severity === 'warning' ? 'text-amber-600' : 'text-blue-600'}
+                            ${
+                              alert.severity === 'critical'
+                                ? 'text-red-600'
+                                : alert.severity === 'warning'
+                                  ? 'text-amber-600'
+                                  : 'text-blue-600'
+                            }
                         `}
-                      onClick={() => {/* Handle alert action */ }}
+                      onClick={() => {
+                        /* Handle alert action */
+                      }}
                     >
                       Acknowledge
                     </Button>
@@ -328,23 +435,33 @@ function PerformanceDashboard() {
             <h3 className="text-2xl font-bold text-gray-800 mb-6">System Recommendations</h3>
             <div className="space-y-6">
               {recommendations.map((rec, index) => (
-                <div key={index} className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
-                  <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <div
+                  key={index}
+                  className="p-6 rounded-2xl bg-white/80 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-800/60 shadow-sm flex flex-col md:flex-row gap-6 backdrop-blur-md transition-all duration-300"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <Lightbulb className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-lg font-bold text-slate-900 mb-2">{rec.title}</h4>
-                    <p className="text-slate-900 font-medium mb-4 leading-relaxed">{rec.description}</p>
+                    <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                      {rec.title}
+                    </h4>
+                    <p className="text-slate-900 dark:text-slate-300 font-medium mb-4 leading-relaxed">
+                      {rec.description}
+                    </p>
 
                     <div className="flex flex-wrap gap-4">
-                      <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
-                        Category: <span className="text-gray-800">{rec.category}</span>
+                      <div className="bg-gray-50 dark:bg-slate-800/40 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 dark:text-slate-400 border border-gray-100 dark:border-slate-700/60">
+                        Category:{' '}
+                        <span className="text-gray-800 dark:text-slate-200">{rec.category}</span>
                       </div>
-                      <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
-                        Impact: <span className="text-gray-800">{rec.impact}</span>
+                      <div className="bg-gray-50 dark:bg-slate-800/40 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 dark:text-slate-400 border border-gray-100 dark:border-slate-700/60">
+                        Impact:{' '}
+                        <span className="text-gray-800 dark:text-slate-200">{rec.impact}</span>
                       </div>
-                      <div className="bg-gray-50 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-100">
-                        Effort: <span className="text-gray-800">{rec.effort}</span>
+                      <div className="bg-gray-50 dark:bg-slate-800/40 px-3 py-1 rounded-lg text-xs font-medium text-gray-500 dark:text-slate-400 border border-gray-100 dark:border-slate-700/60">
+                        Effort:{' '}
+                        <span className="text-gray-800 dark:text-slate-200">{rec.effort}</span>
                       </div>
                     </div>
                   </div>
@@ -361,22 +478,22 @@ function PerformanceDashboard() {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ModernStatCard 
-                label="Aggregate Volume" 
-                value={transactionVolume.total || 0} 
+              <ModernStatCard
+                label="Aggregate Volume"
+                value={transactionVolume.total || 0}
                 icon={<BarChart3 className="w-6 h-6" />}
                 subtext="Transactions (24h)"
               />
-              <ModernStatCard 
-                label="Success Rate" 
-                value={`${transactionVolume.success_rate || 0}%`} 
+              <ModernStatCard
+                label="Success Rate"
+                value={`${transactionVolume.success_rate || 0}%`}
                 icon={<CheckCircle2 className="w-6 h-6" />}
                 trend="up"
                 colorClass="text-emerald-500"
               />
-              <ModernStatCard 
-                label="Latency" 
-                value={`${transactionVolume.avg_response_time || 0}ms`} 
+              <ModernStatCard
+                label="Latency"
+                value={`${transactionVolume.avg_response_time || 0}ms`}
                 icon={<Activity className="w-6 h-6" />}
                 colorClass="text-blue-500"
               />
@@ -388,7 +505,9 @@ function PerformanceDashboard() {
                 <div className="text-center">
                   <TrendingDown className="w-12 h-12 text-slate-200 mx-auto mb-2" />
                   <p className="text-gray-400 font-medium">Chart Visualization Placeholder</p>
-                  <p className="text-xs text-gray-300 mt-1">{(chartData.datasets?.length || 0)} data points available</p>
+                  <p className="text-xs text-gray-300 mt-1">
+                    {chartData.datasets?.length || 0} data points available
+                  </p>
                 </div>
               </div>
             </GlassCard>
@@ -401,21 +520,18 @@ function PerformanceDashboard() {
             <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
               <BrainCircuit className="w-8 h-8 text-primary-600" /> Machine Learning Core
             </h3>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <MLStatusCard 
-                status={mlStatus} 
-                onRetrain={handleTrainModel} 
-                loading={mlLoading}
-              />
-              
+              <MLStatusCard status={mlStatus} onRetrain={handleTrainModel} loading={mlLoading} />
+
               <div className="space-y-6">
                 <GlassCard className="p-6 border-blue-100 bg-blue-50/30">
                   <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
                     <Shield className="w-5 h-5 text-blue-600" /> Fraud Protection Strategy
                   </h4>
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    The AI engine uses an <strong>Isolation Forest</strong> algorithm to detect anomalous transaction patterns. It learns from:
+                    The AI engine uses an <strong>Isolation Forest</strong> algorithm to detect
+                    anomalous transaction patterns. It learns from:
                   </p>
                   <ul className="mt-4 space-y-2 text-xs text-blue-700 font-medium">
                     <li className="flex items-center gap-2">
@@ -438,10 +554,14 @@ function PerformanceDashboard() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
                       <span className="text-xs text-gray-500 font-bold uppercase">Algorithm</span>
-                      <span className="text-xs font-black text-coastal-primary">ISOLATION FOREST</span>
+                      <span className="text-xs font-black text-coastal-primary">
+                        ISOLATION FOREST
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-xs text-gray-500 font-bold uppercase">Contamination</span>
+                      <span className="text-xs text-gray-500 font-bold uppercase">
+                        Contamination
+                      </span>
                       <span className="text-xs font-black text-gray-800">0.05 (AUTO)</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">

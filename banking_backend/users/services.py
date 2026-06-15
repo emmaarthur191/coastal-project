@@ -62,7 +62,7 @@ class SendexaService:
 
     @staticmethod
     def send_sms(phone_number: str, message: str, max_retries: int = 3) -> tuple[bool, str]:
-        """Send an SMS via Sendexa with Cloudflare bypass and retry logic."""
+        """Send an SMS via Sendexa with retry logic."""
         if not phone_number:
             logger.error("Sendexa: Phone number is required")
             return False, "Phone number is required"
@@ -81,49 +81,52 @@ class SendexaService:
         outbox.message = message
         outbox.save()
 
-        # 3. Configure Client
-        url = getattr(settings, "SENDEXA_API_URL", "https://server.sendexa.co/v1/sms/send")
-        api_token_b64 = getattr(settings, "SENDEXA_SERVER_KEY", "")
+        # 3. Configure Client & Resolve Authentication
+        url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/messages")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
-        if settings.DEBUG and not api_token_b64:
+        auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "")
+        server_key = getattr(settings, "SENDEXA_SERVER_KEY", "")
+        api_key = getattr(settings, "SENDEXA_API_KEY", "")
+        api_secret = getattr(settings, "SENDEXA_API_SECRET", "")
+
+        auth_header_value = None
+
+        # Resolve auth mechanism
+        if auth_token:
+            auth_header_value = f"Bearer {auth_token}"
+        elif server_key:
+            auth_header_value = f"Bearer {server_key}"
+        elif api_key and api_secret:
+            import base64
+            credentials = f"{api_key}:{api_secret}"
+            b64_credentials = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
+            auth_header_value = f"Basic {b64_credentials}"
+
+        # 4. Debug Mocking & Validation
+        if settings.DEBUG and not auth_header_value:
             logger.info("Sendexa [DEBUG MOCK]: SMS entry validated")
             outbox.status = "sent"
             outbox.sent_at = timezone.now()
             outbox.save()
             return True, "Mock success"
 
-        if not api_token_b64:
-            msg = "SMS failed: No SENDEXA_SERVER_KEY configured for Basic auth."
+        if not auth_header_value:
+            msg = "SMS failed: No valid Sendexa credentials configured (SENDEXA_AUTH_TOKEN, SENDEXA_SERVER_KEY, or SENDEXA_API_KEY + SENDEXA_API_SECRET missing)."
             outbox.status = "failed"
             outbox.error_message = msg
             outbox.save()
             return False, msg
 
-        # 4. Authentication (Standard Basic Auth)
-        # Standard format: Base64(server_key + ":")
-        import base64
-        
-        # If the token is already base64, we use it directly. 
-        # Otherwise, we encode it correctly for Basic Auth.
-        is_token_b64 = False
-        try:
-            if api_token_b64 and len(api_token_b64) % 4 == 0:
-                base64.b64decode(api_token_b64)
-                is_token_b64 = True
-        except Exception:
-            pass
-
-        auth_header = api_token_b64
-        if not is_token_b64:
-            # Encode raw key for Basic Auth (username is empty/null in most Sendexa configs)
-            raw_auth = f"{api_token_b64}:"
-            auth_header = base64.b64encode(raw_auth.encode()).decode()
-
-        payload: dict[str, str] = {"recipient": normalized_phone, "senderId": sender_id, "message": message}
+        payload: dict[str, str] = {
+            "to": normalized_phone, 
+            "sender_id": sender_id, 
+            "message": message,
+            "channel": "sms"
+        }
 
         headers = {
-            "Authorization": f"Basic {auth_header}",
+            "Authorization": auth_header_value,
             "Content-Type": "application/json",
             "User-Agent": "CoastalBanking-FinOps/1.0",
             "Accept": "application/json",

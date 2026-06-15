@@ -89,6 +89,20 @@ class User(AbstractUser):
         ("admin", "Administrator"),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="customer")
+
+    GENDER_CHOICES = [
+        ("M", "Male"),
+        ("F", "Female"),
+        ("G", "Group"),
+    ]
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        blank=True,
+        default="",
+        help_text="Demographic classification for CUA Financial & Statistical reporting.",
+    )
+
     email = models.EmailField(unique=True, blank=True, null=True)
     is_approved = models.BooleanField(default=False)
 

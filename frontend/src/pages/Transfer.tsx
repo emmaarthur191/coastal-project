@@ -2,7 +2,7 @@
 import { formatCurrencyGHS } from '../utils/formatters';
 import { sanitizeUserInput } from '../utils/sanitizer';
 import { apiService } from '../services/api';
-import { Account } from '../api/models/Account';
+import type { Account } from '../api/types.gen';
 import { Input } from '../components/ui/Input';
 import './Transfer.css';
 
@@ -12,7 +12,7 @@ function Transfer() {
     toAccount: '',
     amount: '',
     description: '',
-    pin: ''
+    pin: '',
   });
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,7 +28,7 @@ function Transfer() {
           setAccounts(result.data);
         }
       } catch (err) {
-        console.error("Failed to fetch accounts", err);
+        console.error('Failed to fetch accounts', err);
       }
     };
     fetchAccounts();
@@ -37,14 +37,14 @@ function Transfer() {
   const transferHistory = [
     { to: 'Kwame Asare', amount: -500, date: '2025-10-08', status: 'completed' },
     { to: 'Abena Mensah', amount: -1000, date: '2025-10-05', status: 'completed' },
-    { to: 'Coastal Utilities', amount: -250, date: '2025-10-01', status: 'completed' }
+    { to: 'Coastal Utilities', amount: -250, date: '2025-10-01', status: 'completed' },
   ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -55,7 +55,7 @@ function Transfer() {
     } else {
       setIsSubmitting(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       setIsSubmitting(false);
       setShowConfirmation(true);
     }
@@ -67,15 +67,15 @@ function Transfer() {
       toAccount: '',
       amount: '',
       description: '',
-      pin: ''
+      pin: '',
     });
     setStep(1);
     setShowConfirmation(false);
   };
 
-  const selectedFromAccount = accounts.find(acc => acc.id === Number(formData.fromAccount));
-  const transferFee = 1.50; // GHS
-  const totalAmount = parseFloat(formData.amount || "0") + transferFee;
+  const selectedFromAccount = accounts.find((acc) => acc.id === Number(formData.fromAccount));
+  const transferFee = 1.5; // GHS
+  const totalAmount = parseFloat(formData.amount || '0') + transferFee;
 
   return (
     <div className="transfer-page">
@@ -83,12 +83,8 @@ function Transfer() {
       <div className="transfer-header-section">
         <div className="header-content">
           <div>
-            <h1 className="header-title">
-              Transfer Funds
-            </h1>
-            <p className="header-subtitle">
-              Send money securely to other accounts
-            </p>
+            <h1 className="header-title">Transfer Funds</h1>
+            <p className="header-subtitle">Send money securely to other accounts</p>
           </div>
           {/* Progress Steps */}
           <div className="progress-steps">
@@ -116,9 +112,7 @@ function Transfer() {
             <form onSubmit={handleSubmit}>
               {step === 1 ? (
                 <>
-                  <h3 className="section-title">
-                    Transfer Details
-                  </h3>
+                  <h3 className="section-title">Transfer Details</h3>
 
                   {/* From Account */}
                   <div className="form-group">
@@ -133,14 +127,14 @@ function Transfer() {
                       required
                     >
                       <option value="">Select source account</option>
-                      {accounts.map(account => (
+                      {accounts.map((account) => (
                         <option key={account.id} value={account.id}>
-                          Account {account.account_number} - {formatCurrencyGHS(parseFloat(account.balance || "0"))}
+                          Account {account.account_number} -{' '}
+                          {formatCurrencyGHS(parseFloat(account.balance || '0'))}
                         </option>
                       ))}
                     </Input>
                   </div>
-
 
                   {/* To Account */}
                   <div className="form-group">
@@ -155,7 +149,6 @@ function Transfer() {
                       required
                     />
                   </div>
-
 
                   {/* Amount */}
                   <div className="form-group">
@@ -172,7 +165,6 @@ function Transfer() {
                     />
                   </div>
 
-
                   {/* Description */}
                   <div className="form-group">
                     <Input
@@ -187,28 +179,26 @@ function Transfer() {
                     />
                   </div>
 
-
-                  <button
-                    type="submit"
-                    className="btn-continue"
-                  >
+                  <button type="submit" className="btn-continue">
                     Continue to Review
                   </button>
                 </>
               ) : (
                 <>
-                  <h3 className="section-title">
-                    Confirm Transfer
-                  </h3>
+                  <h3 className="section-title">Confirm Transfer</h3>
 
                   {/* Transfer Summary */}
                   <div className="confirm-summary">
                     <div className="summary-row-value summary-align-right">
-                      <div>{selectedFromAccount && `Account ${selectedFromAccount.account_number}`}</div>
+                      <div>
+                        {selectedFromAccount && `Account ${selectedFromAccount.account_number}`}
+                      </div>
                     </div>
                     <div className="summary-row">
                       <div className="summary-row-label">To Account</div>
-                      <div className="summary-row-value">{sanitizeUserInput(formData.toAccount)}</div>
+                      <div className="summary-row-value">
+                        {sanitizeUserInput(formData.toAccount)}
+                      </div>
                     </div>
                     <div className="summary-row">
                       <div className="summary-row-label">Amount</div>
@@ -245,20 +235,11 @@ function Transfer() {
                     />
                   </div>
 
-
                   <div className="btn-group">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="btn-back"
-                    >
+                    <button type="button" onClick={() => setStep(1)} className="btn-back">
                       Back
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="btn-confirm"
-                    >
+                    <button type="submit" disabled={isSubmitting} className="btn-confirm">
                       {isSubmitting ? (
                         <div className="spinner-wrapper">
                           <div className="spinner"></div>
@@ -275,14 +256,11 @@ function Transfer() {
           ) : (
             /* Success Confirmation */
             <div className="success-section">
-              <div className="success-icon-badge">
-                {/* Icon placeholder or SVG can go here */}
-              </div>
-              <h3 className="section-title">
-                Transfer Successful!
-              </h3>
+              <div className="success-icon-badge">{/* Icon placeholder or SVG can go here */}</div>
+              <h3 className="section-title">Transfer Successful!</h3>
               <p className="header-subtitle success-subtitle">
-                Your transfer of {formatCurrencyGHS(parseFloat(formData.amount))} has been processed successfully.
+                Your transfer of {formatCurrencyGHS(parseFloat(formData.amount))} has been processed
+                successfully.
               </p>
               <div className="success-summary-box">
                 <div className="success-row">
@@ -299,13 +277,8 @@ function Transfer() {
                 </div>
               </div>
               <div className="receipt-btn-group">
-                <button className="btn-receipt">
-                  Download Receipt
-                </button>
-                <button
-                  onClick={handleNewTransfer}
-                  className="btn-new-transfer"
-                >
+                <button className="btn-receipt">Download Receipt</button>
+                <button onClick={handleNewTransfer} className="btn-new-transfer">
                   New Transfer
                 </button>
               </div>
@@ -315,34 +288,26 @@ function Transfer() {
 
         {/* Transfer History */}
         <div className="history-card">
-          <h4 className="section-title history-title">
-            Recent Transfers
-          </h4>
+          <h4 className="section-title history-title">Recent Transfers</h4>
 
           <div className="history-list">
             {transferHistory.map((transfer, index) => (
               <div key={index} className="history-item">
-                <div className="history-icon">
-                  ↗
-                </div>
+                <div className="history-icon">↗</div>
                 <div className="history-details">
-                  <div className="history-name">
-                    {sanitizeUserInput(transfer.to)}
-                  </div>
-                  <div className="history-date">
-                    {transfer.date}
-                  </div>
+                  <div className="history-name">{sanitizeUserInput(transfer.to)}</div>
+                  <div className="history-date">{transfer.date}</div>
                 </div>
-                <div className={`history-amount ${transfer.amount < 0 ? 'amount-negative' : 'amount-positive'}`}>
+                <div
+                  className={`history-amount ${transfer.amount < 0 ? 'amount-negative' : 'amount-positive'}`}
+                >
                   {formatCurrencyGHS(transfer.amount)}
                 </div>
               </div>
             ))}
           </div>
 
-          <button className="btn-history-view">
-            View Full History
-          </button>
+          <button className="btn-history-view">View Full History</button>
         </div>
       </div>
     </div>
