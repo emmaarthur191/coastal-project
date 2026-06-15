@@ -29,21 +29,12 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('/react-router-dom/') || id.includes('/react-router/')) {
-              return 'vendor-router';
-            }
-            if (id.includes('/@tanstack/react-query/')) {
-              return 'vendor-query';
-            }
-            if (id.includes('/lucide-react/') || id.includes('/recharts/')) {
-              return 'vendor-ui';
-            }
             return 'vendor';
           }
         },
       },
     },
     // Increase chunk size warning limit to reduce noise
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 2000,
   },
 });
