@@ -71,6 +71,7 @@ jobs:
       run: |
         cd frontend
         npm install --legacy-peer-deps
+        mkdir -p dist
         npx cap sync android
         cd android
         chmod +x gradlew
