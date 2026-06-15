@@ -45,11 +45,10 @@ class TestSendexaServiceDelivery:
         assert success is True
         
         # Verify Basic Auth header (base64 of test_key + ":")
-        import base64
-        expected_auth = f"Basic {base64.b64encode(b'test_key:').decode()}"
-
-        args, kwargs = mock_post.call_args
-        assert kwargs["headers"]["Authorization"] == expected_auth
+        
+        # Extract arguments
+        call_args = mock_post.call_args
+        assert call_args[1]["headers"]["Authorization"] == "Bearer test_key"
         assert SmsOutbox.objects.filter(status="sent", phone_number_hash=hash_field("+233244123456")).exists()
 
     @patch("httpx.Client.post")
@@ -66,3 +65,40 @@ class TestSendexaServiceDelivery:
         assert success is False
         assert "HTTP 401" in result
         assert mock_post.call_count == 1
+
+    @patch("httpx.Client.post")
+    def test_send_sms_auth_token_priority(self, mock_post, settings):
+        """Test SENDEXA_AUTH_TOKEN priority Bearer Token auth."""
+        settings.SENDEXA_AUTH_TOKEN = "custom_token"
+        settings.SENDEXA_SERVER_KEY = "ignored_key"
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"success": True}
+        mock_post.return_value = mock_response
+
+        success, result = SendexaService.send_sms("0244123456", "Hello Priority Token")
+
+        assert success is True
+        call_args = mock_post.call_args
+        assert call_args[1]["headers"]["Authorization"] == "Bearer custom_token"
+
+    @patch("httpx.Client.post")
+    def test_send_sms_basic_auth_fallback(self, mock_post, settings):
+        """Test fallback Basic Auth generated from API Key + API Secret."""
+        settings.SENDEXA_AUTH_TOKEN = ""
+        settings.SENDEXA_SERVER_KEY = ""
+        settings.SENDEXA_API_KEY = "my_api_key"
+        settings.SENDEXA_API_SECRET = "my_api_secret"
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"success": True}
+        mock_post.return_value = mock_response
+
+        success, result = SendexaService.send_sms("0244123456", "Hello Basic Auth")
+
+        assert success is True
+        call_args = mock_post.call_args
+        # base64.b64encode(b"my_api_key:my_api_secret") -> b"bXlfYXBpX2tleTpteV9hcGlfc2VjcmV0"
+        assert call_args[1]["headers"]["Authorization"] == "Basic bXlfYXBpX2tleTpteV9hcGlfc2VjcmV0"

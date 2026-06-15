@@ -1,36 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class', // Enable class-based dark mode
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
         // Coastal Premium Theme
         coastal: {
-          dark: '#050a14',    // Darker Navy for Contrast
-          light: '#ffffff',   // Pure White
-          primary: '#0052CC', // Coastal Blue
-          accent: '#DE350B',  // Brand Red
+          dark: '#050a14', // Darker Navy for Contrast
+          light: '#ffffff', // Pure White
+          primary: 'var(--primary-500)', // Dynamic
+          accent: '#DE350B', // Brand Red
           success: '#36B37E', // Success Green
           surface: '#ffffff', // Pure White
-          blue: '#0052CC',    // Sky Blue
+          blue: 'var(--primary-500)', // Dynamic
         },
-        // Deep Ocean Primary - #0284c7 (Light Blue) to #0c4a6e (Deep Ocean)
+        // Deep Ocean Primary - Dynamic CSS Variables
         primary: {
-          50: '#deebff',
-          100: '#b3d4ff',
-          200: '#4c9aff',
-          300: '#2684ff',
-          400: '#0065e0',
-          500: '#0052CC', // Coastal Blue
-          600: '#0747a6',
-          700: '#003884',
-          800: '#00214a',
-          900: '#001024',
-          950: '#000812',
+          50: 'var(--primary-50)',
+          100: 'var(--primary-100)',
+          200: 'var(--primary-200)',
+          300: 'var(--primary-300)',
+          400: 'var(--primary-400)',
+          500: 'var(--primary-500)',
+          600: 'var(--primary-600)',
+          700: 'var(--primary-700)',
+          800: 'var(--primary-800)',
+          900: 'var(--primary-900)',
+          950: 'var(--primary-900)', // Map fallback
         },
         // Secondary - Slate Gray (Professional & Clean)
         secondary: {
@@ -108,16 +105,24 @@ export default {
         transparent: 'transparent',
       },
       fontFamily: {
-        sans: ['Google Sans', 'Roboto', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        sans: [
+          'Google Sans',
+          'Roboto',
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'sans-serif',
+        ],
         display: ['Google Sans Display', 'Roboto', 'sans-serif'],
         mono: ['JetBrains Mono', 'Consolas', 'Monaco', 'monospace'],
       },
       fontSize: {
-        'xs': ['0.75rem', { lineHeight: '1rem' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
+        xs: ['0.75rem', { lineHeight: '1rem' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem' }],
+        base: ['1rem', { lineHeight: '1.5rem' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem' }],
+        xl: ['1.25rem', { lineHeight: '1.75rem' }],
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
         '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
@@ -128,16 +133,16 @@ export default {
         '9xl': ['8rem', { lineHeight: '1' }],
       },
       spacing: {
-        '18': '4.5rem',
-        '88': '22rem',
-        '128': '32rem',
-        '144': '36rem',
+        18: '4.5rem',
+        88: '22rem',
+        128: '32rem',
+        144: '36rem',
       },
       minHeight: {
-        'touch': '44px', // Minimum touch target size
+        touch: '44px', // Minimum touch target size
       },
       minWidth: {
-        'touch': '44px', // Minimum touch target size
+        touch: '44px', // Minimum touch target size
       },
       maxWidth: {
         'screen-xs': '475px',
@@ -148,27 +153,27 @@ export default {
         'screen-2xl': '1536px',
       },
       boxShadow: {
-        'soft': '0 2px 8px rgba(0, 0, 0, 0.04)',
-        'card': '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)',
+        soft: '0 2px 8px rgba(0, 0, 0, 0.04)',
+        card: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)',
         'card-hover': '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)',
-        'elevated': '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06)',
-        'float': '0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08)',
+        elevated: '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06)',
+        float: '0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08)',
         'focus-ring': '0 0 0 3px rgba(0, 102, 204, 0.1)',
         'focus-ring-error': '0 0 0 3px rgba(204, 0, 0, 0.1)',
         'focus-ring-warning': '0 0 0 3px rgba(255, 215, 0, 0.1)',
       },
       borderRadius: {
-        'sm': '0.375rem',
-        'DEFAULT': '0.5rem',
-        'md': '0.625rem',
-        'lg': '0.75rem',
-        'xl': '1rem',
+        sm: '0.375rem',
+        DEFAULT: '0.5rem',
+        md: '0.625rem',
+        lg: '0.75rem',
+        xl: '1rem',
         '2xl': '1.25rem',
         '3xl': '1.5rem',
-        'full': '9999px',
+        full: '9999px',
       },
       borderWidth: {
-        '3': '3px',
+        3: '3px',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
@@ -177,7 +182,7 @@ export default {
         'scale-in': 'scaleIn 0.2s ease-out',
         'bounce-gentle': 'bounceGentle 2s infinite',
         'pulse-gentle': 'pulseGentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'shimmer': 'shimmer 2s infinite linear',
+        shimmer: 'shimmer 2s infinite linear',
       },
       keyframes: {
         fadeIn: {
@@ -221,18 +226,18 @@ export default {
         },
       },
       backdropBlur: {
-        'xs': '2px',
+        xs: '2px',
       },
       // Breakpoints for responsive design
       screens: {
-        'xs': '475px',
-        'sm': '640px',
-        'md': '768px',
-        'lg': '1024px',
-        'xl': '1280px',
+        xs: '475px',
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
         '2xl': '1536px',
       },
     },
   },
   plugins: [],
-}
+};

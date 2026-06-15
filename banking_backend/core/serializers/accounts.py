@@ -65,6 +65,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(required=False, allow_blank=True)
     id_type = serializers.CharField(required=False, allow_blank=True)
     id_number = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.CharField(required=False, allow_blank=True)
 
     def to_internal_value(self, data):
         """Handle nested account_data and field aliases."""
@@ -116,6 +117,7 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
             "location",
             "next_of_kin_data",
             "photo",
+            "gender",
             "status",
             "full_name",
             "processed_by",

@@ -3,17 +3,18 @@ import { api, API_BASE_URL, PaginatedResponse } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FraudRule, RuleTypeEnum, SeverityEnum } from '../api';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { 
-  CircleDollarSign, 
-  Zap, 
-  Globe, 
-  Clock, 
-  User, 
-  Shield, 
-  ShieldCheck, 
-  PlusCircle, 
-  Pencil
+import {
+  CircleDollarSign,
+  Zap,
+  Globe,
+  Clock,
+  User,
+  Shield,
+  ShieldCheck,
+  PlusCircle,
+  Pencil,
 } from 'lucide-react';
+import { Pagination } from '../components/ui/Pagination';
 import './FraudRules.css';
 
 // Get WebSocket base URL from environment
@@ -23,8 +24,7 @@ const getWsBaseUrl = () => {
   }
 
   // Use centralized API_BASE_URL and convert to WebSocket
-  return API_BASE_URL
-    .replace('http://', 'ws://')
+  return API_BASE_URL.replace('http://', 'ws://')
     .replace('https://', 'wss://')
     .replace('/api/', '/ws/');
 };
@@ -35,12 +35,16 @@ const FraudRules: React.FC = React.memo(() => {
   const [activeRules, setActiveRules] = useState<FraudRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  // Pagination states
+  const [rulesPage, setRulesPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
   const [editingRule, setEditingRule] = useState<FraudRule | null>(null);
   const [formData, setFormData] = useState<Partial<FraudRule>>({
     name: '',
     description: '',
-    rule_type: RuleTypeEnum.TRANSACTION_AMOUNT,
-    severity: SeverityEnum.MEDIUM,
+    rule_type: 'transaction_amount',
+    severity: 'medium',
     field: '',
     operator: '',
     value: '',
@@ -48,7 +52,7 @@ const FraudRules: React.FC = React.memo(() => {
     is_active: true,
     auto_block: false,
     require_approval: false,
-    escalation_threshold: 0
+    escalation_threshold: 0,
   });
 
   const fetchRules = useCallback(async () => {
@@ -71,7 +75,9 @@ const FraudRules: React.FC = React.memo(() => {
 
   const fetchActiveRules = useCallback(async () => {
     try {
-      const response = await api.get<PaginatedResponse<FraudRule> | FraudRule[]>('/fraud/rules/active_rules/');
+      const response = await api.get<PaginatedResponse<FraudRule> | FraudRule[]>(
+        '/fraud/rules/active_rules/'
+      );
       const data = response.data;
       if (data && 'results' in data && Array.isArray(data.results)) {
         setActiveRules(data.results);
@@ -88,14 +94,17 @@ const FraudRules: React.FC = React.memo(() => {
   // WebSocket for real-time fraud alerts
   const { isConnected } = useWebSocket({
     url: `${getWsBaseUrl()}fraud-alerts/${user?.id || ''}`,
-    onMessage: useCallback((message) => {
-      if (message.type === 'fraud_alert_update') {
-        console.warn('Real-time fraud alert:', message.alert);
-        // Refresh rules to show updated trigger counts
-        fetchRules();
-        fetchActiveRules();
-      }
-    }, [fetchRules, fetchActiveRules]),
+    onMessage: useCallback(
+      (message) => {
+        if (message.type === 'fraud_alert_update') {
+          console.warn('Real-time fraud alert:', message.alert);
+          // Refresh rules to show updated trigger counts
+          fetchRules();
+          fetchActiveRules();
+        }
+      },
+      [fetchRules, fetchActiveRules]
+    ),
   });
 
   useEffect(() => {
@@ -119,7 +128,7 @@ const FraudRules: React.FC = React.memo(() => {
     if (!editingRule?.id) return;
     try {
       const response = await api.put<FraudRule>(`/fraud/rules/${editingRule.id}/`, formData);
-      setRules(rules.map(rule => rule.id === editingRule.id ? response.data : rule));
+      setRules(rules.map((rule) => (rule.id === editingRule.id ? response.data : rule)));
       setEditingRule(null);
       resetForm();
       fetchActiveRules();
@@ -142,8 +151,8 @@ const FraudRules: React.FC = React.memo(() => {
     setFormData({
       name: '',
       description: '',
-      rule_type: RuleTypeEnum.TRANSACTION_AMOUNT,
-      severity: SeverityEnum.MEDIUM,
+      rule_type: 'transaction_amount',
+      severity: 'medium',
       field: '',
       operator: '',
       value: '',
@@ -151,7 +160,7 @@ const FraudRules: React.FC = React.memo(() => {
       is_active: true,
       auto_block: false,
       require_approval: false,
-      escalation_threshold: 0
+      escalation_threshold: 0,
     });
   };
 
@@ -169,20 +178,24 @@ const FraudRules: React.FC = React.memo(() => {
       is_active: rule.is_active,
       auto_block: rule.auto_block,
       require_approval: rule.require_approval,
-      escalation_threshold: rule.escalation_threshold
+      escalation_threshold: rule.escalation_threshold,
     });
   };
 
-
-
   const getRuleTypeIcon = (type: RuleTypeEnum) => {
     switch (type) {
-      case RuleTypeEnum.TRANSACTION_AMOUNT: return <CircleDollarSign className="w-5 h-5 text-emerald-500" />;
-      case RuleTypeEnum.VELOCITY: return <Zap className="w-5 h-5 text-amber-500" />;
-      case RuleTypeEnum.GEOGRAPHIC: return <Globe className="w-5 h-5 text-blue-500" />;
-      case RuleTypeEnum.TIME_BASED: return <Clock className="w-5 h-5 text-slate-500" />;
-      case RuleTypeEnum.ACCOUNT_ACTIVITY: return <User className="w-5 h-5 text-coastal-primary" />;
-      default: return <Shield className="w-5 h-5 text-coastal-primary" />;
+      case 'transaction_amount':
+        return <CircleDollarSign className="w-5 h-5 text-emerald-500" />;
+      case 'velocity':
+        return <Zap className="w-5 h-5 text-amber-500" />;
+      case 'geographic':
+        return <Globe className="w-5 h-5 text-blue-500" />;
+      case 'time_based':
+        return <Clock className="w-5 h-5 text-slate-500" />;
+      case 'account_activity':
+        return <User className="w-5 h-5 text-coastal-primary" />;
+      default:
+        return <Shield className="w-5 h-5 text-coastal-primary" />;
     }
   };
 
@@ -200,9 +213,7 @@ const FraudRules: React.FC = React.memo(() => {
       {/* Header */}
       <div className="fraud-header">
         <div className="header-title-row">
-          <h1 className="fraud-title">
-            Fraud Detection Rules
-          </h1>
+          <h1 className="fraud-title">Fraud Detection Rules</h1>
           <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot"></span>
             {isConnected ? 'Live Monitoring Active' : 'Real-time Updates Offline'}
@@ -225,19 +236,19 @@ const FraudRules: React.FC = React.memo(() => {
           </div>
           <div className="stat-item">
             <div className="stat-value critical">
-              {activeRules.filter(r => r.severity === SeverityEnum.CRITICAL).length}
+              {activeRules.filter((r) => r.severity === 'critical').length}
             </div>
             <div className="stat-label">Critical Rules</div>
           </div>
           <div className="stat-item">
             <div className="stat-value auto-block">
-              {activeRules.filter(r => r.auto_block).length}
+              {activeRules.filter((r) => r.auto_block).length}
             </div>
             <div className="stat-label">Auto-Block Rules</div>
           </div>
           <div className="stat-item">
             <div className="stat-value approval">
-              {activeRules.filter(r => r.require_approval).length}
+              {activeRules.filter((r) => r.require_approval).length}
             </div>
             <div className="stat-label">Approval Required</div>
           </div>
@@ -257,93 +268,100 @@ const FraudRules: React.FC = React.memo(() => {
 
       {/* Rules List */}
       <div className="rules-list">
-        {rules.map((rule) => (
-          <div
-            key={rule.id}
-            className="rule-card"
-          >
-            <div className="rule-card-header">
-              <div className="rule-info-main">
-                <div className="rule-type-icon">
-                  {getRuleTypeIcon(rule.rule_type)}
+        {(() => {
+          const paginatedRules = rules.slice(
+            (rulesPage - 1) * ITEMS_PER_PAGE,
+            rulesPage * ITEMS_PER_PAGE
+          );
+          return paginatedRules.map((rule) => (
+            <div key={rule.id} className="rule-card">
+              <div className="rule-card-header">
+                <div className="rule-info-main">
+                  <div className="rule-type-icon">{getRuleTypeIcon(rule.rule_type)}</div>
+                  <div>
+                    <h3 className="rule-name">{rule.name}</h3>
+                    <p className="rule-description-text">{rule.description}</p>
+                  </div>
+                </div>
+                <div className="rule-actions">
+                  <span className={`severity-badge ${rule.severity.toLowerCase()}`}>
+                    {rule.severity}
+                  </span>
+                  <button
+                    onClick={() => handleToggleActive(rule.id)}
+                    className={`toggle-active-btn ${rule.is_active ? 'active' : 'inactive'}`}
+                  >
+                    {rule.is_active ? 'Active' : 'Inactive'}
+                  </button>
+                  <button
+                    onClick={() => openEditDialog(rule)}
+                    className="edit-rule-btn"
+                    title="Edit Rule"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="rule-meta-grid">
+                <div>
+                  <span className="meta-item-label">Rule Logic</span>
+                  <span className="meta-item-value">
+                    {rule.field} {rule.operator} {rule.value}
+                  </span>
                 </div>
                 <div>
-                  <h3 className="rule-name">
-                    {rule.name}
-                  </h3>
-                  <p className="rule-description-text">
-                    {rule.description}
-                  </p>
+                  <span className="meta-item-label">Triggered</span>
+                  <span className="meta-item-value">{rule.trigger_count} times</span>
+                </div>
+                <div>
+                  <span className="meta-item-label">False Positives</span>
+                  <span className="meta-item-value text-danger">{rule.false_positive_count}</span>
+                </div>
+                <div>
+                  <span className="meta-item-label">Last Triggered</span>
+                  <span className="meta-item-value">
+                    {rule.last_triggered ? new Date(rule.last_triggered).toLocaleString() : 'Never'}
+                  </span>
                 </div>
               </div>
-              <div className="rule-actions">
-                <span className={`severity-badge ${rule.severity.toLowerCase()}`}>
-                  {rule.severity}
-                </span>
-                <button
-                  onClick={() => handleToggleActive(rule.id)}
-                  className={`toggle-active-btn ${rule.is_active ? 'active' : 'inactive'}`}
-                >
-                  {rule.is_active ? 'Active' : 'Inactive'}
-                </button>
-                <button
-                  onClick={() => openEditDialog(rule)}
-                  className="edit-rule-btn"
-                  title="Edit Rule"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
 
-            <div className="rule-meta-grid">
-              <div>
-                <span className="meta-item-label">Rule Logic</span>
-                <span className="meta-item-value">
-                  {rule.field} {rule.operator} {rule.value}
-                </span>
-              </div>
-              <div>
-                <span className="meta-item-label">Triggered</span>
-                <span className="meta-item-value">
-                  {rule.trigger_count} times
-                </span>
-              </div>
-              <div>
-                <span className="meta-item-label">False Positives</span>
-                <span className="meta-item-value text-danger">
-                  {rule.false_positive_count}
-                </span>
-              </div>
-              <div>
-                <span className="meta-item-label">Last Triggered</span>
-                <span className="meta-item-value">
-                  {rule.last_triggered ? new Date(rule.last_triggered).toLocaleString() : 'Never'}
-                </span>
+              <div className="rule-options">
+                <label className="option-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={rule.auto_block}
+                    readOnly
+                    className="option-checkbox-input"
+                  />
+                  Auto-block Transactions
+                </label>
+                <label className="option-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={rule.require_approval}
+                    readOnly
+                    className="option-checkbox-input"
+                  />
+                  Require Manual Approval
+                </label>
               </div>
             </div>
-
-            <div className="rule-options">
-              <label className="option-checkbox-label">
-                <input type="checkbox" checked={rule.auto_block} readOnly className="option-checkbox-input" />
-                Auto-block Transactions
-              </label>
-              <label className="option-checkbox-label">
-                <input type="checkbox" checked={rule.require_approval} readOnly className="option-checkbox-input" />
-                Require Manual Approval
-              </label>
-            </div>
-          </div>
-        ))}
+          ));
+        })()}
       </div>
+      <Pagination
+        currentPage={rulesPage}
+        totalItems={rules.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setRulesPage}
+      />
 
       {/* Create/Edit Dialog */}
       {(showCreateDialog || editingRule) && (
         <div className="dialog-overlay">
           <div className="dialog-container">
-            <h2 className="dialog-title">
-              {editingRule ? 'Edit Rule' : 'Create New Rule'}
-            </h2>
+            <h2 className="dialog-title">{editingRule ? 'Edit Rule' : 'Create New Rule'}</h2>
 
             <div className="form-grid">
               <div className="form-row-2col">
@@ -364,12 +382,22 @@ const FraudRules: React.FC = React.memo(() => {
                     id="rule-type"
                     className="field-select"
                     value={formData.rule_type}
-                    onChange={(e) => setFormData({ ...formData, rule_type: e.target.value as RuleTypeEnum })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rule_type: e.target.value as RuleTypeEnum })
+                    }
                     title="Select the category of the fraud rule"
                   >
                     <option value="">Select Type</option>
-                    {(Object.values(RuleTypeEnum) as RuleTypeEnum[]).map(type => (
-                      <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                    {[
+                      'transaction_amount',
+                      'velocity',
+                      'geographic',
+                      'time_based',
+                      'account_activity',
+                    ].map((type) => (
+                      <option key={type} value={type}>
+                        {type.replace(/_/g, ' ')}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -435,11 +463,15 @@ const FraudRules: React.FC = React.memo(() => {
                     id="rule-severity"
                     className="field-select"
                     value={formData.severity}
-                    onChange={(e) => setFormData({ ...formData, severity: e.target.value as SeverityEnum })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, severity: e.target.value as SeverityEnum })
+                    }
                     title="Alert severity level"
                   >
-                    {(Object.values(SeverityEnum) as SeverityEnum[]).map(sev => (
-                      <option key={sev} value={sev}>{sev.toUpperCase()}</option>
+                    {['low', 'medium', 'high', 'critical'].map((sev) => (
+                      <option key={sev} value={sev}>
+                        {sev.toUpperCase()}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -450,7 +482,12 @@ const FraudRules: React.FC = React.memo(() => {
                     className="field-input"
                     type="number"
                     value={formData.escalation_threshold}
-                    onChange={(e) => setFormData({ ...formData, escalation_threshold: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        escalation_threshold: parseInt(e.target.value) || 0,
+                      })
+                    }
                     placeholder="0"
                     title="Number of triggers before escalation"
                   />
@@ -475,7 +512,9 @@ const FraudRules: React.FC = React.memo(() => {
                     type="checkbox"
                     className="dialog-checkbox-input"
                     checked={formData.require_approval}
-                    onChange={(e) => setFormData({ ...formData, require_approval: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, require_approval: e.target.checked })
+                    }
                     title="Require manual review for transactions that trigger this rule"
                   />
                   Require Manual Approval
@@ -486,7 +525,11 @@ const FraudRules: React.FC = React.memo(() => {
             <div className="dialog-actions">
               <button
                 className="btn-cancel"
-                onClick={() => { setShowCreateDialog(false); setEditingRule(null); resetForm(); }}
+                onClick={() => {
+                  setShowCreateDialog(false);
+                  setEditingRule(null);
+                  resetForm();
+                }}
               >
                 Cancel
               </button>

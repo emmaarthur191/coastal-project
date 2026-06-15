@@ -7,18 +7,18 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import RequestServicesTab from '../components/member/RequestServicesTab';
-import { 
-  CircleDollarSign, 
-  Building2, 
-  Banknote, 
-  ClipboardList, 
-  Lock, 
-  ShieldCheck, 
+import {
+  CircleDollarSign,
+  Building2,
+  Banknote,
+  ClipboardList,
+  Lock,
+  ShieldCheck,
   AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
   FileText,
-  CheckCircle2
+  CheckCircle2,
 } from 'lucide-react';
 import { MemberDashboardData, Transaction, Account, ServiceRequest, LoanExtended } from '../types';
 
@@ -52,7 +52,7 @@ function MemberDashboard() {
   const [passwordForm, setPasswordForm] = useState({
     current_password: '',
     new_password: '',
-    confirm_password: ''
+    confirm_password: '',
   });
 
   const [otpCode, setOtpCode] = useState('');
@@ -66,7 +66,7 @@ function MemberDashboard() {
     services: true,
     loans: true,
     password: true,
-    twofa: true
+    twofa: true,
   });
 
   // --- DATA FETCHING FUNCTIONS ---
@@ -128,12 +128,42 @@ function MemberDashboard() {
   }, []);
 
   const menuItems = [
-    { id: 'balance', name: 'Account Balance', icon: <CircleDollarSign className="w-full h-full" />, available: backendStatus.balance },
-    { id: 'accounts', name: 'Account Types', icon: <Building2 className="w-full h-full" />, available: backendStatus.accounts },
-    { id: 'loans', name: 'My Loans', icon: <Banknote className="w-full h-full" />, available: backendStatus.loans },
-    { id: 'services', name: 'Request Services', icon: <ClipboardList className="w-full h-full" />, available: backendStatus.services },
-    { id: 'password', name: 'Change Password', icon: <Lock className="w-full h-full" />, available: true },
-    { id: 'twofa', name: 'Activate 2FA', icon: <ShieldCheck className="w-full h-full" />, available: true }
+    {
+      id: 'balance',
+      name: 'Account Balance',
+      icon: <CircleDollarSign className="w-full h-full" />,
+      available: backendStatus.balance,
+    },
+    {
+      id: 'accounts',
+      name: 'Account Types',
+      icon: <Building2 className="w-full h-full" />,
+      available: backendStatus.accounts,
+    },
+    {
+      id: 'loans',
+      name: 'My Loans',
+      icon: <Banknote className="w-full h-full" />,
+      available: backendStatus.loans,
+    },
+    {
+      id: 'services',
+      name: 'Request Services',
+      icon: <ClipboardList className="w-full h-full" />,
+      available: backendStatus.services,
+    },
+    {
+      id: 'password',
+      name: 'Change Password',
+      icon: <Lock className="w-full h-full" />,
+      available: true,
+    },
+    {
+      id: 'twofa',
+      name: 'Activate 2FA',
+      icon: <ShieldCheck className="w-full h-full" />,
+      available: true,
+    },
   ];
 
   // --- EFFECTS ---
@@ -148,7 +178,7 @@ function MemberDashboard() {
           fetchAccountBalance(),
           fetchAccounts(),
           fetchServiceRequests(),
-          fetchLoans()
+          fetchLoans(),
         ]);
 
         if (isMounted) {
@@ -158,7 +188,7 @@ function MemberDashboard() {
             services: servicesOk,
             loans: loansOk,
             password: true,
-            twofa: true
+            twofa: true,
           });
         }
       } catch (error) {
@@ -223,7 +253,7 @@ function MemberDashboard() {
       const result = await authService.changePassword({
         old_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
-        confirm_password: passwordForm.confirm_password
+        confirm_password: passwordForm.confirm_password,
       });
       if (result.success) {
         alert('Password changed successfully!');
@@ -236,16 +266,17 @@ function MemberDashboard() {
     }
   };
 
-
-
   const handleSendOTP = async () => {
     try {
-      const result = await authService.sendOTP({ phone_number: user.phone, verification_type: '2fa_setup' });
+      const result = await authService.sendOTP({
+        phone_number: user.phone,
+        verification_type: '2fa_setup',
+      });
       if (result.success) {
         setOtpSent(true);
         setOtpExpiresIn(300);
         const timer = setInterval(() => {
-          setOtpExpiresIn(prev => {
+          setOtpExpiresIn((prev) => {
             if (prev <= 1) {
               clearInterval(timer);
               setOtpSent(false);
@@ -264,7 +295,11 @@ function MemberDashboard() {
 
   const handleVerifyOTP = async () => {
     try {
-      const result = await authService.verifyOTP({ phone_number: user.phone, otp_code: otpCode, verification_type: '2fa_setup' });
+      const result = await authService.verifyOTP({
+        phone_number: user.phone,
+        otp_code: otpCode,
+        verification_type: '2fa_setup',
+      });
       if (result.success) {
         setTwoFactorStatus({ enabled: true });
         setOtpCode('');
@@ -280,7 +315,7 @@ function MemberDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--app-bg)]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
       </div>
     );
@@ -346,24 +381,41 @@ function MemberDashboard() {
                     const amount = parseFloat(transaction.amount);
                     const isPositive = amount > 0;
                     return (
-                      <div key={index} className="flex justify-between items-center p-4 bg-secondary-50 rounded-lg border border-secondary-100 hover:border-primary-200 transition-colors">
+                      <div
+                        key={index}
+                        className="flex justify-between items-center p-4 bg-[var(--app-bg)] rounded-lg border border-secondary-100 hover:border-primary-200 transition-colors"
+                      >
                         <div className="flex items-center">
-                          <div className={`p-2 rounded-full mr-4 ${isPositive ? 'bg-success-100 text-success-600' : 'bg-error-100 text-error-600'}`}>
-                            {isPositive ? <ArrowDownCircle className="w-5 h-5" /> : <ArrowUpCircle className="w-5 h-5" />}
+                          <div
+                            className={`p-2 rounded-full mr-4 ${isPositive ? 'bg-success-100 text-success-600' : 'bg-error-100 text-error-600'}`}
+                          >
+                            {isPositive ? (
+                              <ArrowDownCircle className="w-5 h-5" />
+                            ) : (
+                              <ArrowUpCircle className="w-5 h-5" />
+                            )}
                           </div>
                           <div>
-                            <p className="font-semibold text-secondary-900">{transaction.description}</p>
-                            <p className="text-xs text-secondary-500">{new Date(transaction.timestamp).toLocaleDateString()}</p>
+                            <p className="font-semibold text-secondary-900">
+                              {transaction.description}
+                            </p>
+                            <p className="text-xs text-secondary-500">
+                              {new Date(transaction.timestamp).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
-                        <span className={`font-bold ${isPositive ? 'text-success-600' : 'text-secondary-900'}`}>
+                        <span
+                          className={`font-bold ${isPositive ? 'text-success-600' : 'text-secondary-900'}`}
+                        >
                           {formatCurrencyGHS(amount)}
                         </span>
                       </div>
                     );
                   })}
                   {transactions.length === 0 && (
-                    <p className="text-center text-secondary-500 py-4">No recent transactions found.</p>
+                    <p className="text-center text-secondary-500 py-4">
+                      No recent transactions found.
+                    </p>
                   )}
                 </div>
               </Card>
@@ -385,8 +437,12 @@ function MemberDashboard() {
                   ****{account.account_number?.slice(-4) || '****'}
                 </span>
               </div>
-              <h4 className="text-lg font-bold text-secondary-900 mb-1">{account.account_type_display} Account</h4>
-              <p className="text-2xl font-bold text-primary-600">{formatCurrencyGHS(parseFloat(account.balance || '0'))}</p>
+              <h4 className="text-lg font-bold text-secondary-900 mb-1">
+                {account.account_type_display} Account
+              </h4>
+              <p className="text-2xl font-bold text-primary-600">
+                {formatCurrencyGHS(parseFloat(account.balance || '0'))}
+              </p>
             </Card>
           ))}
         </div>
@@ -401,28 +457,41 @@ function MemberDashboard() {
             </div>
             <div className="space-y-4">
               {loans.map((loan, index) => (
-                <div key={index} className="p-6 bg-secondary-50 rounded-xl border border-secondary-100">
+                <div
+                  key={index}
+                  className="p-6 bg-[var(--app-bg)] rounded-xl border border-secondary-100"
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="font-bold text-secondary-900">Loan #{loan.id}</h4>
-                      <p className="text-sm text-secondary-500">{loan.purpose || 'General Purpose'}</p>
+                      <p className="text-sm text-secondary-500">
+                        {loan.purpose || 'General Purpose'}
+                      </p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      loan.status === 'approved' ? 'bg-success-50 text-success-700 border border-success-200' :
-                      loan.status === 'pending' ? 'bg-warning-50 text-warning-700 border border-warning-200' :
-                      'bg-error-50 text-error-700 border border-error-200'
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        loan.status === 'approved'
+                          ? 'bg-success-50 text-success-700 border border-success-200'
+                          : loan.status === 'pending'
+                            ? 'bg-warning-50 text-warning-700 border border-warning-200'
+                            : 'bg-error-50 text-error-700 border border-error-200'
+                      }`}
+                    >
                       {loan.status?.toUpperCase()}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
                       <p className="text-xs text-secondary-400">Principal</p>
-                      <p className="font-bold text-secondary-900">{formatCurrencyGHS(Number(loan.amount) || 0)}</p>
+                      <p className="font-bold text-secondary-900">
+                        {formatCurrencyGHS(Number(loan.amount) || 0)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-secondary-400">Current Balance</p>
-                      <p className="font-bold text-primary-600">{formatCurrencyGHS(Number(loan.balance || loan.amount) || 0)}</p>
+                      <p className="font-bold text-primary-600">
+                        {formatCurrencyGHS(Number(loan.balance || loan.amount) || 0)}
+                      </p>
                     </div>
                   </div>
                   {loan.status === 'approved' && (
@@ -438,10 +507,17 @@ function MemberDashboard() {
               ))}
               {loans.length === 0 && (
                 <div className="text-center py-12">
-                <div className="flex justify-center mb-4">
-                  <FileText className="w-12 h-12 text-slate-300" />
-                </div>
-                  <p className="text-secondary-500">You don't have any active loans.</p>
+                  <div className="flex justify-center mb-4">
+                    <FileText className="w-12 h-12 text-slate-300" />
+                  </div>
+                  <p className="text-secondary-500 mb-6">You don't have any active loans.</p>
+                  <Button
+                    onClick={() => setActiveView('services')}
+                    variant="primary"
+                    className="mx-auto"
+                  >
+                    Apply for a Loan
+                  </Button>
                 </div>
               )}
             </div>
@@ -464,39 +540,62 @@ function MemberDashboard() {
             <h3 className="text-lg font-bold text-secondary-900 mb-6">Change Password</h3>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label htmlFor="current-password" className="block text-sm font-medium text-secondary-700 mb-1">Current Password</label>
+                <label
+                  htmlFor="current-password"
+                  className="block text-sm font-medium text-secondary-700 mb-1"
+                >
+                  Current Password
+                </label>
                 <input
                   id="current-password"
                   type="password"
                   value={passwordForm.current_password}
-                  onChange={e => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, current_password: e.target.value })
+                  }
                   className="w-full rounded-lg border-secondary-300 border p-2"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="new-password" className="block text-sm font-medium text-secondary-700 mb-1">New Password</label>
+                <label
+                  htmlFor="new-password"
+                  className="block text-sm font-medium text-secondary-700 mb-1"
+                >
+                  New Password
+                </label>
                 <input
                   id="new-password"
                   type="password"
                   value={passwordForm.new_password}
-                  onChange={e => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, new_password: e.target.value })
+                  }
                   className="w-full rounded-lg border-secondary-300 border p-2"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-secondary-700 mb-1">Confirm New Password</label>
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-sm font-medium text-secondary-700 mb-1"
+                >
+                  Confirm New Password
+                </label>
                 <input
                   id="confirm-password"
                   type="password"
                   value={passwordForm.confirm_password}
-                  onChange={e => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, confirm_password: e.target.value })
+                  }
                   className="w-full rounded-lg border-secondary-300 border p-2"
                   required
                 />
               </div>
-              <Button type="submit" variant="primary" className="w-full mt-4">Update Password</Button>
+              <Button type="submit" variant="primary" className="w-full mt-4">
+                Update Password
+              </Button>
             </form>
           </Card>
         </div>
@@ -507,12 +606,17 @@ function MemberDashboard() {
         <div className="max-w-md mx-auto">
           <Card>
             <h3 className="text-lg font-bold text-secondary-900 mb-6">Two-Factor Authentication</h3>
-            <p className="text-sm text-secondary-600 mb-6">Secure your account by enabling SMS-based 2FA. We'll send a code to your registered phone.</p>
+            <p className="text-sm text-secondary-600 mb-6">
+              Secure your account by enabling SMS-based 2FA. We'll send a code to your registered
+              phone.
+            </p>
 
             {twoFactorStatus.enabled && (
               <div className="mb-4 p-3 bg-success-50 border border-success-200 rounded-xl flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-success-600" />
-                <span className="text-sm font-medium text-success-700">2FA is currently enabled on your account</span>
+                <span className="text-sm font-medium text-success-700">
+                  2FA is currently enabled on your account
+                </span>
               </div>
             )}
 
@@ -528,19 +632,20 @@ function MemberDashboard() {
                     type="text"
                     placeholder="Enter 6-digit code"
                     value={otpCode}
-                    onChange={e => setOtpCode(e.target.value)}
+                    onChange={(e) => setOtpCode(e.target.value)}
                     className="text-center text-2xl tracking-widest w-full border-b-2 border-primary-300 focus:border-primary-600 outline-none bg-transparent py-2"
                     maxLength={6}
                   />
                   <p className="text-xs text-secondary-500 mt-2">Expires in {otpExpiresIn}s</p>
                 </div>
-                <Button onClick={handleVerifyOTP} variant="success" className="w-full">Verify & Enable</Button>
+                <Button onClick={handleVerifyOTP} variant="success" className="w-full">
+                  Verify & Enable
+                </Button>
               </div>
             )}
           </Card>
         </div>
       )}
-
     </DashboardLayout>
   );
 }

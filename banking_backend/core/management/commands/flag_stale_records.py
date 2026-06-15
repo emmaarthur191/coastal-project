@@ -7,7 +7,7 @@ from datetime import timedelta
 from core.models.transactions import Transaction
 from core.models.loans import Loan
 from core.models.accounts import AccountOpeningRequest, AccountClosureRequest
-from core.models.operational import SystemAlert
+from users.models import AdminNotification
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +45,10 @@ class Command(BaseCommand):
                 count += 1
                 
                 # Internal Alert for the Manager
-                SystemAlert.objects.create(
-                    alert_type="security",
-                    severity="medium",
+                AdminNotification.objects.create(
+                    priority="high",
                     title="Stale Pending Record Detected",
                     message=f"A {model.__name__} (ID: {record.id}) has been pending for over 24 hours. Manager intervention required.",
-                    is_active=True
                 )
 
         self.stdout.write(self.style.SUCCESS(f"Successfully flagged {count} stale records."))

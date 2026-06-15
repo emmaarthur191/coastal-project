@@ -13,6 +13,8 @@ class ReportTemplate(models.Model):
     REPORT_TYPES = [
         ("transaction", "Transaction Report"),
         ("account", "Account Report"),
+        ("loan", "Loan Report"),
+        ("cash_advance", "Cash Advance Report"),
         ("fraud", "Fraud Report"),
         ("compliance", "Compliance Report"),
         ("financial", "Financial Report"),

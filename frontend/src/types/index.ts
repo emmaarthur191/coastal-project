@@ -1,24 +1,25 @@
-import type { Account } from '../api/models/Account';
-import type { AccountAccountTypeEnum } from '../api/models/AccountAccountTypeEnum';
-import type { CashAdvance } from '../api/models/CashAdvance';
-import type { Loan } from '../api/models/Loan';
-import type { Message } from '../api/models/Message';
-import type { MessageThread } from '../api/models/MessageThread';
-import type { Refund } from '../api/models/Refund';
-import type { ServiceRequest } from '../api/models/ServiceRequest';
-import type { Transaction } from '../api/models/Transaction';
-import type { User } from '../api/models/User';
+import type {
+  Account,
+  AccountAccountTypeEnum,
+  CashAdvance,
+  Loan,
+  Message,
+  MessageThread,
+  Refund,
+  ServiceRequest,
+  Transaction,
+  User,
+  Product,
+  Promotion,
+  AccountOpeningRequest as BaseAccountOpeningRequest,
+} from '../api/types.gen';
 
 export type { Account, User, Transaction, ServiceRequest };
-import type { Product } from '../api/models/Product';
-import type { Promotion } from '../api/models/Promotion';
 export type { Product as FinancialProduct, Promotion as PromotionType };
-import type { AccountOpeningRequest as BaseAccountOpeningRequest } from '../api/models/AccountOpeningRequest';
 export interface AccountOpeningRequest extends BaseAccountOpeningRequest {
   nationality?: string;
   gender?: string;
 }
-
 
 export interface ApiResponse<T = unknown> {
   data: T;
@@ -72,7 +73,6 @@ export interface AccountWithDetails extends Omit<Account, 'user' | 'account_type
   user?: AccountUser;
   account_type?: AccountAccountTypeEnum | string;
 }
-
 
 /**
  * Payslip interface for payroll management.
@@ -187,7 +187,13 @@ export interface ChatMessageData {
   created_at: string;
 }
 
-export type ExpenseCategory = 'Operational' | 'Utilities' | 'Payroll' | 'Maintenance' | 'Marketing' | 'Other';
+export type ExpenseCategory =
+  | 'Operational'
+  | 'Utilities'
+  | 'Payroll'
+  | 'Maintenance'
+  | 'Marketing'
+  | 'Other';
 export type ExpenseStatus = 'pending' | 'paid' | 'cancelled';
 
 export interface ExpenseData {
@@ -293,13 +299,13 @@ export interface CreateLoanData {
   id_type: string;
   id_number: string;
   verification_notes?: string;
-  
+
   // Next of Kin
   next_of_kin_1_name?: string;
   next_of_kin_1_relationship?: string;
   next_of_kin_1_phone?: string;
   next_of_kin_1_address?: string;
-  
+
   // Guarantor
   guarantor_1_name?: string;
   guarantor_1_id_type?: string;
@@ -823,7 +829,10 @@ export interface MessageExtended extends Message {
 /**
  * Extended Message Thread interface.
  */
-export interface MessageThreadExtended extends Omit<MessageThread, 'messages' | 'participants' | 'unread_count'> {
+export interface MessageThreadExtended extends Omit<
+  MessageThread,
+  'messages' | 'participants' | 'unread_count'
+> {
   participants?: number[] | string[];
   messages?: MessageExtended[];
   unread_count?: number | string;
@@ -867,7 +876,6 @@ export interface AccountSummary {
   available_balance?: number;
   monthly_contributions?: number;
 }
-
 
 /**
  * Data structure for resolving fraud alerts.
@@ -920,7 +928,10 @@ export interface CashAdvanceExtended extends CashAdvance {
 /**
  * Extended Loan interface.
  */
-export interface LoanExtended extends Omit<Loan, 'user' | 'assigned_banker' | 'borrower_name' | 'borrower_email' | 'purpose'> {
+export interface LoanExtended extends Omit<
+  Loan,
+  'user' | 'assigned_banker' | 'borrower_name' | 'borrower_email' | 'purpose'
+> {
   user: number | { id: number; name: string; email: string; full_name?: string };
   assigned_banker?: number | { id: number; name: string; email: string };
   borrower_name?: string;
@@ -1048,7 +1059,6 @@ export interface MLFraudAnalysis {
   risk_level: 'low' | 'medium' | 'high' | 'critical';
   explanation?: string;
 }
-
 
 export interface ClientsForMappingResult {
   id: number;

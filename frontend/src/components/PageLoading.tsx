@@ -15,9 +15,9 @@ interface PageLoadingProps {
  * @param props - The properties to configure the loading indicator.
  * @returns A styled full-screen loading view.
  */
-const PageLoading: React.FC<PageLoadingProps> = ({ message = "Loading page..." }) => {
+const PageLoading: React.FC<PageLoadingProps> = ({ message = 'Loading page...' }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-mauve-50 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-50 via-white to-mauve-50 flex items-center justify-center relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
@@ -30,7 +30,12 @@ const PageLoading: React.FC<PageLoadingProps> = ({ message = "Loading page..." }
         {/* Logo */}
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-6 shadow-elevated animate-pulse">
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         </div>
 
@@ -43,12 +48,8 @@ const PageLoading: React.FC<PageLoadingProps> = ({ message = "Loading page..." }
         </div>
 
         {/* Loading Text */}
-        <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-          {message}
-        </h3>
-        <p className="text-neutral-600 text-sm">
-          Please wait...
-        </p>
+        <h3 className="text-lg font-semibold text-neutral-900 mb-2">{message}</h3>
+        <p className="text-neutral-600 text-sm">Please wait...</p>
 
         {/* Loading Dots */}
         <div className="flex justify-center gap-1 mt-4">

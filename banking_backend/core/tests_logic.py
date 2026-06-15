@@ -110,7 +110,7 @@ class TestLogicEnhancements:
         assert acc.is_active is False
 
         # Check audit log for the lock (Manual check for SQLite compatibility)
-        log = AuditLog.objects.filter(model_name="Account", object_id=str(acc.id)).order_by("-created_at").first()
+        log = AuditLog.objects.filter(model_name="Account", object_id=str(acc.id)).order_by("-id").first()
         assert log is not None
         assert "Test Lock" in str(log.changes) or "Test Lock" in log.object_repr
 

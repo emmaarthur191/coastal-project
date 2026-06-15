@@ -4,21 +4,21 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import GlassCard from '../ui/modern/GlassCard';
 import CameraCapture from '../shared/CameraCapture';
-import { 
-  Printer, 
-  RefreshCw, 
-  UserPlus, 
-  Search, 
-  User, 
-  CreditCard, 
-  Briefcase, 
-  Users, 
-  Plus, 
-  Building2, 
+import {
+  Printer,
+  RefreshCw,
+  UserPlus,
+  Search,
+  User,
+  CreditCard,
+  Briefcase,
+  Users,
+  Plus,
+  Building2,
   Send,
   CheckCircle2,
   X,
-  ShieldAlert
+  ShieldAlert,
 } from 'lucide-react';
 
 /**
@@ -41,6 +41,7 @@ const AccountOpeningTab: React.FC = () => {
     phoneNumber: '',
     email: '',
     digitalAddress: '',
+    gender: '',
 
     // Identification
     idType: 'ghana_card',
@@ -52,16 +53,14 @@ const AccountOpeningTab: React.FC = () => {
     position: '',
 
     // Next of Kin (up to 4)
-    nextOfKin: [
-      { name: '', relationship: '', address: '', stakePercentage: '' }
-    ],
+    nextOfKin: [{ name: '', relationship: '', address: '', stakePercentage: '' }],
 
     // Account Type
     accountType: 'daily_susu',
     cardType: 'standard',
 
     // Photo
-    photo: null as string | null
+    photo: null as string | null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -78,16 +77,16 @@ const AccountOpeningTab: React.FC = () => {
 
   // === CAMERA FUNCTIONS ===
   const handlePhotoCapture = useCallback((photo: string | null) => {
-    setFormData(prev => ({ ...prev, photo }));
+    setFormData((prev) => ({ ...prev, photo }));
   }, []);
 
   // === FORM HANDLERS ===
   const handleInputChange = useCallback((field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const handleNextOfKinChange = useCallback((index: number, field: string, value: string) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const newNextOfKin = [...prev.nextOfKin];
       newNextOfKin[index] = { ...newNextOfKin[index], [field]: value };
       return { ...prev, nextOfKin: newNextOfKin };
@@ -96,21 +95,27 @@ const AccountOpeningTab: React.FC = () => {
 
   const addNextOfKin = useCallback(() => {
     if (formData.nextOfKin.length < 4) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        nextOfKin: [...prev.nextOfKin, { name: '', relationship: '', address: '', stakePercentage: '' }]
+        nextOfKin: [
+          ...prev.nextOfKin,
+          { name: '', relationship: '', address: '', stakePercentage: '' },
+        ],
       }));
     }
   }, [formData.nextOfKin.length]);
 
-  const removeNextOfKin = useCallback((index: number) => {
-    if (formData.nextOfKin.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        nextOfKin: prev.nextOfKin.filter((_, i) => i !== index)
-      }));
-    }
-  }, [formData.nextOfKin.length]);
+  const removeNextOfKin = useCallback(
+    (index: number) => {
+      if (formData.nextOfKin.length > 1) {
+        setFormData((prev) => ({
+          ...prev,
+          nextOfKin: prev.nextOfKin.filter((_, i) => i !== index),
+        }));
+      }
+    },
+    [formData.nextOfKin.length]
+  );
 
   // === VALIDATION ===
   const validateForm = useCallback(() => {
@@ -172,12 +177,13 @@ const AccountOpeningTab: React.FC = () => {
         work_address: formData.workAddress,
         digital_address: formData.digitalAddress,
         position: formData.position,
+        gender: formData.gender,
         next_of_kin: formData.nextOfKin,
-        photo: formData.photo
+        photo: formData.photo,
       };
 
       const response = await api.post<SubmitResponse>('banking/account-openings/submit-request/', {
-        account_data: submitData
+        account_data: submitData,
       });
 
       setCurrentStep(2);
@@ -197,43 +203,57 @@ const AccountOpeningTab: React.FC = () => {
     setLookupLoading(true);
     setMessage({ type: '', text: '' });
     try {
-        const res = await apiService.lookupMember(lookupNumber);
-        
-        if (res.success && res.data) {
-            const d = res.data;
-            setFormData(prev => ({
-                ...prev,
-                firstName: d.first_name || prev.firstName,
-                lastName: d.last_name || prev.lastName,
-                dateOfBirth: d.date_of_birth || prev.dateOfBirth,
-                phoneNumber: d.phone_number || prev.phoneNumber,
-                email: d.email || prev.email,
-                digitalAddress: d.digital_address || prev.digitalAddress,
-                idType: d.id_type || prev.idType,
-                idNumber: d.id_number || prev.idNumber,
-                occupation: d.occupation || prev.occupation,
-                workAddress: d.work_address || prev.workAddress,
-                position: d.position || prev.position,
-            }));
-            setMessage({ type: 'success', text: `Existing record found for Member #${lookupNumber}. Details pre-filled.` });
-        } else {
-            setMessage({ type: 'error', text: res.error || `Member #${lookupNumber} not found.` });
-        }
+      const res = await apiService.lookupMember(lookupNumber);
+
+      if (res.success && res.data) {
+        const d = res.data;
+        setFormData((prev) => ({
+          ...prev,
+          firstName: d.first_name || prev.firstName,
+          lastName: d.last_name || prev.lastName,
+          dateOfBirth: d.date_of_birth || prev.dateOfBirth,
+          phoneNumber: d.phone_number || prev.phoneNumber,
+          email: d.email || prev.email,
+          digitalAddress: d.digital_address || prev.digitalAddress,
+          idType: d.id_type || prev.idType,
+          idNumber: d.id_number || prev.idNumber,
+          occupation: d.occupation || prev.occupation,
+          workAddress: d.work_address || prev.workAddress,
+          position: d.position || prev.position,
+        }));
+        setMessage({
+          type: 'success',
+          text: `Existing record found for Member #${lookupNumber}. Details pre-filled.`,
+        });
+      } else {
+        setMessage({ type: 'error', text: res.error || `Member #${lookupNumber} not found.` });
+      }
     } catch (error: unknown) {
-        console.error('Lookup error:', error);
-        setMessage({ type: 'error', text: 'Error connecting to lookup service.' });
+      console.error('Lookup error:', error);
+      setMessage({ type: 'error', text: 'Error connecting to lookup service.' });
     } finally {
-        setLookupLoading(false);
+      setLookupLoading(false);
     }
   };
 
   const resetForm = () => {
     setFormData({
-      firstName: '', lastName: '', dateOfBirth: '', phoneNumber: '', email: '', digitalAddress: '',
-      idType: 'ghana_card', idNumber: '',
-      occupation: '', workAddress: '', position: '',
+      firstName: '',
+      lastName: '',
+      dateOfBirth: '',
+      phoneNumber: '',
+      email: '',
+      digitalAddress: '',
+      gender: '',
+      idType: 'ghana_card',
+      idNumber: '',
+      occupation: '',
+      workAddress: '',
+      position: '',
       nextOfKin: [{ name: '', relationship: '', address: '', stakePercentage: '' }],
-      accountType: 'daily_susu', cardType: 'standard', photo: null
+      accountType: 'daily_susu',
+      cardType: 'standard',
+      photo: null,
     });
   };
 
@@ -247,14 +267,26 @@ const AccountOpeningTab: React.FC = () => {
       {/* Action Header */}
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100 print:hidden">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tighter italic">Registration Desk</h2>
-          <p className="text-xs text-slate-500 font-medium">Capture details and generate physical forms</p>
+          <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tighter italic">
+            Registration Desk
+          </h2>
+          <p className="text-xs text-slate-500 font-medium">
+            Capture details and generate physical forms
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handlePrint} variant="ghost" className="border-slate-200 flex items-center gap-2">
+          <Button
+            onClick={handlePrint}
+            variant="ghost"
+            className="border-slate-200 flex items-center gap-2"
+          >
             <Printer className="w-4 h-4" /> Print Blank Form
           </Button>
-          <Button onClick={resetForm} variant="ghost" className="text-rose-500 flex items-center gap-2">
+          <Button
+            onClick={resetForm}
+            variant="ghost"
+            className="text-rose-500 flex items-center gap-2"
+          >
             <RefreshCw className="w-4 h-4" /> Reset
           </Button>
         </div>
@@ -274,24 +306,47 @@ const AccountOpeningTab: React.FC = () => {
         </div>
 
         <div className="flex justify-center gap-4 mb-6 print:hidden">
-          {[1, 2].map(step => (
+          {[1, 2].map((step) => (
             <div key={step} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${currentStep >= step ? 'bg-coastal-primary text-white' : 'bg-gray-200 text-gray-500'
-                }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
+                  currentStep >= step
+                    ? 'bg-blue-600 text-white dark:bg-amber-500 dark:text-slate-950 font-black'
+                    : 'bg-slate-200 text-slate-500 dark:bg-slate-850 dark:text-slate-400'
+                }`}
+              >
                 {step}
               </div>
-              {step < 2 && <div className={`w-10 h-1 mx-2 ${currentStep > step ? 'bg-coastal-primary' : 'bg-gray-200'}`} />}
+              {step < 2 && (
+                <div
+                  className={`w-10 h-1 mx-2 ${currentStep > step ? 'bg-blue-600 dark:bg-amber-500' : 'bg-slate-200 dark:bg-slate-800'}`}
+                />
+              )}
             </div>
           ))}
         </div>
-        <div className="flex justify-center gap-10 text-sm text-gray-500 print:hidden">
-          <span className={currentStep === 1 ? 'font-bold text-coastal-primary' : ''}>Opening Form</span>
-          <span className={currentStep === 2 ? 'font-bold text-coastal-primary' : ''}>Submission Complete</span>
+        <div className="flex justify-center gap-10 text-sm text-slate-500 dark:text-slate-400 print:hidden">
+          <span
+            className={
+              currentStep === 1 ? 'font-black text-blue-600 dark:text-amber-500' : 'font-bold'
+            }
+          >
+            Opening Form
+          </span>
+          <span
+            className={
+              currentStep === 2 ? 'font-black text-blue-600 dark:text-amber-500' : 'font-bold'
+            }
+          >
+            Submission Complete
+          </span>
         </div>
 
         {/* Message Display */}
         {message.text && (
-          <div className={`p-4 rounded-xl border mb-6 ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+          <div
+            className={`p-4 rounded-xl border mb-6 ${message.type === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}
+          >
             {message.text}
           </div>
         )}
@@ -301,28 +356,28 @@ const AccountOpeningTab: React.FC = () => {
           <div className="space-y-6">
             {/* Lookup Section */}
             <div className="p-6 bg-blue-500/5 rounded-2xl border border-blue-200/20 mb-4 print:hidden">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Search className="w-4 h-4 text-blue-500" /> Existing Member Lookup
-                </h3>
-                <div className="flex gap-2">
-                    <Input 
-                        placeholder="CB-XXXXXX..." 
-                        value={lookupNumber}
-                        onChange={(e) => setLookupNumber(e.target.value)}
-                        className="flex-1"
-                        title="Enter Member ID to pre-fill form"
-                    />
-                    <Button 
-                        onClick={handleLookupMember} 
-                        disabled={lookupLoading || !lookupNumber}
-                        className="font-black px-6"
-                    >
-                        {lookupLoading ? '...' : 'LOOKUP'}
-                    </Button>
-                </div>
-                <p className="text-[10px] text-slate-500 font-bold mt-2 italic">
-                    Use this to pre-fill PII data for existing customers adding new accounts.
-                </p>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-500" /> Existing Member Lookup
+              </h3>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="CB-XXXXXX..."
+                  value={lookupNumber}
+                  onChange={(e) => setLookupNumber(e.target.value)}
+                  className="flex-1"
+                  title="Enter Member ID to pre-fill form"
+                />
+                <Button
+                  onClick={handleLookupMember}
+                  disabled={lookupLoading || !lookupNumber}
+                  className="font-black px-6"
+                >
+                  {lookupLoading ? '...' : 'LOOKUP'}
+                </Button>
+              </div>
+              <p className="text-[10px] text-slate-500 font-bold mt-2 italic">
+                Use this to pre-fill PII data for existing customers adding new accounts.
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -341,12 +396,62 @@ const AccountOpeningTab: React.FC = () => {
                   <User className="w-5 h-5 text-coastal-primary" /> Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Input label="First Name *" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} placeholder="Enter first name" required />
-                  <Input label="Last Name *" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} placeholder="Enter last name" required />
-                  <Input label="Date of Birth *" type="date" value={formData.dateOfBirth} onChange={(e) => handleInputChange('dateOfBirth', e.target.value)} required />
-                  <Input label="Phone Number *" type="tel" value={formData.phoneNumber} onChange={(e) => handleInputChange('phoneNumber', e.target.value)} placeholder="+233 XX XXX XXXX" required />
-                  <Input label="Email Address" type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} placeholder="customer@example.com" />
-                  <Input label="Digital Address (GPS) *" value={formData.digitalAddress} onChange={(e) => handleInputChange('digitalAddress', e.target.value)} placeholder="e.g., GA-123-4567" required />
+                  <Input
+                    label="First Name *"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    placeholder="Enter first name"
+                    required
+                  />
+                  <Input
+                    label="Last Name *"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    placeholder="Enter last name"
+                    required
+                  />
+                  <Input
+                    label="Date of Birth *"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Phone Number *"
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    placeholder="+233 XX XXX XXXX"
+                    required
+                  />
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="customer@example.com"
+                  />
+                  <Input
+                    label="Digital Address (GPS) *"
+                    value={formData.digitalAddress}
+                    onChange={(e) => handleInputChange('digitalAddress', e.target.value)}
+                    placeholder="e.g., GA-123-4567"
+                    required
+                  />
+                  <Input
+                    as="select"
+                    label="Gender *"
+                    id={`gender-select-${idTypeSelectId}`}
+                    title="Select gender classification for CUA reporting"
+                    value={formData.gender}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                  >
+                    <option value="">— Select Gender —</option>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="G">Group</option>
+                  </Input>
                 </div>
               </div>
 
@@ -370,7 +475,13 @@ const AccountOpeningTab: React.FC = () => {
                     <option value="drivers_license">Driver's License</option>
                     <option value="nhis_card">NHIS Card</option>
                   </Input>
-                  <Input label="ID Number *" value={formData.idNumber} onChange={(e) => handleInputChange('idNumber', e.target.value)} placeholder="Enter ID number" required />
+                  <Input
+                    label="ID Number *"
+                    value={formData.idNumber}
+                    onChange={(e) => handleInputChange('idNumber', e.target.value)}
+                    placeholder="Enter ID number"
+                    required
+                  />
                 </div>
               </div>
 
@@ -380,10 +491,25 @@ const AccountOpeningTab: React.FC = () => {
                   <Briefcase className="w-5 h-5 text-coastal-primary" /> Employment Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input label="Occupation" value={formData.occupation} onChange={(e) => handleInputChange('occupation', e.target.value)} placeholder="e.g., Teacher, Trader" />
-                  <Input label="Position/Title" value={formData.position} onChange={(e) => handleInputChange('position', e.target.value)} placeholder="e.g., Senior Staff" />
+                  <Input
+                    label="Occupation"
+                    value={formData.occupation}
+                    onChange={(e) => handleInputChange('occupation', e.target.value)}
+                    placeholder="e.g., Teacher, Trader"
+                  />
+                  <Input
+                    label="Position/Title"
+                    value={formData.position}
+                    onChange={(e) => handleInputChange('position', e.target.value)}
+                    placeholder="e.g., Senior Staff"
+                  />
                   <div className="md:col-span-2">
-                    <Input label="Work Address" value={formData.workAddress} onChange={(e) => handleInputChange('workAddress', e.target.value)} placeholder="Enter work address" />
+                    <Input
+                      label="Work Address"
+                      value={formData.workAddress}
+                      onChange={(e) => handleInputChange('workAddress', e.target.value)}
+                      placeholder="Enter work address"
+                    />
                   </div>
                 </div>
               </div>
@@ -399,23 +525,58 @@ const AccountOpeningTab: React.FC = () => {
                       <div className="flex justify-between items-center mb-3">
                         <span className="font-bold text-gray-600">Beneficiary {index + 1}</span>
                         {formData.nextOfKin.length > 1 && (
-                          <button type="button" onClick={() => removeNextOfKin(index)} className="text-red-500 hover:text-red-700 text-sm font-semibold transition-colors print:hidden flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => removeNextOfKin(index)}
+                            className="text-red-500 hover:text-red-700 text-sm font-semibold transition-colors print:hidden flex items-center gap-1"
+                          >
                             <X className="w-4 h-4" /> Remove
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Input label="Full Name" value={kin.name} onChange={(e) => handleNextOfKinChange(index, 'name', e.target.value)} placeholder="Beneficiary name" />
-                        <Input label="Relationship" value={kin.relationship} onChange={(e) => handleNextOfKinChange(index, 'relationship', e.target.value)} placeholder="e.g., Spouse" />
-                        <Input label="Address" value={kin.address} onChange={(e) => handleNextOfKinChange(index, 'address', e.target.value)} placeholder="Beneficiary address" />
-                        <Input label="Stake %" type="number" value={kin.stakePercentage} onChange={(e) => handleNextOfKinChange(index, 'stakePercentage', e.target.value)} placeholder="e.g., 50" />
+                        <Input
+                          label="Full Name"
+                          value={kin.name}
+                          onChange={(e) => handleNextOfKinChange(index, 'name', e.target.value)}
+                          placeholder="Beneficiary name"
+                        />
+                        <Input
+                          label="Relationship"
+                          value={kin.relationship}
+                          onChange={(e) =>
+                            handleNextOfKinChange(index, 'relationship', e.target.value)
+                          }
+                          placeholder="e.g., Spouse"
+                        />
+                        <Input
+                          label="Address"
+                          value={kin.address}
+                          onChange={(e) => handleNextOfKinChange(index, 'address', e.target.value)}
+                          placeholder="Beneficiary address"
+                        />
+                        <Input
+                          label="Stake %"
+                          type="number"
+                          value={kin.stakePercentage}
+                          onChange={(e) =>
+                            handleNextOfKinChange(index, 'stakePercentage', e.target.value)
+                          }
+                          placeholder="e.g., 50"
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
                 {formData.nextOfKin.length < 4 && (
                   <div className="mt-4 print:hidden">
-                    <Button type="button" onClick={addNextOfKin} variant="secondary" size="sm" className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      onClick={addNextOfKin}
+                      variant="secondary"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
                       <Plus className="w-4 h-4" /> Add Another Beneficiary
                     </Button>
                   </div>
@@ -467,7 +628,9 @@ const AccountOpeningTab: React.FC = () => {
                     disabled={loading}
                     className="w-full h-14 text-lg font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 print:hidden flex items-center justify-center gap-3"
                   >
-                    {loading ? 'Processing...' : (
+                    {loading ? (
+                      'Processing...'
+                    ) : (
                       <>
                         Complete Digital Registration
                         <Send className="w-5 h-5" />
@@ -493,22 +656,39 @@ const AccountOpeningTab: React.FC = () => {
             <div className="flex justify-center mb-6">
               <CheckCircle2 className="w-20 h-20 text-emerald-500 animate-bounce" />
             </div>
-            <h2 className="text-3xl font-bold text-emerald-600 mb-2">Request Submitted Successfully!</h2>
+            <h2 className="text-3xl font-bold text-emerald-600 mb-2">
+              Request Submitted Successfully!
+            </h2>
             <div className="max-w-md mx-auto bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm mb-8">
               <p className="text-gray-600 mb-4">
-                The account opening request for <span className="font-bold text-gray-800">{formData.firstName} {formData.lastName}</span> has been saved in a <b>Pending</b> state.
+                The account opening request for{' '}
+                <span className="font-bold text-gray-800">
+                  {formData.firstName} {formData.lastName}
+                </span>{' '}
+                has been saved in a <b>Pending</b> state.
               </p>
               <div className="bg-emerald-50 p-4 rounded-xl text-emerald-800 text-sm border border-emerald-200">
                 <p className="font-bold mb-2">Next Steps for Customer:</p>
                 <ol className="text-left list-decimal ml-5 space-y-1">
-                  <li>Proceed to the <b>Manager's Office</b></li>
+                  <li>
+                    Proceed to the <b>Manager's Office</b>
+                  </li>
                   <li>Present physical ID for verification</li>
-                  <li>Collect your printed <b>Account Opening Letter</b></li>
+                  <li>
+                    Collect your printed <b>Account Opening Letter</b>
+                  </li>
                   <li>Use credentials in the letter to log in</li>
                 </ol>
               </div>
             </div>
-            <Button onClick={() => { setCurrentStep(1); resetForm(); }} variant="primary" size="lg">
+            <Button
+              onClick={() => {
+                setCurrentStep(1);
+                resetForm();
+              }}
+              variant="primary"
+              size="lg"
+            >
               Register Another Customer
             </Button>
           </div>

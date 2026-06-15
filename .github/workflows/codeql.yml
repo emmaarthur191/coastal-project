@@ -41,8 +41,17 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    # Setup Node.js (needed for JavaScript/TypeScript and potentially Gradle/Capacitor integration)
+    # Setup Python for Python analysis
+    - name: Set up Python
+      if: matrix.language == 'python'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    # Setup Node.js (needed for JavaScript/TypeScript and Gradle/Capacitor integration)
     - name: Set up Node.js
+      if: matrix.language == 'javascript-typescript' || matrix.language == 'java-kotlin'
       uses: actions/setup-node@v4
       with:
         node-version: '22'
@@ -55,8 +64,6 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
-        # Optional: Add custom queries or security-extended suites
-        # queries: security-extended,security-and-quality
 
     # Manual build step for Java/Kotlin to resolve Gradle dependencies
     - name: Build Android Project
@@ -67,7 +74,14 @@ jobs:
         npx cap sync android
         cd android
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon
+        ./gradlew clean assembleDebug --no-daemon -x lint
+
+    # Install Python dependencies for Python analysis
+    - name: Install Python Dependencies
+      if: matrix.language == 'python'
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r banking_backend/requirements.txt
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

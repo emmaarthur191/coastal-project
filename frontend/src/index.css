@@ -1,8 +1,8 @@
 /* Production-Ready Login Page Styles - WCAG 2.1 AA Compliant */
 
 /* Google Fonts Import with accessibility optimization */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+/* @import url('https://fonts.googleapis.com/icon?family=Material+Icons'); */
 
 @tailwind base;
 @tailwind components;
@@ -10,14 +10,25 @@
 
 /* CSS Custom Properties for Design System */
 :root {
-  /* Primary Brand Colors - Deep Ocean Blue */
-  --color-primary: #0052CC;
+  /* Dynamic Primary Brand Colors - Coastal Blue for Light Mode */
+  --color-primary: #0052cc;
   --color-primary-hover: #0747a6;
   --color-primary-light: #deebff;
   --color-primary-dark: #00214a;
 
+  --primary-50: #deebff;
+  --primary-100: #b3d4ff;
+  --primary-200: #4c9aff;
+  --primary-300: #2684ff;
+  --primary-400: #0065e0;
+  --primary-500: #0052cc;
+  --primary-600: #0747a6;
+  --primary-700: #003884;
+  --primary-800: #00214a;
+  --primary-900: #001024;
+
   /* Background Colors - Slate/White */
-  --color-white: #FFFFFF;
+  --color-white: #ffffff;
   --color-white-light: #f8fafc;
   /* Slate 50 */
   --color-white-dark: #f1f5f9;
@@ -36,7 +47,7 @@
   --app-bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 
   /* Secondary/Accent - Cyan/Slate */
-  --color-secondary: #DE350B; /* Red Accent */
+  --color-secondary: #de350b; /* Red Accent */
   --color-secondary-hover: #bf2600;
   --color-secondary-light: #ffebe6;
   --color-secondary-dark: #661400;
@@ -53,7 +64,7 @@
   --color-warning-medium: #fde68a;
 
   /* Success Colors */
-  --color-success: #36B37E;
+  --color-success: #36b37e;
   --color-success-light: #e3fcef;
 
   /* Text Colors - WCAG 2.1 AA Max Contrast */
@@ -86,26 +97,43 @@
   --easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
 
   /* Premium Extended Palette */
-  --color-navy-deep: #001D3A;
-  --color-sky-refraction: #B6D3F0;
+  --color-navy-deep: #001d3a;
+  --color-sky-refraction: #b6d3f0;
 }
 
 /* Dark Mode Variables */
 .dark {
+  /* Primary Brand Colors - Fintech Gold for Dark Mode */
+  --color-primary: #f59e0b;
+  --color-primary-hover: #d97706;
+  --color-primary-light: #fde68a;
+  --color-primary-dark: #b45309;
+
+  --primary-50: #fffbeb;
+  --primary-100: #fef3c7;
+  --primary-200: #fde68a;
+  --primary-300: #fcd34d;
+  --primary-400: #fbbf24;
+  --primary-500: #f59e0b;
+  --primary-600: #d97706;
+  --primary-700: #b45309;
+  --primary-800: #92400e;
+  --primary-900: #78350f;
+
   /* Backgrounds */
-  --color-white: #050a14;
+  --color-white: #0f172a;
   /* Dark Navy base */
-  --color-white-light: #091e42;
+  --color-white-light: #1e293b;
   /* Deep Blue surface */
-  --color-white-dark: #172b4d;
+  --color-white-dark: #334155;
   /* Surface blue */
 
   /* App Background */
-  --app-bg: #050a14;
-  --app-bg-gradient: linear-gradient(135deg, #050a14 0%, #091e42 100%);
+  --app-bg: #0f172a;
+  --app-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 
   /* Glass Variables (Dark Mode) */
-  --glass-bg: rgba(30, 41, 59, 0.70);
+  --glass-bg: rgba(30, 41, 59, 0.7);
   /* Slate 800 with opacity */
   --glass-border: rgba(148, 163, 184, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -115,9 +143,9 @@
   /* Slate 300 */
 
   /* Text Colors (Dark Mode Max Contrast) */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #F8FAFC;
-  --color-text-tertiary: #E2E8F0;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #f8fafc;
+  --color-text-tertiary: #e2e8f0;
 
   /* Borders */
   --color-border-light: #334155;
@@ -146,23 +174,35 @@ html,
 }
 
 .dark .high-contrast-text {
-  color: #FFFFFF !important;
+  color: #ffffff !important;
 }
 
 @keyframes mesh-ocean {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 body {
-  font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'IBM Plex Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   background-color: var(--app-bg);
   /* Baseline background (Ocean theme) - matched for Login page */
-  background-image: radial-gradient(at 0% 0%, var(--color-primary-dark) 0%, transparent 50%),
-                    radial-gradient(at 50% 0%, var(--color-primary) 0%, transparent 55%),
-                    radial-gradient(at 100% 0%, var(--color-navy-deep) 0%, transparent 50%),
-                    radial-gradient(at 50% 100%, var(--color-primary-hover) 0%, transparent 60%);
+  background-image:
+    radial-gradient(at 0% 0%, var(--color-primary-dark) 0%, transparent 50%),
+    radial-gradient(at 50% 0%, var(--color-primary) 0%, transparent 55%),
+    radial-gradient(at 100% 0%, var(--color-navy-deep) 0%, transparent 50%),
+    radial-gradient(at 50% 100%, var(--color-primary-hover) 0%, transparent 60%);
   background-size: 200% 200%;
   animation: mesh-ocean 20s ease-all infinite;
   background-attachment: fixed;
@@ -178,7 +218,7 @@ body {
 /* Scoped Sunrise Theme for Dashboard Light Mode */
 .sunrise-mode {
   background-color: #f8fafc !important;
-  background-image: 
+  background-image:
     radial-gradient(at 0% 0%, #fefce8 0%, transparent 50%),
     radial-gradient(at 50% 0%, #eff6ff 0%, transparent 50%),
     radial-gradient(at 100% 0%, #f0fdf4 0%, transparent 50%),
@@ -229,7 +269,6 @@ body {
 
 /* Component Styles */
 @layer components {
-
   /* Global Glass Card Utility - Refined for 2025 */
   .glass-card-global {
     background: var(--glass-bg);
@@ -299,40 +338,39 @@ body {
   }
 }
 
-
 /* High Contrast Mode Overrides - WCAG 2.1 AAA Target */
 .high-contrast-mode {
   --app-bg: #000000 !important;
   --app-bg-gradient: none !important;
-  --color-text-primary: #FFFFFF !important;
-  --color-text-secondary: #FFFF00 !important; /* Yellow for specific contrast */
-  --color-text-tertiary: #00FFFF !important; /* Cyan for tertiary */
+  --color-text-primary: #ffffff !important;
+  --color-text-secondary: #ffff00 !important; /* Yellow for specific contrast */
+  --color-text-tertiary: #00ffff !important; /* Cyan for tertiary */
   --glass-bg: #000000 !important;
-  --glass-border: #FFFFFF !important;
-  --color-primary: #FFFF00 !important;
-  --color-primary-hover: #00FFFF !important;
+  --glass-border: #ffffff !important;
+  --color-primary: #ffff00 !important;
+  --color-primary-hover: #00ffff !important;
   --color-white: #000000 !important;
-  color: #FFFFFF !important; /* Global text fallback */
+  color: #ffffff !important; /* Global text fallback */
 }
 
 /* Force override on cards */
-.high-contrast-mode .glass-card, 
+.high-contrast-mode .glass-card,
 .high-contrast-mode .glass-panel {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  border: 2px solid #FFFFFF !important;
+  border: 2px solid #ffffff !important;
   background: #000000 !important;
   box-shadow: none !important;
 }
 
 /* Inputs and interactive elements */
-.high-contrast-mode input, 
-.high-contrast-mode select, 
+.high-contrast-mode input,
+.high-contrast-mode select,
 .high-contrast-mode textarea,
 .high-contrast-mode .form-input {
-  border: 2px solid #FFFFFF !important;
+  border: 2px solid #ffffff !important;
   background: #000000 !important;
-  color: #FFFFFF !important;
+  color: #ffffff !important;
   opacity: 1 !important;
 }
 
@@ -340,60 +378,60 @@ body {
 .high-contrast-mode .text-slate-500,
 .high-contrast-mode .text-gray-400,
 .high-contrast-mode .text-gray-500 {
-  color: #FFFF00 !important; /* High contrast yellow for secondary text */
+  color: #ffff00 !important; /* High contrast yellow for secondary text */
 }
 
 .high-contrast-mode .text-blue-400,
 .high-contrast-mode .text-cyan-400 {
-  color: #00FFFF !important; /* Cyan for blue-linked text */
+  color: #00ffff !important; /* Cyan for blue-linked text */
 }
 
 /* Button forcing */
 .high-contrast-mode button {
-  border: 2px solid #FFFFFF !important;
-  color: #FFFFFF !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
   background: #000000 !important;
 }
 
 .high-contrast-mode button:hover {
-  background: #FFFFFF !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 /* Global Selection Hardening - Force Absolute Black on White/Light backgrounds */
-select, 
-input:not([type="button"]):not([type="submit"]), 
+select,
+input:not([type='button']):not([type='submit']),
 textarea {
-    color: #000000 !important;
-    font-weight: 900 !important;
+  color: #000000 !important;
+  font-weight: 900 !important;
 }
 
 /* Ensure native select options are consistently black */
 option {
-    color: #000000 !important;
-    background-color: #FFFFFF !important;
-    font-weight: 700 !important;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 /* Fix for browsers that override internal selection color */
-select:focus, 
-input:focus, 
+select:focus,
+input:focus,
 textarea:focus {
-    color: #000000 !important;
+  color: #000000 !important;
 }
 
 ::placeholder {
-    color: rgba(0, 0, 0, 0.6) !important;
-    font-weight: 700 !important;
+  color: rgba(0, 0, 0, 0.6) !important;
+  font-weight: 700 !important;
 }
 
 /* High Contrast Visibility Reset for Dark-Mode Leakage */
-.dark select, 
-.dark input:not([type="button"]):not([type="submit"]), 
-.dark textarea {
-    color: #000000 !important;
+.dark select:not(.login-page-container *),
+.dark input:not([type='button']):not([type='submit']):not(.login-page-container *),
+.dark textarea:not(.login-page-container *) {
+  color: #f8fafc !important;
 }
 
 .dark option {
-    color: #000000 !important;
-    background-color: #FFFFFF !important;
+  color: #f8fafc !important;
+  background-color: #0f172a !important;
 }

@@ -8,12 +8,14 @@ import FinancialOperationsHub from '../components/operational/FinancialOperation
 import { apiService, authService } from '../services/api';
 import { useAuth, AuthContextType, User } from '../context/AuthContext';
 import type { AccountWithDetails, UserExtended, StaffId } from '../types';
-import type { Loan } from '../api/models/Loan';
-import type { AccountOpeningRequest } from '../api/models/AccountOpeningRequest';
-import { Status669Enum } from '../api/models/Status669Enum';
-import { LoanStatusEnum } from '../api/models/LoanStatusEnum';
-import { AccountOpeningRequestAccountTypeEnum } from '../api/models/AccountOpeningRequestAccountTypeEnum';
-import { RoleEnum } from '../api/models/RoleEnum';
+import type {
+  Loan,
+  AccountOpeningRequest,
+  StatusE5aEnum,
+  LoanStatusEnum,
+  AccountOpeningRequestAccountTypeEnum,
+  RoleEnum,
+} from '../api/types.gen';
 import type { Expense } from '../components/operational/FinancialOperationsHub';
 import React from 'react';
 
@@ -28,11 +30,21 @@ vi.mock('../services/api', () => ({
     getCashAdvances: vi.fn(),
     getRefunds: vi.fn(),
     getReports: vi.fn(),
-    getComplaints: vi.fn().mockResolvedValue({ 
-      success: true, 
-      data: [{ id: 'c1', subject: 'Test Complaint', status: 'pending', category: 'billing' }] 
+    getComplaints: vi.fn().mockResolvedValue({
+      success: true,
+      data: [{ id: 'c1', subject: 'Test Complaint', status: 'pending', category: 'billing' }],
     }),
-    getComplaintSummary: vi.fn().mockResolvedValue({ success: true, data: { total_complaints: 0, resolved_complaints: 0, open_complaints: 0, escalated_complaints: 0 } }),
+    getComplaintSummary: vi
+      .fn()
+      .mockResolvedValue({
+        success: true,
+        data: {
+          total_complaints: 0,
+          resolved_complaints: 0,
+          open_complaints: 0,
+          escalated_complaints: 0,
+        },
+      }),
     getServiceRequests: vi.fn().mockResolvedValue({ success: true, data: [] }),
     getServiceRequestStats: vi.fn().mockResolvedValue({ success: true, data: {} }),
   },
@@ -44,13 +56,18 @@ vi.mock('../services/api', () => ({
     getServiceCharges: vi.fn().mockResolvedValue({ success: true, data: [] }),
     getExpenses: vi.fn().mockResolvedValue({ success: true, data: [] }),
     createExpense: vi.fn().mockResolvedValue({ success: true }),
-    getCashFlow: vi.fn().mockResolvedValue({ success: true, data: { inflow: { total: 0 }, outflow: { total: 0 }, net_cash_flow: 0, period: 'April' } }),
+    getCashFlow: vi
+      .fn()
+      .mockResolvedValue({
+        success: true,
+        data: { inflow: { total: 0 }, outflow: { total: 0 }, net_cash_flow: 0, period: 'April' },
+      }),
     calculateInterest: vi.fn().mockResolvedValue({ success: true, data: {} }),
     calculateCommission: vi.fn().mockResolvedValue({ success: true, data: {} }),
     generatePayslip: vi.fn().mockResolvedValue({ success: true }),
     generateStatement: vi.fn().mockResolvedValue({ success: true }),
     getStaffUsers: vi.fn().mockResolvedValue({ success: true, data: [] }),
-  }
+  },
 }));
 
 vi.mock('../context/AuthContext', () => ({
@@ -106,7 +123,10 @@ describe('Operational Unified Hubs', () => {
     ];
 
     it('renders accounts view and handles search', async () => {
-      vi.mocked(authService.getStaffAccounts).mockResolvedValue({ success: true, data: mockAccounts });
+      vi.mocked(authService.getStaffAccounts).mockResolvedValue({
+        success: true,
+        data: mockAccounts,
+      });
 
       render(<AdministrativeHub mode="manager" initialTab="accounts" />);
 
@@ -122,21 +142,26 @@ describe('Operational Unified Hubs', () => {
     });
 
     it('switches to Staff IDs tab', async () => {
-      const mockStaff: UserExtended[] = [{
-        id: 1,
-        username: 'alice.smith',
-        email: 'alice@coastal.com',
-        first_name: 'Alice',
-        last_name: 'Smith',
-        name: 'Alice Smith',
-        role: RoleEnum.CASHIER,
-        is_active: true,
-        is_staff: true,
-        is_superuser: false,
-        staff_id: 'CA001',
-        is_approved: false,
-      }];
-      vi.mocked(authService.getStaffIds).mockResolvedValue({ success: true, data: mockStaff as unknown as StaffId[] });
+      const mockStaff: UserExtended[] = [
+        {
+          id: 1,
+          username: 'alice.smith',
+          email: 'alice@coastal.com',
+          first_name: 'Alice',
+          last_name: 'Smith',
+          name: 'Alice Smith',
+          role: 'cashier' as RoleEnum,
+          is_active: true,
+          is_staff: true,
+          is_superuser: false,
+          staff_id: 'CA001',
+          is_approved: false,
+        },
+      ];
+      vi.mocked(authService.getStaffIds).mockResolvedValue({
+        success: true,
+        data: mockStaff as unknown as StaffId[],
+      });
       vi.mocked(authService.getStaffAccounts).mockResolvedValue({ success: true, data: [] });
 
       render(<AdministrativeHub mode="manager" initialTab="staff-ids" />);
@@ -161,7 +186,15 @@ describe('Operational Unified Hubs', () => {
 
   describe('FinancialOperationsHub', () => {
     it('renders expenses and allows recording', async () => {
-      const mockExpenses: Expense[] = [{ date: '2026-04-01', category: 'Utilities', description: 'Power bill', amount: 500, status: 'pending' }];
+      const mockExpenses: Expense[] = [
+        {
+          date: '2026-04-01',
+          category: 'Utilities',
+          description: 'Power bill',
+          amount: 500,
+          status: 'pending',
+        },
+      ];
       vi.mocked(authService.getExpenses).mockResolvedValue({ success: true, data: mockExpenses });
 
       render(<FinancialOperationsHub mode="manager" initialTab="expenses" />);
@@ -173,88 +206,96 @@ describe('Operational Unified Hubs', () => {
     });
 
     it('switches to Payroll tab', async () => {
-       render(<FinancialOperationsHub mode="manager" />);
+      render(<FinancialOperationsHub mode="manager" />);
 
-       const payrollTab = screen.getByText(/Payroll/);
-       fireEvent.click(payrollTab);
+      const payrollTab = screen.getByText(/Payroll/);
+      fireEvent.click(payrollTab);
 
-       await waitFor(() => {
-         expect(screen.getByText(/Generate Staff Payslip/i)).toBeInTheDocument();
-       });
+      await waitFor(() => {
+        expect(screen.getByText(/Generate Staff Payslip/i)).toBeInTheDocument();
+      });
     });
 
     it('switches to Cash Flow tab', async () => {
-        vi.mocked(authService.getCashFlow).mockResolvedValue({
-            success: true,
-            data: {
-                inflow: { total: 5000, deposits: 4000, loan_repayments: 1000 },
-                outflow: { total: 2000, withdrawals: 1500, loan_disbursements: 500 },
-                net_cash_flow: 3000,
-                period: 'April 2026'
-            }
-        });
+      vi.mocked(authService.getCashFlow).mockResolvedValue({
+        success: true,
+        data: {
+          inflow: { total: 5000, deposits: 4000, loan_repayments: 1000 },
+          outflow: { total: 2000, withdrawals: 1500, loan_disbursements: 500 },
+          net_cash_flow: 3000,
+          period: 'April 2026',
+        },
+      });
 
-        render(<FinancialOperationsHub mode="manager" />);
+      render(<FinancialOperationsHub mode="manager" />);
 
-        const cfTab = screen.getByText(/Cash Flow/);
-        fireEvent.click(cfTab);
+      const cfTab = screen.getByText(/Cash Flow/);
+      fireEvent.click(cfTab);
 
-        await waitFor(() => {
-            expect(screen.getByText(/Net Cash Flow/i)).toBeInTheDocument();
-            expect(screen.getByText(/3,000.00/)).toBeInTheDocument();
-        });
-     });
+      await waitFor(() => {
+        expect(screen.getByText(/Net Cash Flow/i)).toBeInTheDocument();
+        expect(screen.getByText(/3,000.00/)).toBeInTheDocument();
+      });
+    });
   });
 
   describe('OnboardingHub', () => {
     it('renders manager mode with approval queue', async () => {
-      const mockRequests: AccountOpeningRequest[] = [{
-        id: 1,
-        first_name: 'John',
-        last_name: 'Doe',
-        phone_number: '1234567890',
-        account_type: AccountOpeningRequestAccountTypeEnum.DAILY_SUSU,
-        id_type: 'passport',
-        id_number: 'P123',
-        status: Status669Enum.PENDING,
-        email: 'john@test.com',
-        date_of_birth: '1990-01-01',
-        address: '123 Main St',
-        occupation: 'Engineer',
-        work_address: '456 Work Ave',
-        position: 'Senior',
-        digital_address: 'GA-000-0001',
-        location: 'Accra',
-        next_of_kin_data: '{}',
-        photo: '',
-        full_name: 'John Doe',
-        processed_by: null,
-        submitted_by: null,
-        created_account: null,
-        credentials_approved_by: null,
-        credentials_sent_at: null,
-        rejection_reason: '',
-        notes: '',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-        approved_at: null,
-      }];
+      const mockRequests: AccountOpeningRequest[] = [
+        {
+          id: 1,
+          first_name: 'John',
+          last_name: 'Doe',
+          phone_number: '1234567890',
+          account_type: 'daily_susu' as AccountOpeningRequestAccountTypeEnum,
+          id_type: 'passport',
+          id_number: 'P123',
+          status: 'pending' as StatusE5aEnum,
+          email: 'john@test.com',
+          date_of_birth: '1990-01-01',
+          address: '123 Main St',
+          occupation: 'Engineer',
+          work_address: '456 Work Ave',
+          position: 'Senior',
+          digital_address: 'GA-000-0001',
+          location: 'Accra',
+          next_of_kin_data: '{}',
+          photo: '',
+          full_name: 'John Doe',
+          processed_by: null,
+          submitted_by: null,
+          created_account: null,
+          credentials_approved_by: null,
+          credentials_sent_at: null,
+          rejection_reason: '',
+          notes: '',
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          approved_at: null,
+        },
+      ];
 
-      vi.mocked(apiService.getAccountOpenings).mockResolvedValue({ success: true, data: mockRequests });
+      vi.mocked(apiService.getAccountOpenings).mockResolvedValue({
+        success: true,
+        data: mockRequests,
+      });
 
       render(<OnboardingHub mode="manager" />);
 
       await waitFor(() => {
         expect(screen.getByText(/Secure Paper-First Queue/i)).toBeInTheDocument();
-        const matches = screen.getAllByText((_, el) => el?.textContent?.replace(/\s+/g, ' ').includes('John Doe') ?? false);
+        const matches = screen.getAllByText(
+          (_, el) => el?.textContent?.replace(/\s+/g, ' ').includes('John Doe') ?? false
+        );
         expect(matches.length).toBeGreaterThan(0);
       });
     });
   });
 
   describe('FinancialRequestsHub', () => {
-     it('renders manager mode with loans', async () => {
-        const mockLoans: Loan[] = [{
+    it('renders manager mode with loans', async () => {
+      const mockLoans: Loan[] = [
+        {
           id: 1,
           user: 1,
           borrower_name: 'John',
@@ -281,24 +322,27 @@ describe('Operational Unified Hubs', () => {
           guarantor_2_phone: '0552222222',
           guarantor_2_address: '2 Guarantor Rd',
           outstanding_balance: '5000.00',
-          status: LoanStatusEnum.PENDING,
+          status: 'pending' as LoanStatusEnum,
           approved_at: null,
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
-        }];
+          requested_by: null,
+          initiator_name: '',
+        },
+      ];
 
-        vi.mocked(apiService.getLoans).mockResolvedValue({ 
-            success: true, 
-            data: mockLoans,
-        });
+      vi.mocked(apiService.getLoans).mockResolvedValue({
+        success: true,
+        data: mockLoans,
+      });
 
-        render(<FinancialRequestsHub mode="manager" initialView="pending-loans" />);
+      render(<FinancialRequestsHub mode="manager" initialView="pending-loans" />);
 
-        await waitFor(() => {
-            expect(screen.getByText('John')).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /Approve/i })).toBeInTheDocument();
-        });
-     });
+      await waitFor(() => {
+        expect(screen.getByText('John')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Approve/i })).toBeInTheDocument();
+      });
+    });
   });
 
   describe('SupportHub', () => {
