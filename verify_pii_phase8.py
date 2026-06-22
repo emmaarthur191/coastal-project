@@ -10,11 +10,11 @@ django.setup()
 from django.contrib.auth import get_user_model
 from core.models.loans import Loan
 from core.models.accounts import AccountOpeningRequest
-from core.models.operational import ClientRegistration, VisitSchedule, ClientAssignment
+from core.models.operational import VisitSchedule, ClientAssignment
 from core.serializers.loans import LoanSerializer
 from core.serializers.accounts import AccountOpeningRequestSerializer
-from core.serializers.operational import ClientAssignmentSerializer, ClientRegistrationSerializer
-from core.models.audit import AuditLog
+from core.serializers.operational import ClientAssignmentSerializer
+from users.models import AuditLog
 
 User = get_user_model()
 
@@ -25,6 +25,11 @@ def verify_pii_phase8():
     user, _ = User.objects.get_or_create(username="test_pii_user_p8", defaults={"email": "pii_p8@example.com", "role": "customer"})
     manager, _ = User.objects.get_or_create(username="test_manager_p8", defaults={"email": "manager_p8@example.com", "role": "manager"})
     cashier, _ = User.objects.get_or_create(username="test_cashier_p8", defaults={"email": "cashier_p8@example.com", "role": "cashier"})
+
+    # Clean up old test data to ensure re-entrancy
+    ClientAssignment.objects.filter(client=user).delete()
+    Loan.objects.filter(user=user).delete()
+    AccountOpeningRequest.objects.filter(existing_member=user).delete()
 
     # 2. Test Loan Encryption
     loan = Loan.objects.create(
@@ -52,16 +57,16 @@ def verify_pii_phase8():
     # Check raw DB fields (should be encrypted)
     from django.db import connection
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id_number_encrypted, next_of_kin_1_name_encrypted FROM core_loan WHERE id = %s", [loan.id])
+        cursor.execute("SELECT id_number_encrypted, next_of_kin_1_name_encrypted FROM loan WHERE id = %s", [loan.id])
         row = cursor.fetchone()
         assert "GHA-123456789" not in row[0]
         assert "John Doe" not in row[1]
-        assert row[0].startswith("enc:")
+        assert row[0].startswith("gAAAAA")
         print("✓ Loan PII is encrypted in DB.")
 
     # 3. Test AccountOpeningRequest Photo Encryption
     aor = AccountOpeningRequest.objects.create(
-        user=user,
+        existing_member=user,
         first_name="Alice",
         last_name="Wonderland",
         occupation="Developer",
@@ -73,7 +78,7 @@ def verify_pii_phase8():
     assert aor.photo == "BASE64_STUFF_HERE"
 
     with connection.cursor() as cursor:
-        cursor.execute("SELECT occupation_encrypted, photo_encrypted FROM core_account_opening_request WHERE id = %s", [aor.id])
+        cursor.execute("SELECT occupation_encrypted, photo_encrypted FROM account_opening_request WHERE id = %s", [aor.id])
         row = cursor.fetchone()
         assert "Developer" not in row[0]
         assert "BASE64_STUFF_HERE" not in row[1]
@@ -84,7 +89,7 @@ def verify_pii_phase8():
     serializer_staff = LoanSerializer(loan, context={'request': type('obj', (object,), {'user': cashier})})
     data_staff = serializer_staff.data
     assert data_staff['id_number'].startswith("GHA-XXXX")
-    assert data_staff['next_of_kin_1_name'] == "XXXXXXXX"
+    assert data_staff['next_of_kin_1_name'] == "XXXX"
     assert "1990" in data_staff['date_of_birth']
     assert "****" in data_staff['date_of_birth']
     print("✓ LoanSerializer masks PII for cashier.")
@@ -96,16 +101,17 @@ def verify_pii_phase8():
     assert data_manager['next_of_kin_1_name'] == "John Doe"
     print("✓ LoanSerializer shows full PII for manager.")
 
-    # Test ClientAssignment Masking
+    user.first_name = "Bob"
+    user.last_name = "Brown"
+    user.save()
     ca = ClientAssignment.objects.create(
         mobile_banker=manager,
         client=user,
-        client_name="Bob Brown",
         location="Accra Mall"
     )
     serializer_ca_staff = ClientAssignmentSerializer(ca, context={'request': type('obj', (object,), {'user': cashier})})
-    assert serializer_ca_staff.data['client_name'] == "XXXXXXXX"
-    assert serializer_ca_staff.data['location'] == "XXXXXXXX"
+    assert serializer_ca_staff.data['client_name'] == "XXXX"
+    assert serializer_ca_staff.data['location'] == "XXXX"
     print("✓ ClientAssignmentSerializer masks PII for cashier.")
 
     # 5. Test Audit Log Redaction
@@ -113,9 +119,8 @@ def verify_pii_phase8():
     loan.digital_address = "GA-999-0000"
     loan.save()
 
-    # Audit log should be created (assuming signals are active)
-    audit = AuditLog.objects.filter(object_id=str(loan.id), action="update").latest('timestamp')
-    changes = json.loads(audit.changes_json)
+    audit = AuditLog.objects.filter(object_id=str(loan.id), action="update").latest('created_at')
+    changes = audit.changes
 
     # Check digital_address and its encrypted variant
     if "digital_address" in changes:

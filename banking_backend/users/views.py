@@ -452,10 +452,11 @@ class SendOTPView(APIView):
         success, response = SendexaService.send_sms(phone_number, message)
 
         if not success:
-            logger.error(f"[OTP Error] Failed to send SMS: {response}")
+            # Avoid logging provider/raw error details that may contain sensitive data (e.g., phone numbers)
+            logger.error("[OTP Error] Failed to send SMS to user phone number")
             # If Sendexa fails, return a specific error to help diagnosis
             if not settings.DEBUG:
-                logger.error(f"Failed to send SMS code for user. Gateway response: {response}")
+                logger.error("Failed to send SMS code for user due to gateway failure.")
                 return Response(
                     {"error": "Failed to send secure SMS. Please contact support."},
                     status=status.HTTP_502_BAD_GATEWAY,

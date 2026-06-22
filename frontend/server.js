@@ -14,18 +14,18 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://coastal-backend.onrender
 
 // SECURITY: Global Rate Limiter (High-Severity SAST Fix)
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 1000 requests per window
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: {
-        status: 429,
-        error: 'Too many requests, please try again later.'
-    },
-    skip: (req) => {
-        // Skip rate limiting for static assets (images, fonts, etc.)
-        return req.url.match(/\.(png|jpg|jpeg|gif|svg|webp|woff|woff2|eot|ttf|otf|css|js)$/);
-    }
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per window
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: {
+    status: 429,
+    error: 'Too many requests, please try again later.',
+  },
+  skip: (req) => {
+    // Skip rate limiting for static assets (images, fonts, etc.)
+    return req.url.match(/\.(png|jpg|jpeg|gif|svg|webp|woff|woff2|eot|ttf|otf|css|js)$/);
+  },
 });
 
 // Apply rate limiting to all requests (except skipped static assets)
@@ -33,133 +33,137 @@ app.use(limiter);
 
 // Security Headers & CSP
 app.use((req, res, next) => {
-    // Basic Security Headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Basic Security Headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
 
-    // Strict Transport Security (HSTS)
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  // Strict Transport Security (HSTS)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
-    // Content Security Policy (CSP)
-    const cspDirectives = [
-        "default-src 'self'",
-        "script-src 'self' https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data: blob: https:",
-        "connect-src 'self' " + BACKEND_URL + " https://api2.amplitude.com https://*.sentry.io https://*.ingest.sentry.io",
-        "frame-src 'self'",
-        "object-src 'none'",
-        "base-uri 'self'"
-    ];
-    res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+  // Content Security Policy (CSP)
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' " +
+      BACKEND_URL +
+      ' https://api2.amplitude.com https://*.sentry.io https://*.ingest.sentry.io',
+    "frame-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+  ];
+  res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
 
-    next();
+  next();
 });
 
 // Proxy API requests (HTTP)
 const apiProxy = createProxyMiddleware({
-    target: BACKEND_URL,
-    changeOrigin: true,
-    secure: true,
-    cookieDomainRewrite: {
-        "*": "" // Rewrite all cookie domains to match the client's domain
-    },
-    pathRewrite: {
-        '^/api': '/api'
-    },
-    on: {
-        proxyReq: (proxyReq, req, res) => {
-            // CRITICAL: Forward original Origin header for CSRF validation
-            let origin = req.headers.origin;
+  target: BACKEND_URL,
+  changeOrigin: true,
+  secure: true,
+  cookieDomainRewrite: {
+    '*': '', // Rewrite all cookie domains to match the client's domain
+  },
+  pathRewrite: {
+    '^/api': '/api',
+  },
+  on: {
+    proxyReq: (proxyReq, req, res) => {
+      // CRITICAL: Forward original Origin header for CSRF validation
+      let origin = req.headers.origin;
 
-            // If Origin is missing (sometimes on same-origin POSTs), try to extract from Referer
-            if (!origin && req.headers.referer) {
-                try {
-                    const refererUrl = new URL(req.headers.referer);
-                    origin = `${refererUrl.protocol}//${refererUrl.host}`;
-                } catch (e) {
-                    console.error('[Proxy] Failed to parse Referer for Origin:', e);
-                }
-            }
-
-            if (origin) {
-                proxyReq.setHeader('Origin', origin);
-                proxyReq.setHeader('Referer', origin);
-            }
-
-            // Forward X-Forwarded headers for proper request context
-            proxyReq.setHeader('X-Forwarded-Host', req.headers.host);
-            proxyReq.setHeader('X-Forwarded-Proto', 'https');
-
-            console.log(`[Proxy API] ${req.method} ${req.path} -> ${BACKEND_URL}${req.path}`);
-        },
-        error: (err, req, res) => {
-            console.error('[Proxy API Error]', err);
-            if (res.writeHead) res.writeHead(500);
-            if (res.end) res.end('Proxy Error');
+      // If Origin is missing (sometimes on same-origin POSTs), try to extract from Referer
+      if (!origin && req.headers.referer) {
+        try {
+          const refererUrl = new URL(req.headers.referer);
+          origin = `${refererUrl.protocol}//${refererUrl.host}`;
+        } catch (e) {
+          console.error('[Proxy] Failed to parse Referer for Origin:', e);
         }
-    }
+      }
+
+      if (origin) {
+        proxyReq.setHeader('Origin', origin);
+        proxyReq.setHeader('Referer', origin);
+      }
+
+      // Forward X-Forwarded headers for proper request context
+      proxyReq.setHeader('X-Forwarded-Host', req.headers.host);
+      proxyReq.setHeader('X-Forwarded-Proto', 'https');
+
+      console.log(`[Proxy API] ${req.method} ${req.path} -> ${BACKEND_URL}${req.path}`);
+    },
+    error: (err, req, res) => {
+      console.error('[Proxy API Error]', err);
+      if (res.writeHead) res.writeHead(500);
+      if (res.end) res.end('Proxy Error');
+    },
+  },
 });
 app.use('/api', apiProxy);
 
 // Proxy WebSocket requests
 const wsProxy = createProxyMiddleware({
-    target: BACKEND_URL,
-    changeOrigin: true,
-    secure: true,
-    ws: true, // Enable WebSocket proxying
-    pathRewrite: {
-        '^/ws': '/ws'
+  target: BACKEND_URL,
+  changeOrigin: true,
+  secure: true,
+  ws: true, // Enable WebSocket proxying
+  pathRewrite: {
+    '^/ws': '/ws',
+  },
+  on: {
+    proxyReqWs: (proxyReq, req, socket, options, head) => {
+      console.log(`[Proxy WS] WebSocket upgrade: ${req.url} -> ${BACKEND_URL}${req.url}`);
     },
-    on: {
-        proxyReqWs: (proxyReq, req, socket, options, head) => {
-            console.log(`[Proxy WS] WebSocket upgrade: ${req.url} -> ${BACKEND_URL}${req.url}`);
-        },
-        error: (err, req, res) => {
-            console.error('[Proxy WS Error]', err);
-        }
-    }
+    error: (err, req, res) => {
+      console.error('[Proxy WS Error]', err);
+    },
+  },
 });
 app.use('/ws', wsProxy);
 
 // Serve Static Files with Explicit MIME Types
-app.use(express.static(path.join(__dirname, 'dist'), {
+app.use(
+  express.static(path.join(__dirname, 'dist'), {
     maxAge: '1y',
     setHeaders: (res, path) => {
-        if (path.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-        }
-        if (path.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
-        }
-    }
-}));
+      if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+    },
+  })
+);
 
 // CRITICAL: Handle missing assets to prevent HTML fallback (MIME type error fix)
-app.use('/assets/*', (req, res) => {
-    console.warn(`[404] Missing asset requested: ${req.originalUrl}`);
-    res.status(404).send('Asset not found');
+app.use(/\/assets\/.*/, (req, res) => {
+  console.warn(`[404] Missing asset requested: ${req.originalUrl}`);
+  res.status(404).send('Asset not found');
 });
 
 // SPA Fallback (Rewrite all other requests to index.html)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Create HTTP server and attach WebSocket upgrade handler
 const server = createServer(app);
 server.on('upgrade', (req, socket, head) => {
-    if (req.url.startsWith('/ws')) {
-        wsProxy.upgrade(req, socket, head);
-    } else {
-        socket.destroy();
-    }
+  if (req.url.startsWith('/ws')) {
+    wsProxy.upgrade(req, socket, head);
+  } else {
+    socket.destroy();
+  }
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Proxying /api to ${BACKEND_URL}`);
-    console.log(`Proxying /ws (WebSocket) to ${BACKEND_URL}`);
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Proxying /api to ${BACKEND_URL}`);
+  console.log(`Proxying /ws (WebSocket) to ${BACKEND_URL}`);
 });
