@@ -346,6 +346,9 @@ def sync_missing_tables():
         "user_message_preference",
         """CREATE TABLE "user_message_preference" (
             "id" BIGSERIAL PRIMARY KEY,
+            "email_notifications" BOOLEAN NOT NULL DEFAULT TRUE,
+            "push_notifications" BOOLEAN NOT NULL DEFAULT TRUE,
+            "show_previews" BOOLEAN NOT NULL DEFAULT TRUE,
             "sound_enabled" BOOLEAN NOT NULL DEFAULT TRUE,
             "notification_sound" VARCHAR(50) NOT NULL DEFAULT 'default',
             "read_receipts_enabled" BOOLEAN NOT NULL DEFAULT TRUE,
@@ -643,6 +646,11 @@ def sync_missing_columns():
     # Loans
     add_column_if_not_exists("loan", "id_number", "VARCHAR(50) DEFAULT '' NOT NULL")
     add_column_if_not_exists("loan", "monthly_income", "NUMERIC(12,2) DEFAULT 0.00 NOT NULL")
+
+    # UserMessagePreference (migration 0037: added notification columns)
+    add_column_if_not_exists("user_message_preference", "email_notifications", "BOOLEAN NOT NULL DEFAULT TRUE")
+    add_column_if_not_exists("user_message_preference", "push_notifications", "BOOLEAN NOT NULL DEFAULT TRUE")
+    add_column_if_not_exists("user_message_preference", "show_previews", "BOOLEAN NOT NULL DEFAULT TRUE")
 
     # Banking & Operations Messages
     add_column_if_not_exists("core_bankingmessage", "body_encrypted", "TEXT DEFAULT '' NOT NULL")
