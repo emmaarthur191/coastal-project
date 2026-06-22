@@ -415,18 +415,19 @@ def sync_missing_tables():
         )""",
     )
 
-    # ServiceCharge
+    # ServiceCharge (db_table = "service_charge")
     create_table_if_not_exists(
-        "core_servicecharge",
-        """CREATE TABLE "core_servicecharge" (
+        "service_charge",
+        """CREATE TABLE "service_charge" (
             "id" BIGSERIAL PRIMARY KEY,
             "name" VARCHAR(100) NOT NULL,
-            "charge_type" VARCHAR(20) NOT NULL,
-            "amount" NUMERIC(12,2) NOT NULL,
-            "frequency" VARCHAR(20) NOT NULL DEFAULT 'one_time',
             "description" TEXT NOT NULL DEFAULT '',
+            "charge_type" VARCHAR(20) NOT NULL DEFAULT 'fixed',
+            "rate" NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+            "applicable_to" JSONB NOT NULL DEFAULT '[]',
             "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
-            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
         )""",
     )
 
@@ -454,16 +455,33 @@ def sync_missing_tables():
         )""",
     )
 
-    # ChatMessage
+    # ChatMessage (full schema with encrypted content, reactions, threading)
     create_table_if_not_exists(
         "core_chatmessage",
         """CREATE TABLE "core_chatmessage" (
             "id" BIGSERIAL PRIMARY KEY,
-            "content" TEXT NOT NULL,
+            "content_encrypted" TEXT NOT NULL DEFAULT '',
             "is_read" BOOLEAN NOT NULL DEFAULT FALSE,
+            "read_at" TIMESTAMP WITH TIME ZONE NULL,
+            "attachment_url" VARCHAR(200) NULL,
+            "attachment_name" VARCHAR(255) NOT NULL DEFAULT '',
             "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "edited_at" TIMESTAMP WITH TIME ZONE NULL,
+            "reactions" JSONB NOT NULL DEFAULT '{}',
+            "parent_id" BIGINT NULL REFERENCES "core_chatmessage" ("id") ON DELETE SET NULL,
             "room_id" BIGINT NOT NULL REFERENCES "core_chatroom" ("id") ON DELETE CASCADE,
             "sender_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # Junction: ChatMessage <-> User (read_by)
+    create_table_if_not_exists(
+        "core_chatmessage_read_by",
+        """CREATE TABLE "core_chatmessage_read_by" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "chatmessage_id" BIGINT NOT NULL REFERENCES "core_chatmessage" ("id") ON DELETE CASCADE,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("chatmessage_id", "user_id")
         )""",
     )
 
@@ -568,6 +586,175 @@ def sync_missing_tables():
         )""",
     )
 
+
+    # PasswordResetToken (users app)
+    create_table_if_not_exists(
+        "password_reset_token",
+        """CREATE TABLE "password_reset_token" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "token" VARCHAR(64) NOT NULL UNIQUE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
+            "is_used" BOOLEAN NOT NULL DEFAULT FALSE,
+            "used_at" TIMESTAMP WITH TIME ZONE NULL,
+            "ip_address" INET NULL,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # UserInvitation (users app)
+    create_table_if_not_exists(
+        "user_invitation",
+        """CREATE TABLE "user_invitation" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "token" VARCHAR(64) NOT NULL UNIQUE,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
+            "is_used" BOOLEAN NOT NULL DEFAULT FALSE,
+            "used_at" TIMESTAMP WITH TIME ZONE NULL,
+            "user_id" BIGINT NOT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # ==========================================================================
+    # OPERATIONAL MODELS (Service, Complaints, Cash, Devices)
+    # ==========================================================================
+
+    # ServiceRequest
+    create_table_if_not_exists(
+        "service_request",
+        """CREATE TABLE "service_request" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "request_type" VARCHAR(50) NOT NULL,
+            "description" TEXT NOT NULL DEFAULT '',
+            "delivery_method" VARCHAR(20) NOT NULL DEFAULT 'email',
+            "status" VARCHAR(20) NOT NULL DEFAULT 'pending',
+            "admin_notes" TEXT NOT NULL DEFAULT '',
+            "processed_at" TIMESTAMP WITH TIME ZONE NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "processed_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # Complaint
+    create_table_if_not_exists(
+        "complaint",
+        """CREATE TABLE "complaint" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "category" VARCHAR(50) NOT NULL,
+            "priority" VARCHAR(20) NOT NULL DEFAULT 'medium',
+            "subject" VARCHAR(200) NOT NULL,
+            "description" TEXT NOT NULL,
+            "status" VARCHAR(20) NOT NULL DEFAULT 'open',
+            "resolution" TEXT NOT NULL DEFAULT '',
+            "resolved_at" TIMESTAMP WITH TIME ZONE NULL,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "assigned_to_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "resolved_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # Device
+    create_table_if_not_exists(
+        "device",
+        """CREATE TABLE "device" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "device_token" VARCHAR(500) NOT NULL,
+            "device_type" VARCHAR(20) NOT NULL DEFAULT 'web',
+            "device_name" VARCHAR(100) NOT NULL DEFAULT '',
+            "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "last_used_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE,
+            UNIQUE ("user_id", "device_token")
+        )""",
+    )
+
+    # CashAdvance
+    create_table_if_not_exists(
+        "cash_advance",
+        """CREATE TABLE "cash_advance" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "amount" NUMERIC(12,2) NOT NULL,
+            "reason" TEXT NOT NULL,
+            "status" VARCHAR(20) NOT NULL DEFAULT 'pending',
+            "repayment_date" DATE NULL,
+            "repaid_at" TIMESTAMP WITH TIME ZONE NULL,
+            "notes" TEXT NOT NULL DEFAULT '',
+            "id_type" VARCHAR(50) NOT NULL DEFAULT 'ghana_card',
+            "id_number_encrypted" TEXT NOT NULL DEFAULT '',
+            "id_number_hash" VARCHAR(64) NOT NULL DEFAULT '',
+            "verification_notes" TEXT NOT NULL DEFAULT '',
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "approved_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "submitted_by_id" BIGINT NULL REFERENCES "users_user" ("id") ON DELETE SET NULL,
+            "user_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # CashDrawer
+    create_table_if_not_exists(
+        "cash_drawer",
+        """CREATE TABLE "cash_drawer" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "drawer_number" VARCHAR(20) NOT NULL,
+            "opening_balance" NUMERIC(12,2) NOT NULL,
+            "current_balance" NUMERIC(12,2) NOT NULL,
+            "closing_balance" NUMERIC(12,2) NULL,
+            "expected_balance" NUMERIC(12,2) NULL,
+            "variance" NUMERIC(12,2) NOT NULL DEFAULT 0,
+            "status" VARCHAR(20) NOT NULL DEFAULT 'open',
+            "opened_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "closed_at" TIMESTAMP WITH TIME ZONE NULL,
+            "notes" TEXT NOT NULL DEFAULT '',
+            "cashier_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # CashDrawerDenomination
+    create_table_if_not_exists(
+        "cash_drawer_denomination",
+        """CREATE TABLE "cash_drawer_denomination" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "denomination" NUMERIC(10,2) NOT NULL,
+            "count" INTEGER NOT NULL DEFAULT 0,
+            "is_opening" BOOLEAN NOT NULL DEFAULT TRUE,
+            "cash_drawer_id" BIGINT NOT NULL REFERENCES "cash_drawer" ("id") ON DELETE CASCADE
+        )""",
+    )
+
+    # GlobalSequence (reliability)
+    create_table_if_not_exists(
+        "global_sequence",
+        """CREATE TABLE "global_sequence" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "name" VARCHAR(64) NOT NULL UNIQUE,
+            "last_value" BIGINT NOT NULL DEFAULT 0,
+            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        )""",
+    )
+
+    # SmsOutbox (reliability)
+    create_table_if_not_exists(
+        "sms_outbox",
+        """CREATE TABLE "sms_outbox" (
+            "id" BIGSERIAL PRIMARY KEY,
+            "phone_number_encrypted" TEXT NOT NULL DEFAULT '',
+            "phone_number_hash" VARCHAR(64) NOT NULL DEFAULT '',
+            "message_encrypted" TEXT NOT NULL DEFAULT '',
+            "status" VARCHAR(20) NOT NULL DEFAULT 'pending',
+            "error_message" TEXT NULL,
+            "retry_count" INTEGER NOT NULL DEFAULT 0,
+            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            "sent_at" TIMESTAMP WITH TIME ZONE NULL
+        )""",
+    )
+
     print("  Table creation complete!\n")
 
 
@@ -656,6 +843,19 @@ def sync_missing_columns():
     add_column_if_not_exists("core_bankingmessage", "body_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("operations_message", "message_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("core_chatmessage", "content_encrypted", "TEXT DEFAULT '' NOT NULL")
+
+    add_column_if_not_exists("core_chatmessage", "read_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("core_chatmessage", "edited_at", "TIMESTAMP WITH TIME ZONE NULL")
+    add_column_if_not_exists("core_chatmessage", "reactions", "JSONB NOT NULL DEFAULT '{}'")
+    add_column_if_not_exists("core_chatmessage", "attachment_url", "VARCHAR(200) NULL")
+    add_column_if_not_exists("core_chatmessage", "attachment_name", "VARCHAR(255) NOT NULL DEFAULT ''")
+    add_column_if_not_exists("core_chatmessage", "parent_id", 'BIGINT NULL REFERENCES "core_chatmessage" ("id") ON DELETE SET NULL')
+
+    # IdempotencyKey alignment (model uses 'key' and 'response_data' / 'status_code' / 'expires_at')
+    add_column_if_not_exists("idempotency_key", "key", "UUID UNIQUE")
+    add_column_if_not_exists("idempotency_key", "response_data", "JSONB NULL")
+    add_column_if_not_exists("idempotency_key", "status_code", "INTEGER NULL")
+    add_column_if_not_exists("idempotency_key", "expires_at", "TIMESTAMP WITH TIME ZONE NULL")
 
     # Visits & Assignments
     add_column_if_not_exists("visit_schedule", "client_name_encrypted", "TEXT DEFAULT '' NOT NULL")
@@ -831,6 +1031,17 @@ def drop_redundant_duplicates():
         "core_usermessagepreference": "user_message_preference",
         "core_operationsmessage": "operations_message",
         "core_otpverification": "otp_verification",
+        "users_passwordresettoken": "password_reset_token",
+        "users_userinvitation": "user_invitation",
+        "core_servicerequest": "service_request",
+        "core_complaint": "complaint",
+        "core_device": "device",
+        "core_cashadvance": "cash_advance",
+        "core_cashdrawer": "cash_drawer",
+        "core_cashdrawerdenomination": "cash_drawer_denomination",
+        "core_globalsequence": "global_sequence",
+        "core_smsoutbox": "sms_outbox",
+        "core_servicecharge": "service_charge",
     }
 
     with connection.cursor() as cursor:
