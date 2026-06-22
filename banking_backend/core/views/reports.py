@@ -323,7 +323,7 @@ class ReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Cre
                     report.error_message = str(fnf)
                     report.save()
                     return Response(
-                        {"status": "error", "message": str(fnf), "code": "TEMPLATE_MISSING"},
+                        {"status": "error", "message": "The required report template is missing.", "code": "TEMPLATE_MISSING"},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
                 except Exception as gen_error:

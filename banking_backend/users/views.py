@@ -144,7 +144,7 @@ class LoginView(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except PermissionDenied as e:
             logger.warning(f"Login permission denied: {e}")
-            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+            raise
 
         user = serializer.validated_data["user"]
 
