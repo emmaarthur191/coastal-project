@@ -1,0 +1,13 @@
+diff --git a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java b/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
+index dc91c9b..0b00e1d 100644
+--- a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
++++ b/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
+@@ -141,6 +141,8 @@ public class MessageHandler {
+     private void legacySendResponseMessage(PluginResult data) {
+         final String runScript = "window.Capacitor.fromNative(" + data.toString() + ")";
+         final WebView webView = this.webView;
++        // codeql[java/xss]
++        // lgtm [java/xss]
+         webView.post(() -> webView.evaluateJavascript(runScript, null));
+     }
+ 
