@@ -120,3 +120,6 @@ phase3_*.txt
 
 # Gemini Brain artifacts
 .gemini/
+
+# Documentation
+docs/
