@@ -10,6 +10,7 @@
     "sync": "cd frontend && npm run api:sync",
     "build": "cd frontend && npm install && npm run build",
     "start": "cd frontend && npm start",
+    "lint:api": "npx @stoplight/spectral-cli lint banking_backend/schema.yml",
     "prepare": "node -e \"if (process.env.CI === 'true') process.exit(0); process.exit(1)\" || husky"
   },
   "devDependencies": {
