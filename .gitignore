@@ -117,3 +117,6 @@ phase3_*.txt
 !tsconfig.json
 !composer.json
 !composer.lock
+
+# Gemini Brain artifacts
+.gemini/
