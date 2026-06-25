@@ -23,13 +23,16 @@ class TestUtilityExpansion:
     def test_phone_normalization(self):
         assert SendexaService.normalize_phone_number("0244123456") == "+233244123456"
 
-    @patch('httpx.Client.post')
-    def test_send_sms_outbox_logging(self, mock_post):
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.text = "Success"
+    @patch('httpx.Client')
+    def test_send_sms_outbox_logging(self, mock_client_cls):
+        from django.test import override_settings
+        mock_response = mock_client_cls.return_value.__enter__.return_value.post.return_value
+        mock_response.status_code = 200
+        mock_response.text = "Success"
         phone = "0244123456"
         msg = "Test Coastal Message"
-        success, info = SendexaService.send_sms(phone, msg)
+        with override_settings(SENDEXA_AUTH_TOKEN="test-token"):
+            success, info = SendexaService.send_sms(phone, msg)
         assert success is True
         p_hash = hash_field("+233244123456")
         outbox = SmsOutbox.objects.get(phone_number_hash=p_hash)

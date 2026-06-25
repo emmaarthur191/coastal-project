@@ -88,8 +88,8 @@ class TestSessionsAndDiagnostics:
 
     def test_security_diagnostics_access(self, api_client, manager_user, customer_user):
         """Manager/Admin can view diagnostics, customer is blocked."""
-        # Registered as path('health/diagnostics/', ...) in core/urls.py
-        url = "/health/diagnostics/"
+        # Registered in core/urls.py, included under api/ prefix in config/urls.py
+        url = "/api/health/diagnostics/"
 
         # 1. Customer blocked
         api_client.force_authenticate(user=customer_user)
