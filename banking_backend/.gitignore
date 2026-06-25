@@ -36,16 +36,54 @@ ml_models/
 *.txt
 *.log
 
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+db.sqlite3
+.env
+.DS_Store
+media/
+staticfiles/
+.gemini/
+
+# Test Artifacts
+.coverage
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+*.pyc
+
+# Auto-generated files (do not commit)
+schema.yml
+
+# ML model binaries
+ml_models/
+
+# Developer Scratch Scripts & Verification Tools
+/verify_*.py
+/debug_*.py
+/check_*.py
+/repair_*.py
+/diagnose_*.py
+/fix_*.py
+/tmp_*.py
+*.txt
+*.log
+
 # Project Logs
 logs/
 *.log
 *.html
 
 # Scratch scripts & folders
-reproduce_*.py
-test_*.py
+/reproduce_*.py
+/test_*.py
 list_urls.py
 scratch/
-temp_*.py
+/temp_*.py
 *.txt
 !requirements.txt

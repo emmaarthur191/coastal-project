@@ -1,7 +1,6 @@
-import * as Sentry from "@sentry/react";
-import { browserTracingIntegration } from "@sentry/react";
-import { replayIntegration } from "@sentry/replay";
-import { logger } from "./logger";
+import * as Sentry from '@sentry/react';
+import { browserTracingIntegration, replayIntegration } from '@sentry/react';
+import { logger } from './logger';
 
 const validateSentryDsn = (dsn) => {
   if (!dsn) return false;
@@ -36,11 +35,7 @@ const initializeSentry = () => {
       dsn: sentryDsn,
       integrations: [
         browserTracingIntegration({
-          tracePropagationTargets: [
-            "localhost",
-            /^\//,
-            /^https:\/\/[a-zA-Z0-9-]+\.onrender\.com/,
-          ],
+          tracePropagationTargets: ['localhost', /^\//, /^https:\/\/[a-zA-Z0-9-]+\.onrender\.com/],
         }),
         replayIntegration({
           maskAllText: true,
@@ -71,9 +66,11 @@ const initializeSentry = () => {
         if (error && typeof error === 'object') {
           const errorMessage = error.message || '';
           // Filter out network errors that are expected (user offline, CORS, etc.)
-          if (errorMessage.includes('NetworkError') ||
+          if (
+            errorMessage.includes('NetworkError') ||
             errorMessage.includes('Failed to fetch') ||
-            errorMessage.includes('Load failed')) {
+            errorMessage.includes('Load failed')
+          ) {
             return null;
           }
         }
@@ -96,7 +93,7 @@ const initializeSentry = () => {
 // Health check function
 const checkSentryHealth = () => {
   try {
-    Sentry.captureMessage("Sentry health check", "info");
+    Sentry.captureMessage('Sentry health check', 'info');
     return true;
   } catch (error) {
     logger.error('[Sentry] Health check failed:', error);
