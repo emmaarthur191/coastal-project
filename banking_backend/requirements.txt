@@ -33,7 +33,7 @@ uvicorn[standard]==0.34.0
 daphne==4.1.2
 
 # Tasks & Processing
-celery==5.6.0
+celery==5.6.3
 kombu==5.6.1
 amqp==5.3.1
 billiard==4.2.4
