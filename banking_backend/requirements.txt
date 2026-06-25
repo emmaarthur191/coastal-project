@@ -34,7 +34,7 @@ daphne==4.1.2
 
 # Tasks & Processing
 celery==5.6.0
-kombu==5.6.1
+kombu==5.6.2
 amqp==5.3.1
 billiard==4.2.4
 psutil==6.1.1
