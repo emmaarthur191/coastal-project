@@ -404,10 +404,36 @@ class MemberLookupSerializer(serializers.ModelSerializer):
 
         return mask_generic(obj.phone_number)
 
+    def to_representation(self, instance):
+        """Apply strict PII masking for non-managers to prevent data harvesting."""
+        from core.utils import mask_email, mask_generic
+
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        is_privileged = user and (
+            user.role in ["manager", "operations_manager", "admin"]
+            or user.is_superuser
+        )
+
+        if not is_privileged:
+            # Mask all sensitive PII fields in representation
+            data["email"] = mask_email(instance.email)
+            data["phone_number"] = mask_generic(instance.phone_number)
+            data["id_number"] = mask_generic(instance.id_number)
+            data["date_of_birth"] = mask_generic(instance.date_of_birth)
+            data["digital_address"] = mask_generic(instance.digital_address)
+            data["work_address"] = mask_generic(instance.work_address)
+            data["position"] = mask_generic(instance.position)
+
+        return data
+
 
 class UserSessionSerializer(serializers.Serializer):
     """Serializer for the UserSessionsView output representing an active user session."""
 
+    id = serializers.IntegerField()
     user_id = serializers.IntegerField()
     email = serializers.EmailField()
     name = serializers.CharField()

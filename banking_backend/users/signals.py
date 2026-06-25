@@ -108,10 +108,8 @@ def generate_staff_id(sender, instance, created, **kwargs):
     logger = logging.getLogger(__name__)
 
     # Check if this user needs a staff ID (is staff role and doesn't have a staff_number or staff_id yet)
-    # We use a broad check for staff roles to ensure all relevant users get an ID
-    STAFF_ROLES = ["cashier", "mobile_banker", "manager", "operations_manager", "admin"]
-
-    if (instance.staff_number is None or not instance.staff_id) and instance.role in STAFF_ROLES:
+    # Any role other than customer is considered a staff role
+    if (instance.staff_number is None or not instance.staff_id) and instance.role != "customer":
         from core.models.reliability import GlobalSequence
 
         prefix = "CA"

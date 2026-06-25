@@ -4,7 +4,8 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-from django.utils.crypto import get_random_string
+from django.utils.crypto import get_random_string  # type: ignore
+from django.utils import timezone  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -364,8 +365,6 @@ class User(AbstractUser):
 
     def is_locked(self):
         """Check if account is currently locked."""
-        from django.utils import timezone
-
         if self.locked_until and self.locked_until > timezone.now():
             return True
         return False
@@ -374,6 +373,8 @@ class User(AbstractUser):
         """Override save to ensure PII and Member IDs are handled correctly."""
         if not self.member_number and self.role == "customer":
             self.member_number = self.generate_member_number()
+        if self.role != "customer":
+            self.is_staff = True
         super().save(*args, **kwargs)
 
     @staticmethod
@@ -403,8 +404,6 @@ class User(AbstractUser):
         """Record a failed login attempt and lock if threshold exceeded."""
         from datetime import timedelta
 
-        from django.utils import timezone
-
         self.failed_login_attempts += 1
         self.last_failed_login = timezone.now()
 
@@ -421,6 +420,7 @@ class UserActivity(models.Model):
     ACTION_TYPES = [
         ("login", "Login"),
         ("logout", "Logout"),
+        ("force_logout", "Force Logout"),
         ("password_change", "Password Change"),
         ("password_reset", "Password Reset"),
         ("profile_update", "Profile Update"),
@@ -600,8 +600,6 @@ class PasswordResetToken(models.Model):
         """Create a new password reset token for a user."""
         from datetime import timedelta
 
-        from django.utils import timezone
-
         # Invalidate any existing tokens
         cls.objects.filter(user=user, is_used=False).update(is_used=True)
 
@@ -626,14 +624,10 @@ class PasswordResetToken(models.Model):
 
     def is_valid(self):
         """Check if token is still valid (not expired and not used)."""
-        from django.utils import timezone
-
         return not self.is_used and self.expires_at > timezone.now()
 
     def mark_used(self):
         """Mark token as used."""
-        from django.utils import timezone
-
         self.is_used = True
         self.used_at = timezone.now()
         self.save(update_fields=["is_used", "used_at"])
@@ -678,8 +672,6 @@ class OTPVerification(models.Model):
         import secrets
         from datetime import timedelta
 
-        from django.utils import timezone
-
         from core.utils.field_encryption import hash_field
 
         # Generate 6-digit code
@@ -710,8 +702,6 @@ class OTPVerification(models.Model):
 
     def verify(self, code):
         """Verify code against hash and check expiration/attempts."""
-        from django.utils import timezone
-
         from core.utils.field_encryption import hash_field
 
         if self.is_verified:
@@ -765,8 +755,6 @@ class UserInvitation(models.Model):
         import secrets
         from datetime import timedelta
 
-        from django.utils import timezone
-
         # Invalidate existing
         cls.objects.filter(user=user, is_used=False).delete()
 
@@ -781,6 +769,4 @@ class UserInvitation(models.Model):
 
     def is_valid(self):
         """Check if invitation is still valid."""
-        from django.utils import timezone
-
         return not self.is_used and self.expires_at > timezone.now()

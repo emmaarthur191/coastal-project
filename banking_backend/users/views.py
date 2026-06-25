@@ -48,8 +48,6 @@ class ChangePasswordView(APIView):
     @extend_schema(request=ChangePasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         """Handle password change requests for the authenticated user, validating old password and updating security tokens."""
-        from .serializers import ChangePasswordSerializer
-
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
@@ -604,8 +602,6 @@ class StaffIdsView(APIView):
         elif approved_param == "false":
             queryset = queryset.filter(is_approved=False)
 
-        import logging
-        logger = logging.getLogger(__name__)
         logger.info(f"StaffIdsView: Filtering by role={role}, status={status_param}, approved={approved_param}. Count: {queryset.count()}")
 
         # Pull objects to allow property-based PII decryption
@@ -620,6 +616,7 @@ class StaffIdsView(APIView):
             "last_name_encrypted",
             "staff_id_encrypted",
             "phone_number_encrypted",
+            "key_version",  # Prefetch to avoid N+1 queries when properties decrypt
         )[:100]
 
         results = []
@@ -695,7 +692,6 @@ class ClientBankerAssignmentView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def post(self, request):
-        from django.db import transaction
         from core.models.operational import ClientAssignment
 
         client_id = request.data.get("client_id")
@@ -868,9 +864,6 @@ class UserSessionsView(APIView):
             )
 
         import datetime
-
-        from django.utils import timezone
-
         from .models import UserActivity
 
         # Find recent logins in the last 24 hours to simulate "active sessions"
@@ -881,15 +874,15 @@ class UserSessionsView(APIView):
             .order_by("-created_at")
         )
 
-        # Deduplicate by user to show only latest session per user
-        sessions = {}
+        # Deduplicate by user to show only latest session per user, mapping to serializer keys
+        sessions_list = []
+        seen_users = set()
         for login in recent_logins:
-            if login.user.id not in sessions:
-                # Extract device and location from stored activity details
+            if login.user.id not in seen_users:
+                seen_users.add(login.user.id)
                 details = login.details or {}
                 device_name = details.get("device", "Unknown Device")
                 os_info = details.get("os", "")
-                # browser_info available via details.get('browser', '') if needed
                 location = details.get("location", "Unknown Location")
 
                 # Fallback to User-Agent parsing if details are empty (for old logs)
@@ -908,17 +901,20 @@ class UserSessionsView(APIView):
                 if os_info:
                     full_device_string += f" ({os_info})"
 
-                sessions[login.user.id] = {
+                sessions_list.append({
                     "id": login.id,
-                    "user": login.user.email,
+                    "user_id": login.user.id,
+                    "email": login.user.email,
+                    "name": login.user.get_full_name(),
+                    "role": login.user.role,
+                    "last_activity": login.created_at,
                     "ip_address": login.ip_address,
                     "device": full_device_string,
                     "location": location,
-                    "last_active": login.created_at.isoformat(),
-                    "status": "Active",
-                }
+                })
 
-        return Response(list(sessions.values()))
+        serializer = UserSessionSerializer(sessions_list, many=True)
+        return Response(serializer.data)
 
 
 class SessionTerminateView(APIView):
@@ -980,8 +976,6 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         """Handle request for a password reset token."""
         from .models import PasswordResetToken
-        from .serializers import PasswordResetRequestSerializer
-        from .services import SendexaService
 
         serializer = PasswordResetRequestSerializer(data=request.data)
         if not serializer.is_valid():
@@ -1180,7 +1174,6 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
             )
 
         from .models import UserInvitation
-        from .serializers import StaffCreationSerializer
 
         # Use a temporary secure password - user will change it via invitation
         temp_password = f"Temp{secrets.token_urlsafe(16)}!1"
@@ -1306,11 +1299,23 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                 # 2. Activate Account
                 import secrets
 
-                temp_password = secrets.token_urlsafe(8)
-                user.set_password(temp_password)
+                # If user already activated their account via invitation, do not overwrite their password
+                has_used_invitation = False
+                try:
+                    has_used_invitation = user.invitation.is_used
+                except Exception:
+                    pass
+
+                fields_to_update = ["is_approved", "is_active"]
+                if not has_used_invitation:
+                    temp_password = secrets.token_urlsafe(8)
+                    user.set_password(temp_password)
+                    fields_to_update.append("password")
+                else:
+                    temp_password = "[Set during enrollment]"
+
                 user.is_approved = True
                 user.is_active = True
-                fields_to_update = ["password", "is_approved", "is_active"]
                 user.save(update_fields=fields_to_update)
 
                 # 3. Generate Welcome Letter (using staff_id)
@@ -1329,15 +1334,12 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
                     f"ID: {user.staff_id}. Credentials handover via Manager. "
                     f"Login with your email."
                 )
-                from users.services import SendexaService
 
                 SendexaService.send_sms(user.phone_number, message)
 
-                from core.utils.async_stream import async_file_iterator
-
                 filename = f"Coastal_Staff_Welcome_{user.staff_id}.pdf"
                 return FileResponse(
-                    async_file_iterator(pdf_buffer),
+                    pdf_buffer,
                     as_attachment=False,
                     filename=filename,
                     content_type="application/pdf",
@@ -1358,7 +1360,7 @@ class SecurityDiagnosticsView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request, *args, **kwargs):
-        from core.utils.secret_service import SecretService
+        from core.utils.secret_service import SecretManager
         from django.utils.timezone import now
         import os
 
@@ -1369,7 +1371,6 @@ class SecurityDiagnosticsView(APIView):
             mounted_secrets = os.listdir(SECRET_MOUNT_PATH)
 
         # Check critical secrets status (without revealing values)
-        secret_service = SecretService()
         status = {
             "environment": os.environ.get("DJANGO_ENV", "development"),
             "secret_storage": (
@@ -1378,11 +1379,11 @@ class SecurityDiagnosticsView(APIView):
             "mounted_secrets_count": len(mounted_secrets),
             "critical_checks": {
                 "field_encryption_key": (
-                    secret_service.get_secret("FIELD_ENCRYPTION_KEY")
+                    SecretManager.get_secret("FIELD_ENCRYPTION_KEY")
                     is not None
                 ),
                 "sendexa_api_key": (
-                    secret_service.get_secret("SENDEXA_API_KEY")
+                    SecretManager.get_secret("SENDEXA_API_KEY")
                     is not None
                 ),
             },

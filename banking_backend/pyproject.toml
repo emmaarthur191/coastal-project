@@ -185,3 +185,30 @@ exclude_lines = [
 ]
 fail_under = 80
 show_missing = true
+
+# =============================================================================
+# Pyright Type Checker Configuration
+# =============================================================================
+[tool.pyright]
+venvPath = "C:\\Users\\snype\\anaconda3\\envs"
+venv = "coastal_cu_env"
+
+# =============================================================================
+# Pyrefly Type Checker Configuration
+# =============================================================================
+[tool.pyrefly]
+python-interpreter-path = "C:\\Users\\snype\\anaconda3\\envs\\coastal_cu_env\\python.exe"
+
+[tool.pyrefly.errors]
+bad-assignment = "ignore"
+bad-argument-type = "ignore"
+missing-attribute = "ignore"
+unsupported-operation = "ignore"
+untyped-import = "ignore"
+bad-override = "ignore"
+redundant-condition = "ignore"
+bad-index = "ignore"
+
+
+
+

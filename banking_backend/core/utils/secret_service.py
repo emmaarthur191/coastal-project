@@ -97,6 +97,20 @@ class SecretManager:
 
         return key
 
+    @staticmethod
+    def get_secret(key_name: str) -> str:
+        """Retrieve a secret by name from file injection, settings, or environment variables."""
+        # 1. File injection
+        val = SecretManager._get_secret_from_file(key_name)
+        # 2. Settings
+        if not val:
+            val = getattr(settings, key_name, None)
+        # 3. Environment variables
+        if not val:
+            val = os.environ.get(key_name)
+        return val
+
+
 
 # Helper for DRF ImproperlyConfigured
 from django.core.exceptions import ImproperlyConfigured
