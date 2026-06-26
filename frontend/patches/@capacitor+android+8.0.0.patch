@@ -3,13 +3,14 @@ index dc91c9b..68b1aae 100644
 --- a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
 +++ b/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
 @@ -16,6 +16,7 @@ public class MessageHandler {
+     private Bridge bridge;
      private WebView webView;
      private PluginManager cordovaPluginManager;
      private JavaScriptReplyProxy javaScriptReplyProxy;
 +    private static final java.util.Map<String, String> pendingMessages = new java.util.concurrent.ConcurrentHashMap<>();
  
      public MessageHandler(Bridge bridge, WebView webView, PluginManager cordovaPluginManager) {
-@@ -39,6 +40,7 @@ public class MessageHandler {
+@@ -40,6 +41,7 @@ public class MessageHandler {
          } else {
              webView.addJavascriptInterface(this, "androidBridge");
          }
