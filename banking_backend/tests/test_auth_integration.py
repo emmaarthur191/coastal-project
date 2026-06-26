@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import pytest
+from conftest import TEST_PASSWORD
 
 User = get_user_model()
 
@@ -16,7 +17,7 @@ def test_user(db):
     return User.objects.create_user(
         email="testauth@example.com",
         username="testauth",
-        password="securepassword123",
+        password=TEST_PASSWORD,
         phone_number="+233200000000",
         role="customer",
         is_approved=True,
@@ -56,7 +57,7 @@ class TestAuthIntegration:
         # 1. Login
         login_url = reverse("users:login")
         print(f"Login URL: {login_url}")
-        login_data = {"email": test_user.email, "password": "securepassword123"}
+        login_data = {"email": test_user.email, "password": TEST_PASSWORD}
         response = client.post(login_url, login_data, follow=True)
         print(f"Login Response: {response.status_code}, URL: {response.url if hasattr(response, 'url') else 'N/A'}")
         assert response.status_code == status.HTTP_200_OK

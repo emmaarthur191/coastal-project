@@ -10,13 +10,15 @@ from core.models import Loan
 from core.permissions import IsMobileBanker
 from core.services import LoanService
 
+from conftest import TEST_PASSWORD
+
 User = get_user_model()
 
 
 @pytest.fixture
 def customer_user(db):
     return User.objects.create_user(
-        username="customer", email="customer@example.com", password="password123", role="customer"
+        username="customer", email="customer@example.com", password=TEST_PASSWORD, role="customer"
     )
 
 
@@ -25,7 +27,7 @@ def ops_manager_user(db):
     return User.objects.create_user(
         username="ops_manager",
         email="ops@example.com",
-        password="password123",
+        password=TEST_PASSWORD,
         role="operations_manager",
         is_staff=True,
     )
@@ -34,7 +36,7 @@ def ops_manager_user(db):
 @pytest.fixture
 def manager_user(db):
     return User.objects.create_user(
-        username="manager", email="manager@example.com", password="password123", role="manager", is_staff=True
+        username="manager", email="manager@example.com", password=TEST_PASSWORD, role="manager", is_staff=True
     )
 
 
@@ -43,7 +45,7 @@ def mobile_banker_user(db):
     return User.objects.create_user(
         username="mobile_banker",
         email="mobile@example.com",
-        password="password123",
+        password=TEST_PASSWORD,
         role="mobile_banker",
         is_staff=True,
     )

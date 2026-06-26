@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
+from conftest import TEST_PASSWORD
 from core.models.accounts import AccountOpeningRequest, Account
 
 User = get_user_model()
@@ -12,7 +13,7 @@ def registrar_user(db):
     return User.objects.create_user(
         email="registrar@coastal.com",
         username="registrar",
-        password="StaffPassword123!",
+        password=TEST_PASSWORD,
         role="cashier",
         is_approved=True
     )
@@ -22,7 +23,7 @@ def manager_user(db):
     return User.objects.create_user(
         email="manager@coastal.com",
         username="manager",
-        password="ManagerPassword123!",
+        password=TEST_PASSWORD,
         role="manager",
         is_approved=True
     )

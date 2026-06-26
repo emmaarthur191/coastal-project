@@ -1,4 +1,5 @@
 import pytest
+from conftest import TEST_PASSWORD
 from django.urls import reverse
 from django.utils import timezone
 import datetime
@@ -13,13 +14,13 @@ def api_client():
 @pytest.fixture
 def manager_user(db):
     return User.objects.create_user(
-        username="manager_test", email="manager@test.com", password="Password123!", role="manager", is_approved=True
+        username="manager_test", email="manager@test.com", password=TEST_PASSWORD, role="manager", is_approved=True
     )
 
 @pytest.fixture
 def customer_user(db):
     return User.objects.create_user(
-        username="customer_test", email="customer@test.com", password="Password123!", role="customer", is_approved=True
+        username="customer_test", email="customer@test.com", password=TEST_PASSWORD, role="customer", is_approved=True
     )
 
 @pytest.mark.django_db

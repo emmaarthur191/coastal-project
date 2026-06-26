@@ -15,6 +15,7 @@ from rest_framework.test import APIClient
 
 import pytest
 
+from conftest import TEST_PASSWORD
 from core.models import Account
 
 User = get_user_model()
@@ -23,20 +24,20 @@ User = get_user_model()
 @pytest.fixture
 def user_a(db):
     """Create test user A."""
-    return User.objects.create_user(email="user_a@test.com", username="user_a", password="testpass123", role="customer")
+    return User.objects.create_user(email="user_a@test.com", username="user_a", password=TEST_PASSWORD, role="customer")
 
 
 @pytest.fixture
 def user_b(db):
     """Create test user B."""
-    return User.objects.create_user(email="user_b@test.com", username="user_b", password="testpass123", role="customer")
+    return User.objects.create_user(email="user_b@test.com", username="user_b", password=TEST_PASSWORD, role="customer")
 
 
 @pytest.fixture
 def staff_user(db):
     """Create a staff user for processing transactions."""
     return User.objects.create_user(
-        email="staff@test.com", username="staff", password="testpass123", role="cashier", is_staff=True
+        email="staff@test.com", username="staff", password=TEST_PASSWORD, role="cashier", is_staff=True
     )
 
 

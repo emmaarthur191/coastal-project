@@ -7,6 +7,8 @@ from core.models.operational import CashAdvance, ClientAssignment
 from core.models.transactions import Refund
 from core.models.loans import Loan
 
+from conftest import TEST_PASSWORD
+
 User = get_user_model()
 
 @pytest.fixture
@@ -18,7 +20,7 @@ def mobile_banker(db):
     return User.objects.create_user(
         username="mb_test", 
         email="mb@coastal.com", 
-        password="password123", 
+        password=TEST_PASSWORD, 
         role="mobile_banker", 
         is_staff=True
     )
@@ -28,7 +30,7 @@ def cashier(db):
     return User.objects.create_user(
         username="cashier_test", 
         email="cashier@coastal.com", 
-        password="password123", 
+        password=TEST_PASSWORD, 
         role="cashier", 
         is_staff=True
     )
@@ -38,7 +40,7 @@ def client_user(db):
     return User.objects.create_user(
         username="client_test", 
         email="client@test.com", 
-        password="password123", 
+        password=TEST_PASSWORD, 
         role="customer"
     )
 
@@ -47,7 +49,7 @@ def other_client(db):
     return User.objects.create_user(
         username="other_client", 
         email="other@test.com", 
-        password="password123", 
+        password=TEST_PASSWORD, 
         role="customer"
     )
 

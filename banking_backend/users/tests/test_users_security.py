@@ -3,6 +3,7 @@ from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
+from conftest import TEST_PASSWORD
 from django.test import override_settings
 from django.conf import settings
 from django.core.cache import cache
@@ -153,7 +154,7 @@ class TestSecurityService:
         user = User.objects.create_user(
             email="limit_test@coastal.com",
             username="limit_user",
-            password="Password123!",
+            password=TEST_PASSWORD,
             daily_transaction_limit=Decimal("1000.00")
         )
 
@@ -181,7 +182,7 @@ class TestSecurityService:
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user = User.objects.create_user(
-            email="anomaly@coastal.com", username="anomaly", password="Password123!", is_approved=True
+            email="anomaly@coastal.com", username="anomaly", password=TEST_PASSWORD, is_approved=True
         )
         
         request = MagicMock()
@@ -205,7 +206,7 @@ class TestSecurityService:
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user = User.objects.create_user(
-            email="login_test@coastal.com", username="login_user", password="Password123!"
+            email="login_test@coastal.com", username="login_user", password=TEST_PASSWORD
         )
         user.failed_login_attempts = 3
         user.save()
@@ -242,7 +243,7 @@ class TestSecurityService:
         user = User.objects.create_user(
             email="reset@coastal.com", 
             username="reset_user", 
-            password="Password123!",
+            password=TEST_PASSWORD,
             daily_transaction_total=Decimal("500.00"),
             daily_limit_reset_date=date.today() - timedelta(days=1)
         )
@@ -257,7 +258,7 @@ class TestSecurityService:
         """Test log_activity triggers location lookup for specific actions."""
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        user = User.objects.create_user(email="loc@coastal.com", username="loc", password="Password123!")
+        user = User.objects.create_user(email="loc@coastal.com", username="loc", password=TEST_PASSWORD)
         
         request = MagicMock()
         request.META = {"REMOTE_ADDR": "8.8.8.8", "HTTP_USER_AGENT": "TestAgent"}

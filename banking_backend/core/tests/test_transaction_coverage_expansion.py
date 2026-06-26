@@ -6,6 +6,7 @@ from unittest.mock import patch
 from decimal import Decimal
 from django.utils import timezone
 
+from conftest import TEST_PASSWORD
 from users.models import User
 from core.models.accounts import Account
 from core.models.transactions import Transaction
@@ -19,7 +20,7 @@ def api_client():
 def manager_user(db):
     return User.objects.create_user(
         username='tx_manager', email='tx_manager@ex.com',
-        password='Password123!', role='manager',
+        password=TEST_PASSWORD, role='manager',
         is_approved=True, is_staff=True,
     )
 
@@ -27,7 +28,7 @@ def manager_user(db):
 def cashier_user(db):
     return User.objects.create_user(
         username='tx_cashier', email='tx_cashier@ex.com',
-        password='Password123!', role='cashier',
+        password=TEST_PASSWORD, role='cashier',
         is_approved=True, is_staff=True,
     )
 
@@ -35,7 +36,7 @@ def cashier_user(db):
 def mb_user(db):
     return User.objects.create_user(
         username='tx_mb', email='tx_mb@ex.com',
-        password='Password123!', role='mobile_banker',
+        password=TEST_PASSWORD, role='mobile_banker',
         is_approved=True, is_staff=True,
     )
 
@@ -43,7 +44,7 @@ def mb_user(db):
 def customer_user(db):
     user = User.objects.create_user(
         username='tx_cust1', email='tx_cust1@ex.com',
-        password='Password123!', role='customer',
+        password=TEST_PASSWORD, role='customer',
         is_approved=True,
     )
     # Ensure customer has at least one account for first() calls
@@ -54,7 +55,7 @@ def customer_user(db):
 def customer_user2(db):
     return User.objects.create_user(
         username='tx_cust2', email='tx_cust2@ex.com',
-        password='Password123!', role='customer',
+        password=TEST_PASSWORD, role='customer',
         is_approved=True,
     )
 

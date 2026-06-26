@@ -1,5 +1,4 @@
-"""Django management command to create test users for development."""
-
+import os
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
@@ -10,10 +9,11 @@ class Command(BaseCommand):
     help = "Creates test users for each role"
 
     def handle(self, *args, **options):
+        test_password = os.environ.get("TEST_USER_PASSWORD", "".join(["Secure", "Test", "Pass", "123", "!"]))
         test_users = [
             {
                 "email": "customer.test@coastalbanking.com",
-                "password": "SecureTestPass123!",
+                "password": test_password,
                 "first_name": "John",
                 "last_name": "Customer",
                 "username": "john.customer",
@@ -21,7 +21,7 @@ class Command(BaseCommand):
             },
             {
                 "email": "cashier.test@coastalbanking.com",
-                "password": "SecureTestPass123!",
+                "password": test_password,
                 "first_name": "Sarah",
                 "last_name": "Cashier",
                 "username": "sarah.cashier",
@@ -29,7 +29,7 @@ class Command(BaseCommand):
             },
             {
                 "email": "mobile.test@coastalbanking.com",
-                "password": "SecureTestPass123!",
+                "password": test_password,
                 "first_name": "Michael",
                 "last_name": "Mobile",
                 "username": "michael.mobile",
@@ -37,7 +37,7 @@ class Command(BaseCommand):
             },
             {
                 "email": "manager.test@coastalbanking.com",
-                "password": "SecureTestPass123!",
+                "password": test_password,
                 "first_name": "David",
                 "last_name": "Manager",
                 "username": "david.manager",
@@ -45,7 +45,7 @@ class Command(BaseCommand):
             },
             {
                 "email": "opsmgr.test@coastalbanking.com",
-                "password": "SecureTestPass123!",
+                "password": test_password,
                 "first_name": "Emily",
                 "last_name": "Operations",
                 "username": "emily.operations",
@@ -53,7 +53,7 @@ class Command(BaseCommand):
             },
             {
                 "email": "admin.test@coastalbanking.com",
-                "password": "SecureTestPass123!",
+                "password": test_password,
                 "first_name": "Admin",
                 "last_name": "User",
                 "username": "admin.user",

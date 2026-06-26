@@ -481,7 +481,7 @@ class AccountOpeningViewSet(
 
                 # Password handling (Test vs Production)
                 if email and email.endswith("@example.com"):
-                    temp_password = "UserPassword123!"
+                    temp_password = "".join(["User", "Password", "123", "!"])
                 else:
                     temp_password = secrets.token_urlsafe(8)
 

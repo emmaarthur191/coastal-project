@@ -1,4 +1,5 @@
 import pytest
+from conftest import TEST_PASSWORD
 from django.urls import reverse
 from rest_framework import status
 from unittest.mock import patch, MagicMock
@@ -18,19 +19,19 @@ class TestUsersViewsCoverage:
     @pytest.fixture
     def admin_user(self):
         return User.objects.create_superuser(
-            email="admin@coastal.com", username="admin", password="Password123!", role="admin"
+            email="admin@coastal.com", username="admin", password=TEST_PASSWORD, role="admin"
         )
 
     @pytest.fixture
     def manager_user(self):
         return User.objects.create_user(
-            email="manager@coastal.com", username="manager", password="Password123!", role="manager", is_approved=True
+            email="manager@coastal.com", username="manager", password=TEST_PASSWORD, role="manager", is_approved=True
         )
 
     @pytest.fixture
     def customer_user(self):
         return User.objects.create_user(
-            email="customer@coastal.com", username="customer", password="Password123!", role="customer", is_approved=True
+            email="customer@coastal.com", username="customer", password=TEST_PASSWORD, role="customer", is_approved=True
         )
 
     def test_create_staff_permission_denied(self, api_client, customer_user):
@@ -70,14 +71,14 @@ class TestUsersViewsCoverage:
     def test_verify_invitation_invalid_token(self, api_client):
         """Line 191: Invitation not found."""
         url = reverse("users:staff-enroll")
-        response = api_client.post(url, {"token": "nonexistent", "password": "Password123!", "password_confirm": "Password123!"})
+        response = api_client.post(url, {"token": "nonexistent", "password": TEST_PASSWORD, "password_confirm": TEST_PASSWORD})
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["error"] == "Invalid invitation token."
 
     def test_verify_invitation_mismatched_passwords(self, api_client):
         """Line 162: Password mismatch."""
         url = reverse("users:staff-enroll")
-        response = api_client.post(url, {"token": "some-token", "password": "Password123!", "password_confirm": "Other123!"})
+        response = api_client.post(url, {"token": "some-token", "password": TEST_PASSWORD, "password_confirm": "Other123!"})
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["error"] == "Passwords do not match."
 
@@ -92,7 +93,7 @@ class TestUsersViewsCoverage:
         """Line 211: Wrong old password."""
         api_client.force_authenticate(user=customer_user)
         url = reverse("users:change-password")
-        response = api_client.post(url, {"old_password": "WrongPassword123!", "new_password": "NewPassword123!", "confirm_password": "NewPassword123!"})
+        response = api_client.post(url, {"old_password": f"Wrong{TEST_PASSWORD}", "new_password": f"New{TEST_PASSWORD}", "confirm_password": f"New{TEST_PASSWORD}"})
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "old_password" in response.data
 
@@ -113,7 +114,7 @@ class TestUsersViewsCoverage:
         customer_user.save()
         
         url = reverse("users:login")
-        response = api_client.post(url, {"email": "customer@coastal.com", "password": "Password123!"})
+        response = api_client.post(url, {"email": "customer@coastal.com", "password": TEST_PASSWORD})
         assert response.status_code == 403
         assert response.data["code"] == "ACCOUNT_LOCKED"
 

@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import pytest
+from conftest import TEST_PASSWORD
 
 from users.models import UserActivity, UserInvitation
 
@@ -25,7 +26,7 @@ class TestPayloadSecurity:
     @pytest.fixture
     def admin_user(self):
         return User.objects.create_superuser(
-            email="admin@coastal.com", username="admin", password="StrongPassword123!", role="admin", is_approved=True
+            email="admin@coastal.com", username="admin", password=TEST_PASSWORD, role="admin", is_approved=True
         )
 
     @pytest.fixture
@@ -33,7 +34,7 @@ class TestPayloadSecurity:
         return User.objects.create_user(
             email="customer1@gmail.com",
             username="customer1",
-            password="StrongPassword123!",
+            password=TEST_PASSWORD,
             role="customer",
             is_approved=True,
         )
@@ -43,7 +44,7 @@ class TestPayloadSecurity:
         return User.objects.create_user(
             email="cashier1@coastal.com",
             username="cashier1",
-            password="StrongPassword123!",
+            password=TEST_PASSWORD,
             role="cashier",
             is_approved=True,
         )
@@ -80,15 +81,16 @@ class TestPayloadSecurity:
         """Verify that staff can activate account using a valid invitation token."""
         # Setup inactive user with invitation
         user = User.objects.create_user(
-            email="inactive@coastal.com", username="inactive", password="TempPassword123!", is_active=False
+            email="inactive@coastal.com", username="inactive", password=TEST_PASSWORD, is_active=False
         )
         invitation = UserInvitation.create_for_user(user)
 
         url = reverse("users:staff-enroll")
+        new_password = f"New{TEST_PASSWORD}"
         data = {
             "token": invitation.token,
-            "password": "NewStrongPassword@2026",
-            "password_confirm": "NewStrongPassword@2026",
+            "password": new_password,
+            "password_confirm": new_password,
         }
 
         response = api_client.post(url, data)
@@ -97,7 +99,7 @@ class TestPayloadSecurity:
         # Verify user is now active
         user.refresh_from_db()
         assert user.is_active
-        assert user.check_password("NewStrongPassword@2026")
+        assert user.check_password(new_password)
 
         # Verify invitation is marked as used
         invitation.refresh_from_db()
@@ -106,17 +108,18 @@ class TestPayloadSecurity:
     def test_verify_staff_invitation_expired(self, api_client):
         """Verify that expired invitation tokens are rejected."""
         user = User.objects.create_user(
-            email="expired@coastal.com", username="expired", password="TempPassword123!", is_active=False
+            email="expired@coastal.com", username="expired", password=TEST_PASSWORD, is_active=False
         )
         invitation = UserInvitation.create_for_user(user)
         invitation.expires_at = timezone.now() - timedelta(hours=1)
         invitation.save()
 
         url = reverse("users:staff-enroll")
+        new_password = f"New{TEST_PASSWORD}"
         data = {
             "token": invitation.token,
-            "password": "NewStrongPassword@2026",
-            "password_confirm": "NewStrongPassword@2026",
+            "password": new_password,
+            "password_confirm": new_password,
         }
 
         response = api_client.post(url, data)
@@ -128,7 +131,7 @@ class TestPayloadSecurity:
     def test_messaging_idor_customer_to_customer(self, api_client, customer_user):
         """Verify that customers cannot initiate threads with other customers."""
         another_customer = User.objects.create_user(
-            email="victim@gmail.com", username="victim", password="Password123!", role="customer"
+            email="victim@gmail.com", username="victim", password=TEST_PASSWORD, role="customer"
         )
 
         api_client.force_authenticate(user=customer_user)
@@ -154,7 +157,7 @@ class TestPayloadSecurity:
     def test_payload_anomaly_logging(self, api_client, customer_user):
         """Verify that an unauthorized attempt (IDOR) is logged in UserActivity."""
         another_customer = User.objects.create_user(
-            email="victim2@gmail.com", username="victim2", password="Password123!", role="customer"
+            email="victim2@gmail.com", username="victim2", password=TEST_PASSWORD, role="customer"
         )
 
         api_client.force_authenticate(user=customer_user)

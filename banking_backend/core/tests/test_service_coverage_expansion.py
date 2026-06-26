@@ -1,6 +1,7 @@
 import pytest
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
+from conftest import TEST_PASSWORD
 from django.db import IntegrityError
 from core.services.accounts import AccountService
 from core.services.transactions import TransactionService
@@ -11,11 +12,11 @@ from users.models import User, AuditLog
 
 @pytest.fixture
 def db_user(db):
-    return User.objects.create_user(username="srv_user", email="srv@ex.com", password="Pass123!", is_approved=True)
+    return User.objects.create_user(username="srv_user", email="srv@ex.com", password=TEST_PASSWORD, is_approved=True)
 
 @pytest.fixture
 def manager_user(db):
-    return User.objects.create_user(username="srv_mgr", email="mgr@ex.com", password="Pass123!", role="manager", is_approved=True)
+    return User.objects.create_user(username="srv_mgr", email="mgr@ex.com", password=TEST_PASSWORD, role="manager", is_approved=True)
 
 @pytest.mark.django_db
 class TestAccountService:

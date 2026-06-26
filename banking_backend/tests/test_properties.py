@@ -10,6 +10,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 
 import pytest
+from conftest import TEST_PASSWORD
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.django import TestCase
@@ -30,7 +31,7 @@ class TestTransactionProperties(TestCase):
 
         # Create test user and account
         user = User.objects.create_user(
-            email=f"test_{id(amount)}@test.com", username=f"testuser_{id(amount)}", password="testpass123"
+            email=f"test_{id(amount)}@test.com", username=f"testuser_{id(amount)}", password=TEST_PASSWORD
         )
         account = Account.objects.create(
             user=user,
@@ -68,7 +69,7 @@ class TestTransactionProperties(TestCase):
         assume(withdrawal <= balance)  # Only test valid withdrawals
 
         user = User.objects.create_user(
-            email=f"test_wd_{id(balance)}@test.com", username=f"testuser_wd_{id(balance)}", password="testpass123"
+            email=f"test_wd_{id(balance)}@test.com", username=f"testuser_wd_{id(balance)}", password=TEST_PASSWORD
         )
         account = Account.objects.create(
             user=user,
@@ -107,7 +108,7 @@ class TestUserInputSanitization(TestCase):
         data = {
             "email": email,
             "username": f'user_{email.split("@")[0][:10]}',
-            "password": "SecurePass123!",
+            "password": TEST_PASSWORD,
             "role": "customer",
         }
 

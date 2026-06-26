@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import pytest
+from conftest import TEST_PASSWORD
 
 User = get_user_model()
 
@@ -16,12 +17,12 @@ class TestStaffRegistrationEdgeCases:
         """Ensure registering a staff member with an already existing email fails."""
         client = APIClient()
         admin_user = User.objects.create_superuser(
-            email="admin@coastal.com", username="admin_test", password="password123"
+            email="admin@coastal.com", username="admin_test", password=TEST_PASSWORD
         )
         User.objects.create_user(
             email="existing@coastal.com",
             username="existingstaff",
-            password="testpassword123",
+            password=TEST_PASSWORD,
             phone_number="+233244000111",
         )
         client.force_authenticate(user=admin_user)
@@ -29,8 +30,8 @@ class TestStaffRegistrationEdgeCases:
         data = {
             "email": "existing@coastal.com",
             "username": "newstaff",
-            "password": "StrongPassword123!",
-            "password_confirm": "StrongPassword123!",
+            "password": f"Strong{TEST_PASSWORD}",
+            "password_confirm": f"Strong{TEST_PASSWORD}",
             "phone": "+233244000222",
             "role": "cashier",
             "first_name": "Test",
@@ -44,7 +45,7 @@ class TestStaffRegistrationEdgeCases:
         """Verify adding an invalid staff role throws an error."""
         client = APIClient()
         admin_user = User.objects.create_superuser(
-            email="admin@coastal.com", username="admin_test", password="password123"
+            email="admin@coastal.com", username="admin_test", password=TEST_PASSWORD
         )
         url = reverse("users:create-staff")
         client.force_authenticate(user=admin_user)
@@ -66,34 +67,34 @@ class TestPasswordResetFlow:
         """Ensure password update workflow changes user credentials securely."""
         client = APIClient()
         customer_user = User.objects.create_user(
-            email="customer@example.com", username="customer", password="password123", role="customer"
+            email="customer@example.com", username="customer", password=TEST_PASSWORD, role="customer"
         )
         client.force_authenticate(user=customer_user)
         url = reverse("users:change-password")
         data = {
-            "old_password": "password123",
-            "new_password": "NewStrongPassword1!",
-            "confirm_password": "NewStrongPassword1!",
+            "old_password": TEST_PASSWORD,
+            "new_password": f"New{TEST_PASSWORD}",
+            "confirm_password": f"New{TEST_PASSWORD}",
         }
         response = client.post(url, data, format="json")
         assert response.status_code == status.HTTP_200_OK
 
         # Verify old password no longer works
         customer_user.refresh_from_db()
-        assert not customer_user.check_password("password123")
-        assert customer_user.check_password("NewStrongPassword1!")
+        assert not customer_user.check_password(TEST_PASSWORD)
+        assert customer_user.check_password(f"New{TEST_PASSWORD}")
 
     def test_password_update_mismatch(self):
         """Ensure password mismatch is caught."""
         client = APIClient()
         customer_user = User.objects.create_user(
-            email="customer2@example.com", username="customer2", password="password123", role="customer"
+            email="customer2@example.com", username="customer2", password=TEST_PASSWORD, role="customer"
         )
         client.force_authenticate(user=customer_user)
         url = reverse("users:change-password")
         data = {
-            "old_password": "password123",
-            "new_password": "NewStrongPassword1!",
+            "old_password": TEST_PASSWORD,
+            "new_password": f"New{TEST_PASSWORD}",
             "confirm_password": "DifferentPassword2!",
         }
         response = client.post(url, data, format="json")
@@ -107,7 +108,7 @@ class TestProfileUpdateValidation:
         customer_user = User.objects.create_user(
             email="customer3@example.com",
             username="customer3",
-            password="password123",
+            password=TEST_PASSWORD,
             first_name="Old",
             role="customer",
         )
@@ -151,9 +152,9 @@ class TestAuthentication:
 
     def test_login_success(self):
         client = APIClient()
-        User.objects.create_user(username="testuser", password="password123", email="test@auth.com", is_approved=True)
+        User.objects.create_user(username="testuser", password=TEST_PASSWORD, email="test@auth.com", is_approved=True)
         url = reverse("users:login")
-        data = {"email": "test@auth.com", "password": "password123"}
+        data = {"email": "test@auth.com", "password": TEST_PASSWORD}
         response = client.post(url, data, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["message"] == "Login successful"
@@ -161,7 +162,7 @@ class TestAuthentication:
 
     def test_login_invalid_credentials(self):
         client = APIClient()
-        User.objects.create_user(username="testuser", password="password123", email="test@auth.com", is_approved=True)
+        User.objects.create_user(username="testuser", password=TEST_PASSWORD, email="test@auth.com", is_approved=True)
         url = reverse("users:login")
         data = {"email": "test@auth.com", "password": "wrongpassword"}
         response = client.post(url, data, format="json")
@@ -174,7 +175,7 @@ class TestStaffCreationFlow:
 
     def test_create_staff_success(self):
         client = APIClient()
-        admin = User.objects.create_superuser(username="admin", password="password123", email="admin@test.com")
+        admin = User.objects.create_superuser(username="admin", password=TEST_PASSWORD, email="admin@test.com")
         client.force_authenticate(user=admin)
         url = reverse("users:create-staff")
         data = {

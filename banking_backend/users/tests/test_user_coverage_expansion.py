@@ -9,6 +9,7 @@ Targets the uncovered blocks identified in the last coverage report:
 - Superuser bypass in auth flows
 """
 import pytest
+from conftest import TEST_PASSWORD
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -27,7 +28,7 @@ def api_client():
 def admin_user(db):
     return User.objects.create_user(
         username="cov_admin", email="cov_admin@ex.com",
-        password="Password123!", role="admin",
+        password=TEST_PASSWORD, role="admin",
         is_approved=True, is_staff=True, is_superuser=True,
     )
 
@@ -36,7 +37,7 @@ def admin_user(db):
 def manager_user(db):
     return User.objects.create_user(
         username="cov_manager", email="cov_manager@ex.com",
-        password="Password123!", role="manager",
+        password=TEST_PASSWORD, role="manager",
         is_approved=True, is_staff=True,
     )
 
@@ -45,7 +46,7 @@ def manager_user(db):
 def cashier_user(db):
     return User.objects.create_user(
         username="cov_cashier", email="cov_cashier@ex.com",
-        password="Password123!", role="cashier",
+        password=TEST_PASSWORD, role="cashier",
         is_approved=True, is_staff=True,
     )
 
@@ -54,7 +55,7 @@ def cashier_user(db):
 def customer_user(db):
     return User.objects.create_user(
         username="cov_cust", email="cov_cust@ex.com",
-        password="Password123!", role="customer",
+        password=TEST_PASSWORD, role="customer",
         is_approved=True,
     )
 
@@ -177,7 +178,7 @@ class TestStaffManagementApproveAndPrint:
         from core.models.accounts import AccountOpeningRequest
         pending_staff = User.objects.create_user(
             username="pending_staff", email="pending@ex.com",
-            password="Password123!", role="cashier",
+            password=TEST_PASSWORD, role="cashier",
             is_approved=False,
             first_name="Jane", last_name="Doe",
         )
@@ -229,15 +230,15 @@ class TestSuperuserAuthBypass:
         admin_user.save()
         url = reverse("users:login")
         response = api_client.post(url, {
-            "email": admin_user.email, "password": "Password123!",
+            "email": admin_user.email, "password": TEST_PASSWORD,
         }, format="json")
         assert response.status_code == status.HTTP_200_OK
 
     def test_unapproved_regular_user_is_blocked(self, api_client, db):
         u = User.objects.create_user(
             username="blocked_cust", email="blocked@ex.com",
-            password="Password123!", role="customer", is_approved=False,
+            password=TEST_PASSWORD, role="customer", is_approved=False,
         )
         url = reverse("users:login")
-        response = api_client.post(url, {"email": u.email, "password": "Password123!"}, format="json")
+        response = api_client.post(url, {"email": u.email, "password": TEST_PASSWORD}, format="json")
         assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]
