@@ -55,8 +55,8 @@ class TestStaffCreationFallbackAndBankDetails:
         assert user.bank_account_number_encrypted != "123456789012"
         assert user.bank_branch_encrypted != "ACCRA-01"
 
-    def test_staff_creation_optional_branch_code(self):
-        """Verify staff creation works when branch_code is omitted, and other bank details are saved."""
+    def test_staff_creation_missing_branch_code_fails(self):
+        """Verify staff creation fails when branch_code is omitted."""
         payload = {
             "email": "staff2@coastal.com",
             "phone": "+233202222223",
@@ -68,12 +68,8 @@ class TestStaffCreationFallbackAndBankDetails:
         }
         
         response = self.client.post(self.create_url, payload, content_type="application/json")
-        assert response.status_code == status.HTTP_201_CREATED
-        
-        user = User.objects.get(email="staff2@coastal.com")
-        assert user.bank_name == "Coastal Trust Bank"
-        assert user.bank_account_number == "123456789012"
-        assert user.bank_branch == "" # Should be empty string (default blank)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "branch_code" in response.data
 
     def test_ssnit_fallback_to_ghana_card(self):
         """Verify ssnit_number picks the Ghana Card ID from government_id when ssnit_number is left blank."""

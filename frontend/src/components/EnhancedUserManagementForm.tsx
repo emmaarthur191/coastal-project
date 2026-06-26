@@ -133,7 +133,7 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
   };
 
   const validateBranchCode = (branchCode: string): string | null => {
-    if (!branchCode) return null;
+    if (!branchCode) return 'Bank branch is required';
     if (!/^[a-zA-Z0-9\s\-,.]+$/.test(branchCode))
       return 'Bank branch must contain only letters, numbers, spaces, and basic punctuation';
     if (branchCode.length < 3 || branchCode.length > 50)
@@ -388,9 +388,10 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
               <Input
                 name="branch_code"
                 autoComplete="off"
-                label="Bank Branch"
+                label="Bank Branch *"
                 value={formData.branch_code || ''}
                 onChange={(e) => setFormData({ ...formData, branch_code: e.target.value })}
+                required
                 placeholder="e.g. East Legon Branch"
                 error={errors.branch_code || undefined}
               />

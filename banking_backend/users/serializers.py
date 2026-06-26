@@ -140,7 +140,7 @@ class StaffCreationSerializer(serializers.ModelSerializer):
     # Staff banking and identification details
     bank_name = serializers.CharField(required=True)
     account_number = serializers.CharField(source="bank_account_number", required=True)
-    branch_code = serializers.CharField(source="bank_branch", required=False, allow_blank=True, allow_null=True)
+    branch_code = serializers.CharField(source="bank_branch", required=True)
     ssnit_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     id_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     id_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
