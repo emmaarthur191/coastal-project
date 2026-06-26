@@ -17,7 +17,10 @@ index dc91c9b..68b1aae 100644
      }
  
      /**
-@@ -141,7 +143,15 @@ public class MessageHandler {
+@@ -138,10 +140,18 @@ public class MessageHandler {
+         }
+     }
+ 
 +    @JavascriptInterface
 +    public String getPendingMessage(String key) {
 +        if (key == null) return null;

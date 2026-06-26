@@ -61,6 +61,10 @@ class TestPayloadSecurity:
             "last_name": "Staff",
             "role": "cashier",
             "phone": "+233244123456",
+            "bank_name": "Coastal Trust Bank",
+            "account_number": "123456789012",
+            "branch_code": "ACCRA-01",
+            "government_id": "GHA-123456789-0",
         }
 
         with patch("users.services.SendexaService.send_sms", return_value=(True, {})):

@@ -1,7 +1,7 @@
 import pytest
 from django.urls import reverse
 from rest_framework import status
-from django.test import Client
+from rest_framework.test import APIClient
 from users.models import User
 from core.models.hr import Payslip
 from core.pdf_services import generate_payslip_pdf
@@ -22,8 +22,8 @@ class TestStaffCreationFallbackAndBankDetails:
             is_approved=True,
             is_staff=True
         )
-        self.client = Client()
-        self.client.force_login(self.manager)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.manager)
         self.create_url = reverse("users:create-staff")
 
     def test_staff_creation_success_with_all_details(self):
@@ -39,7 +39,7 @@ class TestStaffCreationFallbackAndBankDetails:
             "government_id": "GHA-123456789-0",
         }
         
-        response = self.client.post(self.create_url, payload, content_type="application/json")
+        response = self.client.post(self.create_url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         
         # Verify user was created in the database
@@ -67,7 +67,7 @@ class TestStaffCreationFallbackAndBankDetails:
             "government_id": "GHA-123456789-0",
         }
         
-        response = self.client.post(self.create_url, payload, content_type="application/json")
+        response = self.client.post(self.create_url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "branch_code" in response.data
 
@@ -79,10 +79,11 @@ class TestStaffCreationFallbackAndBankDetails:
             "role": "cashier",
             "bank_name": "Coastal Trust Bank",
             "account_number": "123456789012",
+            "branch_code": "ACCRA-01",
             "government_id": "GHA-987654321-0", # Valid Ghana Card ID
         }
         
-        response = self.client.post(self.create_url, payload, content_type="application/json")
+        response = self.client.post(self.create_url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         
         user = User.objects.get(email="staff3@coastal.com")
@@ -98,10 +99,11 @@ class TestStaffCreationFallbackAndBankDetails:
             "role": "cashier",
             "bank_name": "Coastal Trust Bank",
             "account_number": "123456789012",
+            "branch_code": "ACCRA-01",
             "government_id": "PASSPORT-12345", # Not a Ghana Card
         }
         
-        response = self.client.post(self.create_url, payload, content_type="application/json")
+        response = self.client.post(self.create_url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "ssnit_number" in response.data
 
@@ -114,9 +116,10 @@ class TestStaffCreationFallbackAndBankDetails:
             "role": "cashier",
             "bank_name": "Fidelity Bank",
             "account_number": "987654321098",
+            "branch_code": "KUMASI-02",
             "government_id": "GHA-777777777-7",
         }
-        self.client.post(self.create_url, payload, content_type="application/json")
+        self.client.post(self.create_url, payload, format="json")
         user = User.objects.get(email="staff5@coastal.com")
         
         # Create a mock payslip for this staff member

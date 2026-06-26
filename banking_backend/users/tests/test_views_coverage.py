@@ -64,7 +64,15 @@ class TestUsersViewsCoverage:
         mock_save.side_effect = Exception("Database error")
         api_client.force_authenticate(user=admin_user)
         url = reverse("users:create-staff")
-        response = api_client.post(url, {"email": "staff@test.com", "role": "cashier", "phone": "+123456789"})
+        response = api_client.post(url, {
+            "email": "staff@test.com",
+            "role": "cashier",
+            "phone": "+123456789",
+            "bank_name": "Coastal Trust Bank",
+            "account_number": "123456789012",
+            "branch_code": "ACCRA-01",
+            "government_id": "GHA-123456789-0",
+        })
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data["code"] == "STAFF_REGISTRATION_FAILED"
 

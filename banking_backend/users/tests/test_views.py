@@ -185,6 +185,10 @@ class TestStaffCreationFlow:
             "phone": "+233244999000",
             "first_name": "New",
             "last_name": "Staff",
+            "bank_name": "Coastal Trust Bank",
+            "account_number": "123456789012",
+            "branch_code": "ACCRA-01",
+            "government_id": "GHA-123456789-0",
         }
         response = client.post(url, data, format="json")
         assert response.status_code == status.HTTP_201_CREATED
