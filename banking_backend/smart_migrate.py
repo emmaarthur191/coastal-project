@@ -69,6 +69,21 @@ def drop_column_if_exists(table_name: str, column_name: str) -> bool:
             return False
 
 
+def drop_table_if_exists(table_name: str) -> bool:
+    """Drop a table if it exists — used to clean up removed models."""
+    if not table_exists(table_name):
+        return False
+
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute(f'DROP TABLE "{table_name}" CASCADE')
+            print(f"    - Dropped table {table_name}")
+            return True
+        except Exception as e:
+            print(f"    ! Error dropping table {table_name}: {e}")
+            return False
+
+
 def set_column_nullable(table_name: str, column_name: str, nullable: bool = True) -> bool:
     """Set a column to be nullable or NOT NULL (PostgreSQL/standard SQL)."""
     if not table_exists(table_name):
@@ -538,37 +553,6 @@ def sync_missing_tables():
         )""",
     )
 
-    # ClientRegistration
-    create_table_if_not_exists(
-        "client_registration",
-        """CREATE TABLE "client_registration" (
-            "id" BIGSERIAL PRIMARY KEY,
-            "registration_id" VARCHAR(20) NOT NULL UNIQUE,
-            "first_name" VARCHAR(100) NOT NULL,
-            "last_name" VARCHAR(100) NOT NULL,
-            "date_of_birth" DATE NULL,
-            "email" VARCHAR(254) NOT NULL DEFAULT '',
-            "phone_number" VARCHAR(20) NOT NULL,
-            "id_type" VARCHAR(20) NOT NULL DEFAULT 'ghana_card',
-            "id_number" VARCHAR(50) NOT NULL DEFAULT '',
-            "occupation" VARCHAR(100) NOT NULL DEFAULT '',
-            "work_address" TEXT NOT NULL DEFAULT '',
-            "position" VARCHAR(100) NOT NULL DEFAULT '',
-            "account_type" VARCHAR(25) NOT NULL DEFAULT 'daily_susu',
-            "digital_address" VARCHAR(50) NOT NULL DEFAULT '',
-            "location" VARCHAR(255) NOT NULL DEFAULT '',
-            "next_of_kin_data" JSONB NULL,
-            "id_document" VARCHAR(100) NULL,
-            "passport_picture" VARCHAR(100) NULL,
-            "status" VARCHAR(25) NOT NULL DEFAULT 'pending_verification',
-            "notes" TEXT NOT NULL DEFAULT '',
-            "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-            "created_user_id" BIGINT NULL UNIQUE REFERENCES "users_user" ("id") ON DELETE SET NULL,
-            "submitted_by_id" BIGINT NOT NULL REFERENCES "users_user" ("id") ON DELETE CASCADE
-        )""",
-    )
-
     # IdempotencyKey
     create_table_if_not_exists(
         "idempotency_key",
@@ -866,22 +850,11 @@ def sync_missing_columns():
     # NOTE: client_assignment.client_name_encrypted removed in migration 0048 — do NOT re-add it.
     add_column_if_not_exists("client_assignment", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
 
-    # Client Registration (Exhaustive PII)
-    add_column_if_not_exists("client_registration", "first_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "last_name_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "date_of_birth_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "id_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "id_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "phone_number_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "phone_number_hash", "VARCHAR(64) DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "occupation_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "work_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "position_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "digital_address_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "location_encrypted", "TEXT DEFAULT '' NOT NULL")
-    add_column_if_not_exists("client_registration", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
-
     # ── Schema Cleanup (DROP removed columns on existing production DBs) ──────
+    # Drop legacy client_registration tables (removed in migration 0054)
+    drop_table_if_exists("client_registration")
+    drop_table_if_exists("core_clientregistration")
+
     # Migration 0048: client_name_encrypted removed from client_assignment
     drop_column_if_exists("client_assignment", "client_name_encrypted")
     # Migration 0048: old plaintext location column (superseded by location_encrypted)
