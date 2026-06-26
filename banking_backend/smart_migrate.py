@@ -76,7 +76,8 @@ def drop_table_if_exists(table_name: str) -> bool:
 
     with connection.cursor() as cursor:
         try:
-            cursor.execute(f'DROP TABLE "{table_name}" CASCADE')
+            cascade = "CASCADE" if connection.vendor != "sqlite" else ""
+            cursor.execute(f'DROP TABLE "{table_name}" {cascade}'.strip())
             print(f"    - Dropped table {table_name}")
             return True
         except Exception as e:
@@ -981,10 +982,16 @@ def sync_missing_columns():
     print("  Column sync complete!\n")
 
 
+def get_table_columns(table_name: str) -> list:
+    """Get list of column names for a table."""
+    with connection.cursor() as cursor:
+        return [c.name for c in connection.introspection.get_table_description(cursor, table_name)]
+
+
 def drop_redundant_duplicates():
     """Identify and drop tables following app_model naming if custom naming is used.
 
-    Example: Drop 'users_user' if 'user' is the authoritative table.
+    Migrates any data from the redundant table to the authoritative table before dropping.
     """
     print("--> Checking for redundant duplicate tables...")
     redundant_map = {
@@ -1018,20 +1025,36 @@ def drop_redundant_duplicates():
         "core_cashdrawerdenomination": "cash_drawer_denomination",
         "core_globalsequence": "global_sequence",
         "core_smsoutbox": "sms_outbox",
-        "core_servicecharge": "service_charge",
     }
 
     with connection.cursor() as cursor:
         for redundant, authoritative in redundant_map.items():
             if table_exists(redundant) and table_exists(authoritative):
-                # Safe check: if the redundant table is empty, drop it.
-                cursor.execute(f'SELECT count(*) FROM "{redundant}"')
-                count = cursor.fetchone()[0]
-                if count == 0:
-                    print(f"    - Dropping empty redundant table: {redundant}")
-                    cursor.execute(f'DROP TABLE "{redundant}" CASCADE')
-                else:
-                    print(f"    ! CAUTION: {redundant} is not empty but duplicate of {authoritative}. Manual review required.")
+                try:
+                    cursor.execute(f'SELECT count(*) FROM "{redundant}"')
+                    count = cursor.fetchone()[0]
+                    if count > 0:
+                        print(f"    * Migrating {count} rows from legacy table {redundant} to {authoritative}...")
+                        red_cols = get_table_columns(redundant)
+                        auth_cols = get_table_columns(authoritative)
+                        common_cols = [col for col in red_cols if col in auth_cols and col != "id"]
+                        
+                        if common_cols:
+                            cols_str = ", ".join([f'"{c}"' for c in common_cols])
+                            if "user_id" in common_cols:
+                                sql = f'INSERT INTO "{authoritative}" ({cols_str}) SELECT {cols_str} FROM "{redundant}" WHERE "user_id" IN (SELECT "id" FROM "users_user") ON CONFLICT DO NOTHING'
+                            else:
+                                sql = f'INSERT INTO "{authoritative}" ({cols_str}) SELECT {cols_str} FROM "{redundant}" ON CONFLICT DO NOTHING'
+                            cursor.execute(sql)
+                            print(f"      + Successfully migrated data.")
+                        else:
+                            print(f"      ! No common columns found between {redundant} and {authoritative}.")
+                    
+                    print(f"    - Dropping redundant table: {redundant}")
+                    cascade = "CASCADE" if connection.vendor != "sqlite" else ""
+                    cursor.execute(f'DROP TABLE "{redundant}" {cascade}'.strip())
+                except Exception as e:
+                    print(f"    ! Error handling redundant table {redundant}: {e}")
 
 
 def backfill_existing_user_approvals():
