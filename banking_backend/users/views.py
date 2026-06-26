@@ -1166,6 +1166,9 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
         if "phone" in data and "phone_number" not in data:
             data["phone_number"] = data["phone"]
 
+        if "government_id" in data and "id_number" not in data:
+            data["id_number"] = data["government_id"]
+
         phone_number = data.get("phone_number")
         if not phone_number:
             return Response(

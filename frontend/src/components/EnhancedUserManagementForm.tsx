@@ -42,7 +42,6 @@ export interface UserFormData {
   bank_name: string;
   account_number: string;
   branch_code: string;
-  routing_number: string;
   [key: string]: string | number | boolean | File | null | undefined;
 }
 
@@ -92,7 +91,14 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
 
   const validateSSNIT = (ssnit: string): string | null => {
     const cleanSSNIT = ssnit.replace(/[\s-]/g, '').toUpperCase();
-    if (!cleanSSNIT) return 'SSNIT number is required';
+    if (!cleanSSNIT) {
+      const cleanGovId = (formData.government_id || '').replace(/[\s-]/g, '').toUpperCase();
+      const isGovIdGhanaCard = /^GHA[0-9]{10}$/.test(cleanGovId);
+      if (isGovIdGhanaCard) {
+        return null;
+      }
+      return 'SSNIT number is required if Government ID is not a Ghana Card';
+    }
 
     const isLegacy = /^[A-Z][0-9]{12}$/.test(cleanSSNIT);
     const isGhanaCard = /^GHA[0-9]{10}$/.test(cleanSSNIT);
@@ -127,17 +133,11 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
   };
 
   const validateBranchCode = (branchCode: string): string | null => {
-    if (!branchCode) return 'Branch code is required';
-    if (!/^[A-Z0-9]+$/.test(branchCode)) return 'Branch code must contain only letters and numbers';
-    if (branchCode.length < 3 || branchCode.length > 10)
-      return 'Branch code must be between 3 and 10 characters long';
-    return null;
-  };
-
-  const validateRoutingNumber = (routingNumber: string): string | null => {
-    const cleanRouting = routingNumber.replace(/[\s-]/g, '');
-    if (!cleanRouting) return 'Routing number is required';
-    if (!/^\d{9}$/.test(cleanRouting)) return 'Routing number must be 9 digits';
+    if (!branchCode) return null;
+    if (!/^[a-zA-Z0-9\s\-,.]+$/.test(branchCode))
+      return 'Bank branch must contain only letters, numbers, spaces, and basic punctuation';
+    if (branchCode.length < 3 || branchCode.length > 50)
+      return 'Bank branch must be between 3 and 50 characters long';
     return null;
   };
 
@@ -152,7 +152,6 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
     newErrors.appointment_letter = validateFile(formData.appointment_letter, 'letter');
     newErrors.account_number = validateAccountNumber(formData.account_number);
     newErrors.branch_code = validateBranchCode(formData.branch_code);
-    newErrors.routing_number = validateRoutingNumber(formData.routing_number);
     setErrors(newErrors);
     return !Object.values(newErrors).some((error) => error !== null);
   };
@@ -164,7 +163,7 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
       setIsSubmitting(true);
       const response = await authService.createUser(formData);
       if (response.success) {
-        alert(`User created! ID: ${response.data.staff_id || 'N/A'}`);
+        alert(`User created! ID: ${response.data?.staff_id || 'N/A'}`);
         setFormData({
           first_name: '',
           last_name: '',
@@ -181,7 +180,6 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
           bank_name: '',
           account_number: '',
           branch_code: '',
-          routing_number: '',
         });
         fetchStaffMembers();
       } else {
@@ -327,8 +325,7 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
                 label="SSNIT Number *"
                 value={formData.ssnit_number || ''}
                 onChange={(e) => setFormData({ ...formData, ssnit_number: e.target.value })}
-                required
-                placeholder="Format: AAA-NN-NNNNN"
+                placeholder="Format: AAA-NN-NNNNN (Optional if Gov ID is Ghana Card)"
                 error={errors.ssnit_number || undefined}
               />
             </div>
@@ -391,22 +388,11 @@ const EnhancedUserManagementForm: React.FC<UserManagementSectionProps> = ({
               <Input
                 name="branch_code"
                 autoComplete="off"
-                label="Branch Code *"
+                label="Bank Branch"
                 value={formData.branch_code || ''}
                 onChange={(e) => setFormData({ ...formData, branch_code: e.target.value })}
-                required
-                placeholder="3-10 alphanumeric characters"
+                placeholder="e.g. East Legon Branch"
                 error={errors.branch_code || undefined}
-              />
-              <Input
-                name="routing_number"
-                autoComplete="off"
-                label="Routing Number *"
-                value={formData.routing_number || ''}
-                onChange={(e) => setFormData({ ...formData, routing_number: e.target.value })}
-                required
-                placeholder="9 digits"
-                error={errors.routing_number || undefined}
               />
             </div>
           </div>

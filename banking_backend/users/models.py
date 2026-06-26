@@ -133,6 +133,11 @@ class User(AbstractUser):
     work_address_encrypted = models.TextField(blank=True, default="")
     position_encrypted = models.TextField(blank=True, default="")
 
+    # Staff Banking Details (Encrypted for PII protection)
+    bank_name_encrypted = models.TextField(blank=True, default="")
+    bank_account_number_encrypted = models.TextField(blank=True, default="")
+    bank_branch_encrypted = models.TextField(blank=True, default="")
+
     # SECURITY: Searchable hashes for PII (Zero-Plaintext compliance)
     # HMAC-SHA256 hex digests are 64 characters
     id_number_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
@@ -347,6 +352,48 @@ class User(AbstractUser):
         from core.utils.field_encryption import encrypt_field
 
         self.position_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def bank_name(self):
+        """Decrypt and return the bank name."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.bank_name_encrypted, version=self.key_version)
+
+    @bank_name.setter
+    def bank_name(self, value):
+        """Encrypt and set the bank name."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.bank_name_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def bank_account_number(self):
+        """Decrypt and return the bank account number."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.bank_account_number_encrypted, version=self.key_version)
+
+    @bank_account_number.setter
+    def bank_account_number(self, value):
+        """Encrypt and set the bank account number."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.bank_account_number_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def bank_branch(self):
+        """Decrypt and return the bank branch."""
+        from core.utils.field_encryption import decrypt_field
+
+        return decrypt_field(self.bank_branch_encrypted, version=self.key_version)
+
+    @bank_branch.setter
+    def bank_branch(self, value):
+        """Encrypt and set the bank branch."""
+        from core.utils.field_encryption import encrypt_field
+
+        self.bank_branch_encrypted = encrypt_field(value, version=self.key_version) if value else ""
 
     # Security: Account lockout fields
     failed_login_attempts = models.PositiveIntegerField(default=0)

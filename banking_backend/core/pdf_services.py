@@ -170,10 +170,11 @@ def generate_payslip_pdf(payslip):
         ["Employee Name:", payslip.staff.get_full_name()],
         ["Staff ID:", payslip.staff.staff_id or "N/A"],
         ["SSNIT Number:", getattr(payslip.staff, "ssnit_number", None) or "N/A"],
+        ["Bank Name:", getattr(payslip.staff, "bank_name", None) or "N/A"],
+        ["Bank Account Number:", getattr(payslip.staff, "bank_account_number", None) or "N/A"],
         ["Department:", payslip.staff.role.replace("_", " ").title()],
         ["Pay Period:", f"{payslip.pay_period_start.strftime('%d %b %Y')} to {payslip.pay_period_end.strftime('%d %b %Y')}"],
         ["Date Issued:", timezone.now().strftime("%B %d, %Y")],
-
     ]
     emp_table = Table(emp_data, colWidths=[60 * mm, 100 * mm])
     emp_table.setStyle(

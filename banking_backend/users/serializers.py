@@ -137,6 +137,13 @@ class StaffCreationSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=False, allow_blank=True)
 
+    # Staff banking and identification details
+    bank_name = serializers.CharField(required=True)
+    account_number = serializers.CharField(source="bank_account_number", required=True)
+    branch_code = serializers.CharField(source="bank_branch", required=False, allow_blank=True, allow_null=True)
+    ssnit_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    id_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    id_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
@@ -150,6 +157,12 @@ class StaffCreationSerializer(serializers.ModelSerializer):
             "role",
             "phone_number",
             "staff_id",
+            "bank_name",
+            "account_number",
+            "branch_code",
+            "ssnit_number",
+            "id_number",
+            "id_type",
         ]
         extra_kwargs = {"staff_id": {"read_only": True}}
 
@@ -165,6 +178,28 @@ class StaffCreationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs.get("password") != attrs.get("password_confirm"):
             raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+
+        ssnit = attrs.get("ssnit_number")
+        id_num = attrs.get("id_number")
+
+        # Clean/normalize values if present
+        if ssnit:
+            attrs["ssnit_number"] = ssnit.replace("-", "").replace(" ", "").upper()
+        if id_num:
+            attrs["id_number"] = id_num.replace("-", "").replace(" ", "").upper()
+            
+            # Auto-set id_type to ghana_card if format matches
+            import re
+            if re.match(r"^GHA[0-9]{10}$", attrs["id_number"]):
+                attrs["id_type"] = "ghana_card"
+
+        # Apply Ghana Card fallback for SSNIT number
+        if not attrs.get("ssnit_number"):
+            if attrs.get("id_number") and attrs.get("id_type") == "ghana_card":
+                attrs["ssnit_number"] = attrs["id_number"]
+            else:
+                raise serializers.ValidationError({"ssnit_number": "SSNIT number is required if Government ID is not a Ghana Card."})
+
         return attrs
 
     def create(self, validated_data):
@@ -175,6 +210,8 @@ class StaffCreationSerializer(serializers.ModelSerializer):
         return user
 
     def validate_ssnit_number(self, value):
+        if not value:
+            return value
         import re
 
         clean_value = value.replace("-", "").replace(" ", "").upper()
