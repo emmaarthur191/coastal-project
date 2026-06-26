@@ -179,7 +179,7 @@ class SecurityService:
             return {}
 
     @staticmethod
-    def log_activity(user: User, action: str, request, details: dict = None):
+    def log_activity(user: User, action: str, request, details: dict | None = None):
         """Log a user activity with comprehensive device and location info."""
         ip = SecurityService.get_client_ip(request)
         ua_string = request.META.get("HTTP_USER_AGENT", "")
@@ -204,7 +204,7 @@ class SecurityService:
         """Handle post-login cleanup and logging."""
         user.reset_failed_attempts()
         SecurityService.log_activity(user, "login", request)
-        logger.info(f"Successful login for user {user.email} from {SecurityService.get_client_ip(request)}")
+        logger.info(f"Successful login for user ID:{user.id} from {SecurityService.get_client_ip(request)}")
 
     @staticmethod
     def handle_failed_login(user: User, request):
@@ -216,7 +216,7 @@ class SecurityService:
             SecurityService.log_activity(
                 user, "account_locked", request, {"locked_until": user.locked_until.isoformat()}
             )
-            logger.warning(f"Account locked for user {user.email} after {user.failed_login_attempts} failed attempts")
+            logger.warning(f"Account locked for user ID:{user.id} after {user.failed_login_attempts} failed attempts")
 
         return is_locked
 

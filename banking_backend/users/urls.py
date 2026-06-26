@@ -61,7 +61,8 @@ urlpatterns = [
     path("sessions/<int:pk>/terminate/", SessionTerminateView.as_view(), name="session-terminate"),
     path("csrf/", GetCSRFToken.as_view(), name="csrf-token"),
     path("", include(router.urls)),
-    # LEGACY COMPATIBILITY: Aliases for tests that expect these specific URL names
+    # LEGACY COMPATIBILITY: Aliases for tests and frontend that expect these specific URL names
+    path("staff/create/", StaffManagementViewSet.as_view({"post": "create"}), name="staff-create"),
     path("create-staff/", StaffManagementViewSet.as_view({"post": "create"}), name="create-staff"),
     path("staff-enroll/", StaffManagementViewSet.as_view({"post": "verify_invitation"}), name="staff-enroll"),
 ]

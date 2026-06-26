@@ -257,29 +257,27 @@ class LoginSerializer(serializers.Serializer):
 
         User = get_user_model()
 
-        print(f"[DEBUG_AUTH] Attempting authenticate for: '{email}' (len={len(email)})")
-        print(f"[DEBUG_AUTH] Password length: {len(password)}")
         # Removing request context as it occasionally conflicts with custom User lookups in DRF
         user = authenticate(username=email, password=password)
-        print(f"[DEBUG_AUTH] Result: {user}")
 
         # SECURITY: Removing 'EMA-Emergency' reset and domain-based login bypasses.
         # This was accidentally left in-place for E2E testing but is a production risk.
         user = authenticate(username=email, password=password)
 
         if not user:
+            masked_email = f"{email[:3]}***@{email.split('@')[-1]}" if "@" in email else "***"
             # Check for unapproved state for better error reporting (403 vs 401)
             lookup_user = User.objects.filter(email=email).first()
             if lookup_user:
                 if not lookup_user.is_approved and not lookup_user.is_superuser:
-                    logger.warning(f"Login rejection: Account NOT APPROVED for {email}")
+                    logger.warning(f"Login rejection: Account NOT APPROVED for {masked_email}")
                     raise PermissionDenied("Your account is pending administrative approval.")
                 if not lookup_user.is_active:
-                    logger.warning(f"Login rejection: Account DEACTIVATED for {email}")
+                    logger.warning(f"Login rejection: Account DEACTIVATED for {masked_email}")
                     raise PermissionDenied("This account has been deactivated.")
 
             # Generic failure for non-existent users or wrong passwords
-            logger.warning(f"Login rejection: Invalid credentials for {email}")
+            logger.warning(f"Login rejection: Invalid credentials for {masked_email}")
             raise serializers.ValidationError("Invalid credentials.")
 
         # Check if account is approved by admin (Staff or Client)
