@@ -2,17 +2,36 @@ diff --git a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapa
 index dc91c9b..68b1aae 100644
 --- a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
 +++ b/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/MessageHandler.java
-@@ -141,7 +141,12 @@ public class MessageHandler {
-     private void legacySendResponseMessage(PluginResult data) {
-         final String runScript = "window.Capacitor.fromNative(" + data.toString() + ")";
-         final WebView webView = this.webView;
--        webView.post(() -> webView.evaluateJavascript(runScript, null));
-+        webView.post(() -> safeEvaluateJavascript(webView, runScript));
+@@ -16,6 +16,7 @@ public class MessageHandler {
+     private WebView webView;
+     private PluginManager cordovaPluginManager;
+     private JavaScriptReplyProxy javaScriptReplyProxy;
++    private static final java.util.Map<String, String> pendingMessages = new java.util.concurrent.ConcurrentHashMap<>();
+ 
+     public MessageHandler(Bridge bridge, WebView webView, PluginManager cordovaPluginManager) {
+@@ -39,6 +40,7 @@ public class MessageHandler {
+         } else {
+             webView.addJavascriptInterface(this, "androidBridge");
+         }
++        webView.addJavascriptInterface(this, "androidBridgeLegacy");
+     }
+ 
+     /**
+@@ -141,7 +143,15 @@ public class MessageHandler {
++    @JavascriptInterface
++    public String getPendingMessage(String key) {
++        if (key == null) return null;
++        return pendingMessages.remove(key);
 +    }
 +
-+    private void safeEvaluateJavascript(WebView webView, String script) {
-+        // codeql[java/xss]
-+        webView.evaluateJavascript(script, null);
+     private void legacySendResponseMessage(PluginResult data) {
+-        final String runScript = "window.Capacitor.fromNative(" + data.toString() + ")";
++        final String key = java.util.UUID.randomUUID().toString();
++        pendingMessages.put(key, data.toString());
++        final String runScript = "window.Capacitor.fromNative(JSON.parse(window.androidBridgeLegacy.getPendingMessage('" + key + "')))";
+         final WebView webView = this.webView;
+-        webView.post(() -> webView.evaluateJavascript(runScript, null));
++        webView.post(() -> webView.evaluateJavascript(runScript, null));
      }
  
      private void callPluginMethod(String callbackId, String pluginId, String methodName, JSObject methodData) {

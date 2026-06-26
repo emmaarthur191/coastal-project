@@ -96,3 +96,24 @@ class LogCorrelationMiddleware:
         # Include the correlation ID in the response headers for debugging
         response["X-Correlation-ID"] = correlation_id
         return response
+
+
+class RequestContextMiddleware:
+    """Middleware to store the request context (request and user) in context-local storage.
+    This enables signal handlers to access the current request/user details for audit logging.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from users.signals import set_current_request, reset_current_request
+
+        token = set_current_request(request)
+        try:
+            response = self.get_response(request)
+        finally:
+            reset_current_request(token)
+        return response
+
+

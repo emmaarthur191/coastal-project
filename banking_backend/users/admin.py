@@ -297,9 +297,9 @@ class UserAdmin(BaseUserAdmin):
 class UserActivityAdmin(admin.ModelAdmin):
     """Admin for viewing user activity logs."""
 
-    list_display = ("user", "action", "ip_address", "get_location_display", "get_device_display", "created_at")
+    list_display = ("account_display", "action", "ip_address", "get_location_display", "get_device_display", "created_at")
     list_filter = ("action", "created_at")
-    search_fields = ("user__email", "user__username", "ip_address")
+    search_fields = ("user__email", "user__username", "user__role", "ip_address")
     ordering = ("-created_at",)
     readonly_fields = (
         "user",
@@ -314,6 +314,16 @@ class UserActivityAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
     actions = [export_to_csv, export_to_json]
+
+    def account_display(self, obj):
+        """Display detailed user account information."""
+        if obj.user:
+            role_display = obj.user.get_role_display()
+            identifier = obj.user.email or obj.user.phone_number or obj.user.username
+            return f"{identifier} ({role_display})"
+        return "Anonymous"
+
+    account_display.short_description = "User Account"
 
     def get_device_display(self, obj):
         """Extract device name from details or user agent."""
@@ -368,9 +378,9 @@ class UserActivityAdmin(admin.ModelAdmin):
 class AuditLogAdmin(admin.ModelAdmin):
     """Admin for viewing system-wide audit logs."""
 
-    list_display = ("created_at", "user", "action", "model_name", "object_repr", "ip_address")
+    list_display = ("created_at", "actor_display", "action", "model_name", "object_repr", "ip_address")
     list_filter = ("action", "model_name", "created_at")
-    search_fields = ("user__email", "model_name", "object_repr", "object_id")
+    search_fields = ("user__email", "user__username", "user__role", "model_name", "object_repr", "object_id")
     ordering = ("-created_at",)
     readonly_fields = (
         "user",
@@ -385,6 +395,16 @@ class AuditLogAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
     actions = [export_to_csv, export_to_json]
+
+    def actor_display(self, obj):
+        """Display detailed actor account information."""
+        if obj.user:
+            role_display = obj.user.get_role_display()
+            identifier = obj.user.email or obj.user.phone_number or obj.user.username
+            return f"{identifier} ({role_display})"
+        return "System"
+
+    actor_display.short_description = "Actor Account"
 
     def has_add_permission(self, request):
         return False
@@ -433,6 +453,62 @@ class AdminNotificationAdmin(admin.ModelAdmin):
     def mark_as_unread(self, request, queryset):
         queryset.update(is_read=False, read_at=None)
         self.message_user(request, f"{queryset.count()} notifications marked as unread.", messages.SUCCESS)
+
+
+# =============================================================================
+# Admin Dashboard Log Entry Admin (Built-in Django Audit Log)
+# =============================================================================
+from django.contrib.admin.models import LogEntry
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    """Admin class to view Django's built-in Admin action logs."""
+
+    list_display = ("action_time", "user_display", "action_flag_display", "content_type", "object_repr", "change_message")
+    list_filter = ("action_time", "action_flag", "content_type")
+    search_fields = ("user__email", "user__username", "object_repr", "change_message")
+    ordering = ("-action_time",)
+    readonly_fields = (
+        "action_time",
+        "user",
+        "action_flag",
+        "content_type",
+        "object_id",
+        "object_repr",
+        "change_message",
+    )
+
+    def user_display(self, obj):
+        """Display detailed administrator account information."""
+        if obj.user:
+            role_display = obj.user.get_role_display()
+            identifier = obj.user.email or obj.user.phone_number or obj.user.username
+            return f"{identifier} ({role_display})"
+        return "Unknown Admin"
+
+    user_display.short_description = "Admin Account"
+
+    def action_flag_display(self, obj):
+        """Color-coded display of the action performed."""
+        if obj.is_addition():
+            return format_html('<span style="color: green; font-weight: bold;">Addition</span>')
+        elif obj.is_change():
+            return format_html('<span style="color: orange; font-weight: bold;">Change</span>')
+        elif obj.is_deletion():
+            return format_html('<span style="color: red; font-weight: bold;">Deletion</span>')
+        return "Unknown"
+
+    action_flag_display.short_description = "Action"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 # =============================================================================

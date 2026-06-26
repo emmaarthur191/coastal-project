@@ -110,3 +110,15 @@ class IsClientRegistrar(BasePermission):
                 or request.user.is_superuser
             )
         )
+
+
+class IsManagerOrAdminOnly(BasePermission):
+    """Allows access only to managers and administrators (excluding operations managers)."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and (request.user.role in ["manager", "admin"] or request.user.is_superuser)
+        )
+

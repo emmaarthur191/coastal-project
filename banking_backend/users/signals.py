@@ -82,6 +82,11 @@ def set_current_request(request):
     return _request_ctx.set(request)
 
 
+def reset_current_request(token):
+    """Reset current request context to its previous state."""
+    _request_ctx.reset(token)
+
+
 def get_current_request():
     """Get current request from context-local storage."""
     return _request_ctx.get()

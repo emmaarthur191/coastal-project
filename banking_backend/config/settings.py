@@ -186,6 +186,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.base.RequestContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "core.middleware.anomaly_detection.BulkAccessDetectionMiddleware",
     "csp.middleware.CSPMiddleware",  # Replace XFrameOptionsMiddleware with CSP

@@ -19,7 +19,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff
+from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff, IsManagerOrAdminOnly
 
 from .models import User
 from .serializers import (
@@ -1123,15 +1123,15 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Restrict most actions to Manager/Admin, but allow invitation verification for all."""
-        # SECURITY FIX: Ensure only authenticated managers can create new staff
+        # SECURITY FIX: Ensure only authenticated managers/admins can create/edit new staff
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsAuthenticated(), IsManagerOrAdmin()]
+            return [IsAuthenticated(), IsManagerOrAdminOnly()]
         
         # Invitation verification must be public but is token-gated
         if self.action == "verify_invitation":
             return [AllowAny()]
             
-        return [IsAuthenticated(), IsManagerOrAdmin()]
+        return [IsAuthenticated(), IsManagerOrAdminOnly()]
 
     @extend_schema(request=StaffCreationSerializer, responses={201: UserSerializer})
     def create(self, request, *args, **kwargs):

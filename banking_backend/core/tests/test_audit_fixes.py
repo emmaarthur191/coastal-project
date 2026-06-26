@@ -86,3 +86,27 @@ class TestSecurityRemediation:
         response = api_client.post(url, {"member_ids": [users["staff"].id], "is_group": False})
 
         assert response.status_code == status.HTTP_201_CREATED
+
+    def test_audit_log_user_context_via_middleware(self, api_client, users):
+        """Verify that when a model is updated through the API (via middleware), the AuditLog records the correct user."""
+        from users.models import AuditLog
+        from core.models import Account
+
+        account = Account.objects.create(user=users["c1"], account_number="789", balance=Decimal("20.00"))
+        
+        # Authenticate as staff
+        api_client.force_authenticate(user=users["staff"])
+
+        # Make an API call to update the account status (which triggers post_save and middleware context capture)
+        url = reverse("core:account-detail", kwargs={"pk": account.pk})
+        response = api_client.patch(url, {"is_active": False})
+
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Find the latest audit log for this Account object
+        latest_log = AuditLog.objects.filter(model_name="Account", object_id=str(account.id)).order_by("-id").first()
+        
+        assert latest_log is not None
+        assert latest_log.user == users["staff"]
+
+
