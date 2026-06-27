@@ -133,7 +133,9 @@ class TestStaffCreationFallbackAndBankDetails:
             generated_by=self.manager
         )
         
-        # Generate the PDF buffer
+        # Generate the PDF buffer with compression disabled so we can assert on plain text bytes
+        from reportlab import rl_config
+        rl_config.pageCompression = 0
         pdf_buffer = generate_payslip_pdf(payslip)
         pdf_bytes = pdf_buffer.getvalue()
         
