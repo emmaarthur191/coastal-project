@@ -122,4 +122,5 @@ phase3_*.txt
 .gemini/
 
 # Documentation
-docs/
+!docs/**/*.md
+

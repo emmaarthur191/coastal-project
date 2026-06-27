@@ -6,7 +6,7 @@
 A secure, modern banking application for Coastal Credit Union, built with Django (DRF) and React.
  
 ## 📚 Documentation
-> **[Full Project Documentation](docs/index.md)**
+> **[Full Project Documentation](docs/Full_Project_Documentation.md)**
 - [System Architecture](docs/01-architecture.md)
 - [Data Models & ERD](docs/02-data-models.md)
 - [Infrastructure & Config](docs/06-infrastructure.md)
@@ -17,6 +17,25 @@ A secure, modern banking application for Coastal Credit Union, built with Django
 - **`frontend/`**: React + TypeScript frontend (Vite).
 - **`scripts/`**: Utility scripts for migration and provisioning.
  
+## 🚀 Quick Start (Docker)
+
+The fastest way to spin up the entire development environment (Vite frontend, Django API, PostgreSQL database, and Redis cache/broker) is using Docker Compose:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/emmaarthur191/coastal-project.git && cd coastal-project
+
+# 2. Build and start all services
+docker-compose up --build
+```
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **Postgres Database**: port 5432
+- **Redis Cache**: port 6379
+
+---
+
 ## Setup Instructions
  
 ### Prerequisites
