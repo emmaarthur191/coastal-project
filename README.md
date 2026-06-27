@@ -30,7 +30,7 @@ This section compiles the core technical specifications of the Coastal Banking S
 ```mermaid
 graph TD
     User[User Device] -->|HTTPS / mTLS| LB[Load Balancer]
-    LB -->|/api| Backend[Django Service (Python Container)]
+    LB -->|/api| Backend["Django Service (Python Container)"]
     LB -->|/*| Frontend[Node Web Service - Vite SPA]
     
     Backend -->|Read/Write| DB[(PostgreSQL 18)]
