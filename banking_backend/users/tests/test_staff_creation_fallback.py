@@ -6,6 +6,7 @@ from users.models import User
 from core.models.hr import Payslip
 from core.pdf_services import generate_payslip_pdf
 import datetime
+from decimal import Decimal
 
 @pytest.mark.django_db
 class TestStaffCreationFallbackAndBankDetails:
@@ -129,7 +130,7 @@ class TestStaffCreationFallbackAndBankDetails:
             year=2026,
             pay_period_start=datetime.date(2026, 6, 1),
             pay_period_end=datetime.date(2026, 6, 30),
-            base_pay=2500.00,
+            base_pay=Decimal("2500.00"),
             generated_by=self.manager
         )
         
