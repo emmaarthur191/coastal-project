@@ -427,13 +427,16 @@ class OperationsMetricsView(APIView):
             # Staff Performance: Optimized with annotation to avoid N+1 queries in loop
             staff_perf_list = []
 
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999)
+
             # Unmasking: Include ALL staff roles and don't filter strictly by is_active if manager needs to see them
             active_staff_list = User.objects.filter(
                 role__in=["cashier", "manager", "mobile_banker", "operations_manager"]
             ).annotate(
-                activity_count=Count("activities", filter=Q(activities__created_at__date=_today)),
+                activity_count=Count("activities", filter=Q(activities__created_at__range=(today_start, today_end))),
                 logged_in_today=Exists(
-                    UserActivity.objects.filter(user=OuterRef("pk"), action="login", created_at__date=_today)
+                    UserActivity.objects.filter(user=OuterRef("pk"), action="login", created_at__range=(today_start, today_end))
                 ),
             )[:10]
 

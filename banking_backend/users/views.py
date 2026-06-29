@@ -1319,7 +1319,7 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
                 user.is_approved = True
                 user.is_active = True
-                user.save(update_fields=fields_to_update)
+                user.save()
 
                 # 3. Generate Welcome Letter (using staff_id)
                 from core.pdf_services import (

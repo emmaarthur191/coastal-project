@@ -44,7 +44,17 @@ Aligning with the **Ghana Data Protection Act (Act 843)** and international stan
 ## 5. 🛠️ Phase 5: Remediation & Post-Mortem
 Closing the vulnerability and restoring normal operations.
 
-- **Secret Rotation**: Initiate a full **Key Rotation** of the master secrets via the `rotate_keys` management command (`python manage.py rotate_keys`).
+- **Secret Rotation**: Initiate a full **Key Rotation** of the master secrets via the `rotate_keys` management command.
+  > [!NOTE]
+  > Key rotation is designed for zero-downtime online execution. The application automatically decrypts records using the specific `key_version` stored on each record, and encrypts new writes with the active key.
+  
+  ```bash
+  # 1. Verify key availability and run dry-run validation
+  python manage.py rotate_keys --target-version <new_version_integer> --dry-run
+
+  # 2. Perform the actual database re-encryption
+  python manage.py rotate_keys --target-version <new_version_integer>
+  ```
 - **Logic Patching**: Identify and patch the root cause (e.g., IDOR vulnerability, excessive permissions).
 - **Retrospective**: Document the "What, Why, and How" to prevent future occurrences.
 

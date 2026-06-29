@@ -74,11 +74,12 @@ Certificates are automatically provisioned via cert-manager and Let's Encrypt.
 - Secrets management via Kubernetes secrets
 
 ## Rollback Plan
-1. Identify the problematic deployment
-2. Scale down the current deployment
-3. Scale up the previous working deployment
-4. Update ingress/service selectors if needed
-5. Monitor and verify rollback success
+Refer to [ROLLBACK_PLAN.md](file:///e:/coastal/ROLLBACK_PLAN.md) for full procedures.
+
+Quick rollback commands:
+* **Backend**: `kubectl rollout undo deployment/backend -n banking-app`
+* **Frontend**: `kubectl rollout undo deployment/frontend -n banking-app`
+* **Database**: Scale down backend to `0`, run the one-off restore job using a `.dump` file from `postgres-backup-pvc`, then scale backend back up.
 
 ## Troubleshooting
 - Check pod logs: `kubectl logs -n banking-app <pod-name>`

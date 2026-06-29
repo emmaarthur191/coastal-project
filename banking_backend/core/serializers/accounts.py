@@ -150,10 +150,12 @@ class AccountOpeningRequestSerializer(serializers.ModelSerializer):
         """Ensure either existing_member is provided or all PII fields are present."""
         existing_member = data.get("existing_member")
         if not existing_member:
-            required_pii = ["first_name", "last_name", "phone_number", "id_type", "id_number"]
+            required_pii = ["first_name", "last_name", "phone_number", "id_type", "id_number", "email"]
             errors = {}
             for field in required_pii:
-                if not data.get(field):
+                # Check both validated data and raw initial_data to ensure presence
+                val = data.get(field) or self.initial_data.get(field)
+                if val is None or (isinstance(val, str) and not val.strip()):
                     errors[field] = "This field is required for new member registration."
             if errors:
                 raise serializers.ValidationError(errors)
