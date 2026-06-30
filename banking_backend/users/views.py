@@ -19,7 +19,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff, IsManagerOrAdminOnly
+from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff, IsManagerOrAdminOnly, IsClientRegistrar
 
 from .models import User
 from .serializers import (
@@ -1394,3 +1394,12 @@ class SecurityDiagnosticsView(APIView):
         }
 
         return Response(status)
+
+
+class ClientDetailView(generics.RetrieveUpdateAPIView):
+    """Endpoint for managers and mobile bankers to retrieve and update customer profiles."""
+
+    queryset = User.objects.filter(role="customer")
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsClientRegistrar]
+

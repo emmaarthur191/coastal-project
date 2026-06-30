@@ -781,6 +781,7 @@ def sync_missing_columns():
     add_column_if_not_exists("users_user", "bank_name_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "bank_account_number_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "bank_branch_encrypted", "TEXT DEFAULT '' NOT NULL")
+    add_column_if_not_exists("users_user", "next_of_kin_encrypted", "TEXT DEFAULT '' NOT NULL")
     add_column_if_not_exists("users_user", "key_version", "INTEGER DEFAULT 1 NOT NULL")
     # Security/Lockout
     add_column_if_not_exists("users_user", "failed_login_attempts", "INTEGER DEFAULT 0 NOT NULL")

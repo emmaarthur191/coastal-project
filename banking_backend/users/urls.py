@@ -29,6 +29,7 @@ from .views import (
     UserListView,
     UserSessionsView,
     VerifyOTPView,
+    ClientDetailView,
 )
 
 router = SimpleRouter()
@@ -47,6 +48,7 @@ urlpatterns = [
     path("auth/password-reset/", PasswordResetRequestView.as_view(), name="password-reset-request"),
     path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     path("me/", UserDetailView.as_view(), name="user-detail"),
+    path("clients/<int:pk>/", ClientDetailView.as_view(), name="client-detail"),
     path("list/", UserListView.as_view(), name="user-list"),
     path("members/", UserListView.as_view(), name="member-list-alias"),
     path("staff/", StaffListView.as_view(), name="staff-list"),

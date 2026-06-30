@@ -299,3 +299,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "created_at": message.created_at.isoformat(),
             "parent_id": parent_id,
         }
+
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    """WebSocket consumer for real-time user notifications (e.g. transactions)."""
+
+    async def connect(self):
+        self.user = self.scope.get("user")
+
+        # Require authentication
+        if not self.user or self.user.is_anonymous:
+            await self.close(code=4001)
+            return
+
+        self.group_name = f"notifications_{self.user.id}"
+
+        # Join notifications group
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def send_notification(self, event):
+        """Send notification data to the client WebSocket."""
+        await self.send(text_data=json.dumps(event["data"]))
+

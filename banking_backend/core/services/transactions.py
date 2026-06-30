@@ -233,19 +233,20 @@ class TransactionService:
 
     @staticmethod
     def _enqueue_notification(tx: Transaction):
-        """Helper to enqueue SMS notification."""
-        if tx.from_account:
-            transaction.on_commit(
-                lambda: TransactionService._send_transaction_notification(
-                    tx.from_account, tx.transaction_type, tx.amount, tx.id
-                )
+        """Helper to enqueue SMS and WebSocket notifications on commit."""
+        target_account = tx.from_account or tx.to_account
+        if not target_account:
+            return
+
+        def trigger_notifications():
+            TransactionService._send_transaction_notification(
+                target_account, tx.transaction_type, tx.amount, tx.id
             )
-        elif tx.to_account:
-            transaction.on_commit(
-                lambda: TransactionService._send_transaction_notification(
-                    tx.to_account, tx.transaction_type, tx.amount, tx.id
-                )
+            TransactionService._broadcast_transaction_notification(
+                target_account, tx.transaction_type, tx.amount, tx.id
             )
+
+        transaction.on_commit(trigger_notifications)
 
     @staticmethod
     def validate_transaction(
@@ -326,3 +327,44 @@ class TransactionService:
         if not acc_num or len(acc_num) < 8:
             return "XXXX"
         return f"{acc_num[:4]}****{acc_num[-4:]}"
+
+    @staticmethod
+    def _broadcast_transaction_notification(account, transaction_type, amount, tx_id):
+        """Broadcast real-time transaction notification via WebSocket."""
+        try:
+            if not account or not account.user:
+                return
+
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            from django.utils import timezone
+
+            user = account.user
+            channel_layer = get_channel_layer()
+            if not channel_layer:
+                logger.warning("No channel layer configured, skipping WebSocket broadcast")
+                return
+
+            notification_data = {
+                "type": "transaction",
+                "transaction_type": transaction_type,
+                "amount": float(amount),
+                "reference": str(tx_id),
+                "account_number": account.account_number,
+                "new_balance": float(account.balance),
+                "timestamp": timezone.now().isoformat(),
+                "message": f"GHS {amount:.2f} {transaction_type} processed successfully."
+            }
+
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_{user.id}",
+                {
+                    "type": "send_notification",
+                    "data": notification_data
+                }
+            )
+            logger.info(f"WebSocket transaction notification sent to user {user.id}")
+
+        except Exception:
+            logger.exception("Failed to send WebSocket transaction notification")
+

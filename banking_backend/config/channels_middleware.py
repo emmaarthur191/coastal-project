@@ -18,8 +18,10 @@ def get_user(token):
         decoded_data = UntypedToken(token)
         user_id = decoded_data["user_id"]
         return User.objects.get(id=user_id)
-    except (InvalidToken, TokenError, User.DoesNotExist):
+    except Exception as e:
+        print(f"\n[MIDDLEWARE ERROR] get_user failed: {e!r}")
         return AnonymousUser()
+
 
 
 class TokenAuthMiddleware(BaseMiddleware):
@@ -38,7 +40,7 @@ class TokenAuthMiddleware(BaseMiddleware):
             token = headers[b"sec-websocket-protocol"].decode().split(",")[0].strip()
 
         # 3. Fallback to query string
-        elif not token and b"query_string" in scope:
+        elif not token and "query_string" in scope:
             query_string = scope["query_string"].decode()
             query_params = parse_qs(query_string)
             if "token" in query_params:

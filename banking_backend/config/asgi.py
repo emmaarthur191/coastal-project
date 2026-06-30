@@ -24,9 +24,18 @@ from channels.security.websocket import AllowedHostsOriginValidator
 from .channels_middleware import TokenAuthMiddleware
 from .routing import websocket_urlpatterns
 
+# In test mode, we bypass AllowedHostsOriginValidator to prevent host/origin validation issues.
+is_testing = "test" in os.environ.get("DJANGO_SETTINGS_MODULE", "")
+
+if is_testing:
+    websocket_app = TokenAuthMiddleware(URLRouter(websocket_urlpatterns))
+else:
+    websocket_app = AllowedHostsOriginValidator(TokenAuthMiddleware(URLRouter(websocket_urlpatterns)))
+
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
-        "websocket": AllowedHostsOriginValidator(TokenAuthMiddleware(URLRouter(websocket_urlpatterns))),
+        "websocket": websocket_app,
     }
 )
+

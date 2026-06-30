@@ -49,6 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=False, allow_blank=True)
+    next_of_kin_data = serializers.JSONField(required=False, allow_null=True)
 
 
     class Meta:
@@ -69,6 +70,7 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_photo",
             "member_number",
             "assigned_banker",
+            "next_of_kin_data",
         ]
         # SECURITY: 'role' must be read-only to prevent privilege escalation via mass assignment
         read_only_fields = ["id", "role", "is_active", "is_staff", "is_superuser", "name", "staff_id"]

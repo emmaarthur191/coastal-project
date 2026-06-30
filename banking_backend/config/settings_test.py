@@ -27,6 +27,8 @@ from .settings import *
 
 DEBUG = True
 
+ALLOWED_HOSTS = ["*"]
+
 # Disable security redirects for tests
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False

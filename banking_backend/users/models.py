@@ -132,6 +132,7 @@ class User(AbstractUser):
     occupation_encrypted = models.TextField(blank=True, default="")
     work_address_encrypted = models.TextField(blank=True, default="")
     position_encrypted = models.TextField(blank=True, default="")
+    next_of_kin_encrypted = models.TextField(blank=True, default="")
 
     # Staff Banking Details (Encrypted for PII protection)
     bank_name_encrypted = models.TextField(blank=True, default="")
@@ -352,6 +353,31 @@ class User(AbstractUser):
         from core.utils.field_encryption import encrypt_field
 
         self.position_encrypted = encrypt_field(value, version=self.key_version) if value else ""
+
+    @property
+    def next_of_kin_data(self):
+        """Decrypt and return the next of kin JSON data."""
+        import json
+        from core.utils.field_encryption import decrypt_field
+
+        val = decrypt_field(self.next_of_kin_encrypted, version=self.key_version)
+        if val:
+            try:
+                return json.loads(val)
+            except json.JSONDecodeError:
+                return None
+        return None
+
+    @next_of_kin_data.setter
+    def next_of_kin_data(self, value):
+        """Encrypt and set the next of kin JSON data."""
+        import json
+        from core.utils.field_encryption import encrypt_field
+
+        if value:
+            self.next_of_kin_encrypted = encrypt_field(json.dumps(value), version=self.key_version)
+        else:
+            self.next_of_kin_encrypted = ""
 
     @property
     def bank_name(self):
