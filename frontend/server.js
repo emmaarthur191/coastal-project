@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BACKEND_URL = process.env.BACKEND_URL || 'https://coastalautotec.com';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://api.coastalautotec.com';
 
 // SECURITY: Global Rate Limiter (High-Severity SAST Fix)
 const limiter = rateLimit({
