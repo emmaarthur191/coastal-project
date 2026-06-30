@@ -131,12 +131,16 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # Render dynamic hostname support
 ALLOWED_HOSTS.append("*.onrender.com")
+ALLOWED_HOSTS.append("coastalautotec.com")
+ALLOWED_HOSTS.append("*.coastalautotec.com")
 if RENDER_EXTERNAL_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # CSRF Trusted Origins (Required for POST requests)
 CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com",
+    "https://coastalautotec.com",
+    "https://*.coastalautotec.com",
 ]
 
 # Handle comma-separated list from string env var for flexibility
