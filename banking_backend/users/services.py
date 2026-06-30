@@ -82,7 +82,7 @@ class SendexaService:
         outbox.save()
 
         # 3. Configure Client & Resolve Authentication
-        url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/messages")
+        url = getattr(settings, "SENDEXA_API_URL", "https://api.sendexa.co/v1/sms/send")
         sender_id = getattr(settings, "SENDEXA_SENDER_ID", "CACCU")
 
         auth_token = getattr(settings, "SENDEXA_AUTH_TOKEN", "")
@@ -120,9 +120,8 @@ class SendexaService:
 
         payload: dict[str, str] = {
             "to": normalized_phone, 
-            "sender_id": sender_id, 
+            "from": sender_id, 
             "message": message,
-            "channel": "sms"
         }
 
         headers = {
