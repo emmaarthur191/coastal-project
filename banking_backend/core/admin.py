@@ -498,3 +498,56 @@ class AccountOpeningRequestAdmin(admin.ModelAdmin):
     def reject_requests(self, request, queryset):
         queryset.filter(status="pending").update(status="rejected", processed_by=request.user)
         self.message_user(request, "Selected requests rejected.", admin.messages.SUCCESS)
+
+
+# =============================================================================
+# SMS Outbox Admin
+# =============================================================================
+from core.models.reliability import SmsOutbox
+
+
+@admin.register(SmsOutbox)
+class SmsOutboxAdmin(admin.ModelAdmin):
+    """Admin for tracking sent and failed SMS messages."""
+
+    list_display = (
+        "id",
+        "phone_number_display",
+        "message_preview",
+        "status_display",
+        "retry_count",
+        "sent_at",
+        "created_at",
+    )
+    list_filter = ("status", "created_at", "sent_at")
+    search_fields = ("phone_number_hash", "error_message")
+    ordering = ("-created_at",)
+    readonly_fields = ("created_at", "sent_at", "phone_number_hash")
+
+    def phone_number_display(self, obj):
+        """Show the decrypted phone number."""
+        return obj.phone_number
+
+    phone_number_display.short_description = "Phone Number"
+
+    def message_preview(self, obj):
+        """Show a preview of the decrypted message."""
+        msg = obj.message
+        if not msg:
+            return ""
+        return msg[:50] + "..." if len(msg) > 50 else msg
+
+    message_preview.short_description = "Message"
+
+    def status_display(self, obj):
+        """Display status with color coding."""
+        colors = {
+            "pending": "orange",
+            "sent": "green",
+            "failed": "red",
+        }
+        color = colors.get(obj.status, "gray")
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.status.upper())
+
+    status_display.short_description = "Status"
+
