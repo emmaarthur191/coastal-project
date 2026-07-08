@@ -91,10 +91,8 @@ class BulkAccessDetectionMiddleware:
         )
 
     def _get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0]
-        return request.META.get('REMOTE_ADDR')
+        from users.security import SecurityService
+        return SecurityService.get_client_ip(request)
 
 
 class TransactionVelocityMiddleware:

@@ -157,14 +157,26 @@ class TransactionService:
         if tx.from_account and tx.from_account.user_id == approved_by.id:
             raise InvalidTransactionError(message="Self-approval is not allowed (Maker-Checker violation).")
 
-        # Refetch and lock accounts
+        # Refetch and lock accounts in a consistent order (smaller ID first) to prevent deadlocks
         from_acc = None
         to_acc = None
 
-        if tx.from_account:
-            from_acc = Account.objects.select_for_update().get(pk=tx.from_account_id)
-        if tx.to_account:
-            to_acc = Account.objects.select_for_update().get(pk=tx.to_account_id)
+        account_ids = []
+        if tx.from_account_id:
+            account_ids.append(tx.from_account_id)
+        if tx.to_account_id:
+            account_ids.append(tx.to_account_id)
+
+        # Enforce global PK lock ordering
+        account_ids.sort()
+        locked_accounts = {}
+        for aid in account_ids:
+            locked_accounts[aid] = Account.objects.select_for_update().get(pk=aid)
+
+        if tx.from_account_id:
+            from_acc = locked_accounts[tx.from_account_id]
+        if tx.to_account_id:
+            to_acc = locked_accounts[tx.to_account_id]
 
         # Re-validate (balance might have changed while pending)
         TransactionService.validate_transaction(from_acc, to_acc, tx.amount, tx.transaction_type)
@@ -209,13 +221,26 @@ class TransactionService:
         if tx.status != "completed":
             raise InvalidTransactionError(message="Only completed transactions can be reversed.")
 
-        # 1. Acquire locks on involved accounts
+        # 1. Acquire locks on involved accounts in a consistent order (smaller ID first) to prevent deadlocks
         from_acc = None
         to_acc = None
-        if tx.from_account:
-            from_acc = Account.objects.select_for_update().get(pk=tx.from_account_id)
-        if tx.to_account:
-            to_acc = Account.objects.select_for_update().get(pk=tx.to_account_id)
+
+        account_ids = []
+        if tx.from_account_id:
+            account_ids.append(tx.from_account_id)
+        if tx.to_account_id:
+            account_ids.append(tx.to_account_id)
+
+        # Enforce global PK lock ordering
+        account_ids.sort()
+        locked_accounts = {}
+        for aid in account_ids:
+            locked_accounts[aid] = Account.objects.select_for_update().get(pk=aid)
+
+        if tx.from_account_id:
+            from_acc = locked_accounts[tx.from_account_id]
+        if tx.to_account_id:
+            to_acc = locked_accounts[tx.to_account_id]
 
         # 2. Reverse balance changes
         if from_acc:

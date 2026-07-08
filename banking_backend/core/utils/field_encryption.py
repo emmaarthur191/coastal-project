@@ -34,61 +34,104 @@ def get_fernet_key(version: int = None):
 def encrypt_field(value: str, version: int = None) -> str:
     """Encrypt a string value for database storage using the specified key version.
 
-    Args:
-        value: The plaintext string to encrypt.
-        version: Optional integer version of the key to use. If None, uses the current default.
+    Uses AES-256-GCM (AEAD) with a fresh random 96-bit nonce generated per call.
+    The resulting ciphertext is tagged with 'v2GCM:' prefix.
 
-    Returns:
-        Base64-encoded encrypted string, or empty string if value is None/empty.
-
+    Memory Hygiene Note:
+        Decrypted keys, plaintext values, and intermediate key materials must never be 
+        logged, cached persistently, or serialized. Keep them strictly in temporary 
+        local variables.
     """
     if not value:
         return ""
 
     try:
-        from cryptography.fernet import Fernet
+        import base64
+        import os
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-        f = Fernet(get_fernet_key(version=version))
-        encrypted = f.encrypt(value.encode())
-        return encrypted.decode()
+        key_str = get_fernet_key(version=version)
+        if isinstance(key_str, str):
+            key_bytes = base64.urlsafe_b64decode(key_str.encode())
+        else:
+            key_bytes = base64.urlsafe_b64decode(key_str)
+
+        # Generate a fresh 96-bit (12-byte) random nonce per encryption
+        nonce = os.urandom(12)
+        aesgcm = AESGCM(key_bytes)
+
+        # Encrypt the plaintext using AES-256-GCM (tag is appended automatically)
+        ciphertext = aesgcm.encrypt(nonce, value.encode('utf-8'), None)
+
+        # Store format: "v2GCM:" prefix + base64(nonce + ciphertext)
+        packed = nonce + ciphertext
+        return "v2GCM:" + base64.b64encode(packed).decode('utf-8')
     except Exception as e:
-        logger.error(f"Encryption failed: {e}")
+        logger.error("Encryption failed")
         raise ValueError("Failed to encrypt sensitive data") from e
 
 
 def decrypt_field(encrypted_value: str, version: int = None) -> str:
     """Decrypt a previously encrypted string value using the specified key version.
 
-    Args:
-        encrypted_value: The base64-encoded encrypted string.
-        version: Optional integer version of the key to use.
-
-    Returns:
-        Decrypted plaintext string, or empty string if value is None/empty.
-
+    Supports both legacy Fernet (prefixed with 'gAAAAA') and modern AES-256-GCM 
+    (prefixed with 'v2GCM:'). Non-matching prefixes raise ValueError to prevent 
+    unrecognized/downgrade payloads.
     """
     if not encrypted_value:
         return ""
 
     try:
-        from cryptography.fernet import Fernet
+        import base64
 
-        f = Fernet(get_fernet_key(version=version))
-        decrypted = f.decrypt(encrypted_value.encode())
-        return decrypted.decode()
+        # 1. Branch strictly based on known format version prefixes
+        if encrypted_value.startswith("gAAAAA"):
+            # Legacy Fernet (AES-128-CBC + HMAC-SHA256) read-only compatibility shim.
+            # Do NOT use this algorithm for new writes.
+            from cryptography.fernet import Fernet
+            f = Fernet(get_fernet_key(version=version))
+            decrypted = f.decrypt(encrypted_value.encode())
+            return decrypted.decode('utf-8')
+
+        elif encrypted_value.startswith("v2GCM:"):
+            # Modern AES-256-GCM
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+            payload_b64 = encrypted_value[len("v2GCM:"):]
+            data = base64.b64decode(payload_b64.encode('utf-8'))
+            if len(data) < 12:
+                raise ValueError("Invalid AES-GCM payload: too short")
+
+            nonce = data[:12]
+            ciphertext = data[12:]
+
+            key_str = get_fernet_key(version=version)
+            if isinstance(key_str, str):
+                key_bytes = base64.urlsafe_b64decode(key_str.encode())
+            else:
+                key_bytes = base64.urlsafe_b64decode(key_str)
+
+            aesgcm = AESGCM(key_bytes)
+            decrypted = aesgcm.decrypt(nonce, ciphertext, None)
+            return decrypted.decode('utf-8')
+
+        else:
+            # Unrecognized format prefix — fail closed immediately to prevent downgrade attacks
+            raise ValueError(f"Unsupported encryption format version prefix: {encrypted_value[:10]}")
+
+    except ValueError as e:
+        # Re-raise explicit validation and format errors directly
+        raise e
     except Exception as e:
-        logger.error(f"Decryption failed for version {version}: {e}")
+        logger.error("Decryption failed")
         raise ValueError("Failed to decrypt sensitive data") from e
 
 
 def is_encrypted(value: str) -> bool:
-    """Check if a value appears to be Fernet-encrypted.
-
-    Fernet tokens start with 'gAAAAA' (base64 prefix of version byte 0x80).
-    """
+    """Check if a value appears to be encrypted (either legacy Fernet or modern AES-GCM)."""
     if not value:
         return False
-    return value.startswith("gAAAAA")
+    return value.startswith("gAAAAA") or value.startswith("v2GCM:")
 
 
 def hash_field(value: str) -> str:

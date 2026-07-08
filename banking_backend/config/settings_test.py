@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["*"]
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+SKIP_MTLS_IN_DEV = True
 
 # Explicitly disable HSTS
 SECURE_HSTS_SECONDS = 0
@@ -60,3 +61,6 @@ CACHES = {
         "LOCATION": "test-cache",
     }
 }
+
+TESTING = True
+

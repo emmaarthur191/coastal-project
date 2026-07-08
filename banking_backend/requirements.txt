@@ -8,6 +8,7 @@ django-filter==25.1
 django-prometheus==2.4.1
 django-cors-headers==4.7.0
 django-csp==3.8
+django-allow-cidr>=0.6
 
 # Security & Auth
 cryptography==48.0.1

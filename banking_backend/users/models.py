@@ -682,11 +682,8 @@ class PasswordResetToken(models.Model):
 
         ip_address = None
         if request:
-            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-            if x_forwarded_for:
-                ip_address = x_forwarded_for.split(",")[0].strip()
-            else:
-                ip_address = request.META.get("REMOTE_ADDR")
+            from users.security import SecurityService
+            ip_address = SecurityService.get_client_ip(request)
 
         return cls.objects.create(
             user=user,
@@ -759,8 +756,8 @@ class OTPVerification(models.Model):
         ip_address = None
         user_agent = ""
         if request:
-            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-            ip_address = x_forwarded_for.split(",")[0].strip() if x_forwarded_for else request.META.get("REMOTE_ADDR")
+            from users.security import SecurityService
+            ip_address = SecurityService.get_client_ip(request)
             user_agent = request.META.get("HTTP_USER_AGENT", "")
 
         obj = cls.objects.create(

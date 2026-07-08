@@ -45,9 +45,59 @@ class SecretManager:
         return None
 
     @staticmethod
+    def _decrypt_via_kms(key_name: str, key_val: str) -> bytes:
+        """Decrypt a secret key via AWS/GCP KMS if KMS_PROVIDER is set.
+
+        If decryption fails:
+        - If ALLOW_LOCAL_KEK_FALLBACK is True, falls back to the raw key_val bytes.
+        - Otherwise, raises ImproperlyConfigured.
+
+        Memory Hygiene Note:
+            Decrypted keys must never be logged, persistently cached, or written to disk.
+            Keep them in local method variables only.
+        """
+        provider = os.environ.get("KMS_PROVIDER") or getattr(settings, "KMS_PROVIDER", None)
+        if not provider:
+            return key_val.encode() if isinstance(key_val, str) else key_val
+
+        fallback_allowed = os.environ.get("ALLOW_LOCAL_KEK_FALLBACK", "False").lower() in ("true", "1", "yes") or getattr(settings, "ALLOW_LOCAL_KEK_FALLBACK", False)
+
+        try:
+            import base64
+            # Attempt to decode base64 ciphertext
+            ciphertext = base64.b64decode(key_val)
+
+            if provider == "aws":
+                import boto3
+                kms_client = boto3.client("kms", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+                response = kms_client.decrypt(CiphertextBlob=ciphertext)
+                return response["Plaintext"]
+
+            elif provider == "gcp":
+                from google.cloud import kms
+                client = kms.KeyManagementServiceClient()
+                kms_key_name = os.environ.get("GCP_KMS_KEY_NAME")
+                if not kms_key_name:
+                    raise ValueError("GCP_KMS_KEY_NAME must be set when using GCP KMS")
+                response = client.decrypt(request={"name": kms_key_name, "ciphertext": ciphertext})
+                return response.plaintext
+
+            else:
+                raise ValueError(f"Unsupported KMS provider: {provider}")
+
+        except Exception as e:
+            if not fallback_allowed:
+                logger.critical(f"KMS Decryption failed for {key_name} and fallback is disabled: {e}")
+                from django.core.exceptions import ImproperlyConfigured
+                raise ImproperlyConfigured(f"KMS Decryption failed for {key_name}: {e}") from e
+
+            logger.warning(f"KMS Decryption failed for {key_name}, falling back to local KEK: {e}")
+            return key_val.encode() if isinstance(key_val, str) else key_val
+
+    @staticmethod
     @lru_cache(maxsize=32)
     def get_encryption_key(version: int = None) -> bytes:
-        """Retrieve the symmetric encryption key by version (AES-128-CBC)."""
+        """Retrieve the symmetric encryption key by version (AES-256-GCM)."""
         key_name = "FIELD_ENCRYPTION_KEY"
         if version and version > 1:
             key_name = f"FIELD_ENCRYPTION_KEY_V{version}"
@@ -79,7 +129,8 @@ class SecretManager:
             logger.warning(f"Using ephemeral encryption key for {key_name}. DATA WILL NOT BE PERSISTENT.")
             key = Fernet.generate_key().decode()
 
-        return key.encode() if isinstance(key, str) else key
+        # Route through KMS envelope decryption wrapper
+        return SecretManager._decrypt_via_kms(key_name, key)
 
     @staticmethod
     @lru_cache(maxsize=32)

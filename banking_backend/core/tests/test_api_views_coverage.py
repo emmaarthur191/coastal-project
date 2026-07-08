@@ -273,6 +273,9 @@ class TestAccountOpeningViewSetCoverage:
 @pytest.mark.django_db
 class TestAccountClosureViewSetCoverage:
     def test_account_closure_maker_checker(self, api_client, customer_user, customer_account, manager_user):
+        customer_account.balance = Decimal("0.00")
+        customer_account.initial_balance = Decimal("0.00")
+        customer_account.save()
         api_client.force_authenticate(user=customer_user)
         url_list = reverse("core:account-closure-list")
         response = api_client.post(url_list, {

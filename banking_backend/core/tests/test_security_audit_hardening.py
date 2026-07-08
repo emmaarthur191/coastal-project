@@ -202,8 +202,8 @@ class TestRedTeamAuditHardening:
         assert user.phone_number_encrypted != user.phone_number
         assert user.id_number_encrypted != user.id_number
 
-        # Verify it looks like Fernet (starts with gAAAA)
-        assert user.phone_number_encrypted.startswith("gAAAA")
+        # Verify it looks like AES-256-GCM (starts with v2GCM:)
+        assert user.phone_number_encrypted.startswith("v2GCM:")
 
         # Test AccountOpeningRequest encryption
         from core.models import AccountOpeningRequest
@@ -218,4 +218,4 @@ class TestRedTeamAuditHardening:
         request.refresh_from_db()
         assert request.phone_number_encrypted != ""
         assert request.id_number_encrypted != ""
-        assert request.phone_number_encrypted.startswith("gAAAA")
+        assert request.phone_number_encrypted.startswith("v2GCM:")

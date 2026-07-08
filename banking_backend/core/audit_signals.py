@@ -20,11 +20,8 @@ def get_request_context():
     user = get_current_user()
     ip = None
     if request:
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(",")[0].strip()
-        else:
-            ip = request.META.get("REMOTE_ADDR")
+        from users.security import SecurityService
+        ip = SecurityService.get_client_ip(request)
     return user, ip
 
 
@@ -109,7 +106,7 @@ PII_FIELDS = [
 ]
 
 
-def create_audit_log(action: str, model_name: str, instance, changes: dict = None):
+def create_audit_log(action: str, model_name: str, instance, changes: dict | None = None):
     """Create an audit log entry for a model change."""
     from users.models import AuditLog
 

@@ -419,6 +419,12 @@ class AccountOpeningRequest(models.Model):
             models.Index(fields=["submitted_by", "-created_at"], name="acc_open_sub_idx"),
             models.Index(fields=["is_stale"], name="acc_open_stale_idx"),
         ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
+                name='opening_request_maker_checker_distinct'
+            )
+        ]
 
     def clean(self):
         """Enforce Maker-Checker."""
@@ -538,6 +544,12 @@ class AccountClosureRequest(models.Model):
         verbose_name_plural = "Account Closure Requests"
         indexes = [
              models.Index(fields=["is_stale"], name="acc_close_stale_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
+                name='closure_request_maker_checker_distinct'
+            )
         ]
 
     def clean(self):

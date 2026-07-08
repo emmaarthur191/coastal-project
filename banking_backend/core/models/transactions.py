@@ -69,6 +69,12 @@ class Transaction(models.Model):
             models.Index(fields=["status", "-timestamp"], name="tx_status_idx"),
             models.Index(fields=["is_stale"], name="tx_stale_idx"),
         ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('processed_by')),
+                name='transaction_maker_checker_distinct'
+            )
+        ]
 
     def __str__(self):
         return f"{self.transaction_type} - {self.amount} ({self.status})"

@@ -157,6 +157,9 @@ class TestAccountOpeningViewSet:
 @pytest.mark.django_db
 class TestAccountClosureViewSet:
     def test_approve_closure_request_maker_checker(self, api_client, manager_user, cashier_user, active_account):
+        active_account.balance = Decimal("0.00")
+        active_account.initial_balance = Decimal("0.00")
+        active_account.save()
         req = AccountClosureRequest.objects.create(
             account=active_account, closure_reason='other',
             submitted_by=cashier_user, status='pending'

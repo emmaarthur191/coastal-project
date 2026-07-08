@@ -764,31 +764,65 @@ class AccountClosureViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mi
     def approve(self, request, pk=None):
         """Approve an account closure request and close the account."""
         from django.utils import timezone
+        from django.db.models import Q
+        from core.models.transactions import Transaction
 
-        closure_request = self.get_object()
+        with transaction.atomic():
+            # Acquire lock on the closure request itself
+            closure_request = AccountClosureRequest.objects.select_for_update().get(pk=pk)
 
-        if closure_request.status != "pending":
-            return Response({"error": "Only pending requests can be approved."}, status=status.HTTP_400_BAD_REQUEST)
+            if closure_request.status != "pending":
+                return Response({"error": "Only pending requests can be approved."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # SECURITY FIX: Maker-Checker Enforcement
-        if closure_request.submitted_by == request.user:
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Maker-Checker Violation: You cannot approve a closure request you submitted.",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            # SECURITY FIX: Maker-Checker Enforcement
+            if closure_request.submitted_by == request.user:
+                return Response(
+                    {
+                        "status": "error",
+                        "message": "Maker-Checker Violation: You cannot approve a closure request you submitted.",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
-        # Close the associated account
-        if closure_request.account:
-            closure_request.account.is_active = False
-            closure_request.account.save()
+            account = closure_request.account
+            if account:
+                # Lock the account row to prevent concurrent balance mutations
+                account = Account.objects.select_for_update().get(pk=account.pk)
+                
+                # Lock all transaction ledger rows associated with the account to freeze calculated_balance
+                # Sort explicitly by ID to enforce a consistent lock order and prevent deadlocks
+                list(Transaction.objects.select_for_update().filter(
+                    Q(from_account=account) | Q(to_account=account)
+                ).order_by("id"))
 
-        closure_request.status = "approved"
-        closure_request.approved_by = request.user
-        closure_request.processed_at = timezone.now()
-        closure_request.save()
+                # Re-validate balance integrity (stored vs calculated) securely under the acquired locks
+                if account.balance != account.calculated_balance:
+                    return Response(
+                        {
+                            "status": "error",
+                            "message": "Account balance drift detected. Please reconcile before closure.",
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Re-validate that balance is zero
+                if account.balance != 0:
+                    return Response(
+                        {
+                            "status": "error",
+                            "message": "Account balance must be zero. Please materialize interest and withdraw funds first.",
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Lock/Deactivate the account
+                account.is_active = False
+                account.save(update_fields=["is_active", "updated_at"])
+
+            closure_request.status = "approved"
+            closure_request.approved_by = request.user
+            closure_request.processed_at = timezone.now()
+            closure_request.save()
 
         return Response(
             {

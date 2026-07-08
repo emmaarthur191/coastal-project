@@ -63,6 +63,11 @@ class SecurityService:
         """
         from django.conf import settings
 
+        # Cloudflare connecting IP takes absolute precedence if present
+        cf_connecting_ip = request.META.get("HTTP_CF_CONNECTING_IP")
+        if cf_connecting_ip:
+            return cf_connecting_ip
+
         # Get the forwarded-for chain
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         remote_addr = request.META.get("REMOTE_ADDR")

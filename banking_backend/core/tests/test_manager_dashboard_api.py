@@ -104,13 +104,13 @@ class TestManagerDashboardAPI:
         """Verify account closure can be approved without OTP."""
         # 1. Setup account and closure request
         customer = User.objects.create_user(email="cust@test.com", password="pw", role="customer")
-        account = Account.objects.create(user=customer, account_number="123456789", balance=500)
+        account = Account.objects.create(user=customer, account_number="123456789", balance=0, initial_balance=0)
         
         closure_request = AccountClosureRequest.objects.create(
             account=account,
             status="pending",
             submitted_by=staff_user,
-            final_balance=500
+            final_balance=0
         )
 
         # 2. Approve via Manager

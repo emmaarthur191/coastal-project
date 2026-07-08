@@ -1074,6 +1074,85 @@ def backfill_existing_user_approvals():
         print(f"    ! Error backfilling approvals: {e}")
 
 
+def apply_security_hardening():
+    """Ensure database check constraints and audit log triggers are present."""
+    print("\n--> Applying database-level security constraints and triggers...")
+    with connection.cursor() as cursor:
+        try:
+            # 1. Audit Log Triggers
+            if connection.vendor == 'postgresql':
+                cursor.execute("""
+                    CREATE OR REPLACE FUNCTION block_audit_log_mutation()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        RAISE EXCEPTION 'Audit log entries are immutable and cannot be updated or deleted.';
+                    END;
+                    $$ LANGUAGE plpgsql;
+                """)
+                cursor.execute("DROP TRIGGER IF EXISTS audit_log_no_update_delete ON audit_log;")
+                cursor.execute("""
+                    CREATE TRIGGER audit_log_no_update_delete
+                    BEFORE UPDATE OR DELETE ON audit_log
+                    FOR EACH ROW EXECUTE FUNCTION block_audit_log_mutation();
+                """)
+                print("    + Applied PostgreSQL AuditLog trigger")
+            elif connection.vendor == 'sqlite':
+                cursor.execute("DROP TRIGGER IF EXISTS audit_log_no_update;")
+                cursor.execute("""
+                    CREATE TRIGGER audit_log_no_update
+                    BEFORE UPDATE ON audit_log
+                    BEGIN
+                        SELECT RAISE(FAIL, 'Audit log entries are immutable and cannot be updated.');
+                    END;
+                """)
+                cursor.execute("DROP TRIGGER IF EXISTS audit_log_no_delete;")
+                cursor.execute("""
+                    CREATE TRIGGER audit_log_no_delete
+                    BEFORE DELETE ON audit_log
+                    BEGIN
+                        SELECT RAISE(FAIL, 'Audit log entries are immutable and cannot be deleted.');
+                    END;
+                """)
+                print("    + Applied SQLite AuditLog triggers")
+            
+            # 2. Check Constraints (if not already present)
+            if connection.vendor == 'postgresql':
+                try:
+                    cursor.execute("""
+                        ALTER TABLE account_opening_request 
+                        ADD CONSTRAINT opening_request_maker_checker_distinct 
+                        CHECK (approved_by_id IS NULL OR approved_by_id <> submitted_by_id)
+                    """)
+                    print("    + Added CheckConstraint: opening_request_maker_checker_distinct")
+                except Exception as e:
+                    if "already exists" not in str(e).lower():
+                        print(f"    ! Warning adding opening request constraint: {e}")
+
+                try:
+                    cursor.execute("""
+                        ALTER TABLE account_closure_request 
+                        ADD CONSTRAINT closure_request_maker_checker_distinct 
+                        CHECK (approved_by_id IS NULL OR approved_by_id <> submitted_by_id)
+                    """)
+                    print("    + Added CheckConstraint: closure_request_maker_checker_distinct")
+                except Exception as e:
+                    if "already exists" not in str(e).lower():
+                        print(f"    ! Warning adding closure request constraint: {e}")
+
+                try:
+                    cursor.execute("""
+                        ALTER TABLE transaction 
+                        ADD CONSTRAINT transaction_maker_checker_distinct 
+                        CHECK (approved_by_id IS NULL OR approved_by_id <> processed_by_id)
+                    """)
+                    print("    + Added CheckConstraint: transaction_maker_checker_distinct")
+                except Exception as e:
+                    if "already exists" not in str(e).lower():
+                        print(f"    ! Warning adding transaction constraint: {e}")
+        except Exception as e:
+            print(f"    ! Error applying security hardening: {e}")
+
+
 def main():
     """Run the smart migration sync v8."""
     print("=" * 60)
@@ -1138,6 +1217,9 @@ def main():
 
     else:
         print("\n--> Fresh database detected. Standard migrate was already attempted.")
+
+    # Apply database-level triggers and constraints
+    apply_security_hardening()
 
     print("=" * 60)
     print("  Migration sync complete!")

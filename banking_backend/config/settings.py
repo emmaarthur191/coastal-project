@@ -135,6 +135,12 @@ ALLOWED_HOSTS.append(".coastalautotec.com")
 if RENDER_EXTERNAL_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# Cloudflare Origin bypass verification secret
+ORIGIN_VERIFICATION_SECRET = env.str("ORIGIN_VERIFICATION_SECRET", default="")
+
+# CIDR networks allowed by django-allow-cidr middleware
+ALLOWED_CIDR_NETS = env.list("ALLOWED_CIDR_NETS", default=[])
+
 # CSRF Trusted Origins (Required for POST requests)
 CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com",
@@ -180,6 +186,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "allow_cidr.middleware.AllowCIDRMiddleware",
+    "core.middleware.origin_verification.OriginVerificationMiddleware",
+    "core.middleware.mtls_verification.MTLSVerificationMiddleware",
     "core.middleware.base.LogCorrelationMiddleware",
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -239,8 +248,26 @@ CHANNEL_LAYERS = {
 if not DEBUG:
     db_config = DATABASES["default"]
     if db_config.get("ENGINE") != "django.db.backends.sqlite3":
-        db_sslmode = env("DB_SSLMODE", default="prefer")
+        db_sslmode = env("DB_SSLMODE", default="verify-full")
         db_config.setdefault("OPTIONS", {})["sslmode"] = db_sslmode
+
+        # In verify-full, we need the root certificate CA bundle to authenticate the database server
+        if db_sslmode == "verify-full":
+            sslrootcert = env("DB_SSLROOTCERT", default="")
+            if not sslrootcert:
+                # Auto-detect standard system trust stores if no custom root cert path is supplied
+                standard_ca_paths = [
+                    "/etc/ssl/certs/ca-certificates.crt",                  # Debian/Ubuntu/Render
+                    "/etc/pki/tls/certs/ca-bundle.crt",                    # RedHat/CentOS
+                    "/etc/ssl/ca-bundle.pem",                              # OpenSUSE
+                    "/etc/ssl/cert.pem",                                   # macOS/FreeBSD
+                ]
+                for path in standard_ca_paths:
+                    if os.path.exists(path):
+                        sslrootcert = path
+                        break
+            if sslrootcert:
+                db_config["OPTIONS"]["sslrootcert"] = sslrootcert
 
 # Connection Pooling for Production Performance
 # Reuse database connections to reduce overhead

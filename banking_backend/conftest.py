@@ -8,7 +8,7 @@ TEST_PASSWORD = "".join(_pw_parts)
 
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings_test")
 
 # Mock channel layer to avoid Redis dependency in tests but keep WebSockets functional
 from channels.layers import InMemoryChannelLayer
