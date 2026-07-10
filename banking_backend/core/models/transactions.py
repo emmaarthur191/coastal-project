@@ -71,7 +71,7 @@ class Transaction(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('processed_by')),
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('processed_by')),
                 name='transaction_maker_checker_distinct'
             )
         ]

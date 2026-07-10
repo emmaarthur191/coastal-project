@@ -57,21 +57,21 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="accountopeningrequest",
             constraint=models.CheckConstraint(
-                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
                 name="opening_request_maker_checker_distinct",
             ),
         ),
         migrations.AddConstraint(
             model_name="accountclosurerequest",
             constraint=models.CheckConstraint(
-                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
                 name="closure_request_maker_checker_distinct",
             ),
         ),
         migrations.AddConstraint(
             model_name="transaction",
             constraint=models.CheckConstraint(
-                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('processed_by')),
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('processed_by')),
                 name="transaction_maker_checker_distinct",
             ),
         ),

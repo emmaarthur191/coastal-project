@@ -1,7 +1,7 @@
 import pytest
 from decimal import Decimal
 from django.urls import reverse
-from django.db import OperationalError, IntegrityError
+from django.db import OperationalError, IntegrityError, InternalError
 from django.test import override_settings
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -31,20 +31,24 @@ class TestAuditLogImmutabilityTriggers:
 
         # 1. Attempt UPDATE should raise OperationalError or IntegrityError due to SQLite trigger RAISE(FAIL)
         # Wrap in transaction.atomic() to isolate the error and keep the connection transaction clean
-        with pytest.raises((OperationalError, IntegrityError)) as exc_info:
+        with pytest.raises((OperationalError, IntegrityError, InternalError)) as exc_info:
             with transaction.atomic():
                 log.action = "update"
                 log.save()
         assert "Audit log entries are immutable" in str(exc_info.value)
 
         # 2. Attempt DELETE should raise OperationalError or IntegrityError due to SQLite trigger RAISE(FAIL)
-        with pytest.raises((OperationalError, IntegrityError)) as exc_info:
+        with pytest.raises((OperationalError, IntegrityError, InternalError)) as exc_info:
             with transaction.atomic():
                 log.delete()
         assert "Audit log entries are immutable" in str(exc_info.value)
 
     def test_audit_log_bypass_works(self, db):
         """Verify that when local_storage.bypass_audit_trigger is set to True, modifications are permitted."""
+        from django.db import connection
+        if connection.vendor != 'sqlite':
+            pytest.skip("Bypass is an SQLite-specific hack for flush command")
+            
         user = User.objects.create_user(username="audit_test_user_2", email="audit2@ex.com", password="password123")
         log = AuditLog.objects.create(
             user=user,

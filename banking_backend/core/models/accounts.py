@@ -421,7 +421,7 @@ class AccountOpeningRequest(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
                 name='opening_request_maker_checker_distinct'
             )
         ]
@@ -547,7 +547,7 @@ class AccountClosureRequest(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
+                condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F('submitted_by')),
                 name='closure_request_maker_checker_distinct'
             )
         ]
