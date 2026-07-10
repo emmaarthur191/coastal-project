@@ -61,7 +61,7 @@ def check_database():
     except Exception as e:
         return {
             "status": "unhealthy",
-            "message": str(e),
+            "message": "Database connection failed",
         }
 
 
@@ -89,7 +89,7 @@ def check_cache():
     except Exception as e:
         return {
             "status": "unhealthy",
-            "message": str(e),
+            "message": "Cache connection failed",
         }
 
 
