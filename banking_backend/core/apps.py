@@ -61,15 +61,16 @@ class CoreConfig(AppConfig):
             kms_provider = os.environ.get("KMS_PROVIDER") or getattr(settings, "KMS_PROVIDER", None)
 
             # 1. Enforce KMS_PROVIDER presence and validity in production (never bypassable)
+            #    'none' = direct key management without envelope encryption (e.g. Render)
             if not kms_provider:
                 raise ImproperlyConfigured(
                     "Production Protection Guard: KMS_PROVIDER is not set! "
-                    "Production environments must configure a KMS provider ('aws' or 'gcp') to secure field encryption keys."
+                    "Production environments must configure a KMS provider ('aws', 'gcp', or 'none') to secure field encryption keys."
                 )
-            if kms_provider not in ("aws", "gcp"):
+            if kms_provider not in ("aws", "gcp", "none"):
                 raise ImproperlyConfigured(
                     f"Production Protection Guard: KMS_PROVIDER '{kms_provider}' is invalid! "
-                    "Must be 'aws' or 'gcp' in production."
+                    "Must be 'aws', 'gcp', or 'none' in production."
                 )
 
             # 2. Prevent local fallback KEK in production unless running a designated emergency DR command

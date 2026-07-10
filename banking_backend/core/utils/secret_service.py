@@ -57,7 +57,7 @@ class SecretManager:
             Keep them in local method variables only.
         """
         provider = os.environ.get("KMS_PROVIDER") or getattr(settings, "KMS_PROVIDER", None)
-        if not provider:
+        if not provider or provider == "none":
             return key_val.encode() if isinstance(key_val, str) else key_val
 
         fallback_allowed = os.environ.get("ALLOW_LOCAL_KEK_FALLBACK", "False").lower() in ("true", "1", "yes") or getattr(settings, "ALLOW_LOCAL_KEK_FALLBACK", False)
