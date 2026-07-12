@@ -16,6 +16,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
@@ -632,11 +633,13 @@ class AccountOpeningViewSet(
         url_path="submit-request",
         authentication_classes=[],
         permission_classes=[AllowAny],
+        throttle_classes=[AnonRateThrottle],
     )
     def submit_request(self, request):
         """Submit a new account opening request without OTP verification.
 
         This is the new entry point for the manual approval workflow.
+        SECURITY FIX (C-06): Rate-limited to prevent spam/DoS on approval queue.
         """
         # Support both top-level and nested account_data
         data = request.data.get("account_data", request.data)

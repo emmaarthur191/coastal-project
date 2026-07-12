@@ -19,7 +19,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff, IsManagerOrAdminOnly, IsClientRegistrar
+from core.permissions import IsAdmin, IsManagerOrAdmin, IsStaff, IsManagerOrAdminOnly, IsClientRegistrar, IsSuperUser
 
 from .models import User
 from .serializers import (
@@ -48,7 +48,7 @@ class ChangePasswordView(APIView):
     @extend_schema(request=ChangePasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         """Handle password change requests for the authenticated user, validating old password and updating security tokens."""
-        serializer = ChangePasswordSerializer(data=request.data)
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = request.user
             old_password = serializer.validated_data["old_password"]
@@ -57,6 +57,17 @@ class ChangePasswordView(APIView):
             # Verify old password
             if not user.check_password(old_password):
                 return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+
+            # SECURITY FIX (H-02): Run Django's AUTH_PASSWORD_VALIDATORS
+            # (UserAttributeSimilarity, CommonPassword, etc.) in addition to
+            # the custom validate_password_strength in the serializer.
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError as DjangoValidationError
+
+            try:
+                validate_password(new_password, user=user)
+            except DjangoValidationError as e:
+                return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
             # Set new password
             user.set_password(new_password)
@@ -202,7 +213,8 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
 class LogoutView(APIView):
     """Endpoint for user logout and token revocation."""
 
-    permission_classes = [AllowAny]
+    # SECURITY FIX (H-01): Require authentication to prevent unauthenticated probing
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """Handle user logout, invalidating JWT tokens and clearing authentication cookies."""
@@ -465,8 +477,10 @@ class SendOTPView(APIView):
             "message": f"OTP sent to {phone_number}",
             "expires_in": 600,
         }
+        # SECURITY FIX (C-05): Never return OTP in API response, even in DEBUG.
+        # Use server-side logs for development debugging only.
         if settings.DEBUG:
-            response_data["debug_otp"] = otp_code
+            logger.debug(f"[DEV ONLY] OTP for debugging: {otp_code}")
 
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -655,7 +669,8 @@ class MemberLookupView(APIView):
     Search for an existing member by their Member ID.
     Used during account opening to pre-fill information for existing customers.
     """
-    permission_classes = [IsAuthenticated]
+    # SECURITY FIX (H-04): Restrict to staff roles to prevent customer-to-customer enumeration
+    permission_classes = [IsAuthenticated, IsStaff]
 
     @extend_schema(
         parameters=[
@@ -1023,7 +1038,9 @@ class PasswordResetRequestView(APIView):
             # Mitigation: Perform "dummy" work to mask timing differences
             # We don't want attackers guessing if an email exists by seeing if 
             # the server responds 100ms faster when it doesn't.
-            logger.warning(f"Password reset attempted for non-existent email: {email}")
+            # SECURITY FIX (H-03): Mask email in logs to prevent enumeration via log compromise
+            masked = f"{email[:3]}***@{email.split('@')[-1]}" if "@" in email else "***"
+            logger.warning(f"Password reset attempted for non-existent email: {masked}")
             # Simulate the token generation + SMS overhead
             time.sleep(0.05) 
 
@@ -1360,7 +1377,8 @@ class StaffManagementViewSet(viewsets.ModelViewSet):
 
 class SecurityDiagnosticsView(APIView):
     """Staff diagnostic for cluster config and secret mounting."""
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    # SECURITY FIX (M-07): Restrict to superuser only — exposes internal infrastructure
+    permission_classes = [IsAuthenticated, IsSuperUser]
 
     def get(self, request, *args, **kwargs):
         from core.utils.secret_service import SecretManager

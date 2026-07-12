@@ -235,6 +235,18 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["new_password"] != attrs["confirm_password"]:
             raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+
+        # SECURITY FIX (H-08): Validate against password history (prevent reuse)
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            from .models import PasswordHistory
+            from django.contrib.auth.hashers import check_password
+            histories = PasswordHistory.objects.filter(user=request.user).order_by("-created_at")[:12]
+            for history in histories:
+                if check_password(attrs["new_password"], history.password_hash):
+                    raise serializers.ValidationError({
+                        "new_password": "You cannot reuse a previously used password."
+                    })
         return attrs
 
     def validate_new_password(self, value):
@@ -259,33 +271,30 @@ class LoginSerializer(serializers.Serializer):
 
         User = get_user_model()
 
-        # Removing request context as it occasionally conflicts with custom User lookups in DRF
-        user = authenticate(username=email, password=password)
-
-        # SECURITY: Removing 'EMA-Emergency' reset and domain-based login bypasses.
-        # This was accidentally left in-place for E2E testing but is a production risk.
+        # SECURITY FIX (C-03): Single authenticate() call — duplicate removed.
         user = authenticate(username=email, password=password)
 
         if not user:
             masked_email = f"{email[:3]}***@{email.split('@')[-1]}" if "@" in email else "***"
-            # Check for unapproved state for better error reporting (403 vs 401)
+            # SECURITY FIX (M-03): Check states for internal logging only.
+            # Do NOT reveal account state to the caller (prevents enumeration).
             lookup_user = User.objects.filter(email=email).first()
             if lookup_user:
                 if not lookup_user.is_approved and not lookup_user.is_superuser:
                     logger.warning(f"Login rejection: Account NOT APPROVED for {masked_email}")
-                    raise PermissionDenied("Your account is pending administrative approval.")
-                if not lookup_user.is_active:
+                elif not lookup_user.is_active:
                     logger.warning(f"Login rejection: Account DEACTIVATED for {masked_email}")
-                    raise PermissionDenied("This account has been deactivated.")
+                else:
+                    logger.warning(f"Login rejection: Invalid credentials for {masked_email}")
+            else:
+                logger.warning(f"Login rejection: Invalid credentials for {masked_email}")
 
-            # Generic failure for non-existent users or wrong passwords
-            logger.warning(f"Login rejection: Invalid credentials for {masked_email}")
+            # SECURITY FIX (M-03): Single generic error for ALL failure cases
             raise serializers.ValidationError("Invalid credentials.")
 
         # Check if account is approved by admin (Staff or Client)
         # SECURITY: Superusers bypass this check for absolute system access
         if hasattr(user, "is_approved") and not user.is_approved and not user.is_superuser:
-            # We raise PermissionDenied to differentiate from incorrect password (403 vs 401/400)
             logger.warning(f"Login rejection: Account NOT APPROVED for user {user.email}")
             raise PermissionDenied("Your account is pending administrative approval. Please contact the manager.")
 
@@ -295,6 +304,7 @@ class LoginSerializer(serializers.Serializer):
 
         attrs["user"] = user
         return attrs
+
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -326,6 +336,26 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["new_password"] != attrs["confirm_password"]:
             raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+
+        # SECURITY FIX (H-08): Validate against password history (prevent reuse)
+        from .models import PasswordResetToken, PasswordHistory
+        from django.contrib.auth.hashers import check_password
+        
+        token_str = attrs.get("token")
+        try:
+            reset_token = PasswordResetToken.objects.get(token=token_str)
+            if reset_token.is_valid():
+                user = reset_token.user
+                # Check last 12 password history entries
+                histories = PasswordHistory.objects.filter(user=user).order_by("-created_at")[:12]
+                for history in histories:
+                    if check_password(attrs["new_password"], history.password_hash):
+                        raise serializers.ValidationError({
+                            "new_password": "You cannot reuse a previously used password."
+                        })
+        except PasswordResetToken.DoesNotExist:
+            pass
+
         return attrs
 
     def validate_new_password(self, value):

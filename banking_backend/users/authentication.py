@@ -17,6 +17,9 @@ def enforce_csrf(request):
 class JWTCookieAuthentication(JWTAuthentication):
     """Custom Authentication class to authenticate using JWT from cookies."""
 
+    # SECURITY: HTTP methods that are considered state-changing and require CSRF protection
+    CSRF_REQUIRED_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
     def authenticate(self, request):
         header = self.get_header(request)
 
@@ -40,9 +43,13 @@ class JWTCookieAuthentication(JWTAuthentication):
             # This allows other authentication classes to try, or leads to a standard 401.
             return None
 
-        # CSRF enforcement is handled by Django's CsrfViewMiddleware in MIDDLEWARE.
-        # Do NOT enforce here - it causes 403 when csrftoken cookie is missing (e.g., first request).
-        # The frontend sends X-CSRFToken header which the middleware validates.
+        # SECURITY FIX (C-04): Enforce CSRF for state-changing requests when authenticating
+        # via cookie. This prevents cross-site request forgery attacks that exploit the
+        # browser automatically attaching HttpOnly JWT cookies to cross-origin requests.
+        # Safe methods (GET, HEAD, OPTIONS) are exempt per Django's CSRF design.
+        if request.method in self.CSRF_REQUIRED_METHODS:
+            enforce_csrf(request)
 
         validated_token = self.get_validated_token(raw_token)
         return self.get_user(validated_token), validated_token
+

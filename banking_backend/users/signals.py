@@ -138,3 +138,17 @@ def generate_staff_id(sender, instance, created, **kwargs):
             logger.info(f"Generated staff ID {instance.staff_id} (seq: {new_seq}) for {instance.email}")
         except Exception as e:
             logger.error(f"Failed to generate staff ID for {instance.email}: {e!s}")
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def record_password_history(sender, instance, created, **kwargs):
+    """
+    Automatically records user password hashes in PasswordHistory.
+    """
+    if instance.password:
+        from users.models import PasswordHistory
+        # Check if the latest password history has a different hash
+        latest = instance.password_histories.first()
+        if not latest or latest.password_hash != instance.password:
+            PasswordHistory.objects.create(user=instance, password_hash=instance.password)
+

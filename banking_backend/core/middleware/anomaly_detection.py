@@ -6,6 +6,8 @@ access (scraping/exfiltration) and unusual transaction patterns.
 
 import logging
 import time
+from decimal import Decimal
+from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 from django.conf import settings
 
@@ -96,11 +98,95 @@ class BulkAccessDetectionMiddleware:
 
 
 class TransactionVelocityMiddleware:
-    """Detects rapid bursts of high-value transactions."""
+    """Detects rapid bursts of high-value transactions to prevent fraud."""
+
+    MAX_TX_PER_MIN = 3
+    MAX_CUMULATIVE_5MIN = Decimal("10000.00")
+    WINDOW_TX_SECONDS = 60
+    WINDOW_CUMULATIVE_SECONDS = 300
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Implementation for rolling window velocity checks
+        # We only check POST requests to the transactions endpoint
+        if (
+            request.method == "POST"
+            and request.path.startswith("/api/transactions")
+            and request.user.is_authenticated
+        ):
+            # Skip velocity check for superusers in development
+            if request.user.is_superuser and settings.DEBUG:
+                return self.get_response(request)
+
+            user_id = request.user.id
+            now = time.time()
+
+            # Attempt to parse amount from raw JSON body
+            amount = Decimal("0.00")
+            try:
+                import json
+                if request.body:
+                    body_data = json.loads(request.body.decode("utf-8"))
+                    amount_val = body_data.get("amount")
+                    if amount_val is not None:
+                        amount = Decimal(str(amount_val))
+            except Exception:
+                # Fallback if body cannot be parsed or read
+                pass
+
+            # 1. Update/check transaction frequency (rolling 1-minute window)
+            freq_key = f"tx_velocity_freq_{user_id}"
+            freq_history = cache.get(freq_key, [])
+            freq_history = [t for t in freq_history if t > now - self.WINDOW_TX_SECONDS]
+            freq_history.append(now)
+            cache.set(freq_key, freq_history, timeout=self.WINDOW_TX_SECONDS)
+
+            if len(freq_history) > self.MAX_TX_PER_MIN:
+                self._trigger_alert(
+                    request,
+                    f"Transaction frequency limit exceeded: {len(freq_history)} transactions in last minute."
+                )
+                raise PermissionDenied(
+                    "Transaction frequency limit exceeded. Please wait a minute and try again."
+                )
+
+            # 2. Update/check cumulative amount limit (rolling 5-minute window)
+            if amount > 0:
+                amount_key = f"tx_velocity_amount_{user_id}"
+                amount_history = cache.get(amount_key, [])
+                amount_history = [
+                    entry for entry in amount_history
+                    if entry[0] > now - self.WINDOW_CUMULATIVE_SECONDS
+                ]
+                amount_history.append((now, float(amount)))
+                cache.set(amount_key, amount_history, timeout=self.WINDOW_CUMULATIVE_SECONDS)
+
+                total_amount = sum(Decimal(str(entry[1])) for entry in amount_history)
+                if total_amount > self.MAX_CUMULATIVE_5MIN:
+                    self._trigger_alert(
+                        request,
+                        f"Cumulative transaction amount ${total_amount} exceeded limit of ${self.MAX_CUMULATIVE_5MIN} in last 5 minutes."
+                    )
+                    raise PermissionDenied(
+                        "Cumulative high-value transaction limit exceeded. Transaction blocked."
+                    )
+
         return self.get_response(request)
+
+    def _trigger_alert(self, request, reason):
+        logger.warning(
+            f"SECURITY ANOMALY: User {request.user.email} (ID: {request.user.id}) "
+            f"triggered transaction velocity alert. Reason: {reason}. IP: {self._get_client_ip(request)}"
+        )
+        from users.models import AdminNotification
+        AdminNotification.objects.create(
+            priority="critical",
+            title="Suspicious Transaction Velocity",
+            message=f"User {request.user.email} triggered alert: {reason}",
+        )
+
+    def _get_client_ip(self, request):
+        from users.security import SecurityService
+        return SecurityService.get_client_ip(request)
+

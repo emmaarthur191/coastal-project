@@ -840,3 +840,27 @@ class UserInvitation(models.Model):
     def is_valid(self):
         """Check if invitation is still valid."""
         return not self.is_used and self.expires_at > timezone.now()
+
+
+class PasswordHistory(models.Model):
+    """
+    Tracks hashed password history for users to prevent password reuse.
+    NIST 800-63B guidelines recommend restricting password reuse.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="password_histories"
+    )
+    password_hash = models.CharField(max_length=256)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "password_history"
+        ordering = ["-created_at"]
+        verbose_name = "Password History"
+        verbose_name_plural = "Password Histories"
+
+    def __str__(self):
+        return f"Password history for {self.user.email} at {self.created_at}"
+

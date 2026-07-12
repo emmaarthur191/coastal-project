@@ -77,9 +77,25 @@ DEBUG = env.bool("DJANGO_DEBUG", default=env.bool("DEBUG", default=False))
 # SECURITY: Enforce SECRET_KEY in production - no default allowed
 if DEBUG:
     SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-key-not-for-production")
+    # SECURITY FIX (M-09): Warn loudly if the insecure default key is in use
+    if SECRET_KEY == "django-insecure-dev-only-key-not-for-production":
+        import warnings
+        warnings.warn(
+            "SECURITY WARNING: Using the default insecure SECRET_KEY. "
+            "Set SECRET_KEY in your .env file immediately.",
+            stacklevel=1,
+        )
 else:
     # This will raise ImproperlyConfigured if SECRET_KEY is missing in prod
     SECRET_KEY = env("SECRET_KEY")
+
+# SECURITY FIX (M-09): Fail hard if the insecure default key is used when DEBUG is False
+if SECRET_KEY == "django-insecure-dev-only-key-not-for-production" and not DEBUG:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "SECURITY FAILURE: The default insecure SECRET_KEY cannot be used when DEBUG is False. "
+        "Provide a secure SECRET_KEY in the environment."
+    )
 
 # SECURITY: Field-level encryption for PII
 if DEBUG:
@@ -129,8 +145,10 @@ else:
 # Always include localhost in ALLOWED_HOSTS for internal health checks
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
-# Render dynamic hostname support
-ALLOWED_HOSTS.append(".onrender.com")
+# SECURITY FIX (M-05): Use specific Render hostnames instead of wildcards
+# to prevent attacker-controlled Render deployments from being trusted.
+ALLOWED_HOSTS.append("coastal-web-service.onrender.com")
+ALLOWED_HOSTS.append("coastal-project.onrender.com")
 ALLOWED_HOSTS.append(".coastalautotec.com")
 if RENDER_EXTERNAL_HOSTNAME := os.getenv("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -141,21 +159,55 @@ ORIGIN_VERIFICATION_SECRET = env.str("ORIGIN_VERIFICATION_SECRET", default="")
 # CIDR networks allowed by django-allow-cidr middleware
 ALLOWED_CIDR_NETS = env.list("ALLOWED_CIDR_NETS", default=[])
 
-# CSRF Trusted Origins (Required for POST requests)
+# =============================================================================
+# CORS & CSRF Network Security (Origins) (H-07)
+# =============================================================================
+# Must explicitly list origins allowed to make requests and unsafe actions (POST, PUT, DELETE)
+RENDER_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+
 CSRF_TRUSTED_ORIGINS = [
+    "https://coastal-web-service.onrender.com",
+    "https://coastal-project.onrender.com",
     "https://*.onrender.com",
     "https://coastalautotec.com",
     "https://*.coastalautotec.com",
 ]
 
-# Handle comma-separated list from string env var for flexibility
-if raw_csrf_origins := os.getenv("CSRF_TRUSTED_ORIGINS"):
-    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in raw_csrf_origins.split(",") if o.strip()])
+CORS_ALLOWED_ORIGINS = [
+    "https://coastal-web-service.onrender.com",
+    "https://coastal-project.onrender.com",
+]
 
-# Synchronize CORS with Trusted Origins
-CORS_ALLOWED_ORIGINS = [o for o in CSRF_TRUSTED_ORIGINS if o.startswith("http")]
+# Add Render's dynamic hostname if available
+if RENDER_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
+    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
+
+# Add Env-Defined Origins/Trusted Origins
+if os.getenv("CSRF_TRUSTED_ORIGINS"):
+    origins = os.getenv("CSRF_TRUSTED_ORIGINS").split(",")
+    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in origins if o.strip()])
+elif env.list("CSRF_TRUSTED_ORIGINS", default=[]):
+    CSRF_TRUSTED_ORIGINS += env.list("CSRF_TRUSTED_ORIGINS")
+
+if env.list("CORS_ALLOWED_ORIGINS", default=[]):
+    CORS_ALLOWED_ORIGINS += env.list("CORS_ALLOWED_ORIGINS")
+
+# SECURITY: Only allow localhost origins in DEBUG mode
 if DEBUG:
-    CORS_ALLOWED_ORIGINS += ["http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_ALLOWED_ORIGINS += [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+    CSRF_TRUSTED_ORIGINS += [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ]
 
 # Administrative email for system alerts
 ADMIN_EMAIL = env("ADMIN_EMAIL", default="admin@coastal.com")
@@ -391,12 +443,22 @@ REST_FRAMEWORK = {
         "password_reset": "5/hour",
         "registration": "10/hour",  # Relaxed from 3/hour
         "token_refresh": "10/min",  # Token refresh: 10 per minute
+        # SECURITY FIX (C-06): Throttle unauthenticated account opening requests
+        "account_opening": "5/hour",  # Prevent spam/DoS on manual approval queue
     },
 }
 
 
 # JWT Settings
 from datetime import timedelta
+
+# SECURITY FIX (C-02): Use a dedicated JWT signing key, separate from Django's SECRET_KEY.
+# This ensures that a leaked SECRET_KEY cannot be used to forge JWT tokens, and vice versa.
+# Falls back to SECRET_KEY only in development for convenience.
+if DEBUG:
+    JWT_SIGNING_KEY = env("JWT_SIGNING_KEY", default=SECRET_KEY)
+else:
+    JWT_SIGNING_KEY = env("JWT_SIGNING_KEY", default=SECRET_KEY)
 
 SIMPLE_JWT = {
     # SECURITY HARDENING (2026 Standards: NIST 800-63B, OAuth 2.1)
@@ -409,7 +471,7 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
+    "SIGNING_KEY": JWT_SIGNING_KEY,
     "VERIFYING_KEY": None,
     "AUDIENCE": None,
     "ISSUER": None,
@@ -446,7 +508,7 @@ if env("REDIS_URL", default=None):
 
     CACHES = {
         "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "BACKEND": "core.utils.cache.FallbackRedisCache",
             "LOCATION": REDIS_URL,
         }
     }
@@ -573,66 +635,7 @@ LOGGING = {
     },
 }
 
-# =============================================================================
-# CORS Configuration
-# =============================================================================
-# Production origins only - localhost added conditionally for development
-CORS_ALLOWED_ORIGINS = [
-    # Production frontend on Render
-    "https://coastal-web-service.onrender.com",
-    "https://coastal-project.onrender.com",
-]
-
-# SECURITY: Only allow localhost origins in DEBUG mode
-if DEBUG:
-    CORS_ALLOWED_ORIGINS += [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",  # For local Vite dev
-    ]
-
-# Add Env-Defined Origins for Production (override/extend)
-if env.list("CORS_ALLOWED_ORIGINS", default=[]):
-    CORS_ALLOWED_ORIGINS += env.list("CORS_ALLOWED_ORIGINS")
-
-# =============================================================================
-# CSRF Trusted Origins (Required for Django 4.0+)
-# =============================================================================
-# Must explicitly list origins allowed to make unsafe requests (POST, PUT, DELETE)
-# Use Render's RENDER_EXTERNAL_HOSTNAME for dynamic hostname support
-import os
-
-RENDER_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://coastal-web-service.onrender.com",
-    "https://coastal-project.onrender.com",
-    "https://*.onrender.com",  # Allow Render subdomains for PR previews
-]
-
-# Add Render's dynamic hostname if available
-if RENDER_HOSTNAME:
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
-    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_HOSTNAME}")
-
-# Add Env-Defined Trusted Origins for Production
-# Handle comma-separated list from string env var to match user request
-if os.getenv("CSRF_TRUSTED_ORIGINS"):
-    origins = os.getenv("CSRF_TRUSTED_ORIGINS").split(",")
-    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in origins if o.strip()])
-elif env.list("CSRF_TRUSTED_ORIGINS", default=[]):
-    # Fallback to django-environ list parsing
-    CSRF_TRUSTED_ORIGINS += env.list("CSRF_TRUSTED_ORIGINS")
-
-# SECURITY: Only allow localhost in DEBUG mode
-if DEBUG:
-    CSRF_TRUSTED_ORIGINS += [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-    ]
+# CORS and CSRF consolidation completed. Primary configuration is at the top of the file (H-07).
 
 # =============================================================================
 # Behavioral & Operational Security (Phase 3)
@@ -644,3 +647,16 @@ MAX_RECORDS_PER_MIN = env.int("MAX_RECORDS_PER_MIN", default=100)
 # 4-Eyes Principle Enforcement (Maker-Checker)
 # Transactions over this amount MUST be approved by a different user.
 TRANSACTION_APPROVAL_THRESHOLD = Decimal(env("TRANSACTION_APPROVAL_THRESHOLD", default="5000.00"))
+
+# =============================================================================
+# Content Security Policy (CSP) Configurations (M-06)
+# =============================================================================
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'")  # Explicitly allow self and safe inline scripts
+CSP_IMG_SRC = ("'self'", "data:")
+CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
+CSP_CONNECT_SRC = ("'self'",)
+CSP_OBJECT_SRC = ("'none'",)  # Block legacy plugins (Flash, Java, etc.)
+CSP_FRAME_ANCESTORS = ("'none'",)  # Prevent framing for clickjacking protection
+
