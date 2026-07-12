@@ -97,7 +97,14 @@ class TestSessionsAndDiagnostics:
         response = api_client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        # 2. Manager allowed and gets correct fields
+        # 2. Manager blocked (since only superuser allowed now per M-07)
+        api_client.force_authenticate(user=manager_user)
+        response = api_client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        # 3. Superuser allowed and gets correct fields
+        manager_user.is_superuser = True
+        manager_user.save()
         api_client.force_authenticate(user=manager_user)
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
