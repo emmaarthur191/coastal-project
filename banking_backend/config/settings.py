@@ -238,13 +238,13 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # Place first to handle preflight and add CORS headers to all responses
     "allow_cidr.middleware.AllowCIDRMiddleware",
     "core.middleware.origin_verification.OriginVerificationMiddleware",
     "core.middleware.mtls_verification.MTLSVerificationMiddleware",
     "core.middleware.base.LogCorrelationMiddleware",
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # Moved after SecurityMiddleware as requested
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

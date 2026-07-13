@@ -18,6 +18,10 @@ class OriginVerificationMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Exempt OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return self.get_response(request)
+
         # Allow health checks and root path to bypass origin secret verification
         if request.path in self.EXEMPT_PATHS or request.path == "/":
             return self.get_response(request)

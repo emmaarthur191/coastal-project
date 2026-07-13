@@ -49,7 +49,10 @@ class MTLSVerificationMiddleware:
     def __call__(self, request):
         # 1. Check if path requires mTLS
         if any(request.path.startswith(path) for path in self.MTLS_REQUIRED_PATHS):
-            
+            # Exempt OPTIONS requests (CORS preflight)
+            if request.method == "OPTIONS":
+                return self.get_response(request)
+
             # 2. Allow skipping mTLS in local development or testing ONLY if explicitly configured
             if (settings.DEBUG or getattr(settings, "TESTING", False)) and getattr(settings, "SKIP_MTLS_IN_DEV", False):
                 return self.get_response(request)
