@@ -195,6 +195,9 @@ elif env.list("CSRF_TRUSTED_ORIGINS", default=[]):
 if env.list("CORS_ALLOWED_ORIGINS", default=[]):
     CORS_ALLOWED_ORIGINS += env.list("CORS_ALLOWED_ORIGINS")
 
+# Allow cookies/credentials in cross-origin requests (required for JWT cookie auth)
+CORS_ALLOW_CREDENTIALS = True
+
 # SECURITY: Only allow localhost origins in DEBUG mode
 if DEBUG:
     CORS_ALLOWED_ORIGINS += [

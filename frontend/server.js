@@ -44,7 +44,8 @@ app.use((req, res, next) => {
   // Content Security Policy (CSP)
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'sha256-gzKlYsIszOjFASq+W3obCcqzhavR5QZ3uAv3AV4P17U=' https://static.cloudflareinsights.com https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+    "script-src 'self' https://static.cloudflareinsights.com https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+    "script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://api2.amplitude.com https://browser.sentry-cdn.com https://js.sentry-cdn.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
