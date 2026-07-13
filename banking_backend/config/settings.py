@@ -176,6 +176,8 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     "https://coastal-web-service.onrender.com",
     "https://coastal-project.onrender.com",
+    "https://coastalautotec.com",
+    "https://api.coastalautotec.com",
 ]
 
 # Add Render's dynamic hostname if available
