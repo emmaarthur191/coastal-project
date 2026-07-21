@@ -46,7 +46,7 @@ rich==14.2.0
 sentry-sdk==2.63.0
 
 # Utilities
-Pillow==12.2.0
+Pillow==12.3.0
 joblib==1.5.3
 numpy==2.4.2
 scikit-learn==1.9.0
