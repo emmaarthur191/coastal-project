@@ -11,7 +11,7 @@ django-csp==3.8
 django-allow-cidr>=0.6
 
 # Security & Auth
-cryptography==48.0.1
+cryptography==49.0.0
 Authlib==1.7.1
 PyJWT==2.13.0
 
